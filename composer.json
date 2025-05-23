@@ -1,0 +1,17 @@
+{
+    "name": "app/practica_crud",
+    "description": "Proyecto, inicio del crud",
+    "autoload": {
+        "psr-4": {
+            "App\\PracticaCrud\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "SabrinaC19",
+            "email": "sabrii.colmenarez@gmail.com"
+        }
+    ],
+    "minimum-stability": "beta",
+    "require": {}
+}
