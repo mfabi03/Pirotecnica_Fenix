@@ -8,10 +8,12 @@
     },
     "authors": [
         {
-            "name": "SabrinaC19",
-            "email": "sabrii.colmenarez@gmail.com"
+            "name": "mfabi03",
+            "email": "mfabisivira03@gmail.com"
         }
     ],
     "minimum-stability": "beta",
-    "require": {}
+    "require": {
+        "cboden/ratchet": "^0.4.4"
+    }
 }
