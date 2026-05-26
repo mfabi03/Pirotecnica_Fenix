@@ -21,7 +21,7 @@
             try {
 
                 // Crear una nueva conexión PDO
-                $this->conex = new PDO("mysql: host=localhost; dbname=userdb", "root", "");
+                $this->conex = new PDO("mysql: host=localhost; dbname=Pirotecnica_Fenix", "root", "");
                 
                 // Establecer el modo de error de PDO a excepción
                 $this->conex->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
