@@ -1,9 +1,9 @@
 {
-    "name": "app/practica_crud",
+    "name": "app/pirotecnica_fenix",
     "description": "Proyecto, inicio del crud",
     "autoload": {
         "psr-4": {
-            "App\\PracticaCrud\\": "app/"
+            "App\\Pirotecnicafenix\\": "app/"
         }
     },
     "authors": [

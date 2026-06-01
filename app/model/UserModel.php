@@ -1,8 +1,8 @@
 <?php 
 
-    namespace App\PracticaCrud\Model;
+    namespace App\Pirotecnicafenix\Model;
 
-    use App\PracticaCrud\Config\Connect\ConnectDB;
+    use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
     class userModel extends ConnectDB {
 

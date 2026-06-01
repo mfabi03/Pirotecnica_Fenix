@@ -1,5 +1,5 @@
 <?php
-    namespace App\PracticaCrud\Config\Connect;
+    namespace App\Pirotecnicafenix\Config\Connect;
 
     use PDO;
     use PDOException; 

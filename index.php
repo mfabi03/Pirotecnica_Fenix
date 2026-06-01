@@ -2,7 +2,7 @@
 
     require 'vendor/autoload.php';
 
-    use App\PracticaCrud\Controller\FrontController;
+    use App\Pirotecnicafenix\Controller\FrontController;
 
     $frontController = new FrontController();
 

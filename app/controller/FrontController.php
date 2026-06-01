@@ -1,6 +1,6 @@
 <?php
 
-    namespace App\PracticaCrud\Controller;
+    namespace App\Pirotecnicafenix\Controller;
     class FrontController {
 
         // Definicion de atributos que serán constantes

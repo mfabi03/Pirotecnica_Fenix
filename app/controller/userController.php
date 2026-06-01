@@ -1,6 +1,6 @@
 <?php
 
-    use App\PracticaCrud\Model\userModel;
+    use App\Pirotecnicafenix\Model\userModel;
     $object = new userModel();
 
     if (isset($_GET['type'])) {
