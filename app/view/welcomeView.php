@@ -1,22 +1,21 @@
-<<<<<<< HEAD
-<?php
-//  Menú Principal / Panel de Control de Usuarios del Sistema  Pirotecnia Fénix,
+<?php 
 //  con un diseño moderno y atractivo utilizando Bootstrap. La vista presenta tres opciones principales : 
-// Consultar Lista, Registrar Nuevo y Buscar Usuario, cada una representada por una tarjeta con íconos y descripciones claras. El diseño es responsivo y utiliza colores llamativos para destacar cada opción, invitando al usuario a interactuar con el sistema de manera intuitiva.
+
+// Consultar Lista, Registrar Nuevo y Buscar Usuario, cada una representada por una tarjeta con íconos y descripciones claras. El diseño es responsivo 
+
+//y utiliza colores llamativos para destacar cada opción, invitando al usuario a interactuar con el sistema de manera intuitiva.
 ?>
-=======
->>>>>>> 09a6b8f0612ba1d30f56dd729dd277dd4f212b9f
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-<<<<<<< HEAD
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bienvenido - Pirotecnia Fénix</title>
     <link rel="stylesheet" href="../assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
-<body class="bg-light"> <div class="container mt-5">
+<body class="bg-light"> <div class="container mt-5"> 
     
     <div class="row justify-content-center mb-5">
         <div class="col-md-10 text-center bg-dark text-white p-5 rounded shadow-lg">
@@ -72,22 +71,7 @@
     </div>
 
 </div> <script src="../assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-=======
-    <title>Bienvenido al CRUD</title>
-    <link rel="stylesheet" href="../Practica_CRUD/assets/css/welcome.css">
-</head>
-<body>
 
-<div class="container">
-    <h1>Bienvenido al Sistema CRUD</h1>
-    <p>¿Qué deseas hacer?</p>
-    <div class="options">   
-        <a href="?url=user&type=list" class="btn btn-consultar">Consultar</a>
-        <a href="?url=user&type=register" class="btn btn-registrar">Registrar</a>
-        <a href="?url=user&type=main" class="btn btn-consultar">Buscar User</a>
-    </div>
-</div>
->>>>>>> 09a6b8f0612ba1d30f56dd729dd277dd4f212b9f
+    
 
-</body>
-</html>
+
