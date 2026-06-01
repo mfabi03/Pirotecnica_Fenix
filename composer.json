@@ -1,0 +1,19 @@
+{
+    "name": "app/practica_crud",
+    "description": "Proyecto, inicio del crud",
+    "autoload": {
+        "psr-4": {
+            "App\\PracticaCrud\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "mfabi03",
+            "email": "mfabisivira03@gmail.com"
+        }
+    ],
+    "minimum-stability": "beta",
+    "require": {
+        "cboden/ratchet": "^0.4.4"
+    }
+}
