@@ -12,7 +12,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bienvenido - Pirotecnia Fénix</title>
-    <link rel="stylesheet" href="../assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body class="bg-light"> <div class="container mt-5"> 
@@ -70,7 +70,7 @@
         © 2026 Pirotecnia Fénix C.A. - Todos los derechos reservados.
     </div>
 
-</div> <script src="../assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+</div> <script src="assets/bootstrap/js/bootstrap.bundle.min.js"></script>
 
     
 
