@@ -1,56 +1,52 @@
 <?php
+namespace App\Pirotecnicafenix\Controller;
 
-    namespace App\Pirotecnicafenix\Controller;
-    class FrontController {
+class FrontController {
 
-        // Definicion de atributos que serán constantes
-        private $dir;
-        private $controller;        
-        private $url;
+    private $dir;
+    private $controller;        
+    private $url;
 
-        public function __construct() {
-
-            // Si existe y no está vacía una request con el nombre de url
-
-            if (isset($_REQUEST["url"])) {
-
-                //se asigna el valor de la request a la variable url
-                $this->url = $_REQUEST["url"];
-
-                //directorio donde se encuentran los controladores
-                $this->dir = 'app/controller/';
-
-                //concatenación del nombre del controlador con el nombre de la clase
-                $this->controller = 'Controller.php';
-
-                //se ejecuta el método getURL que se encarga de cargar el controlador correspondiente
-                $this->getURL();
-
-            } else {
-
-                //si no existe la request se asigna el valor conocido por defecto a la variable url 
-                
-                echo "Error 404: la url no existe";
-                
-                die("<script>location='?url=user'</script>");
-            }
+    public function __construct() {
+        if (isset($_REQUEST["url"])) {
+            $this->url = $_REQUEST["url"];
+            $this->dir = 'app/controller/';
+            $this->controller = 'Controller.php';
+            $this->getURL();
+        } else {
+            // Redirigir si no hay URL
+            header("Location: ?url=configuracion");
+            exit;
         }
-
-        private function getURL() {
-
-            //si existe el controlador en la carpeta de controladores
-            
-            if(file_exists($this->dir.$this->url.$this->controller)) {
-                
-                //se llama al controlador correspondiente
-                require_once($this->dir.$this->url.$this->controller);
-            
-            } else {
-
-                echo "<script>location='?url=user'</script>";
-            }
-        }
-
     }
 
-?>
+    private function getURL() {
+        // Usamos ucfirst para que 'user' se convierta en 'User'
+        $nombreControlador = ucfirst($this->url) . $this->controller;
+        $rutaCompleta = $this->dir . $nombreControlador;
+
+        if (file_exists($rutaCompleta)) {
+            require_once($rutaCompleta);
+            
+            // Construimos el nombre de la clase con Namespace
+            $nombreClase = "\\App\\Pirotecnicafenix\\Controller\\" . ucfirst($this->url) . "Controller";
+            
+            if (class_exists($nombreClase)) {
+                $instancia = new $nombreClase();
+                
+                // Ejecutar acción o método por defecto
+                $metodo = $_REQUEST["type"] ?? 'index';
+                
+                if (method_exists($instancia, $metodo)) {
+                    $instancia->$metodo();
+                } else {
+                    echo "Error: El método '$metodo' no existe en $nombreClase";
+                }
+            } else {
+                echo "Error: La clase $nombreClase no fue encontrada en $rutaCompleta";
+            }
+        } else {
+            echo "Error: No se encuentra el archivo $rutaCompleta";
+        }
+    }
+}

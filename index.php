@@ -1,9 +1,12 @@
 <?php
 
-    require 'vendor/autoload.php';
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-    use App\Pirotecnicafenix\Controller\FrontController;
+require 'vendor/autoload.php';
 
-    $frontController = new FrontController();
+use App\Pirotecnicafenix\Controller\FrontController;
 
+$frontController = new FrontController();
 ?>
