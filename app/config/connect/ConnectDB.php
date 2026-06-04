@@ -4,7 +4,8 @@
     use PDO;
     use PDOException; 
 
-    abstract class ConnectDB {
+    
+    class ConnectDB {
 
         // Atributos de la clase
         private $conex;
@@ -15,7 +16,7 @@
         }
 
         // metodo para conectar a la base de datos
-        protected function getConnection(): PDO {
+        public function getConnection(): PDO {
 
             // Manejo de excepciones para la conexión a la base de datos
             try {

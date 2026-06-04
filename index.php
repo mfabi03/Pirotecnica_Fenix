@@ -1,12 +1,26 @@
 <?php
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+    require 'vendor/autoload.php';
 
-require 'vendor/autoload.php';
-
-use App\Pirotecnicafenix\Controller\FrontController;
-
-$frontController = new FrontController();
+    $partesRuta = isset($_GET["ruta"]) ? $_GET["ruta"] : "main";
+    
+    $ruta = explode("/", $partesRuta);
+    $paginaActual = $ruta[0];
+    
+    include __DIR__."/app/view/header.php";
+    switch ($paginaActual) {
+        case "login":
+            include __DIR__."/app/view/clientes/listClienteView.php";
+            break;
+        case "home":
+            include __DIR__."/app/view/configuracion/main.php";
+            break;
+        case "hola":
+            echo "aaaaaaa";
+            break;
+        default: 
+            include __DIR__."/app/view/configuracion/main.php";
+    }
 ?>
