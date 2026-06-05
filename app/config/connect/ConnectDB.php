@@ -3,29 +3,19 @@
 
     use PDO;
     use PDOException; 
-
-    
+        
     class ConnectDB {
 
-        // Atributos de la clase
-        private $conex;
-
-        public function __construct() {
-            // Llamar al método para establecer la conexión a la base de datos
-            $this->getConnection();
-        }
-
-        // metodo para conectar a la base de datos
-        public function getConnection(): PDO {
+        public function getConnection() {
 
             // Manejo de excepciones para la conexión a la base de datos
             try {
 
                 // Crear una nueva conexión PDO
-                $this->conex = new PDO("mysql: host=localhost; dbname=Pirotecnica_Fenix", "root", "");
+                $pdo = new PDO("mysql: host=localhost; dbname=Pirotecnica_Fenix", "root", "");
                 
                 // Establecer el modo de error de PDO a excepción
-                $this->conex->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
             } catch (PDOException $e) {
 
@@ -34,7 +24,7 @@
             }
 
             // Retornar la conexión establecida
-            return $this->conex;
+            return $pdo;
         }
     }
 

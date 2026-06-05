@@ -3,14 +3,7 @@
 <link rel="stylesheet" href="assets/css/welcome.css">
 
 
-<nav class="navbar bg-dark navbar-dark px-4 py-3 mb-4 shadow">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
-        <span class="navbar-brand mb-0 h1 text-white display-5">
-            🔥 Pirotecnia Fénix
-        </span>
-        <span class="text-white-50 small">Panel de Control General</span>
-    </div>
-</nav>
+
 
 <div class="container-fluid px-4">
     <div class="row">

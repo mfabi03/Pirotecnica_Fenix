@@ -21,6 +21,8 @@ class ComposerStaticInit9499bc5c6ab1745e2902109854cf08fe
     );
 
     public static $classMap = array (
+        'App\\Pirotecnicafenix\\Model\\UsuarioModel' => __DIR__ . '/../..' . '/app/Model/UsuarioModel.php',
+        'App\\Pirotecnicafenix\\Model\\iniciodesecionModel' => __DIR__ . '/../..' . '/app/Model/iniciodesecionModel.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
     );
 

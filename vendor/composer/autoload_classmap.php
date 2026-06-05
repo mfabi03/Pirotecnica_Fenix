@@ -6,5 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'App\\Pirotecnicafenix\\Model\\UsuarioModel' => $baseDir . '/app/Model/UsuarioModel.php',
+    'App\\Pirotecnicafenix\\Model\\iniciodesecionModel' => $baseDir . '/app/Model/iniciodesecionModel.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
 );

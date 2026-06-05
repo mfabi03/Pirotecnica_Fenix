@@ -14,7 +14,8 @@
                 
                 
                 <div class="d-grid gap-3 d-md-block">
-                    <a href="?url=configuracion&type=usuarios" class="btn btn-warning btn-lg mx-2">Inicio de Sesión</a><a href="?url=iniciodesecionModel" class="btn btn-warning btn-lg mx-2">Registro</a>
+                    <a href="registro" class="btn btn-warning btn-lg mx-2">Registro</a>
+                    <a href="login" class="btn btn-warning btn-lg mx-2">Inicio de sesión</a>
                 </div>
             </div>
         </div>
