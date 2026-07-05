@@ -1,80 +1,12 @@
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-<style>
-    body {
-        background-color: #f8f9fa;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .navbar-fenix {
-        background: linear-gradient(135deg, #1e1e24 0%, #0f0f12 100%);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    .brand-title {
-        color: #fff;
-        font-weight: 700;
-        letter-spacing: 1px;
-    }
-    .brand-orange {
-        color: #f25c05;
-    }
-    .sidebar-mock {
-        background-color: #ffffff;
-        border-right: 1px solid #e3e6f0;
-        min-height: 100vh;
-    }
-    .nav-link-custom {
-        color: #4e73df;
-        font-weight: 600;
-        padding: 0.8rem 1rem;
-        border-radius: 5px;
-        margin-bottom: 0.3rem;
-        transition: all 0.2s;
-    }
-    .nav-link-custom:hover {
-        background-color: #f1f3f9;
-        color: #224abe;
-    }
-    .card-custom {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
-    }
-    .table-fenix thead {
-        background-color: #1e1e24;
-        color: white;
-    }
-    .badge-entrada { background-color: #2e7d32; color: white; }
-    .badge-salida { background-color: #c62828; color: white; }
-</style>
-
-<nav class="navbar navbar-dark navbar-fenix px-4 py-3 mb-4">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
-        <span class="navbar-brand m-0 h1 brand-title">
-            🔥 <span class="brand-orange">Sistema</span> Pirotecnia Fénix
-        </span>
-        <span class="text-white-50 small">Panel de Control General</span>
-    </div>
-</nav>
+<?php 
+require_once dirname(__DIR__, 2) . "/view/header.php"; 
+?>
 
 <div class="container-fluid px-4">
     <div class="row">
-        
-        <div class="col-md-3 col-lg-2 mb-4">
-            <div class="card card-custom p-3">
-                <h6 class="text-muted text-uppercase font-weight-bold mb-3 small">Navegación</h6>
-                <div class="d-flex flex-column">
-                    <a href="?url=productos" class="nav-link nav-link-custom"><i class="fas fa-box me-2"></i> Productos</a>
-                    <a href="?url=salidas" class="nav-link nav-link-custom"><i class="fas fa-shopping-cart me-2"></i> Ventas</a>
-                    <a href="?url=clientes" class="nav-link nav-link-custom"><i class="fas fa-users me-2"></i> Clientes</a>
-                    <a href="?url=proveedor" class="nav-link nav-link-custom"><i class="fas fa-truck me-2"></i> Proveedores</a>
-                    <a href="?url=usuarios" class="nav-link nav-link-custom"><i class="fas fa-user-cog me-2"></i> Usuarios</a>
-                    <a href="?url=reportes" class="nav-link nav-link-custom active bg-dark text-white"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-                </div>
-            </div>
-        </div>
+        <?php require_once dirname(__DIR__) . "/sidebar.php"; ?>
 
-        <div class="col-md-9 col-lg-10">
+        <div class="col-md-9 col-lg-10"> 
             
             <div class="card card-custom p-4 mb-4 bg-white">
                 <div class="row align-items-center g-3">
@@ -96,7 +28,9 @@
             <div class="card card-custom mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
                     <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-history text-muted me-2"></i>Historial de Movimientos</h5>
-                    <button class="btn btn-sm btn-warning fw-bold text-dark"><i class="fas fa-plus me-1"></i> Registrar</button>
+                    <a href="?url=notasalida&type=register" class="btn btn-sm btn-warning fw-bold text-dark">
+                        <i class="fas fa-plus me-1"></i> Registrar Salida
+                    </a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle table-fenix m-0">

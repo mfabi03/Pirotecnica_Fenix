@@ -9,7 +9,10 @@ class iniciodesecionModel {
     }
 
     public function verificarUsuario($usuario, $password) {
-        $sql = "SELECT * FROM usuarios WHERE correo = :usuario OR cedula = :usuario";
+        $sql = "SELECT u.*, p.nombre, p.apellido 
+                FROM usuarios u 
+                INNER JOIN persona p ON u.id_persona = p.id_persona 
+                WHERE p.correo_electronico = :usuario OR p.cedula = :usuario";
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['usuario' => $usuario]);
         $user = $stmt->fetch();

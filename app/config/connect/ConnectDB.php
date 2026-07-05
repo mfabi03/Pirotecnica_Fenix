@@ -3,8 +3,6 @@
 
     use PDO;
     use PDOException; 
-
-    
     class ConnectDB {
 
         // Atributos de la clase
@@ -15,21 +13,21 @@
             $this->getConnection();
         }
 
-        // metodo para conectar a la base de datos
+        // Método para conectar a la base de datos
         public function getConnection(): PDO {
 
             // Manejo de excepciones para la conexión a la base de datos
             try {
 
-                // Crear una nueva conexión PDO
-                $this->conex = new PDO("mysql: host=localhost; dbname=Pirotecnica_Fenix", "root", "");
+                // Nombre exacto en minúsculas y sin espacios internos en la configuración
+                $this->conex = new PDO("mysql:host=localhost;dbname=pirotecnica_fenix", "root", "");
                 
                 // Establecer el modo de error de PDO a excepción
                 $this->conex->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
             } catch (PDOException $e) {
 
-                // Si hay un error, se lanza una excepción y se muestra un mensaje de error
+                // Si hay un error, se corta la ejecución y muestra el fallo real
                 die('ERROR DE CONEXIÓN: No se ha podido conectar con la base de datos. ' . $e->getMessage());
             }
 
@@ -37,5 +35,4 @@
             return $this->conex;
         }
     }
-
 ?>

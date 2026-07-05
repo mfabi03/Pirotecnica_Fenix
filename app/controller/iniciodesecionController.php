@@ -11,7 +11,7 @@ class iniciodesecionController {
     }
 
     public function index() {
-        require_once dirname(__DIR__, 2) . "/app/view/configuracion/iniciodesecion.php";
+        require_once dirname(__DIR__, 2) . "/app/view/seguridad/login.php";
     }
 
     public function autenticar() {
