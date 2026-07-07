@@ -1,0 +1,19 @@
+{
+    "name": "app/pirotecnica_fenix",
+    "description": "Proyecto, inicio del crud",
+    "autoload": {
+        "psr-4": {
+            "App\\Pirotecnicafenix\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "mfabi03",
+            "email": "mfabisivira03@gmail.com"
+        }
+    ],
+    "minimum-stability": "beta",
+    "require": {
+        "cboden/ratchet": "^0.4.4"
+    }
+}

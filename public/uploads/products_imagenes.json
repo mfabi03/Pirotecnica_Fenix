@@ -1,0 +1,22 @@
+{
+    "2": {
+        "especificaciones": "vgxbchgcv hgvdhs",
+        "proveedor": "maria c.a",
+        "id_proveedor": 1
+    },
+    "3": {
+        "especificaciones": "2x1",
+        "proveedor": "hola",
+        "id_proveedor": 3
+    },
+    "4": {
+        "especificaciones": "pequenas",
+        "proveedor": "yvhj",
+        "id_proveedor": 4
+    },
+    "5": {
+        "especificaciones": "100uni",
+        "proveedor": "hola",
+        "id_proveedor": 3
+    }
+}

@@ -1,0 +1,14 @@
+
+    .card-custom {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(69, 58, 68, 0.1);
+    }
+    .empty-img-placeholder {
+        width: 220px;
+        height: 220px;
+        background: #f5f5f5;
+        border-radius: 6px;
+        display: inline-block;
+        margin: 0 auto;
+    }
