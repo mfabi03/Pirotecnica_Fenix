@@ -1,65 +1,163 @@
 <?php
-// lista para mostrar Tabla de Clientes registrados (base_datos + Bootstrap)
+require_once dirname(__DIR__, 2) . "/view/header.php"; 
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Clientes - Pirotecnia Fénix</title>
-    <link class="stylesheet" href="../assets/bootstrap/css/bootstrap.min.css">
-    <link class="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-</head>
-<body class="bg-light"> 
 
-<div class="container mt-5 mb-5">
-<div class="row justify-content-center">
-<div class="col-md-11"> 
-<div class="card shadow border-0 rounded-lg">
-                
-<div class="card-header bg-danger text-white d-flex justify-content-between align-items-center py-3">
-    <h2 class="mb-0 h4 font-weight-bold">👥 Listado General de Clientes</h2>
-        <a href="?url=clientes&type=register" class="btn btn-dark btn-sm font-weight-bold shadow-sm">
-            <i class="bi bi-person-plus-fill"></i> + Nuevo Cliente
-            </a>
+<div class="col-md-9 col-lg-10">
+    <div class="card card-custom p-4 mb-4 bg-white">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8 col-lg-7">
+                <h3 class="m-0 font-weight-bold text-dark">
+                    <i class="fas fa-users me-2"></i> Clientes
+                </h3>
+                <p class="text-muted mb-0">Lista de clientes naturales y jurídicos.</p>
             </div>
-                
-<div class="card-body p-4">
-<div class="table-responsive">
-<table class="table table-striped table-bordered table-hover align-middle text-center w-100">
-    <thead class="table-secondary">
-                <tr>
-                    <th>Cédula / RIF</th>
-                    <th>Nombre / Razón Social</th>
-                    <th>Teléfono</th>
-                    <th>Dirección</th>
-                    <th>Acciones</th>
-                </tr>
-    </thead>
-<tbody>
-                <tr>
-                    <td class="font-weight-bold text-secondary">V-12345678</td>
-                    <td>Juan Pérez (Prueba)</td>
-                    <td>0414-1234567</td>
-                    <td>Barquisimeto, Estado Lara</td>
-                    <td>
-    <div class="btn-group gap-1" role="group">
-        <a href="#" class="btn btn-warning btn-sm text-dark shadow-sm"><i class="bi bi-pencil-square"></i></a>
-        <a href="#" class="btn btn-danger btn-sm shadow-sm"><i class="bi bi-trash-fill"></i></a>
+            <div class="col-md-4 col-lg-5 text-md-end">
+                <a href="?url=clientes&type=register" class="btn btn-gold btn-sm fw-bold">
+                    <i class="fas fa-user-plus me-1"></i> Nuevo Cliente
+                </a>
+            </div>
+        </div>
     </div>
-        </td>
-            </tr>
+
+    <?php if (!empty($mensaje)): ?>
+        <div class="alert alert-<?= $tipo_mensaje === 'success' ? 'success' : 'danger' ?> alert-custom">
+            <?= htmlspecialchars($mensaje) ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="card card-custom p-4 mb-4 bg-white">
+        <form method="GET" action="/Pirotecnica_Fenix/index.php" class="row g-3">
+            <input type="hidden" name="url" value="clientes">
+            <input type="hidden" name="type" value="list">
+            <div class="col-md-5">
+                <input type="text" name="busqueda" class="form-control" 
+                       placeholder="Buscar por nombre, cédula, teléfono..." 
+                       value="<?= htmlspecialchars($busqueda ?? '') ?>">
+            </div>
+            <div class="col-md-3">
+                <select name="tipo" class="form-select">
+                    <option value="todos" <?= ($tipo ?? '') === 'todos' ? 'selected' : '' ?>>Todos los tipos</option>
+                    <option value="Natural" <?= ($tipo ?? '') === 'Natural' ? 'selected' : '' ?>>Natural</option>
+                    <option value="Jurídico" <?= ($tipo ?? '') === 'Jurídico' ? 'selected' : '' ?>>Jurídico</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-gold w-100">
+                    <i class="fas fa-search me-1"></i> Buscar
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a href="?url=clientes&type=list" class="btn btn-secondary w-100">
+                    <i class="fas fa-times me-1"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Búsqueda en tiempo real con debounce y envío por tipo/Enter
+        (function(){
+            const input = document.querySelector('input[name="busqueda"]');
+            const form = input ? input.closest('form') : null;
+            const tipoSelect = form ? form.querySelector('select[name="tipo"]') : null;
+            if (!input || !form) return;
+
+            let timeout = null;
+            function submitFormDelayed() {
+                clearTimeout(timeout);
+                timeout = setTimeout(function(){
+                    // Si está vacío, recargar lista completa
+                    if (input.value.trim() === '') {
+                        window.location.href = '?url=clientes&type=list';
+                        return;
+                    }
+                    form.submit();
+                }, 800);
+            }
+
+            // Debounce en input
+            input.addEventListener('input', submitFormDelayed);
+
+            // Enviar al presionar Enter inmediatamente
+            input.addEventListener('keydown', function(e){
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(timeout);
+                    form.submit();
+                }
+            });
+
+            // Enviar al cambiar el tipo (filtrado inmediato)
+            if (tipoSelect) {
+                tipoSelect.addEventListener('change', function(){
+                    form.submit();
+                });
+            }
+        })();
+    </script>
+
+    <div class="card card-custom mb-4">
+        <div class="table-responsive">
+            <table class="table table-fenix table-hover m-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Cédula / RIF</th>
+                        <th>Nombre / Razón Social</th>
+                        <th>Tipo</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
+                        <th class="pe-4 text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($clientes)): ?>
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="fas fa-database mb-2" style="font-size: 2rem; display: block;"></i>
+                                No hay clientes registrados.
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($clientes as $c): ?>
+                            <tr>
+                                <td class="ps-4"><?= htmlspecialchars($c['cedula'] ?? $c['rif'] ?? 'N/A') ?></td>
+                                <td>
+                                    <?php if (($c['tipo_cliente'] ?? '') === 'Jurídico'): ?>
+                                        <strong><?= htmlspecialchars($c['razon_social'] ?? 'N/A') ?></strong>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars(($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? '')) ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td><span class="badge <?= ($c['tipo_cliente'] ?? '') === 'Jurídico' ? 'bg-primary' : 'bg-success' ?>"><?= htmlspecialchars($c['tipo_cliente'] ?? 'N/A') ?></span></td>
+                                <td><?= htmlspecialchars($c['telefono'] ?? 'N/A') ?></td>
+                                <td><?= htmlspecialchars($c['correo_electronico'] ?? 'N/A') ?></td>
+                                <td class="pe-4 text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="?url=clientes&type=view&id=<?= $c['id_cliente'] ?? 0 ?>" 
+                                           class="btn btn-outline-info" title="Ver">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="?url=clientes&type=<?= ($c['tipo_cliente'] ?? '') === 'Jurídico' ? 'edit_juridico' : 'edit' ?>&id=<?= $c['id_cliente'] ?? 0 ?>" 
+                                           class="btn btn-outline-warning" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                            <form method="POST" action="?url=clientes&type=delete" style="display:inline;" 
+                                              onsubmit="return confirm('¿Eliminar este cliente?');">
+                                            <input type="hidden" name="accion" value="eliminar">
+                                            <input type="hidden" name="id_cliente" value="<?= $c['id_cliente'] ?? 0 ?>">
+                                            <button type="submit" class="btn btn-outline-danger" title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
-                    </table>
-                        </div> 
-                    <div class="text-start mt-4">
-                        <a href="?url=user" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left-short"></i> Menú Principal</a>
-                    </div>
-                </div> 
-            </div> 
+            </table>
         </div>
     </div>
 </div>
-<script src="../assets/bootstrap/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+
+<?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

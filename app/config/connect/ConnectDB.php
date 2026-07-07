@@ -1,31 +1,22 @@
 <?php
-    namespace App\Pirotecnicafenix\Config\Connect;
+namespace App\Pirotecnicafenix\Config\Connect;
 
-    use PDO;
-    use PDOException; 
-        
-    class ConnectDB {
+use PDO;
+use PDOException;
 
-        public function getConnection() {
+class ConnectDB {
 
-            // Manejo de excepciones para la conexión a la base de datos
-            try {
-
-                // Crear una nueva conexión PDO
-                $pdo = new PDO("mysql: host=localhost; dbname=Pirotecnica_Fenix", "root", "");
-                
-                // Establecer el modo de error de PDO a excepción
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            
-            } catch (PDOException $e) {
-
-                // Si hay un error, se lanza una excepción y se muestra un mensaje de error
-                die('ERROR DE CONEXIÓN: No se ha podido conectar con la base de datos. ' . $e->getMessage());
-            }
-
-            // Retornar la conexión establecida
+    public function getConnection() {
+        try {
+            // DSN corregido y codificación
+            $dsn = "mysql:host=localhost;dbname=pirotecnica_fenix);charset=utf8mb4";
+            $pdo = new PDO($dsn, "root", "");
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             return $pdo;
+        } catch (PDOException $e) {
+            // Lanzar excepción para que el llamador decida cómo mostrarla
+            throw new \Exception('ERROR DE CONEXIÓN: ' . $e->getMessage());
         }
     }
-
+}
 ?>

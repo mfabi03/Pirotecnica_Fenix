@@ -1,5 +1,5 @@
 <?php
-// CAMBIO: Ajuste de nombre según BD - Vista de registro de cliente natural CON BOOTSTRAP
+// CAMBIO: Ajuste de nombre según BD - Vista de edición de cliente natural CON BOOTSTRAP
 require_once dirname(__DIR__, 2) . "/view/header.php"; 
 ?>
 
@@ -9,15 +9,12 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         <div class="row align-items-center g-3">
             <div class="col-md-8 col-lg-7">
                 <h3 class="m-0 font-weight-bold text-dark">
-                    <i class="fas fa-user-plus me-2"></i> Registrar Cliente Natural
+                    <i class="fas fa-user-edit me-2"></i> Editar Cliente Natural
                 </h3>
-                <p class="text-muted mb-0">Registra un nuevo cliente persona natural en el sistema.</p>
+                <p class="text-muted mb-0">Modifica los datos del cliente persona natural seleccionado.</p>
             </div>
             <div class="col-md-4 col-lg-5 text-md-end">
-                <a href="?url=clientes&type=register_juridico" class="btn btn-gold btn-sm fw-bold">
-                    <i class="fas fa-building me-1"></i> Cliente Jurídico
-                </a>
-                <a href="?url=clientes&type=list" class="btn btn-secondary btn-sm fw-bold ms-1">
+                <a href="?url=clientes&type=list" class="btn btn-secondary btn-sm fw-bold">
                     <i class="fas fa-list me-1"></i> Ver Clientes
                 </a>
             </div>
@@ -33,8 +30,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <?php endif; ?>
 
     <div class="card card-custom p-4 mb-4 bg-white" style="max-width: 800px; margin: 0 auto;">
-        <form method="post" action="?url=clientes&type=register" class="row g-3">
-            <input type="hidden" name="accion" value="register_natural">
+        <form method="post" action="?url=clientes&type=edit" class="row g-3">
+            <input type="hidden" name="accion" value="edit_natural">
+            <input type="hidden" name="id_cliente" value="<?= htmlspecialchars($cliente['id_cliente'] ?? '') ?>">
 
             <!-- Cédula -->
             <div class="col-md-6">
@@ -42,9 +40,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     Cédula <span class="text-danger">*</span>
                 </label>
                 <input type="text" id="cedula" name="cedula" class="form-control" 
-                       placeholder="Ej: V-12345678" 
-                       value="<?= htmlspecialchars($_POST['cedula'] ?? '') ?>" required>
-                <small class="text-muted">Solo números o con letra V (Ej: V-12345678)</small>
+                       value="<?= htmlspecialchars($cliente['cedula'] ?? '') ?>" required>
             </div>
 
             <!-- Teléfono -->
@@ -53,8 +49,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     Teléfono <span class="text-danger">*</span>
                 </label>
                 <input type="tel" name="telefono" class="form-control" 
-                       placeholder="Ej: 0412-5556677" 
-                       value="<?= htmlspecialchars($_POST['telefono'] ?? '') ?>" required>
+                       value="<?= htmlspecialchars($cliente['telefono'] ?? '') ?>" required>
             </div>
 
             <!-- Nombre -->
@@ -63,8 +58,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     Nombres <span class="text-danger">*</span>
                 </label>
                 <input type="text" name="nombre" class="form-control" 
-                       value="<?= htmlspecialchars($_POST['nombre'] ?? '') ?>" 
-                       required placeholder="Nombres del cliente">
+                       value="<?= htmlspecialchars($cliente['nombre'] ?? '') ?>" required>
             </div>
 
             <!-- Apellido -->
@@ -73,8 +67,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     Apellidos <span class="text-danger">*</span>
                 </label>
                 <input type="text" name="apellido" class="form-control" 
-                       value="<?= htmlspecialchars($_POST['apellido'] ?? '') ?>" 
-                       required placeholder="Apellidos del cliente">
+                       value="<?= htmlspecialchars($cliente['apellido'] ?? '') ?>" required>
             </div>
 
             <!-- Correo -->
@@ -83,8 +76,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     Correo Electrónico <span class="text-danger">*</span>
                 </label>
                 <input type="email" name="correo_electronico" class="form-control" 
-                       value="<?= htmlspecialchars($_POST['correo_electronico'] ?? '') ?>" 
-                       required placeholder="ejemplo@correo.com">
+                       value="<?= htmlspecialchars($cliente['correo_electrónico'] ?? $cliente['correo_electronico'] ?? '') ?>" required>
             </div>
 
             <!-- Fecha de Nacimiento -->
@@ -93,8 +85,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     Fecha de Nacimiento <span class="text-danger">*</span>
                 </label>
                 <input type="date" name="fecha_de_nacimiento" class="form-control" 
-                       value="<?= htmlspecialchars($_POST['fecha_de_nacimiento'] ?? '') ?>" required>
-                <small class="text-muted">Debe ser mayor de 18 años</small>
+                       value="<?= htmlspecialchars($cliente['fecha_de_nacimiento'] ?? '') ?>" required>
             </div>
 
             <!-- Dirección -->
@@ -102,14 +93,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <label class="form-label form-label-custom fw-bold">
                     Dirección <span class="text-danger">*</span>
                 </label>
-                <textarea name="direccion" class="form-control" rows="2" required 
-                          placeholder="Dirección detallada..."><?= htmlspecialchars($_POST['direccion'] ?? '') ?></textarea>
+                <textarea name="direccion" class="form-control" rows="2" required><?= htmlspecialchars($cliente['direccion'] ?? '') ?></textarea>
             </div>
 
             <!-- Botones -->
             <div class="col-12 mt-3">
                 <button type="submit" class="btn btn-gold fw-bold">
-                    <i class="fas fa-save me-1"></i> Registrar Cliente
+                    <i class="fas fa-save me-1"></i> Guardar Cambios
                 </button>
                 <a href="?url=clientes&type=list" class="btn btn-secondary ms-2">
                     <i class="fas fa-times me-1"></i> Cancelar
@@ -121,7 +111,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-cierre de alertas
     const alertElement = document.querySelector('.alert');
     if (alertElement) {
         setTimeout(() => {
@@ -130,7 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Formateo de cédula
     const cedulaInput = document.getElementById('cedula');
     if (cedulaInput) {
         cedulaInput.addEventListener('blur', function() {
@@ -139,24 +127,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = 'V-' + value;
             } else if (/^V\d+$/.test(value)) {
                 this.value = 'V-' + value.substring(1);
-            }
-        });
-    }
-
-    // Validación de edad
-    const fechaInput = document.querySelector('input[name="fecha_de_nacimiento"]');
-    if (fechaInput) {
-        fechaInput.addEventListener('change', function() {
-            const fechaNac = new Date(this.value);
-            const hoy = new Date();
-            let edad = hoy.getFullYear() - fechaNac.getFullYear();
-            const mes = hoy.getMonth() - fechaNac.getMonth();
-            if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
-                edad--;
-            }
-            if (edad < 18 && this.value) {
-                alert('⚠️ Debes ser mayor de 18 años. Edad detectada: ' + edad + ' años.');
-                this.value = '';
             }
         });
     }
