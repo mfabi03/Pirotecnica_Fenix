@@ -5,46 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Pirotecnia Fénix</title>
     
-    <!-- ✅ RUTA RELATIVA: Bootstrap CSS -->
     <link rel="stylesheet" href="../../pirotecnica_fenix/assets/bootstrap/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../pirotecnica_fenix/assets/css/estiloInicio.css">
+    
 </head>
-<body class="bg-light">
-    <div class="container-fluid min-vh-100 d-flex justify-content-center align-items-center bg-light">
-        <div class="card p-4 shadow" style="width: 350px;">
-            <h3 class="text-center"> Inicio de Sesión</h3>
-            
+<body>
+    <img src="../../pirotecnica_fenix/assets/imagenes/fondo.jpg" 
+         alt="Fondo" 
+         class="bg-image">
+    <div class="overlay"></div>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="logo-icon"></span>
+                <h2><span>Pirotécnica Fénix</span> Inicio de Sesión</h2>
+            </div>
             <?php if (isset($_GET['error'])): ?>
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <?php 
-                        $msg = $_GET['error'] == '1' ? 'Usuario o contraseña incorrectos.' : 'Error al iniciar sesión.';
-                        echo htmlspecialchars($msg);
-                    ?>
+                <?php 
+                    $errorMsg = '';
+                    $errorType = $_GET['error'];
+                    switch ($errorType) {
+                        case '1':
+                            $errorMsg = 'Usuario o contraseña incorrectos.';
+                            break;
+                        case 'empty':
+                            $errorMsg = 'Por favor, complete todos los campos.';
+                            break;
+                        case 'session':
+                            $errorMsg = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
+                            break;
+                        default:
+                            $errorMsg = 'Error al iniciar sesión.';
+                    }
+                ?>
+                <div class="alert alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <?= htmlspecialchars($errorMsg) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" 
+                            style="filter: invert(1); opacity: 0.5;"></button>
                 </div>
             <?php endif; ?>
-            
-            <!-- ✅ RUTA RELATIVA: action="?url=login" -->
             <form action="?url=login" method="POST">
-                <div class="mb-3">
-                    <label class="form-label">Usuario</label>
-                    <input type="text" name="usuario" class="form-control" 
-                           value="<?= htmlspecialchars($_POST['usuario'] ?? '') ?>" 
-                           placeholder="Ingresa tu usuario" required>
+                <div class="form-group">
+                    <input type="text" class="form-control" 
+                           id="usuario" 
+                           name="usuario" 
+                           placeholder="Ingresa tu usuario"
+                           value="<?= htmlspecialchars($_POST['usuario'] ?? '') ?>"
+                           required autofocus>
+                    <span class="input-icon">
+                        <i class="fas fa-user"></i>
+                    </span>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Contraseña</label>
-                    <!-- ✅ CAMBIADO: name="clave" para que coincida con LoginController -->
-                    <input type="password" name="clave" class="form-control" 
-                           placeholder="Ingresa tu contraseña" required>
-                </div>
-                <div class="d-grid gap-3 d-md-block text-center">
-                    <button type="submit" class="btn btn-warning btn-lg mx-2">
-                        <i class="fas fa-sign-in-alt me-2"></i> Entrar
-                    </button>
-                </div>
+                <div class="form-group">
+                    <input type="password" class="form-control" 
+                           id="clave" 
+                           name="clave" 
+                           placeholder="Ingresa tu contraseña"
+                           required>
+                    <span class="input-icon">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                </div><button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
             </form>
+            <div class="divider">
+                <span class="line"></span>
+                <span class="text">Sistema seguro</span>
+                <span class="line"></span>
+            </div>
+            <div class="login-footer">
+                <i class="fas fa-shield-alt"></i> v1.0.0
+            </div>
         </div>
     </div>
+
+    <script src="../../pirotecnica_fenix/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

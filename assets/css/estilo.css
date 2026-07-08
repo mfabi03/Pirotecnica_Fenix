@@ -7,8 +7,6 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-<<<<<<< HEAD
-=======
 /* ==========================================
    ESTILOS DASHBOARD - TARJETAS ELEGANTES
    ========================================== */
@@ -37,7 +35,6 @@ body {
 @media (max-width:576px){ .card-icon{ width:48px; height:48px } .card .card-text.display-5{ font-size:1.8rem } }
 
 
->>>>>>> c5c3b40379f2362ad2daa9e1291a696bed94d298
 .navbar-fenix {
     background: #000000 !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -516,5 +513,449 @@ body {
     #contenidoImprimir {
         padding: 0 !important;
         margin: 0 !important;
+    }
+}
+/* ============================================
+   ESTILOS GLOBALES - PIROTECNIA FÉNIX
+   ============================================ */
+
+/* ==========================================
+   ESTILOS PARA MAIN (BIENVENIDA)
+   ========================================== */
+.main-body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    overflow: hidden;
+}
+
+/* Fondo con imagen */
+.main-bg-image {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.8;
+}
+
+.main-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1;
+}
+
+.main-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+}
+
+.main-card {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 50px 40px;
+    text-align: center;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.main-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+}
+
+.main-logo {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid #f39c12;
+    box-shadow: 0 10px 30px rgba(243, 156, 18, 0.3);
+    margin-bottom: 20px;
+    background: #fff;
+    padding: 5px;
+}
+
+.main-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+}
+
+.main-title .highlight {
+    color: #f39c12;
+}
+
+.main-subtitle {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 25px;
+    font-weight: 300;
+}
+
+.main-divider {
+    width: 80px;
+    height: 3px;
+    margin: 20px auto;
+    background: linear-gradient(90deg, transparent, #f39c12, transparent);
+    border-radius: 10px;
+}
+
+.btn-main {
+    display: inline-block;
+    padding: 15px 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    box-shadow: 0 8px 30px rgba(243, 156, 18, 0.3);
+}
+
+.btn-main:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(243, 156, 18, 0.5);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.btn-main i {
+    margin-right: 10px;
+}
+
+.main-features {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.main-features .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85rem;
+}
+
+.main-features .feature-item i {
+    color: #f39c12;
+    font-size: 1rem;
+}
+
+.main-version {
+    margin-top: 20px;
+    color: rgba(255, 255, 255, 0.15);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+}
+
+/* ==========================================
+   ESTILOS PARA LOGIN (MODERNO)
+   ========================================== */
+.login-body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    overflow: hidden;
+}
+
+.login-bg-image {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.3;
+}
+
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+.login-container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 45px 35px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header .logo-icon {
+    font-size: 3.5rem;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.login-header h2 {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+}
+
+.login-header h2 span {
+    color: #f39c12;
+}
+
+.login-header p {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.login-divider .line {
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.login-divider .text {
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Campos del formulario */
+.login-form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.login-form-group .input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1rem;
+    transition: color 0.3s;
+}
+
+.login-form-group .form-control {
+    width: 100%;
+    padding: 14px 16px 14px 48px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.login-form-group .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+.login-form-group .form-control:focus {
+    border-color: #f39c12;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.08);
+}
+
+.login-form-group .form-control:focus + .input-icon {
+    color: #f39c12;
+}
+
+/* Opciones del formulario */
+.login-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0 25px;
+}
+
+.login-options .remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.login-options .remember-me input[type="checkbox"] {
+    accent-color: #f39c12;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.login-options .forgot-password {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.login-options .forgot-password:hover {
+    color: #f39c12;
+}
+
+/* Botón Login */
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    border: none;
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(243, 156, 18, 0.3);
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+/* Alertas de error */
+.login-alert {
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    background: rgba(220, 53, 69, 0.15);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    color: #ff6b6b;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.login-alert i {
+    font-size: 1.1rem;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 25px;
+    color: rgba(255, 255, 255, 0.15);
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+}
+
+.login-footer i {
+    color: #f39c12;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 576px) {
+    .main-card {
+        padding: 30px 20px;
+        margin: 15px;
+        border-radius: 20px;
+    }
+
+    .main-logo {
+        width: 110px;
+        height: 110px;
+    }
+
+    .main-title {
+        font-size: 2rem;
+    }
+
+    .main-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .btn-main {
+        padding: 12px 30px;
+        font-size: 1rem;
+    }
+
+    .main-features {
+        gap: 12px;
+    }
+
+    .login-card {
+        padding: 30px 20px;
+    }
+
+    .login-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .login-options {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
     }
 }
