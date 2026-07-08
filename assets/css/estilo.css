@@ -7,6 +7,37 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+<<<<<<< HEAD
+=======
+/* ==========================================
+   ESTILOS DASHBOARD - TARJETAS ELEGANTES
+   ========================================== */
+.dashboard-main .card{
+    border-radius:1rem;
+    overflow:hidden;
+    transition: transform .20s cubic-bezier(.2,.9,.2,1), box-shadow .20s ease;
+    box-shadow: 0 6px 18px rgba(3,10,18,0.06);
+}
+.dashboard-main .card:hover{
+    transform: translateY(-12px);
+    box-shadow: 0 22px 44px rgba(3,10,18,0.14);
+}
+.card-icon{ width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(255,255,255,0.12); }
+.card .card-title{ font-weight:700; letter-spacing:0.2px; }
+.card .card-text.display-5{ font-weight:800; }
+/* Textos resaltados para mayor contraste */
+.dashboard-main .card .card-title, .dashboard-main .card .card-text, .dashboard-main .card small{
+    color: #071433 !important;
+}
+/* Ajuste para tarjetas con texto claro (ej: bg-primary) */
+.dashboard-main .card.text-white .card-title, .dashboard-main .card.text-white .card-text, .dashboard-main .card.text-white small{
+    color: #ffffff !important;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.08);
+}
+@media (max-width:576px){ .card-icon{ width:48px; height:48px } .card .card-text.display-5{ font-size:1.8rem } }
+
+
+>>>>>>> c5c3b40379f2362ad2daa9e1291a696bed94d298
 .navbar-fenix {
     background: #000000 !important;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);

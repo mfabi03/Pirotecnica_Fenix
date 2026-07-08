@@ -3,38 +3,30 @@
 require_once dirname(__DIR__, 2) . "/view/header.php"; 
 ?>
 
-<div class="col-md-9 col-lg-10">
-    <!-- Tarjeta de título -->
-    <div class="card card-custom p-4 mb-4 bg-white">
-        <div class="row align-items-center g-3">
-            <div class="col-md-8 col-lg-7">
-                <h3 class="m-0 font-weight-bold text-dark">
-                    <i class="fas fa-user-edit me-2"></i> Editar Cliente Natural
-                </h3>
+<div class="col-md-8 col-lg-12">
+    <div class="card shadow-sm p-4 mb-4 mx-auto" style="max-width: 900px;">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="fas fa-user-edit me-2"></i> Editar Cliente Natural</h4>
                 <p class="text-muted mb-0">Modifica los datos del cliente persona natural seleccionado.</p>
             </div>
-            <div class="col-md-4 col-lg-5 text-md-end">
-                <a href="?url=clientes&type=list" class="btn btn-secondary btn-sm fw-bold">
-                    <i class="fas fa-list me-1"></i> Ver Clientes
-                </a>
+            <a href="?url=clientes&type=list" class="btn btn-secondary btn-sm fw-bold">
+                <i class="fas fa-list me-1"></i> Ver Clientes
+            </a>
+        </div>
+
+        <?php if (!empty($mensaje)): ?>
+            <div class="alert alert-<?= $tipo_mensaje === 'success' ? 'success' : 'danger' ?> alert-custom alert-dismissible fade show" role="alert">
+                <i class="fas fa-<?= $tipo_mensaje === 'success' ? 'check-circle' : 'exclamation-circle' ?> me-2"></i>
+                <?= htmlspecialchars($mensaje) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-        </div>
-    </div>
+        <?php endif; ?>
 
-    <?php if (!empty($mensaje)): ?>
-        <div class="alert alert-<?= $tipo_mensaje === 'success' ? 'success' : 'danger' ?> alert-custom alert-dismissible fade show" role="alert">
-            <i class="fas fa-<?= $tipo_mensaje === 'success' ? 'check-circle' : 'exclamation-circle' ?> me-2"></i>
-            <?= htmlspecialchars($mensaje) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-
-    <div class="card card-custom p-4 mb-4 bg-white" style="max-width: 800px; margin: 0 auto;">
         <form method="post" action="?url=clientes&type=edit" class="row g-3">
             <input type="hidden" name="accion" value="edit_natural">
             <input type="hidden" name="id_cliente" value="<?= htmlspecialchars($cliente['id_cliente'] ?? '') ?>">
 
-            <!-- Cédula -->
             <div class="col-md-6">
                 <label class="form-label form-label-custom fw-bold">
                     Cédula <span class="text-danger">*</span>
@@ -43,7 +35,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                        value="<?= htmlspecialchars($cliente['cedula'] ?? '') ?>" required>
             </div>
 
-            <!-- Teléfono -->
             <div class="col-md-6">
                 <label class="form-label form-label-custom fw-bold">
                     Teléfono <span class="text-danger">*</span>
@@ -52,7 +43,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                        value="<?= htmlspecialchars($cliente['telefono'] ?? '') ?>" required>
             </div>
 
-            <!-- Nombre -->
             <div class="col-md-6">
                 <label class="form-label form-label-custom fw-bold">
                     Nombres <span class="text-danger">*</span>
@@ -61,7 +51,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                        value="<?= htmlspecialchars($cliente['nombre'] ?? '') ?>" required>
             </div>
 
-            <!-- Apellido -->
             <div class="col-md-6">
                 <label class="form-label form-label-custom fw-bold">
                     Apellidos <span class="text-danger">*</span>
@@ -70,7 +59,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                        value="<?= htmlspecialchars($cliente['apellido'] ?? '') ?>" required>
             </div>
 
-            <!-- Correo -->
             <div class="col-md-6">
                 <label class="form-label form-label-custom fw-bold">
                     Correo Electrónico <span class="text-danger">*</span>
@@ -79,7 +67,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                        value="<?= htmlspecialchars($cliente['correo_electrónico'] ?? $cliente['correo_electronico'] ?? '') ?>" required>
             </div>
 
-            <!-- Fecha de Nacimiento -->
             <div class="col-md-6">
                 <label class="form-label form-label-custom fw-bold">
                     Fecha de Nacimiento <span class="text-danger">*</span>
@@ -88,7 +75,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                        value="<?= htmlspecialchars($cliente['fecha_de_nacimiento'] ?? '') ?>" required>
             </div>
 
-            <!-- Dirección -->
             <div class="col-12">
                 <label class="form-label form-label-custom fw-bold">
                     Dirección <span class="text-danger">*</span>
@@ -96,8 +82,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <textarea name="direccion" class="form-control" rows="2" required><?= htmlspecialchars($cliente['direccion'] ?? '') ?></textarea>
             </div>
 
-            <!-- Botones -->
-            <div class="col-12 mt-3">
+            <div class="col-12 mt-3 d-flex flex-wrap gap-2">
                 <button type="submit" class="btn btn-gold fw-bold">
                     <i class="fas fa-save me-1"></i> Guardar Cambios
                 </button>

@@ -2,31 +2,25 @@
 require_once dirname(__DIR__, 2) . "/view/header.php"; 
 ?>
 
-<div class="col-md-9 col-lg-10">
-    <div class="card card-custom p-4 mb-4 bg-white">
-        <div class="row align-items-center g-3">
-            <div class="col-md-8 col-lg-7">
-                <h3 class="m-0 font-weight-bold text-dark">
-                    <i class="fas fa-users me-2"></i> Clientes
-                </h3>
+<div class="col-md-8 col-lg-12">
+    <div class="card shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h4 class="mb-1 fw-bold"><i class="fas fa-users me-2"></i> Clientes</h4>
                 <p class="text-muted mb-0">Lista de clientes naturales y jurídicos.</p>
             </div>
-            <div class="col-md-4 col-lg-5 text-md-end">
-                <a href="?url=clientes&type=register" class="btn btn-gold btn-sm fw-bold">
-                    <i class="fas fa-user-plus me-1"></i> Nuevo Cliente
-                </a>
+            <a href="?url=clientes&type=register" class="btn btn-gold btn-sm fw-bold">
+                <i class="fas fa-user-plus me-1"></i> Nuevo Cliente
+            </a>
+        </div>
+
+        <?php if (!empty($mensaje)): ?>
+            <div class="alert alert-<?= $tipo_mensaje === 'success' ? 'success' : 'danger' ?> alert-custom">
+                <?= htmlspecialchars($mensaje) ?>
             </div>
-        </div>
-    </div>
+        <?php endif; ?>
 
-    <?php if (!empty($mensaje)): ?>
-        <div class="alert alert-<?= $tipo_mensaje === 'success' ? 'success' : 'danger' ?> alert-custom">
-            <?= htmlspecialchars($mensaje) ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="card card-custom p-4 mb-4 bg-white">
-        <form method="GET" action="/Pirotecnica_Fenix/index.php" class="row g-3">
+        <form method="GET" action="/Pirotecnica_Fenix/index.php" class="row g-3 mb-4">
             <input type="hidden" name="url" value="clientes">
             <input type="hidden" name="type" value="list">
             <div class="col-md-5">
@@ -52,51 +46,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </a>
             </div>
         </form>
-    </div>
-
-    <script>
-        // Búsqueda en tiempo real con debounce y envío por tipo/Enter
-        (function(){
-            const input = document.querySelector('input[name="busqueda"]');
-            const form = input ? input.closest('form') : null;
-            const tipoSelect = form ? form.querySelector('select[name="tipo"]') : null;
-            if (!input || !form) return;
-
-            let timeout = null;
-            function submitFormDelayed() {
-                clearTimeout(timeout);
-                timeout = setTimeout(function(){
-                    // Si está vacío, recargar lista completa
-                    if (input.value.trim() === '') {
-                        window.location.href = '?url=clientes&type=list';
-                        return;
-                    }
-                    form.submit();
-                }, 800);
-            }
-
-            // Debounce en input
-            input.addEventListener('input', submitFormDelayed);
-
-            // Enviar al presionar Enter inmediatamente
-            input.addEventListener('keydown', function(e){
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    clearTimeout(timeout);
-                    form.submit();
-                }
-            });
-
-            // Enviar al cambiar el tipo (filtrado inmediato)
-            if (tipoSelect) {
-                tipoSelect.addEventListener('change', function(){
-                    form.submit();
-                });
-            }
-        })();
-    </script>
-
-    <div class="card card-custom mb-4">
         <div class="table-responsive">
             <table class="table table-fenix table-hover m-0">
                 <thead>
@@ -159,5 +108,42 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     </div>
 </div>
+
+<script>
+    // Búsqueda en tiempo real con debounce y envío por tipo/Enter
+    (function(){
+        const input = document.querySelector('input[name="busqueda"]');
+        const form = input ? input.closest('form') : null;
+        const tipoSelect = form ? form.querySelector('select[name="tipo"]') : null;
+        if (!input || !form) return;
+
+        let timeout = null;
+        function submitFormDelayed() {
+            clearTimeout(timeout);
+            timeout = setTimeout(function(){
+                if (input.value.trim() === '') {
+                    window.location.href = '?url=clientes&type=list';
+                    return;
+                }
+                form.submit();
+            }, 800);
+        }
+
+        input.addEventListener('input', submitFormDelayed);
+        input.addEventListener('keydown', function(e){
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(timeout);
+                form.submit();
+            }
+        });
+
+        if (tipoSelect) {
+            tipoSelect.addEventListener('change', function(){
+                form.submit();
+            });
+        }
+    })();
+</script>
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

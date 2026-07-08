@@ -3,5 +3,23 @@
         "especificaciones": "vgxbchgcv hgvdhs",
         "proveedor": "maria c.a",
         "id_proveedor": 1
+<<<<<<< HEAD
+=======
+    },
+    "3": {
+        "especificaciones": "2x1",
+        "proveedor": "hola",
+        "id_proveedor": 3
+    },
+    "4": {
+        "especificaciones": "pequenas",
+        "proveedor": "yvhj",
+        "id_proveedor": 4
+    },
+    "5": {
+        "especificaciones": "100uni",
+        "proveedor": "hola",
+        "id_proveedor": 3
+>>>>>>> c5c3b40379f2362ad2daa9e1291a696bed94d298
     }
 }

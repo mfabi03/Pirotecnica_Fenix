@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../header.php';
 ?>
 
-<div class="col-md-9 col-lg-10">
+<div class="col-md-8 col-lg-12">
     <div class="card shadow-sm p-4" style="border-radius: 16px; border-top: 4px solid #DAA520;">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h4 style="color: #000000; font-weight: 700;">

@@ -7,44 +7,42 @@ if (file_exists($jsonPath)) {
     $productosData = json_decode(file_get_contents($jsonPath), true) ?? [];
 }
 ?>
-
-<div class="col-md-9 col-lg-10">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="mb-0 fw-bold">
-                <i class="fas fa-cube me-2"></i> Productos
-            </h4>
-            <small class="text-muted">Administra búsqueda, edición y eliminación en un solo lugar.</small>
+<div class="col-md-8 col-lg-12">
+    <div class="card shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="mb-1 fw-bold"><i class="fas fa-cube me-2"></i> Productos</h4>
+                <p class="text-muted mb-0">Administra búsqueda, edición y eliminación en un solo lugar</p>
+            </div>
+            <a href="?url=productos&type=create" class="btn btn-gold btn-sm fw-bold">
+                <i class="fas fa-cube me-1"></i> Nuevo Producto
+            </a>
         </div>
-        <a href="?url=productos&type=create" class="btn btn-gold">
-            <i class="fas fa-plus me-1"></i> Nuevo Producto
-        </a>
-    </div>
 
-    <?php if (isset($success)): ?>
-        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-    <?php endif; ?>
-    <?php if (isset($error)): ?>
-        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
+        <?php if (isset($success)): ?>
+            <div class="alert alert-success alert-custom"><?= htmlspecialchars($success) ?></div>
+        <?php endif; ?>
+        <?php if (isset($error)): ?>
+            <div class="alert alert-danger alert-custom"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
 
-    <div class="row mb-4">
+        <div class="row mb-4">
         <div class="col-md-4">
-            <div class="card text-center p-3">
-                <h6>TOTAL PRODUCTOS</h6>
-                <h2><?= $resumen['total_productos'] ?? 0 ?></h2>
+            <div class="card card-total-notas border-left-gold text-center p-3">
+                <h6 class="card-title">TOTAL PRODUCTOS</h6>
+                <h2 class="card-number"><?= $resumen['total_productos'] ?? 0 ?></h2>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-center p-3">
-                <h6>STOCK TOTAL</h6>
-                <h2><?= $resumen['total_stock'] ?? 0 ?></h2>
+            <div class="card card-total-notas border-left-info text-center p-3">
+                <h6 class="card-title">STOCK TOTAL</h6>
+                <h2 class="card-number"><?= $resumen['total_stock'] ?? 0 ?></h2>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-center p-3">
-                <h6>CATEGORÍAS</h6>
-                <h2><?= $resumen['total_categorias'] ?? 0 ?></h2>
+            <div class="card card-total-notas border-left-danger text-center p-3">
+                <h6 class="card-title">CATEGORÍAS</h6>
+                <h2 class="card-number"><?= $resumen['total_categorias'] ?? 0 ?></h2>
             </div>
         </div>
     </div>
@@ -69,9 +67,9 @@ if (file_exists($jsonPath)) {
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-dark">
+        <div class="table-responsive">
+            <table class="table table-fenix table-hover align-middle">
+                <thead class="table-dark">
                 <tr>
                     <th>CÓDIGO</th>
                     <th>NOMBRE</th>

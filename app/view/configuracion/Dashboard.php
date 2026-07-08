@@ -2,7 +2,6 @@
 // app/View/configuracion/Dashboard.php
 // Esto debe ir al principio de tu archivo de vista
 require_once dirname(__DIR__, 2) . "/view/header.php"; 
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -18,14 +17,17 @@ if (!empty($_SESSION['error'])): ?>
     <?php unset($_SESSION['error']); ?>
 <?php endif; ?>
 
+<!-- Estilos locales: tarjetas redondeadas, elevación al pasar el cursor y texto resaltado -->
+
+
 <div class="container-fluid px-4">
     <div class="row">
         
       
 
-        <main class="col-md-9 col-lg-10 p-4">
+        <main class="col-md-8 col-lg-12 p-4 dashboard-main">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>📊 Sistema de Gestión</h2>
+                <h2 class="dashboard-title">📊 Sistema de Gestión</h2>
                 
             </div>
                     
@@ -42,7 +44,7 @@ if (!empty($_SESSION['error'])): ?>
                                         <?= number_format($stats['total_productos'] ?? 0) ?>
                                     </p>
                                 </div>
-                                <div class="fs-1">
+                                <div class="fs-1 card-icon">
                                     <i class="bi bi-box-seam"></i>
                                 </div>
                             </div>
@@ -64,7 +66,7 @@ if (!empty($_SESSION['error'])): ?>
                                         <?= number_format($stats['total_usuarios'] ?? 0) ?>
                                     </p>
                                 </div>
-                                <div class="fs-1">
+                                <div class="fs-1 card-icon">
                                     <i class="bi bi-people"></i>
                                 </div>
                             </div>
@@ -86,7 +88,7 @@ if (!empty($_SESSION['error'])): ?>
                                         <?= number_format($stats['productos_criticos'] ?? 0) ?>
                                     </p>
                                 </div>
-                                <div class="fs-1">
+                                <div class="fs-1 card-icon">
                                     <i class="bi bi-exclamation-triangle"></i>
                                 </div>
                             </div>
@@ -108,7 +110,7 @@ if (!empty($_SESSION['error'])): ?>
                                         <?= number_format($stats['total_clientes'] ?? 0) ?>
                                     </p>
                                 </div>
-                                <div class="fs-1 text-dark">
+                                <div class="fs-1 card-icon text-dark">
                                     <i class="bi bi-people"></i>
                                 </div>
                             </div>
@@ -133,7 +135,7 @@ if (!empty($_SESSION['error'])): ?>
                                         <?= number_format($stats['total_nota_salida'] ?? 0) ?>
                                     </p>
                                 </div>
-                                <div class="fs-1">
+                                <div class="fs-1 card-icon">
                                     <i class="bi bi-box-arrow-right"></i>
                                 </div>
                             </div>
@@ -155,7 +157,7 @@ if (!empty($_SESSION['error'])): ?>
                                         <?= number_format($stats['total_nota_entrada'] ?? 0) ?>
                                     </p>
                                 </div>
-                                <div class="fs-1">
+                                <div class="fs-1 card-icon">
                                     <i class="bi bi-box-arrow-in-right"></i>
                                 </div>
                             </div>

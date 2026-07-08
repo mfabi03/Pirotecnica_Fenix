@@ -17,10 +17,11 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // ==========================================
-// 2. VERIFICAR ADMIN
+// 2. VERIFICAR AUTENTICACIÓN (SOLO LOGIN, SIN RESTRICCIÓN DE ROL)
 // ==========================================
-if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
-    header('Location: ?url=main');
+if (!isset($_SESSION['id_usuario']) || empty($_SESSION['id_usuario'])) {
+    $_SESSION['error_permiso'] = "Debes iniciar sesión para acceder a esta sección.";
+    header('Location: ?url=login');
     exit();
 }
 
@@ -64,7 +65,7 @@ unset($_SESSION['tipo_mensaje']);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? $action;
     
-    // === GUARDAR ===
+    // === GUARDAR === (Accesible para todos los usuarios)
     if ($accion === 'guardar' || $accion === 'create') {
         try {
             if (empty(trim($_POST['nombre_categoria']))) {
@@ -93,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    // === ACTUALIZAR ===
+    // === ACTUALIZAR === (Accesible para todos los usuarios)
     if ($accion === 'actualizar' || $accion === 'edit' || $accion === 'update') {
         try {
             $id = $_POST['id_categoria'] ?? null;
@@ -125,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    // === ELIMINAR ===
+    // === ELIMINAR === (Accesible para todos los usuarios)
     if ($accion === 'eliminar' || $accion === 'delete') {
         try {
             $id = $_POST['id_categoria'] ?? null;
@@ -157,9 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $basePath = __DIR__ . "/../view/configuracion/";
 
-// === LISTA ===
+// === LISTA === (Visible para todos)
 if ($action === 'lista' || $action === '' || $action === 'list') {
-    // Obtener categorías (con o sin búsqueda)
     if (!empty($busqueda)) {
         $categorias = $modelo->buscarCategorias($busqueda);
     } else {
@@ -173,13 +173,13 @@ if ($action === 'lista' || $action === '' || $action === 'list') {
     exit();
 }
 
-// === REGISTRAR ===
+// === REGISTRAR === (Visible para todos)
 if ($action === 'registrar' || $action === 'crear' || $action === 'create') {
     require_once $basePath . "registrarCategoriaView.php";
     exit();
 }
 
-// === VER ===
+// === VER === (Visible para todos)
 if ($action === 'ver' || $action === 'show') {
     if (!$id) {
         $_SESSION['mensaje'] = "ID de categoría no proporcionado";
@@ -198,7 +198,7 @@ if ($action === 'ver' || $action === 'show') {
     exit();
 }
 
-// === EDITAR ===
+// === EDITAR === (Visible para todos)
 if ($action === 'editar' || $action === 'edit') {
     if (!$id) {
         $_SESSION['mensaje'] = "ID de categoría no proporcionado";

@@ -12,7 +12,7 @@ $especificacionesActual = $productosData[$productoKey]['especificaciones'] ?? ''
 $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
 ?>
 
-<div class="col-md-9 col-lg-10">
+<div class="col-md-8 col-lg-12">
     <div class="card shadow-sm p-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h4><i class="fas fa-edit me-2"></i> Editar Producto</h4>

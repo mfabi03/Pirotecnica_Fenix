@@ -2,13 +2,20 @@
 require_once __DIR__ . '/../header.php';
 ?>
 
-<div class="col-md-9 col-lg-10">
-    <div class="card shadow-sm p-4">
-        <h4><i class="fas fa-edit me-2"></i> Editar Proveedor</h4>
-        <hr>
+<div class="col-md-8 col-lg-12">
+    <div class="card shadow-sm p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="fas fa-edit me-2"></i> Editar Proveedor</h4>
+                <p class="text-muted mb-0">Actualiza la información del proveedor sin cambiar su funcionalidad.</p>
+            </div>
+            <a href="?url=proveedores&type=list" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Volver
+            </a>
+        </div>
 
         <?php if (isset($error)): ?>
-            <div class="alert alert-danger"><?= $error ?></div>
+            <div class="alert alert-danger alert-custom mb-4"><?= $error ?></div>
         <?php endif; ?>
 
         <form method="POST" action="?url=proveedores&type=update">
@@ -35,8 +42,10 @@ require_once __DIR__ . '/../header.php';
                 <textarea name="direccion" class="form-control"><?= htmlspecialchars($proveedor['direccion'] ?? '') ?></textarea>
             </div>
 
-            <button type="submit" class="btn btn-gold">Actualizar</button>
-            <a href="?url=proveedores&type=list" class="btn btn-secondary">Cancelar</a>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-gold">Actualizar</button>
+                <a href="?url=proveedores&type=list" class="btn btn-secondary">Cancelar</a>
+            </div>
         </form>
     </div>
 </div>

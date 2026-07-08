@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../header.php';
 ?>
 
-<div class="col-md-9 col-lg-10">
+<div class="col-md-8 col-lg-12">
     <!-- Tarjeta de título -->
     <div class="card card-custom p-4 mb-4 bg-white">
         <div class="row align-items-center g-3">
