@@ -7,36 +7,24 @@
     <base href="/pirotecnica_fenix/">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<<<<<<< HEAD
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilo.css">
-=======
-    <?php
-    // Versionado automático del CSS usando filemtime para cache-busting controlado
-    $cssPath = dirname(__DIR__, 2) . '/assets/css/estilo.css';
-    $cssVersion = file_exists($cssPath) ? filemtime($cssPath) : time();
-    ?>
-    <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilo.css?v=<?= $cssVersion ?>">
->>>>>>> c5c3b40379f2362ad2daa9e1291a696bed94d298
 </head>
 <body>
 
 <!-- ==========================================
 NAVBAR - CORREGIDO
 ========================================== -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="min-height: 70px; padding: 5px 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); z-index: 1050; background: linear-gradient(180deg, #12121f 0%, #08080f 100%); border-bottom: 2px solid rgba(218, 165, 32, 0.4);">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="min-height: 60px; padding: 5px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1050;">
     <div class="container-fluid">
-        
-        <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 12px; transition: transform 0.2s ease;">
-            <div style="width: 44px; height: 44px; background: #111116; border: 1.5px solid #DAA520; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px rgba(218, 165, 32, 0.25); padding: 4px;">
-                <img src="assets/imagenes/productos/imgs/logo.png" alt="Logo" 
-                    style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0px 0px 1px rgba(255,255,255,0.1));">
-            </div>
-            
-            <span style="font-size: 1.15rem; font-weight: 700; letter-spacing: 0.8px; color: #ffffff; white-space: nowrap; font-family: 'Poppins', 'Segoe UI', sans-serif;">
-                <span style="color: #DAA520; font-weight: 800;">SISTEMA</span> PIROTECNICA FÉNIX
+        <!-- 🔥 LOGO CON TAMAÑO CORRECTO -->
+        <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 10px;">
+            <img src="assets/imagenes/productos/imgs/logo.png" alt="Logo" 
+                 style="width: 40px !important; height: 40px !important; object-fit: contain; border-radius: 50%; background: #ffffff; padding: 4px;">
+            <span style="font-size: 1.1rem; font-weight: 700; color: #ffffff; white-space: nowrap;">
+                <span style="color: #DAA520;">Sistema</span> Pirotecnica Fénix
             </span>
         </a>
-
+        
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>

@@ -13,9 +13,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ==========================================
+
 // 1. CARGA DEL MODELO
-// ==========================================
+
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'clientesModel.php';
 
@@ -25,9 +25,9 @@ if (file_exists($pathModel)) {
     die("ERROR CRÍTICO: No se encuentra el archivo: " . $pathModel);
 }
 
-// ==========================================
+
 // 2. INICIALIZACIÓN DE CONEXIÓN Y MODELO
-// ==========================================
+
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new \App\Pirotecnicafenix\Model\clientesModel($db);
@@ -47,9 +47,8 @@ unset($_SESSION['tipo_mensaje']);
 $busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 $tipo = trim((string) ($_GET['tipo'] ?? 'todos'));
 
-// ============================================
 // ELIMINAR (vía ?url=clientes&type=delete)
-// ============================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'delete') {
     try {
         $id = $_POST['id_cliente'] ?? null;
@@ -67,9 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'delete') {
     exit();
 }
 
-// ============================================
+
 // ELIMINAR
-// ============================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
     try {
         $id = $_POST['id_cliente'] ?? null;
@@ -87,9 +86,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// ============================================
+
 // REGISTRO NATURAL
-// ============================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_natural') {
     try {
         if (empty(trim($_POST['cedula']))) {
@@ -117,9 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// ==========================================
 // 🔥 REGISTRO RÁPIDO CLIENTE (MODIFICADO - SIN JSON)
-// ==========================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
     try {
         // Validar campos requeridos
@@ -171,9 +169,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
     }
 }
 
-// ============================================
+// 
 // REGISTRO JURIDICO
-// ============================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_juridico') {
     try {
         if (empty(trim($_POST['rif']))) {
@@ -200,9 +198,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// ============================================
+
 // EDITAR NATURAL
-// ============================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_natural') {
     try {
         $id = $_POST['id_cliente'] ?? null;
@@ -229,9 +227,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// ============================================
+
 // EDITAR JURIDICO
-// ============================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_juridico') {
     try {
         $id = $_POST['id_cliente'] ?? null;
@@ -257,9 +255,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// ============================================
+
 // 4. CARGAR VISTAS
-// ============================================
+
 
 $basePath = __DIR__ . "/../view/clientes/";
 
