@@ -23,7 +23,7 @@ require_once __DIR__ . '/../header.php';
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="?url=proveedores&type=store">
+        <form method="POST" action="?url=proveedores&type=store<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>">
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label form-label-custom fw-bold">

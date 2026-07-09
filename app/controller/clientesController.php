@@ -112,7 +112,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
-    header("Location: ?url=clientes&type=list");
+    if (isset($_GET['return'])) {
+        header("Location: ?url=" . $_GET['return'] . "&type=create");
+    } else {
+        header("Location: ?url=clientes&type=list");
+    }
     exit();
 }
 
@@ -194,7 +198,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
-    header("Location: ?url=clientes&type=list");
+    if (isset($_GET['return'])) {
+        header("Location: ?url=" . urlencode($_GET['return']) . "&type=create");
+    } else {
+        header("Location: ?url=clientes&type=list");
+    }
     exit();
 }
 

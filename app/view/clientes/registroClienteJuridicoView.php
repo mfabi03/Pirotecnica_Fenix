@@ -13,7 +13,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <p class="text-muted mb-0">Registra un nuevo cliente persona jurídica (empresa) en el sistema.</p>
             </div>
             <div class="col-md-4 col-lg-5 text-md-end">
-                <a href="?url=clientes&type=register" class="btn btn-gold btn-sm fw-bold">
+                <a href="?url=clientes&type=register<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>" class="btn btn-gold btn-sm fw-bold">
                     <i class="fas fa-user me-1"></i> Cliente Natural
                 </a>
                 <a href="?url=clientes&type=list" class="btn btn-secondary btn-sm fw-bold ms-1">
@@ -30,7 +30,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <?php endif; ?>
 
     <div class="card card-custom p-4 mb-4 bg-white" style="max-width: 800px; margin: 0 auto;">
-        <form method="post" action="?url=clientes&type=register_juridico" class="row g-3">
+        <form method="post" action="?url=clientes&type=register_juridico<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>" class="row g-3">
             <input type="hidden" name="accion" value="register_juridico">
 
             <!-- RIF - OBLIGATORIO -->
