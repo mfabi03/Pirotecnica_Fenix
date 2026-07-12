@@ -54,7 +54,8 @@ require_once __DIR__ . '/../header.php';
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <a href="?url=configuracion&type=create&return=productos" 
+                        <!-- ✅ CORREGIDO: Cambié configuracion por categorias -->
+                        <a href="?url=categorias&action=registrar&return=productos" 
                            class="btn btn-gold" 
                            title="Registrar nueva categoría">
                             <i class="fas fa-plus"></i>
