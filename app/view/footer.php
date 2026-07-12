@@ -7,19 +7,19 @@
 </div> <!-- Cierre container-fluid -->
 
 <!-- ==========================================
-FOOTER
+FOOTER - VERSIÓN PEQUEÑA
 ========================================== -->
-<footer class="footer-fenix py-2" style="background: radial-gradient(circle at center, #141423 0%, #08080f 100%); border-top: 1px solid rgba(212, 175, 55, 0.25);">
+<footer class="footer-fenix py-0" style="background: radial-gradient(circle at center, #141423 0%, #08080f 100%); border-top: 1px solid rgba(212, 175, 55, 0.1);">
     <div class="container text-center">
-        <h3 class="fw-bold mb-2" style="color: #d4af37; letter-spacing: 3px; font-family: 'Cinzel', 'Times New Roman', serif; font-size: 1.6rem;">
-            <span style="opacity: 0.7; font-size: 1.2rem; vertical-align: middle;" class="me-2">✦</span>
-            PIROTECNICA FÉNIX
-            <span style="opacity: 0.7; font-size: 1.2rem; vertical-align: middle;" class="ms-2">✦</span>
-        </h3>
-
-        <p class="mb-0" style="color: #e5c158; letter-spacing: 1px; font-size: 0.85rem; opacity: 0.85;">
-            &copy; <?= date('Y') ?> &middot; Todos los derechos reservados
-        </p>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 0;">
+            <span style="color: #d4af37; font-size: 0.55rem; opacity: 0.5;">✦</span>
+            <span style="color: #d4af37; letter-spacing: 1.5px; font-family: 'Cinzel', 'Times New Roman', serif; font-size: 0.65rem; font-weight: 700;">
+                PIROTECNICA FÉNIX
+            </span>
+            <span style="color: #d4af37; font-size: 0.55rem; opacity: 0.5;">✦</span>
+            <span style="color: rgba(255,255,255,0.06);">|</span>
+            <span style="color: #e5c158; font-size: 0.5rem; opacity: 0.4;">&copy; <?= date('Y') ?></span>
+        </div>
     </div>
 </footer>
 

@@ -18,7 +18,7 @@ NAVBAR - CORREGIDO
     <div class="container-fluid">
         <!-- 🔥 LOGO CON TAMAÑO CORRECTO -->
         <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 10px;">
-            <img src="assets/imagenes/productos/imgs/logo.png" alt="Logo" 
+            <img src="assets/imagenes/logo.png" alt="Logo" 
                  style="width: 40px !important; height: 40px !important; object-fit: contain; border-radius: 50%; background: #ffffff; padding: 4px;">
             <span style="font-size: 1.1rem; font-weight: 700; color: #ffffff; white-space: nowrap;">
                 <span style="color: #DAA520;">Sistema</span> Pirotecnica Fénix
@@ -34,7 +34,7 @@ NAVBAR - CORREGIDO
                 <li class="nav-item">
                     <span class="nav-link text-white" style="font-size: 0.9rem;">
                         <i class="fas fa-user me-1"></i> 
-                        <?= $_SESSION['usuario_nombre'] ?? 'Invitado' ?>
+                        <?= $_SESSION['usuario_nombre'] ?? '' ?>
                     </span>
                 </li>
                 <li class="nav-item">

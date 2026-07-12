@@ -9,7 +9,7 @@ class ConnectDB {
     public function getConnection() {
         try {
             // DSN corregido y codificación
-            $dsn = "mysql:host=localhost;dbname=pirotecnica_fenix;charset=utf8mb4";
+            $dsn = "mysql:host=localhost;dbname=pirotecnica_fenix);charset=utf8mb4";
             $pdo = new PDO($dsn, "root", "");
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             return $pdo;

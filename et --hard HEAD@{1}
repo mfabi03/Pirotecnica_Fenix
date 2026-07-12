@@ -1,0 +1,29 @@
+[33m7962c03[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: pull: Fast-forward
+[33mdd773f7[m HEAD@{1}: commit: camios
+[33mfee8777[m HEAD@{2}: commit: estilo de inicio
+[33m597074b[m HEAD@{3}: commit (merge): camios
+[33mbef35eb[m HEAD@{4}: reset: moving to HEAD
+[33mbef35eb[m HEAD@{5}: commit (merge): Refactorización de controladores y ajuste de estructura de vistas
+[33m957252b[m HEAD@{6}: reset: moving to HEAD
+[33m957252b[m HEAD@{7}: commit: cambios
+[33mf1b6b5f[m HEAD@{8}: reset: moving to HEAD
+[33mf1b6b5f[m HEAD@{9}: commit: cambios
+[33me2378c8[m HEAD@{10}: commit: combio
+[33m7878c77[m HEAD@{11}: reset: moving to HEAD
+[33m7878c77[m HEAD@{12}: reset: moving to HEAD
+[33m7878c77[m HEAD@{13}: commit: cambio de el header y el from controller
+[33mf487038[m HEAD@{14}: commit: gardar avanceses locales
+[33m9c06432[m HEAD@{15}: pull origin main: Fast-forward
+[33m96433a5[m HEAD@{16}: commit: configuracion de vistas
+[33m18c5225[m HEAD@{17}: commit: Configurar namespaces y autoloader para Pirotecnica Fenix
+[33m4f6b9d0[m HEAD@{18}: pull origin main: Fast-forward
+[33m09a6b8f[m HEAD@{19}: reset: moving to HEAD
+[33m09a6b8f[m HEAD@{20}: commit: Configurado composer.lock con autoría y mapeo PSR-4
+[33m10100b5[m HEAD@{21}: reset: moving to HEAD
+[33m10100b5[m HEAD@{22}: commit: Configurado composer.json con autoría y mapeo PSR-4
+[33m9dd2ee1[m HEAD@{23}: reset: moving to HEAD
+[33m9dd2ee1[m HEAD@{24}: commit: Actualizada la conexión PDO con los parámetros de Pirotécnica Fénix
+[33m276e24b[m HEAD@{25}: reset: moving to HEAD
+[33m276e24b[m HEAD@{26}: Branch: renamed refs/heads/main to refs/heads/main
+[33m276e24b[m HEAD@{28}: Branch: renamed refs/heads/main to refs/heads/main
+[33m276e24b[m HEAD@{30}: clone: from https://github.com/SabrinaC19/Practica_CRUD.git

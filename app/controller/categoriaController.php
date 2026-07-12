@@ -223,4 +223,3 @@ if (!is_array($categorias)) {
     $categorias = [];
 }
 require_once $basePath . "listCategoriaView.php";
-?>
