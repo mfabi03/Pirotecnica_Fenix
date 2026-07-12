@@ -1041,3 +1041,137 @@ body {
         padding: 8px 12px;
     }
 }
+/* ==========================================
+   TARJETAS DE ESTADÍSTICAS - DASHBOARD
+   ========================================== */
+
+.stat-card {
+    background: #1a1a2e;
+    border-radius: 16px;
+    padding: 1.5rem 1.5rem 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 16px 16px 0 0;
+}
+
+.stat-card-primary::before {
+    background: linear-gradient(90deg, #f39c12, #e67e22);
+}
+
+.stat-card-success::before {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.stat-card-warning::before {
+    background: linear-gradient(90deg, #dc3545, #e74c3c);
+}
+
+.stat-card-info::before {
+    background: linear-gradient(90deg, #0dcaf0, #0d6efd);
+}
+
+.stat-card-purple::before {
+    background: linear-gradient(90deg, #6f42c1, #9b59b6);
+}
+
+.stat-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.stat-card-primary .stat-card-icon {
+    background: rgba(243, 156, 18, 0.12);
+    color: #f39c12;
+}
+
+.stat-card-success .stat-card-icon {
+    background: rgba(40, 167, 69, 0.12);
+    color: #28a745;
+}
+
+.stat-card-warning .stat-card-icon {
+    background: rgba(220, 53, 69, 0.12);
+    color: #dc3545;
+}
+
+.stat-card-info .stat-card-icon {
+    background: rgba(13, 202, 240, 0.12);
+    color: #0dcaf0;
+}
+
+.stat-card-purple .stat-card-icon {
+    background: rgba(111, 66, 193, 0.12);
+    color: #6f42c1;
+}
+
+.stat-card-content {
+    flex: 1;
+}
+
+.stat-card-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 0.25rem;
+}
+
+.stat-card-number {
+    display: block;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.2;
+}
+
+.stat-card-footer {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-card-change {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.stat-card-change-up {
+    color: #28a745;
+}
+
+.stat-card-change-down {
+    color: #dc3545;
+}
+
+.stat-card-change i {
+    margin-right: 0.25rem;
+}

@@ -53,78 +53,143 @@ CONTENEDOR PRINCIPAL
 <div class="container-fluid" style="margin-top: 70px;">
     <div class="row">
         
-        <!-- ==========================================
-        SIDEBAR - MENÚ DE NAVEGACIÓN CON ESTILO BOOTSTRAP
-        ========================================== -->
-        <div class="col-md-3 col-lg-2">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-body p-3">
-                    <h6 class="text-muted text-uppercase small fw-bold mb-3">Navegación</h6>
-                    <?php $currentUrl = $_GET['url'] ?? 'main'; ?>
-                    <div class="list-group list-group-flush">
-                        
-                        <a href="?url=main" 
-                           class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-1 <?= $currentUrl == 'main' ? 'active' : '' ?>"
-                           style="border: none; <?= $currentUrl == 'main' ? 'background: #000; color: #DAA520;' : '' ?>">
-                            <i class="fas fa-home" style="width: 20px;"></i> Inicio
-                        </a>
-                        
-                        <a href="?url=proveedores" 
-                           class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-1 <?= $currentUrl == 'proveedores' ? 'active' : '' ?>"
-                           style="border: none; <?= $currentUrl == 'proveedores' ? 'background: #000; color: #DAA520;' : '' ?>">
-                            <i class="fas fa-truck" style="width: 20px;"></i> Proveedores
-                        </a>
-                        
-                        <a href="?url=clientes" 
-                           class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-1 <?= $currentUrl == 'clientes' ? 'active' : '' ?>"
-                           style="border: none; <?= $currentUrl == 'clientes' ? 'background: #000; color: #DAA520;' : '' ?>">
-                            <i class="fas fa-users" style="width: 20px;"></i> Clientes
-                        </a>
-                        
-                        <a href="?url=productos" 
-                           class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-1 <?= $currentUrl == 'productos' ? 'active' : '' ?>"
-                           style="border: none; <?= $currentUrl == 'productos' ? 'background: #000; color: #DAA520;' : '' ?>">
-                            <i class="fas fa-box" style="width: 20px;"></i> Productos
-                        </a>
-                        
-                        <!-- NOTAS -->
-                        <?php $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']); ?>
-                        <div class="dropdown w-100">
-                            <a class="dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-1 <?= $isNotasActive ? 'active' : '' ?>" 
-                               href="#" data-bs-toggle="dropdown" style="border: none; width: 100%; background: <?= $isNotasActive ? '#000' : 'transparent' ?>; color: <?= $isNotasActive ? '#DAA520' : '#000' ?>; font-weight: 500; text-decoration: none;">
-                                <i class="fas fa-file-invoice" style="width: 20px;"></i> Notas
+ <!-- ==========================================
+SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
+========================================== -->
+<div class="col-md-3 col-lg-2" style="padding: 0; height: 100%;">
+    <div class="card shadow-sm border-0 rounded-0" style="background: #1a1a2e; border: 1px solid rgba(255,255,255,0.05); height: 100%; min-height: calc(100vh - 70px); border-radius: 0 !important;">
+        <div class="card-body p-3" style="height: 100%; overflow-y: auto;">
+            <h6 class="text-uppercase small fw-bold mb-3" style="color: rgba(255,255,255,0.4); letter-spacing: 0.5px;">
+                <i class="fas fa-compass me-2" style="color: #f39c12;"></i> Navegación
+            </h6>
+            <?php $currentUrl = $_GET['url'] ?? 'main'; ?>
+            <div class="list-group list-group-flush" style="display: flex; flex-direction: column; gap: 2px;">
+                
+                <!-- ===== INICIO ===== -->
+                <a href="?url=main" 
+                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'main' ? 'active' : '' ?>"
+                   style="border: none; background: <?= $currentUrl == 'main' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'main' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'main' ? '600' : '400' ?>; transition: all 0.3s ease;">
+                    <i class="fas fa-home" style="width: 20px; color: <?= $currentUrl == 'main' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                    <span>Inicio</span>
+                </a>
+                
+                <!-- ===== PROVEEDORES ===== -->
+                <a href="?url=proveedores" 
+                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'proveedores' ? 'active' : '' ?>"
+                   style="border: none; background: <?= $currentUrl == 'proveedores' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'proveedores' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'proveedores' ? '600' : '400' ?>; transition: all 0.3s ease;">
+                    <i class="fas fa-truck" style="width: 20px; color: <?= $currentUrl == 'proveedores' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                    <span>Proveedores</span>
+                </a>
+                
+                <!-- ===== CLIENTES ===== -->
+                <a href="?url=clientes" 
+                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'clientes' ? 'active' : '' ?>"
+                   style="border: none; background: <?= $currentUrl == 'clientes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'clientes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'clientes' ? '600' : '400' ?>; transition: all 0.3s ease;">
+                    <i class="fas fa-users" style="width: 20px; color: <?= $currentUrl == 'clientes' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                    <span>Clientes</span>
+                </a>
+                
+                <!-- ===== PRODUCTOS ===== -->
+                <a href="?url=productos" 
+                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'productos' ? 'active' : '' ?>"
+                   style="border: none; background: <?= $currentUrl == 'productos' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'productos' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'productos' ? '600' : '400' ?>; transition: all 0.3s ease;">
+                    <i class="fas fa-box" style="width: 20px; color: <?= $currentUrl == 'productos' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                    <span>Productos</span>
+                </a>
+                
+                <!-- ===== NOTAS (DROPDOWN) ===== -->
+                <?php $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']); ?>
+                <div class="dropdown w-100">
+                    <a class="dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isNotasActive ? 'active' : '' ?>" 
+                       href="#" data-bs-toggle="dropdown" 
+                       style="border: none; width: 100%; background: <?= $isNotasActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isNotasActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
+                        <i class="fas fa-file-invoice" style="width: 20px; color: <?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                        <span style="flex: 1;">Notas</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
+                    </a>
+                    <ul class="dropdown-menu w-100 border-0 shadow-sm rounded-3" style="background: #0D0D1A; border: 1px solid rgba(255,255,255,0.05); margin-top: 4px; padding: 6px;">
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notaentrada" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-sign-in-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Entrada
                             </a>
-                            <ul class="dropdown-menu w-100 border-0 shadow-sm rounded-3">
-                                <li><a class="dropdown-item py-2 px-3 rounded-2" href="?url=notaentrada"><i class="fas fa-sign-in-alt me-2"></i> Nota de Entrada</a></li>
-                                <li><a class="dropdown-item py-2 px-3 rounded-2" href="?url=notasalida"><i class="fas fa-sign-out-alt me-2"></i> Nota de Salida</a></li>
-                            </ul>
-                        </div>
-                        
-                        <!-- CONFIGURACIÓN -->
-                        <?php $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']); ?>
-                        <div class="dropdown w-100">
-                            <a class="dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-1 <?= $isConfigActive ? 'active' : '' ?>" 
-                               href="#" data-bs-toggle="dropdown" style="border: none; width: 100%; background: <?= $isConfigActive ? '#000' : 'transparent' ?>; color: <?= $isConfigActive ? '#DAA520' : '#000' ?>; font-weight: 500; text-decoration: none;">
-                                <i class="fas fa-cog" style="width: 20px;"></i> Configuración
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notasalida" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-sign-out-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Salida
                             </a>
-                            <ul class="dropdown-menu w-100 border-0 shadow-sm rounded-3">
-                                <li><a class="dropdown-item py-2 px-3 rounded-2" href="?url=categorias"><i class="fas fa-tags me-2"></i> Categorías</a></li>
-                                <li><a class="dropdown-item py-2 px-3 rounded-2" href="?url=usuarios"><i class="fas fa-users-cog me-2"></i> Usuarios</a></li>
-                                <li><a class="dropdown-item py-2 px-3 rounded-2" href="?url=roles"><i class="fas fa-user-shield me-2"></i> Roles</a></li>
-                            </ul>
-                        </div>
-                        
-                        <a href="?url=reportes" 
-                           class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-1 <?= $currentUrl == 'reportes' ? 'active' : '' ?>"
-                           style="border: none; <?= $currentUrl == 'reportes' ? 'background: #000; color: #DAA520;' : '' ?>">
-                            <i class="fas fa-file-alt" style="width: 20px;"></i> Reportes
-                        </a>
-                        
-                    </div>
+                        </li>
+                    </ul>
                 </div>
+                
+                <!-- ===== CONFIGURACIÓN (DROPDOWN) ===== -->
+                <?php $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']); ?>
+                <div class="dropdown w-100">
+                    <a class="dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isConfigActive ? 'active' : '' ?>" 
+                       href="#" data-bs-toggle="dropdown" 
+                       style="border: none; width: 100%; background: <?= $isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isConfigActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
+                        <i class="fas fa-cog" style="width: 20px; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                        <span style="flex: 1;">Configuración</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
+                    </a>
+                    <ul class="dropdown-menu w-100 border-0 shadow-sm rounded-3" style="background: #0D0D1A; border: 1px solid rgba(255,255,255,0.05); margin-top: 4px; padding: 6px;">
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=categorias" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-tags me-2" style="color: rgba(255,255,255,0.3);"></i> Categorías
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=usuarios" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-users-cog me-2" style="color: rgba(255,255,255,0.3);"></i> Usuarios
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=roles" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-user-shield me-2" style="color: rgba(255,255,255,0.3);"></i> Roles
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- ===== REPORTES ===== -->
+                <a href="?url=reportes" 
+                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'reportes' ? 'active' : '' ?>"
+                   style="border: none; background: <?= $currentUrl == 'reportes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'reportes' ? '600' : '400' ?>; transition: all 0.3s ease;">
+                    <i class="fas fa-file-alt" style="width: 20px; color: <?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                    <span>Reportes</span>
+                </a>
+                
+                <!-- ===== ESPACIO EMPUJA EL CONTENIDO HACIA ABAJO ===== -->
+                <div style="flex: 1;"></div>
+                
+                <!-- ===== VERSIÓN DEL SISTEMA ===== -->
+                <div class="mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                    <small style="color: rgba(255,255,255,0.2); font-size: 0.65rem; display: block; text-align: center;">
+                        <i class="fas fa-code-branch me-1"></i> v1.0.0
+                    </small>
+                    <small style="color: rgba(255,255,255,0.15); font-size: 0.6rem; display: block; text-align: center;">
+                        Pirotecnia Fénix
+                    </small>
+                </div>
+                
             </div>
         </div>
-        
+    </div>
+</div>
         <!-- CONTENIDO PRINCIPAL -->
         <div class="col-md-9 col-lg-10">
             <div class="content-wrapper p-3">

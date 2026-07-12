@@ -156,6 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // 7. CARGAR VISTAS (GET)
 // ==========================================
 
+// ✅ CORRECCIÓN: Ruta CORRECTA con la tilde
 $basePath = __DIR__ . "/../view/configuracion/";
 
 // === LISTA === (Visible para todos)
