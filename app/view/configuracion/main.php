@@ -20,7 +20,7 @@
                  alt="Logo de Pirotecnia Fénix" 
                  class="main-logo">
             <h1 class="main-title"> <span class="highlight">Pirotecnica Fénix</span></h1>
-            <p class="main-subtitle">Sistema de gestión integral para control de mercancía.</p>
+            <p class="main-subtitle">Sistema de gestión integral para control de stock.</p>
             <div class="main-divider"></div>
             <a href="?url=login" class="btn-main">
                 <i class="fas fa-sign-in-alt"></i> Inicio de Sesión
