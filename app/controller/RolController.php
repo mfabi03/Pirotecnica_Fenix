@@ -10,22 +10,20 @@ use App\Pirotecnicafenix\Model\RolModel;
 use Exception;
 use PDO;
 
-// ==========================================
 // 1. INICIAR SESIÓN Y VERIFICAR PERMISOS
-// ==========================================
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ✅ SOLO ADMIN (ROL 1) PUEDE ACCEDER
+// SOLO ADMIN (ROL 1) PUEDE ACCEDER
 if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
     header('Location: ?url=dashboard');
     exit();
 }
 
-// ==========================================
 // 2. CARGA DEL MODELO
-// ==========================================
+
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'RolModel.php';
 
@@ -35,9 +33,8 @@ if (file_exists($pathModel)) {
     die("ERROR CRÍTICO: No se encuentra el archivo: " . $pathModel);
 }
 
-// ==========================================
 // 3. INICIALIZACIÓN DE CONEXIÓN Y MODELO
-// ==========================================
+
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new \App\Pirotecnicafenix\Model\RolModel($db);
@@ -45,9 +42,8 @@ try {
     die("Error de conexión: " . $e->getMessage());
 }
 
-// ==========================================
 // 4. PARÁMETROS DE LA URL
-// ==========================================
+
 $action = $_GET['action'] ?? 'lista';
 $id = $_GET['id'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
@@ -59,9 +55,7 @@ unset($_SESSION['tipo_mensaje']);
 // Parámetros de búsqueda
 $busqueda = trim((string) ($_GET['busqueda'] ?? ''));
 
-// ==========================================
-// 5. PROCESAR POST (CRUD)
-// ==========================================
+// 5. PROCESAR POST 
 
 // ===== GUARDAR NUEVO ROL =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'guardar') {
@@ -93,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             throw new Exception("El nombre del rol es obligatorio.");
         }
 
-        // ✅ No permitir modificar el rol de administrador (id_rol = 1)
+        //No permitir modificar el rol de administrador (id_rol = 1)
         if ($id == 1) {
             throw new Exception("No puedes modificar el rol de Administrador");
         }
@@ -119,12 +113,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             throw new Exception("ID de rol inválido");
         }
         
-        // ✅ No permitir eliminar el rol de administrador (id_rol = 1)
+        // No permitir eliminar el rol de administrador (id_rol = 1)
         if ($id == 1) {
             throw new Exception("No puedes eliminar el rol de Administrador");
         }
         
-        // ✅ CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+        // CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
         $sql = "SELECT COUNT(*) as total FROM usuario WHERE id_rol = :id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
@@ -155,7 +149,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'eliminar' && isset($_GET['id'
             throw new Exception("No puedes eliminar el rol de Administrador");
         }
         
-        // ✅ CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+        //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
         $sql = "SELECT COUNT(*) as total FROM usuario WHERE id_rol = :id";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
@@ -176,9 +170,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'eliminar' && isset($_GET['id'
     exit();
 }
 
-// ==========================================
 // 6. OBTENER DATOS PARA VISTAS
-// ==========================================
 
 // Obtener rol para edición o visualización
 if (in_array($action, ['editar', 'ver']) && $id) {
@@ -191,9 +183,7 @@ if (in_array($action, ['editar', 'ver']) && $id) {
     }
 }
 
-// ==========================================
 // 7. CARGAR VISTAS
-// ==========================================
 
 $basePath = __DIR__ . "/../view/configuracion/";
 
@@ -201,7 +191,7 @@ $basePath = __DIR__ . "/../view/configuracion/";
 if ($action === 'lista' || $action === '' || $action === 'roles') {
     $busqueda_trim = is_string($busqueda) ? trim($busqueda) : '';
     
-    // ✅ CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+    //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
     $sql = "SELECT 
                 r.id_rol, 
                 r.nombre_rol,

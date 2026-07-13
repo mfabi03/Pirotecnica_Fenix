@@ -14,7 +14,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-box text-gold me-2"></i> Formulario de Registro
+                            <i class="fas fa-box text-gold me-2"></i> Registro de Productos
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Complete todos los campos para registrar un nuevo producto

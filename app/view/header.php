@@ -16,7 +16,7 @@ NAVBAR - CORREGIDO
 ========================================== -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="min-height: 60px; padding: 5px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1050;">
     <div class="container-fluid">
-        <!-- 🔥 LOGO CON TAMAÑO CORRECTO -->
+        <!-- LOGO CON TAMAÑO CORRECTO -->
         <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 10px;">
             <img src="assets/imagenes/logo.png" alt="Logo" 
                  style="width: 40px !important; height: 40px !important; object-fit: contain; border-radius: 50%; background: #ffffff; padding: 4px;">

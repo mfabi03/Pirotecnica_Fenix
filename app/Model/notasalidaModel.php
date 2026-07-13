@@ -12,9 +12,8 @@ class notasalidaModel {
         $this->db = $db;
     }
 
-    // ============================================
     // OBTENER PRODUCTOS
-    // ============================================
+
     public function obtenerProductosConCategoria() {
     try {
         $sql = "SELECT 
@@ -36,9 +35,8 @@ class notasalidaModel {
     }
 }
 
-    // ============================================
     // OBTENER CLIENTES
-    // ============================================
+
     public function obtenerClientes() {
         try {
             $sql = "SELECT 
@@ -73,9 +71,8 @@ class notasalidaModel {
         }
     }
 
-    // ============================================
     // REGISTRAR SALIDA
-    // ============================================
+
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
             $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ?";
@@ -165,9 +162,8 @@ class notasalidaModel {
         }
     }
 
-    // ============================================
     // LISTAR NOTAS DE SALIDA (CON PRODUCTOS Y CATEGORÍAS)
-    // ============================================
+    
     public function listarNotasSalida() {
         try {
             $sql = "SELECT 
@@ -229,9 +225,8 @@ class notasalidaModel {
                     $n['usuario_apellido'] = '';
                 }
                 
-                // ==========================================
                 // OBTENER PRODUCTOS Y CATEGORÍAS
-                // ==========================================
+
                 $sqlProductos = "SELECT 
                                     p.descripcion AS producto,
                                     c.nombre_categoria AS categoria,
@@ -271,9 +266,8 @@ class notasalidaModel {
         }
     }
 
-    // ============================================
     // OBTENER NOTA POR ID
-    // ============================================
+
     public function obtenerNotaPorId($id) {
         try {
             $sql = "SELECT 
@@ -341,9 +335,8 @@ class notasalidaModel {
         }
     }
 
-    // ============================================
     // ACTUALIZAR NOTA
-    // ============================================
+
     public function actualizarNota($id, $datos, $detalles, $idUsuario) {
         try {
             $sqlCheck = "SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ?";
@@ -441,9 +434,8 @@ class notasalidaModel {
         }
     }
 
-    // ============================================
     // ELIMINAR NOTA
-    // ============================================
+
     public function eliminarNota($id) {
         try {
             $sqlCheck = "SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ?";
@@ -491,9 +483,8 @@ class notasalidaModel {
         }
     }
 
-    // ============================================
     // OBTENER RESUMEN
-    // ============================================
+
     public function getResumen() {
         try {
             $sql = "SELECT COUNT(*) AS total_notas FROM nota_de_salida";

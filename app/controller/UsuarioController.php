@@ -11,24 +11,21 @@ use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\UsuarioModel;
 use Exception;
 
-// ==========================================
 // 1. INICIAR SESIÓN
-// ==========================================
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ==========================================
 // 2. VERIFICAR ADMIN
-// ==========================================
+
 if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
     header('Location: ?url=main');
     exit();
 }
 
-// ==========================================
 // 3. CARGAR MODELO
-// ==========================================
+
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'UsuarioModel.php';
 
@@ -38,9 +35,8 @@ if (file_exists($pathModel)) {
     die("ERROR: No se encuentra UsuarioModel.php");
 }
 
-// ==========================================
 // 4. INICIALIZACIÓN
-// ==========================================
+
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new UsuarioModel($db);
@@ -48,9 +44,8 @@ try {
     die("Error de conexión: " . $e->getMessage());
 }
 
-// ==========================================
 // 5. PARÁMETROS
-// ==========================================
+
 $action = $_GET['action'] ?? 'lista';
 $id = $_GET['id'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
@@ -61,11 +56,9 @@ unset($_SESSION['tipo_mensaje']);
 
 $busqueda = trim((string) ($_GET['busqueda'] ?? ''));
 
-// ==========================================
 // 6. PROCESAR POST
-// ==========================================
 
-// ✅ DEPURACIÓN: Ver si llega POST
+// DEPURACIÓN: Ver si llega POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     error_log("========== POST EN USUARIO CONTROLLER ==========");
     error_log("POST data: " . print_r($_POST, true));
@@ -74,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Guardar usuario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ✅ Obtener acción desde POST o GET
+    // Obtener acción desde POST o GET
     $accion = $_POST['accion'] ?? $_GET['action'] ?? '';
     
     if ($accion === 'guardar') {
@@ -240,9 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// ==========================================
 // 7. CARGAR VISTAS
-// ==========================================
 
 $basePath = __DIR__ . "/../view/configuracion/";
 

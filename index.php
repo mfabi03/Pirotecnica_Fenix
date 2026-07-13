@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $url === 'login' && isset($_POST['u
 // 10. RUTAS DE LOS MÓDULOS
 // ==========================================
 
-// ✅ NOTA: El middleware se ejecuta DENTRO de cada caso, no antes del switch
+// NOTA: El middleware se ejecuta DENTRO de cada caso, no antes del switch
 
 switch ($url) {
     
@@ -97,7 +97,7 @@ switch ($url) {
 case 'main':
 case '':
     if (isLoggedIn()) {
-        // ✅ CORREGIDO: Ambos roles van al dashboard
+        // CORREGIDO: Ambos roles van al dashboard
         header('Location: ?url=dashboard');
         exit();
     }

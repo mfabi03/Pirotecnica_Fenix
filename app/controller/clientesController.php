@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// 🔥 REGISTRO RÁPIDO CLIENTE (MODIFICADO - SIN JSON)
+// REGISTRO RÁPIDO CLIENTE 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
     try {
@@ -142,13 +142,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
         $id = $modelo->registrarClienteNatural($datosCliente);
         
         if ($id) {
-            // 🔥 GUARDAR EN SESIÓN PARA EL RETORNO
+            //  GUARDAR EN SESIÓN PARA EL RETORNO
             $_SESSION['nuevo_cliente_id'] = $id;
             $_SESSION['nuevo_cliente_nombre'] = $datosCliente['nombre'] . ' ' . $datosCliente['apellido'];
             $_SESSION['mensaje_rapido'] = "✅ Cliente registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
             
-            // 🔥 REDIRIGIR DE VUELTA (si viene de registro rápido)
+            //  REDIRIGIR DE VUELTA (si viene de registro rápido)
             if (isset($_GET['return'])) {
                 header("Location: ?url=" . $_GET['return'] . "&type=create");
                 exit;
@@ -173,7 +173,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
     }
 }
 
-// 
 // REGISTRO JURIDICO
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_juridico') {

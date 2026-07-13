@@ -15,9 +15,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ==========================================
 // 1. CARGA DE MODELOS
-// ==========================================
+
 $rutaRaiz = dirname(__DIR__, 2);
 
 $pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'notasalidaModel.php';
@@ -51,9 +50,8 @@ try {
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-// ==========================================
 // 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO
-// ==========================================
+
 function obtenerIdUsuarioValido($db) {
     $idUsuario = $_SESSION['usuario_id'] ?? null;
     
@@ -86,19 +84,17 @@ $clientes = [];
 $resumen = [];
 $tipo_mensaje = '';
 
-// ==========================================
 // 3. PROCESAMIENTO POST
-// ==========================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // ==========================================
     // REGISTRAR NOTA DE SALIDA
-    // ==========================================
+   
     if ($type === 'store') {
         try {
             $idUsuario = obtenerIdUsuarioValido($db);
             
-            // 🔥 RECIBIR DETALLES COMO ARRAYS (SIN JSON)
+            // RECIBIR DETALLES COMO ARRAYS 
             $detalles = [];
             $productos_ids = $_POST['detalle_producto'] ?? [];
             $cantidades = $_POST['detalle_cantidad'] ?? [];
@@ -140,9 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // ==========================================
-    // 🔥 REGISTRO RÁPIDO DE PRODUCTO (NUEVO - SIN JSON)
-    // ==========================================
+    // REGISTRO RÁPIDO DE PRODUCTO 
+
     if ($type === 'store_rapido_producto') {
         try {
             // Validar campos requeridos
@@ -164,13 +159,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id_producto = $productoModel->registrarProducto($datosProducto);
             
             if ($id_producto) {
-                // 🔥 GUARDAR EN SESIÓN PARA EL RETORNO
+                // GUARDAR EN SESIÓN PARA EL RETORNO
                 $_SESSION['nuevo_producto_id'] = $id_producto;
                 $_SESSION['nuevo_producto_nombre'] = $datosProducto['descripcion'];
                 $_SESSION['mensaje_rapido'] = "✅ Producto '{$datosProducto['descripcion']}' registrado exitosamente";
                 $_SESSION['tipo_rapido'] = 'success';
                 
-                // 🔥 REDIRIGIR DE VUELTA (si viene de registro rápido)
+                // REDIRIGIR DE VUELTA (si viene de registro rápido)
                 if (isset($_GET['return'])) {
                     header("Location: ?url=" . $_GET['return'] . "&type=create");
                     exit;
@@ -194,9 +189,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // ==========================================
-    // 🔥 REGISTRO RÁPIDO DE CLIENTE (MODIFICADO - SIN JSON)
-    // ==========================================
+    // REGISTRO RÁPIDO DE CLIENTE 
+
     if ($type === 'store_rapido_cliente') {
         try {
             $tipo = $_POST['tipo_cliente'] ?? 'natural';
@@ -240,13 +234,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if ($id_cliente) {
-                // 🔥 GUARDAR EN SESIÓN PARA EL RETORNO
+                // GUARDAR EN SESIÓN PARA EL RETORNO
                 $_SESSION['nuevo_cliente_id'] = $id_cliente;
                 $_SESSION['nuevo_cliente_nombre'] = $nombre_cliente;
                 $_SESSION['mensaje_rapido'] = "✅ Cliente '{$nombre_cliente}' registrado exitosamente";
                 $_SESSION['tipo_rapido'] = 'success';
                 
-                // 🔥 REDIRIGIR DE VUELTA (si viene de registro rápido)
+                // REDIRIGIR DE VUELTA (si viene de registro rápido)
                 if (isset($_GET['return'])) {
                     header("Location: ?url=" . $_GET['return'] . "&type=create");
                     exit;
@@ -268,15 +262,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // ==========================================
     // ACTUALIZAR
-    // ==========================================
+
     if ($type === 'update') {
         try {
             $id = $_POST['id_nota_salida'] ?? 0;
             $idUsuario = obtenerIdUsuarioValido($db);
             
-            // 🔥 RECIBIR DETALLES COMO ARRAYS (SIN JSON)
+            //RECIBIR DETALLES COMO ARRAYS (SIN JSON)
             $detalles = [];
             $productos_ids = $_POST['detalle_producto'] ?? [];
             $cantidades = $_POST['detalle_cantidad'] ?? [];
@@ -318,9 +311,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // ==========================================
     // ELIMINAR
-    // ==========================================
+
     if ($type === 'eliminar') {
         try {
             $idNota = $_POST['id_nota_salida'] ?? 0;
@@ -357,9 +349,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ==========================================
 // 4. VISTAS
-// ==========================================
 
 $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'nota_salida';
 
@@ -400,10 +390,7 @@ if ($type === 'show' && $id) {
     exit();
 }
 
-// ==========================================
-// 🔥 IMPRIMIR - ELIMINADO (YA NO SE USA)
-// ==========================================
-// if ($type === 'print' && $id) { ... }
+//  IMPRIMIR 
 
 // EDITAR
 if ($type === 'edit' && $id) {

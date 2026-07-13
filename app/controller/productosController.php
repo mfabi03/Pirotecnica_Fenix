@@ -7,9 +7,8 @@ use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\ProductoModel;
 use App\Pirotecnicafenix\Model\proveedoresModel;
 
-// ============================================
 // CONFIGURACIÓN INICIAL
-// ============================================
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -20,9 +19,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $rutaRaiz = dirname(__DIR__, 2);
 
-// ============================================
 // CARGA DE MODELOS
-// ============================================
+
 function cargarModelo($nombre, $rutaRaiz) {
     $path = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . $nombre . '.php';
     if (!file_exists($path)) {
@@ -34,9 +32,8 @@ function cargarModelo($nombre, $rutaRaiz) {
 cargarModelo('ProductoModel', $rutaRaiz);
 cargarModelo('proveedoresModel', $rutaRaiz);
 
-// ============================================
 // CONEXIÓN A BASE DE DATOS
-// ============================================
+
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new ProductoModel($db);
@@ -45,9 +42,8 @@ try {
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-// ============================================
 // VARIABLES GLOBALES
-// ============================================
+
 $type = $_GET['type'] ?? 'list';
 $error = null;
 $success = null;
@@ -56,9 +52,8 @@ $productos = [];
 $categorias = [];
 $proveedores = [];
 
-// ============================================
 // GESTOR DE ARCHIVO JSON (MANTENIDO PARA ESPECIFICACIONES)
-// ============================================
+
 function getProductosJsonPath() {
     return __DIR__ . '/../../public/uploads/products_imagenes.json';
 }
@@ -89,9 +84,8 @@ function eliminarProductoJson($id) {
     }
 }
 
-// ============================================
 // PROCESADOR DE PROVEEDORES
-// ============================================
+
 class ProveedorProcessor {
     private $db;
     
@@ -123,9 +117,8 @@ class ProveedorProcessor {
 
 $proveedorProcessor = new ProveedorProcessor($db);
 
-// ============================================
 // VALIDADOR DE PRODUCTOS
-// ============================================
+
 class ProductoValidator {
     public static function validarDatos($datos) {
         $errores = [];
@@ -150,14 +143,12 @@ class ProductoValidator {
     }
 }
 
-// ============================================
 // PROCESAR POST
-// ============================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // ==========================================
     // REGISTRAR PRODUCTO
-    // ==========================================
+
     if ($type === 'store') {
         try {
             $datos = [
@@ -187,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'id_proveedor' => $id_proveedor
             ]);
             
-            // 🔥 REDIRIGIR DE VUELTA (si viene de registro rápido)
+            // REDIRIGIR DE VUELTA (si viene de registro rápido)
             if (isset($_GET['return'])) {
                 $_SESSION['nuevo_producto_id'] = $id_producto;
                 $_SESSION['nuevo_producto_nombre'] = $datos['descripcion'];
@@ -206,10 +197,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = '❌ ' . $e->getMessage();
         }
     }
-    
-    // ==========================================
-    // 🔥 REGISTRO RÁPIDO PRODUCTO (MODIFICADO - SIN JSON)
-    // ==========================================
+   
+    // REGISTRO RÁPIDO PRODUCTO 
+
     if ($type === 'store_rapido') {
         try {
             // Validar campos requeridos
@@ -236,13 +226,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $id_producto = intval($resultado);
             
-            // 🔥 GUARDAR EN SESIÓN PARA EL RETORNO
+            // GUARDAR EN SESIÓN PARA EL RETORNO
             $_SESSION['nuevo_producto_id'] = $id_producto;
             $_SESSION['nuevo_producto_nombre'] = $datosProducto['descripcion'];
             $_SESSION['mensaje_rapido'] = "✅ Producto '{$datosProducto['descripcion']}' registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
             
-            // 🔥 REDIRIGIR DE VUELTA (si viene de registro rápido)
+            // REDIRIGIR DE VUELTA (si viene de registro rápido)
             if (isset($_GET['return'])) {
                 header("Location: ?url=" . $_GET['return'] . "&type=create");
                 exit;
@@ -264,9 +254,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // ==========================================
     // ACTUALIZAR PRODUCTO
-    // ==========================================
+
     if ($type === 'update') {
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
@@ -307,9 +296,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // ==========================================
     // ELIMINAR PRODUCTO
-    // ==========================================
+   
     if ($type === 'delete') {
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
@@ -336,9 +324,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ============================================
 // FUNCIONES AUXILIARES PARA VISTAS
-// ============================================
+
 function cargarDatosProducto($id_producto, $modelo, $proveedorProcessor) {
     $producto = $modelo->obtenerProductoPorId($id_producto);
     if (!$producto) {
@@ -359,9 +346,7 @@ function cargarDatosProducto($id_producto, $modelo, $proveedorProcessor) {
     return $producto;
 }
 
-// ============================================
 // RUTEO DE VISTAS
-// ============================================
 
 if ($type === 'create') {
     try {
@@ -398,9 +383,8 @@ if ($type === 'edit') {
     exit();
 }
 
-// ============================================
 // VISTA DE LISTA DE PRODUCTOS
-// ============================================
+
 try {
     $buscar = trim($_GET['buscar'] ?? '');
     $dataJson = cargarProductosJson();

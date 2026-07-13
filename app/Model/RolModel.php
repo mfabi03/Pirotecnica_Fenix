@@ -12,12 +12,11 @@ class RolModel {
         $this->db = $db;
     }
 
-    // ==========================================
     // 1. OBTENER TODOS LOS ROLES
-    // ==========================================
+
     public function getAllRoles() {
         try {
-            // ✅ CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
             $sql = "SELECT 
                         r.id_rol, 
                         r.nombre_rol,
@@ -34,12 +33,11 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 2. OBTENER ROL POR ID
-    // ==========================================
+
     public function getRolById($id) {
         try {
-            // ✅ CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
             $sql = "SELECT 
                         r.id_rol, 
                         r.nombre_rol,
@@ -57,12 +55,11 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 3. BUSCAR ROLES POR NOMBRE
-    // ==========================================
+
     public function buscarRoles($busqueda) {
         try {
-            // ✅ CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
             $sql = "SELECT 
                         r.id_rol, 
                         r.nombre_rol,
@@ -80,9 +77,8 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 4. CREAR NUEVO ROL
-    // ==========================================
+
     public function crearRol($nombre) {
         try {
             // Verificar si ya existe un rol con ese nombre
@@ -105,9 +101,8 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 5. ACTUALIZAR ROL
-    // ==========================================
+
     public function actualizarRol($id, $nombre) {
         try {
             // Verificar si el rol existe
@@ -140,9 +135,8 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 6. ELIMINAR ROL
-    // ==========================================
+
     public function eliminarRol($id) {
         try {
             // Verificar si el rol existe
@@ -156,7 +150,7 @@ class RolModel {
                 throw new Exception("No puedes eliminar el rol de Administrador");
             }
             
-            // ✅ CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
             $sqlCheck = "SELECT COUNT(*) as total FROM usuario WHERE id_rol = :id";
             $stmtCheck = $this->db->prepare($sqlCheck);
             $stmtCheck->execute(['id' => $id]);
@@ -175,12 +169,11 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 7. OBTENER ROLES CON CONTEO DE USUARIOS
-    // ==========================================
+
     public function getRolesConConteo() {
         try {
-            // ✅ CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
             $sql = "SELECT 
                         r.id_rol, 
                         r.nombre_rol,
@@ -199,9 +192,8 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 8. OBTENER ROL POR NOMBRE
-    // ==========================================
+
     public function getRolByNombre($nombre) {
         try {
             $sql = "SELECT id_rol, nombre_rol FROM rol WHERE nombre_rol = :nombre LIMIT 1";
@@ -214,9 +206,8 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 9. VERIFICAR SI UN ROL EXISTE
-    // ==========================================
+
     public function rolExiste($id) {
         try {
             $sql = "SELECT COUNT(*) as total FROM rol WHERE id_rol = :id";
@@ -229,9 +220,8 @@ class RolModel {
         }
     }
 
-    // ==========================================
     // 10. OBTENER ROLES DISPONIBLES (Sin Administrador)
-    // ==========================================
+
     public function getRolesDisponibles() {
         try {
             $sql = "SELECT 

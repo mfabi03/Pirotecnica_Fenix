@@ -228,9 +228,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const stockActual = document.getElementById('stockActual');
     const detalles = [];
 
-    // ==========================================
     // 1. MOSTRAR CATEGORÍA AL SELECCIONAR PRODUCTO
-    // ==========================================
+
     productoSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         const categoria = selectedOption.getAttribute('data-categoria');
@@ -246,9 +245,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     productoSelect.dispatchEvent(new Event('change'));
 
-    // ==========================================
     // 2. AGREGAR PRODUCTO
-    // ==========================================
+
     btnAgregar.addEventListener('click', function(e) {
         e.preventDefault();
 
@@ -314,9 +312,8 @@ document.addEventListener('DOMContentLoaded', function() {
         cantidadInput.value = 1;
     });
 
-    // ==========================================
     // 3. ELIMINAR PRODUCTO
-    // ==========================================
+
     tbody.addEventListener('click', function(e) {
         const btn = e.target.closest('.eliminar-producto');
         if (btn) {
@@ -343,9 +340,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==========================================
     // 4. ACTUALIZAR CAMPOS OCULTOS
-    // ==========================================
+
     function actualizarCamposOcultos() {
         detallesContainer.innerHTML = '';
         
@@ -364,9 +360,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ==========================================
     // 5. VALIDAR ANTES DE GUARDAR
-    // ==========================================
+
     document.getElementById('formNotaSalida').addEventListener('submit', function(e) {
         if (detalles.length === 0) {
             e.preventDefault();

@@ -17,7 +17,7 @@ class DashboardModel {
         $stats = [];
 
         try {
-            // 1. Total de productos (inventario)
+            // 1. Total de productos
             $sql = "SELECT COUNT(*) as total FROM producto";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -29,13 +29,13 @@ class DashboardModel {
             $stmt->execute();
             $stats['total_usuarios'] = $stmt->fetchColumn() ?? 0;
 
-            // 3. Total de notas de SALIDA (CORREGIDO)
+            // 3. Total de notas de SALIDA 
             $sql = "SELECT COUNT(*) as total FROM nota_de_salida";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $stats['total_nota_salida'] = $stmt->fetchColumn() ?? 0;
 
-            // 4. Total de notas de ENTRADA (CORREGIDO)
+            // 4. Total de notas de ENTRADA 
             $sql = "SELECT COUNT(*) as total FROM nota_de_entrada";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();

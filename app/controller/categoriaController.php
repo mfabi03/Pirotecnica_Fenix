@@ -9,25 +9,20 @@ use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\CategoriaModel;
 use Exception;
 
-// ==========================================
 // 1. INICIAR SESIÓN
-// ==========================================
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ==========================================
 // 2. VERIFICAR AUTENTICACIÓN (SOLO LOGIN, SIN RESTRICCIÓN DE ROL)
-// ==========================================
+
 if (!isset($_SESSION['id_usuario']) || empty($_SESSION['id_usuario'])) {
     $_SESSION['error_permiso'] = "Debes iniciar sesión para acceder a esta sección.";
     header('Location: ?url=login');
     exit();
 }
 
-// ==========================================
 // 3. CARGAR MODELO
-// ==========================================
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'CategoriaModel.php';
 
@@ -37,9 +32,7 @@ if (file_exists($pathModel)) {
     die("ERROR: No se encuentra CategoriaModel.php en: " . $pathModel);
 }
 
-// ==========================================
 // 4. INICIALIZACIÓN
-// ==========================================
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new CategoriaModel($db);
@@ -47,9 +40,7 @@ try {
     die("Error de conexión: " . $e->getMessage());
 }
 
-// ==========================================
 // 5. OBTENER ACCIÓN (GET o POST)
-// ==========================================
 $action = $_GET['action'] ?? $_POST['action'] ?? 'lista';
 $id = $_GET['id'] ?? $_POST['id_categoria'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
@@ -59,9 +50,7 @@ $busqueda = $_GET['busqueda'] ?? '';
 unset($_SESSION['mensaje']);
 unset($_SESSION['tipo_mensaje']);
 
-// ==========================================
 // 6. PROCESAR POST (GUARDAR, ACTUALIZAR, ELIMINAR)
-// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? $action;
     
@@ -152,11 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ==========================================
 // 7. CARGAR VISTAS (GET)
-// ==========================================
 
-// ✅ CORRECCIÓN: Ruta CORRECTA con la tilde
 $basePath = __DIR__ . "/../view/configuracion/";
 
 // === LISTA === (Visible para todos)

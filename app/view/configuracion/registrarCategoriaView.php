@@ -59,7 +59,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             <div class="col-md-6">
                                 <label for="nombre_categoria" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombre de la Categoría *</label>
                                 <input type="text" name="nombre_categoria" id="nombre_categoria" class="form-control" 
-                                       placeholder="Ej: Electrónicos, Ropa, Alimentos"
+                                       placeholder="Ej: volcan, trakitraki,estrellita.."
                                        style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);" required>
                             </div>
                             <div class="col-md-6">

@@ -14,7 +14,7 @@ class LoginModel {
 
     public function autenticar($usuario, $clave) {
         try {
-            // ✅ CORREGIDO: usar id_persona para la relación
+            //CORREGIDO: usar id_persona para la relación
             $sql = "SELECT 
                         u.id_usuario,
                         u.usuario,
@@ -23,7 +23,7 @@ class LoginModel {
                         p.nombre,
                         p.apellido
                     FROM usuario u
-                    LEFT JOIN persona p ON u.id_persona = p.id_persona  -- ✅ CORRECTO
+                    LEFT JOIN persona p ON u.id_persona = p.id_persona 
                     WHERE u.usuario = :usuario
                     LIMIT 1";
             
@@ -32,12 +32,12 @@ class LoginModel {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user) {
-                // ✅ PRIMERO: Comparar texto plano (porque las contraseñas están así)
+                // PRIMERO: Comparar texto plano (porque las contraseñas están así)
                 if ($clave === $user['clave']) {
                     return $user;
                 }
                 
-                // ✅ SEGUNDO: Intentar con password_verify (por si alguna está hasheada)
+                // SEGUNDO: Intentar con password_verify (por si alguna está hasheada)
                 if (password_verify($clave, $user['clave'])) {
                     return $user;
                 }

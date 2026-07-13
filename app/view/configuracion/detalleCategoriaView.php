@@ -1,7 +1,7 @@
 <?php
 // app/view/configuracion/detalleCategoriaView.php
 
-// ✅ VERIFICAR QUE LA VARIABLE EXISTA
+// VERIFICAR QUE LA VARIABLE EXISTA
 if (!isset($categoria) || empty($categoria)) {
     die('Categoría no encontrada');
 }

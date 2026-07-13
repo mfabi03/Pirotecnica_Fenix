@@ -211,7 +211,6 @@ class NotaentradaModel {
 
     /**
      * ANULAR NOTA DE ENTRADA (elimina y revierte stock)
-     * ==================================================
      */
     public function anularNotaEntrada($id, $motivo, $idUsuario) {
         $this->db->beginTransaction();
@@ -256,7 +255,6 @@ class NotaentradaModel {
 
     /**
      * Obtener resumen de notas de entrada
-     * ====================================
      */
     public function getResumen() {
         try {
@@ -268,7 +266,7 @@ class NotaentradaModel {
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            // 🔥 CONTAR ANULADAS DESDE SESSION (igual que nota de salida)
+            // CONTAR ANULADAS DESDE SESSION (igual que nota de salida)
             $totalAnuladas = $_SESSION['contador_anulaciones_notaentrada'] ?? 0;
             
             return [

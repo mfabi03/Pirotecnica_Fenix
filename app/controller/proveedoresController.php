@@ -36,9 +36,8 @@ $proveedores = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // ==========================================
     // REGISTRAR PROVEEDOR
-    // ==========================================
+
     if ($type === 'store') {
         $datos = [
             'rif' => trim($_POST['rif'] ?? ''),
@@ -54,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $resultado = $modelo->registrarProveedor($datos);
                 if ($resultado) {
-                    // 🔥 REDIRIGIR DE VUELTA (si viene de registro rápido)
+                    // REDIRIGIR DE VUELTA (si viene de registro rápido)
                     if (isset($_GET['return'])) {
                         $id_proveedor = $db->lastInsertId();
                         $_SESSION['nuevo_proveedor_id'] = $id_proveedor;
@@ -75,9 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ==========================================
-    // 🔥 REGISTRO RÁPIDO PROVEEDOR (MODIFICADO - SIN JSON)
-    // ==========================================
+    //REGISTRO RÁPIDO PROVEEDOR 
+
     if ($type === 'store_rapido') {
         try {
             // Validar campos requeridos
@@ -102,13 +100,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $idProveedor = $db->lastInsertId();
             
-            // 🔥 GUARDAR EN SESIÓN PARA EL RETORNO
+            //GUARDAR EN SESIÓN PARA EL RETORNO
             $_SESSION['nuevo_proveedor_id'] = $idProveedor;
             $_SESSION['nuevo_proveedor_nombre'] = $datosProveedor['razon_social'];
             $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datosProveedor['razon_social']}' registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
             
-            // 🔥 REDIRIGIR DE VUELTA (si viene de registro rápido)
+            // REDIRIGIR DE VUELTA (si viene de registro rápido)
             if (isset($_GET['return'])) {
                 header("Location: ?url=" . $_GET['return'] . "&type=create");
                 exit;
@@ -130,9 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ==========================================
     // ACTUALIZAR PROVEEDOR
-    // ==========================================
+
     if ($type === 'update') {
         $id = $_POST['id_proveedor'] ?? 0;
         $datos = [
@@ -158,9 +155,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ==========================================
     // ELIMINAR PROVEEDOR
-    // ==========================================
+
     if ($type === 'delete') {
         $id = $_POST['id_proveedor'] ?? 0;
         try {
@@ -177,9 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ==========================================
 // VISTAS
-// ==========================================
 
 if ($type === 'create') {
     require_once 'C:/xampp/htdocs/Pirotecnica_Fenix/app/view/proveedores/registroProveedoresView.php';

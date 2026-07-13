@@ -9,16 +9,14 @@ use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\LoginModel;
 use Exception;
 
-// ==========================================
 // 1. INICIAR SESIÓN
-// ==========================================
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ==========================================
 // 2. CARGA DEL MODELO
-// ==========================================
+
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'LoginModel.php';
 
@@ -28,9 +26,8 @@ if (file_exists($pathModel)) {
     die("ERROR CRÍTICO: No se encuentra el archivo: " . $pathModel);
 }
 
-// ==========================================
 // 3. INICIALIZACIÓN DE CONEXIÓN Y MODELO
-// ==========================================
+
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new LoginModel($db);
@@ -38,15 +35,13 @@ try {
     die("Error de conexión: " . $e->getMessage());
 }
 
-// ==========================================
 // 4. OBTENER PARÁMETROS DE LA URL
-// ==========================================
+
 $action = $_GET['action'] ?? 'index';
 $error = $_GET['error'] ?? null;
 
-// ==========================================
 // 5. PROCESAR LOGOUT
-// ==========================================
+
 if ($action === 'logout') {
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
@@ -61,9 +56,8 @@ if ($action === 'logout') {
     exit();
 }
 
-// ==========================================
 // 6. PROCESAR LOGIN (POST)
-// ==========================================
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['usuario']) && isset($_POST['clave'])) {
     try {
         $usuario = trim($_POST['usuario']);
@@ -96,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['usuario']) && isset($
             
             error_log("Sesión iniciada: " . print_r($_SESSION, true));
             
-            // ✅ CORREGIDO: Ambos roles van al dashboard
+            // CORREGIDO: Ambos roles van al dashboard
             header('Location: ?url=dashboard');
             exit();
         } else {
@@ -112,18 +106,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['usuario']) && isset($
     }
 }
 
-// ==========================================
 // 7. VERIFICAR SI YA ESTÁ LOGUEADO
-// ==========================================
+
 if (isset($_SESSION['id_usuario']) && !empty($_SESSION['id_usuario'])) {
-    // ✅ CORREGIDO: Ambos roles van al dashboard
+    //CORREGIDO: Ambos roles van al dashboard
     header('Location: ?url=dashboard');
     exit();
 }
 
-// ==========================================
 // 8. CARGAR VISTA DE LOGIN
-// ==========================================
+
 $basePath = __DIR__ . "/../view/configuracion/";
 $viewFile = $basePath . "login.php";
 

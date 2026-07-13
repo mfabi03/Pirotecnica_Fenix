@@ -255,9 +255,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 SCRIPTS
 ========================================== -->
 <script>
-// ==========================================
+
 // FUNCIONES DE LA NOTA DE ENTRADA
-// ==========================================
+
 let detalles = [];
 
 function agregarProducto() {

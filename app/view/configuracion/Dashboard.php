@@ -164,44 +164,6 @@ if (!empty($_SESSION['error'])): ?>
                     </div>
                 </div>
             </div>
-
-            <!-- ==========================================
-                 ACCIONES RÁPIDAS
-                 ========================================== -->
-            <div class="dark-card card shadow-sm">
-                <div class="card-header py-3">
-                    <h5 class="m-0">
-                        <i class="fas fa-bolt me-2" style="color: #f39c12;"></i> Acciones Rápidas
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3 col-6">
-                            <a href="?url=productos&type=create" class="btn w-100" style="background: rgba(141, 189, 28, 0.17); color: #a78528; border: 1px solid rgba(40, 167, 69, 0.2); border-radius: 50px; padding: 12px 10px; font-size: 0.85rem; text-decoration: none; transition: all 0.3s ease;"
-                               onmouseover="this.style.background='rgba(255, 188, 4, 0.37)';"
-                               onmouseout="this.style.background='rgba(255, 188, 4, 0.37)';">
-                                <i class="fas fa-user-plus me-1"></i> Nuevo Cliente
-                            </a>
-                        </div>    
-                        <div class="col-md-3 col-6">
-                            <a href="?url=clientes&type=register" class="btn w-100" style="background: rgba(40, 167, 69, 0.15); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2); border-radius: 50px; padding: 12px 10px; font-size: 0.85rem; text-decoration: none; transition: all 0.3s ease;"
-                               onmouseover="this.style.background='rgba(40,167,69,0.25)';"
-                               onmouseout="this.style.background='rgba(40,167,69,0.15)';">
-                                <i class="fas fa-user-plus me-1"></i> Nuevo Cliente
-                            </a>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <a href="?url=notas&type=create" class="btn w-100" style="background: rgba(111, 66, 193, 0.15); color: #6f42c1; border: 1px solid rgba(111, 66, 193, 0.2); border-radius: 50px; padding: 12px 10px; font-size: 0.85rem; text-decoration: none; transition: all 0.3s ease;"
-                               onmouseover="this.style.background='rgba(111,66,193,0.25)';"
-                               onmouseout="this.style.background='rgba(111,66,193,0.15)';">
-                                <i class="fas fa-file-plus me-1"></i> Nueva Nota
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-           
         </div>
     </div>
 </div>

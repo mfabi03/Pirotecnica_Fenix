@@ -14,7 +14,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <div class="row align-items-center g-3">
                     <div class="col-xl-6">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-users text-gold me-2"></i> Registro de Clientes
+                            <i class="fas fa-users text-gold me-2"></i> lista de Clientes
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important;">
                             <i class="fas fa-database me-2"></i> 

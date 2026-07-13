@@ -16,7 +16,7 @@ class DashboardController {
             $model = new DashboardModel($this->db);
             $stats = $model->getEstadisticas();
             
-            // ✅ Pasar estadísticas a la vista
+            // Pasar estadísticas a la vista
             require_once __DIR__ . '/../View/configuracion/Dashboard.php';
             
         } catch (Exception $e) {

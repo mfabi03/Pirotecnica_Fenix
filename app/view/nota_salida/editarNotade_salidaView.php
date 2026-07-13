@@ -138,7 +138,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                     <tr data-index="<?= $index ?>">
                                                         <td class="ps-4" style="color: rgba(255,255,255,0.8);">
                                                             <?php 
-                                                                // ✅ CORREGIDO: Usar el campo correcto para el nombre del producto
+                                                                // CORREGIDO: Usar el campo correcto para el nombre del producto
                                                                 $nombreProducto = $d['descripcion'] ?? $d['nombre_producto'] ?? $d['producto_descripcion'] ?? 'Producto sin nombre';
                                                                 echo htmlspecialchars($nombreProducto);
                                                             ?>
@@ -257,7 +257,7 @@ function agregarProducto() {
         return;
     }
     
-    // ✅ OBTENER DESCRIPCIÓN CORRECTAMENTE
+    // OBTENER DESCRIPCIÓN CORRECTAMENTE
     let descripcion = option.dataset.descripcion;
     
     // Si no tiene data-descripcion, usar el texto del option

@@ -12,9 +12,8 @@ class clientesModel {
         $this->db = $db;
     }
 
-    // ==========================================
     // VALIDAR EDAD
-    // ==========================================
+
     public function validarEdad($fechaNacimiento, $edadMinima = 18) {
         try {
             $fechaActual = new \DateTime();
@@ -37,9 +36,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
     // REGISTRAR CLIENTE NATURAL
-    // ==========================================
+
     public function registrarClienteNatural($datos) {
         if (!$this->db) {
             throw new \Exception("No hay conexión a la base de datos");
@@ -113,9 +111,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
     // REGISTRAR CLIENTE JURIDICO
-    // ==========================================
+
     public function registrarClienteJuridico($datos) {
         if (!$this->db) {
             throw new \Exception("No hay conexión a la base de datos");
@@ -185,9 +182,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
     // ACTUALIZAR CLIENTE NATURAL
-    // ==========================================
+
     public function actualizarClienteNatural($id, $datos) {
         try {
             if (empty($datos['cedula'])) {
@@ -232,9 +228,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
     // ACTUALIZAR CLIENTE JURIDICO
-    // ==========================================
+
     public function actualizarClienteJuridico($id, $datos) {
         try {
             if (empty($datos['rif'])) {
@@ -280,9 +275,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
-    //  BUSCAR CLIENTES (AUTOCOMPLETADO)
-    // ==========================================
+    //  BUSCAR CLIENTES 
+
     public function buscarClientes($termino) {
         try {
             $sql = "SELECT 
@@ -319,9 +313,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
     // BUSCAR CLIENTES CON FILTRO (BÚSQUEDA GENERAL Y TIPO)
-    // ==========================================
+
     public function buscarClientesFiltrados($termino = null, $tipo = 'todos') {
         try {
             $params = [];
@@ -384,12 +377,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
-    // OBTENER TODOS LOS CLIENTES
-    // ==========================================
-    // ==========================================
-    // OBTENER TODOS LOS CLIENTES (CON TODOS LOS CAMPOS)
-    // ==========================================
+    // OBTENER TODOS LOS CLIENTES 
+
     public function obtenerClientes() {
         try {
             $sql = "SELECT 
@@ -424,9 +413,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
     // OBTENER CLIENTE POR ID
-    // ==========================================
+
     public function obtenerClientePorId($id) {
         try {
             $sql = "SELECT 
@@ -459,9 +447,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
     // ELIMINAR CLIENTE
-    // ==========================================
+
     public function eliminarCliente($id) {
         if (!$id || !is_numeric($id)) {
             throw new \Exception("ID de cliente inválido para eliminar");
@@ -525,9 +512,8 @@ class clientesModel {
         }
     }
 
-    // ==========================================
     // VALIDACIONES
-    // ==========================================
+
     public function existeCedula($cedula) {
         try {
             $sql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula";

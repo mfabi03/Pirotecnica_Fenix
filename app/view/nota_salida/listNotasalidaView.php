@@ -13,7 +13,7 @@ require_once __DIR__ . '/../header.php';
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-sign-out-alt text-gold me-2"></i> Notas de Salida
+                            <i class="fas fa-sign-out-alt text-gold me-2"></i> lista de Notas de Salida
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona las notas de salida de productos

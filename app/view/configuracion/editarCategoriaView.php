@@ -1,7 +1,7 @@
 <?php
 // app/view/configuracion/editarCategoriaView.php
 
-// ✅ VERIFICAR QUE LA VARIABLE EXISTA
+// VERIFICAR QUE LA VARIABLE EXISTA
 if (!isset($categoria) || empty($categoria)) {
     die('Categoría no encontrada');
 }
@@ -86,7 +86,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             <a href="?url=categorias" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
                                 <i class="fas fa-times me-1"></i> Cancelar
                             </a>
-                            <!-- ✅ BOTÓN DORADO -->
+                            <!-- BOTÓN DORADO -->
                             <button type="submit" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; transition: all 0.3s ease;">
                                 <i class="fas fa-save me-2"></i> Actualizar Categoría
                             </button>

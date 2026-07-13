@@ -12,9 +12,8 @@ class ProductoModel {
         $this->db = $db;
     }
 
-    // ============================================
     // OBTENER TODOS LOS PRODUCTOS
-    // ============================================
+
     public function obtenerProductos() {
         try {
             $sql = "SELECT 
@@ -37,9 +36,8 @@ class ProductoModel {
         }
     }
 
-    // ============================================
     // OBTENER PRODUCTO POR ID
-    // ============================================
+
     public function obtenerProductoPorId($id) {
         try {
             $sql = "SELECT 
@@ -62,9 +60,8 @@ class ProductoModel {
         }
     }
 
-    // ============================================
     // OBTENER CATEGORÍAS
-    // ============================================
+
     public function obtenerCategorias() {
         try {
             $sql = "SELECT id_categoria, nombre_categoria 
@@ -79,9 +76,8 @@ class ProductoModel {
         }
     }
 
-    // ============================================
     // REGISTRAR PRODUCTO
-    // ============================================
+
     public function registrarProducto($datos) {
         try {
             $sql = "INSERT INTO producto (
@@ -115,9 +111,8 @@ class ProductoModel {
         }
     }
 
-    // ============================================
     // ACTUALIZAR PRODUCTO
-    // ============================================
+
     public function actualizarProducto($id, $datos) {
         try {
             $sql = "UPDATE producto SET 
@@ -141,9 +136,8 @@ class ProductoModel {
         }
     }
 
-    // ============================================
     // VERIFICAR SI EL PRODUCTO ESTÁ ASOCIADO A NOTAS
-    // ============================================
+
     public function verificarAsociaciones($id) {
         try {
             $stmtEntrada = $this->db->prepare("SELECT COUNT(*) FROM detalle_entrada WHERE id_producto = ?");
@@ -165,9 +159,8 @@ class ProductoModel {
         }
     }
 
-    // ============================================
     // ELIMINAR PRODUCTO
-    // ============================================
+
     public function eliminarProducto($id) {
         try {
             $asociaciones = $this->verificarAsociaciones($id);
@@ -187,9 +180,8 @@ class ProductoModel {
         }
     }
 
-    // ============================================
     // BUSCAR PRODUCTOS
-    // ============================================
+
     public function buscarProductos($termino) {
         try {
             $sql = "SELECT 
@@ -213,9 +205,8 @@ class ProductoModel {
         }
     }
 
-    // ============================================
     // OBTENER RESUMEN
-    // ============================================
+
     public function getResumen() {
         try {
             $sql = "SELECT 
