@@ -47,9 +47,9 @@ unset($_SESSION['tipo_mensaje']);
 $busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 $tipo = trim((string) ($_GET['tipo'] ?? 'todos'));
 
-// ELIMINAR (vía ?url=clientes&type=delete)
+// ELIMINAR 
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'delete') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
     try {
         $id = $_POST['id_cliente'] ?? null;
         if (!$id || !is_numeric($id) || $id <= 0) {
@@ -65,27 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'delete') {
     header("Location: ?url=clientes&type=list");
     exit();
 }
-
-
-// ELIMINAR
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
-    try {
-        $id = $_POST['id_cliente'] ?? null;
-        if (!$id || !is_numeric($id) || $id <= 0) {
-            throw new Exception("ID de cliente inválido");
-        }
-        $resultado = $modelo->eliminarCliente($id);
-        $_SESSION['mensaje'] = $resultado ? "✅ Cliente eliminado exitosamente" : "No se pudo eliminar el cliente";
-        $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
-    } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al eliminar: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
-    }
-    header("Location: ?url=clientes&type=list");
-    exit();
-}
-
 
 // REGISTRO NATURAL
 

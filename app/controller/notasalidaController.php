@@ -390,8 +390,6 @@ if ($type === 'show' && $id) {
     exit();
 }
 
-//  IMPRIMIR 
-
 // EDITAR
 if ($type === 'edit' && $id) {
     try {
