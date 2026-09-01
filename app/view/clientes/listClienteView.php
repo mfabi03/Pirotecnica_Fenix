@@ -22,10 +22,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         </small>
                     </div>
                     <div class="col-xl-6">
-                        <form method="GET" class="row g-2">
+                        <form method="GET" id="formFiltros" class="row g-2">
                             <input type="hidden" name="url" value="clientes">
                             <input type="hidden" name="type" value="list">
-                            <div class="col-8">
+                            <div class="col-7">
                                 <div class="dark-search input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-search"></i>
@@ -35,7 +35,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                            value="<?= htmlspecialchars($busqueda ?? '') ?>">
                                 </div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-3">
+                                <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
+                            </div>
+                            <div class="col-2">
                                 <button class="btn btn-dark-search w-100" type="submit">
                                     <i class="fas fa-search me-1"></i> Buscar
                                 </button>
@@ -97,11 +100,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         </td>
                                         <td>
                                             <?php if (($c['tipo_cliente'] ?? '') === 'Jurídico'): ?>
-                                                <span class="badge-dark-admin">
+                                                <span class="badge bg-warning text-dark">
                                                     <i class="fas fa-building me-1"></i> Jurídico
                                                 </span>
                                             <?php else: ?>
-                                                <span class="badge-dark-user">
+                                                <span class="badge bg-primary text-white">
                                                     <i class="fas fa-user me-1"></i> Natural
                                                 </span>
                                             <?php endif; ?>

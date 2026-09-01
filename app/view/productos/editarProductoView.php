@@ -138,11 +138,12 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                                 </h6>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label for="cantidad" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cantidad (Stock) *</label>
-                                        <input type="number" name="cantidad" id="cantidad" class="form-control" 
+                                        <label for="cantidad" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cantidad (Stock)</label>
+                                        <input type="number" id="cantidad" class="form-control" 
                                                value="<?= htmlspecialchars($producto['stock'] ?? 0) ?>"
-                                               style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
-                                               min="0" required>
+                                               style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); background: #f8f9fa; color: #495057;"
+                                               min="0" disabled readonly>
+                                        <small class="form-text text-muted">El stock no se puede editar aquí. Las existencias se actualizan únicamente mediante 'Registrar Entrada' o 'Registrar Salida' (o sus anulaciones).</small>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="costo_unitario" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Costo Unitario *</label>

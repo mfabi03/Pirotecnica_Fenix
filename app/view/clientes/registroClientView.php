@@ -34,6 +34,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
     <div class="card card-custom p-4 mb-4 bg-white" style="max-width: 800px; margin: 0 auto;">
         <form method="post" action="?url=clientes&type=register<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>" class="row g-3">
+            <?php if (isset($_GET['return'])): ?>
+                <input type="hidden" name="return" value="<?= htmlspecialchars($_GET['return']) ?>">
+            <?php endif; ?>
             <input type="hidden" name="accion" value="register_natural">
 
             <!-- Cédula -->

@@ -91,8 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
-    if (isset($_GET['return'])) {
-        header("Location: ?url=" . $_GET['return'] . "&type=create");
+    $return = $_REQUEST['return'] ?? null;
+    if ($return) {
+        header("Location: ?url=" . urlencode($return) . "&type=create");
     } else {
         header("Location: ?url=clientes&type=list");
     }
@@ -127,13 +128,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
             $_SESSION['mensaje_rapido'] = "✅ Cliente registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
             
-            //  REDIRIGIR DE VUELTA (si viene de registro rápido)
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
-                exit;
-            }
-            
-            header("Location: ?url=clientes&type=list");
+                //  REDIRIGIR DE VUELTA (si viene de registro rápido)
+                $return = $_REQUEST['return'] ?? null;
+                if ($return) {
+                    header("Location: ?url=" . urlencode($return) . "&type=create");
+                    exit;
+                }
+
+                header("Location: ?url=clientes&type=list");
             exit;
         } else {
             throw new Exception("No se pudo registrar el cliente.");
@@ -142,11 +144,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
         $_SESSION['mensaje_rapido'] = "❌ " . $e->getMessage();
         $_SESSION['tipo_rapido'] = 'danger';
         
-        if (isset($_GET['return'])) {
-            header("Location: ?url=" . $_GET['return'] . "&type=create");
+        $return = $_REQUEST['return'] ?? null;
+        if ($return) {
+            header("Location: ?url=" . urlencode($return) . "&type=create");
             exit;
         }
-        
+
         header("Location: ?url=clientes&type=list");
         exit;
     }
@@ -176,8 +179,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
-    if (isset($_GET['return'])) {
-        header("Location: ?url=" . urlencode($_GET['return']) . "&type=create");
+    $return = $_REQUEST['return'] ?? null;
+    if ($return) {
+        header("Location: ?url=" . urlencode($return) . "&type=create");
     } else {
         header("Location: ?url=clientes&type=list");
     }
@@ -264,10 +268,22 @@ if ($type === 'list' || $type === '') {
     $tipo_param = $tipo ?? 'todos';
 
     if ($busqueda_trim === '' && ($tipo_param === 'todos' || $tipo_param === '')) {
-        $clientes = $modelo->obtenerClientes();
+        $clientes_full = $modelo->obtenerClientes();
     } else {
-        $clientes = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
+        $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
     }
+
+    // Paginación (client-side slice cuando el modelo devuelve array)
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+    $total_registros = is_array($clientes_full) ? count($clientes_full) : 0;
+    $offset = ($pagina - 1) * $por_pagina;
+    if ($por_pagina > 0) {
+        $clientes = array_slice($clientes_full, $offset, $por_pagina);
+    } else {
+        $clientes = $clientes_full;
+    }
+
     require_once $basePath . "listClienteView.php";
 } else {
     switch ($type) {

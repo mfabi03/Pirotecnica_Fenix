@@ -28,10 +28,10 @@ if (file_exists($jsonPath)) {
                         </small>
                     </div>
                     <div class="col-xl-6">
-                        <form method="GET" class="row g-2">
+                        <form method="GET" id="formFiltros" class="row g-2">
                             <input type="hidden" name="url" value="productos">
                             <input type="hidden" name="type" value="list">
-                            <div class="col-8">
+                            <div class="col-7">
                                 <div class="dark-search input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-search"></i>
@@ -41,7 +41,10 @@ if (file_exists($jsonPath)) {
                                            value="<?= htmlspecialchars($_GET['buscar'] ?? '') ?>">
                                 </div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-3">
+                                <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
+                            </div>
+                            <div class="col-2">
                                 <button class="btn btn-dark-search w-100" type="submit">
                                     <i class="fas fa-search me-1"></i> Buscar
                                 </button>

@@ -166,11 +166,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['tipo_rapido'] = 'success';
                 
                 // REDIRIGIR DE VUELTA (si viene de registro rápido)
-                if (isset($_GET['return'])) {
-                    header("Location: ?url=" . $_GET['return'] . "&type=create");
+                $return = $_REQUEST['return'] ?? null;
+                if ($return) {
+                    header("Location: ?url=" . urlencode($return) . "&type=create");
                     exit;
                 }
-                
+
                 header("Location: ?url=notasalida&type=create");
                 exit;
             } else {
@@ -180,8 +181,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Exception $e) {
             $_SESSION['error'] = '❌ ' . $e->getMessage();
             
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
             header("Location: ?url=notasalida&type=create");
@@ -241,11 +243,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['tipo_rapido'] = 'success';
                 
                 // REDIRIGIR DE VUELTA (si viene de registro rápido)
-                if (isset($_GET['return'])) {
-                    header("Location: ?url=" . $_GET['return'] . "&type=create");
+                $return = $_REQUEST['return'] ?? null;
+                if ($return) {
+                    header("Location: ?url=" . urlencode($return) . "&type=create");
                     exit;
                 }
-                
+
                 header("Location: ?url=notasalida&type=create");
                 exit;
             }
@@ -253,8 +256,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Exception $e) {
             $_SESSION['error'] = '❌ ' . $e->getMessage();
             
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
             header("Location: ?url=notasalida&type=create");
@@ -390,31 +394,21 @@ if ($type === 'show' && $id) {
     exit();
 }
 
-// EDITAR
-if ($type === 'edit' && $id) {
-    try {
-        $nota = $modelo->obtenerNotaPorId($id);
-        if (!$nota) {
-            die("ERROR: Nota de salida no encontrada.");
-        }
-        $productos = $productoModel->obtenerProductos();
-        $clientes = $clienteModel->obtenerClientes();
-    } catch (Exception $e) {
-        die("ERROR al obtener nota: " . $e->getMessage());
-    }
-    
-    $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . "editarNotade_salidaView.php";
-    if (!file_exists($viewFile)) {
-        die("ERROR: No se encuentra editarNotade_salidaView.php");
-    }
-    require_once $viewFile;
-    exit();
-}
+// La funcionalidad de edición fue eliminada intencionalmente.
 
 // LISTAR
 try {
-    $notas = $modelo->listarNotasSalida();
+    $notas_full = $modelo->listarNotasSalida();
     $resumen = $modelo->getResumen();
+
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset = ($pagina - 1) * $por_pagina;
+    if ($por_pagina > 0) {
+        $notas = array_slice($notas_full, $offset, $por_pagina);
+    } else {
+        $notas = $notas_full;
+    }
     
     if (isset($_SESSION['mensaje'])) {
         $success = $_SESSION['mensaje'];

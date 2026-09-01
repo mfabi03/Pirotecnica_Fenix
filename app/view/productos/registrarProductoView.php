@@ -62,10 +62,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
                 
                 <div class="card-body">
-                    <form method="POST" action="?url=productos&type=store<?= isset($_GET['return']) ? '&return=' . $_GET['return'] : '' ?>">
+                    <form method="POST" action="?url=productos&type=store<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>">
                         
                         <?php if (isset($_GET['return'])): ?>
                             <input type="hidden" name="registro_rapido" value="1">
+                            <input type="hidden" name="return" value="<?= htmlspecialchars($_GET['return']) ?>">
                         <?php endif; ?>
                         
                         <div class="row g-3">

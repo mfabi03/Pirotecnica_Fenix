@@ -192,13 +192,16 @@ case '':
         require_once __DIR__ . '/app/Controller/NotaSalidaController.php';
         break;
     
-    // ==========================================
-    // 📊 REPORTES (Requiere autenticación)
-    // ==========================================
-    //case 'reportes':
-    //    AuthMiddleware::requireAuth();
-    //    require_once __DIR__ . '/app/Controller/ReportesController.php';
-    //    break;
+   // ==========================================
+   // 📊 REPORTES
+   // ==========================================
+    case 'reportes':
+    AuthMiddleware::requireAuth();
+    require_once __DIR__ . '/app/Controller/ReportesController.php';
+    $reporteController = new App\Pirotecnicafenix\Controller\ReportesController($pdo);
+    $reporteController->index();
+    break;
+    
     
     // ==========================================
     // 404 - PÁGINA NO ENCONTRADA

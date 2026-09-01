@@ -12,6 +12,20 @@ class notasalidaModel {
         $this->db = $db;
     }
 
+    /**
+     * Comprueba si una tabla tiene una columna específica en la BD actual
+     */
+    private function hasColumn($table, $column) {
+        try {
+            $sql = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':table' => $table, ':column' => $column]);
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
     // OBTENER PRODUCTOS
 
     public function obtenerProductosConCategoria() {
@@ -454,20 +468,42 @@ class notasalidaModel {
                 $stmtDet = $this->db->prepare($sqlDet);
                 $stmtDet->execute([$id]);
                 $detalles = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
-                
+
                 $sqlRestaurar = "UPDATE producto SET cantidad = cantidad + ? WHERE id_producto = ?";
                 $stmtRestaurar = $this->db->prepare($sqlRestaurar);
                 foreach ($detalles as $d) {
                     $stmtRestaurar->execute([$d['cantidad'], $d['id_producto']]);
                 }
-                
-                $sqlDeleteDet = "DELETE FROM detalle_salida WHERE id_nota_salida = ?";
-                $stmtDeleteDet = $this->db->prepare($sqlDeleteDet);
-                $stmtDeleteDet->execute([$id]);
-                
-                $sqlDeleteNota = "DELETE FROM nota_de_salida WHERE id_nota_salida = ?";
-                $stmtDeleteNota = $this->db->prepare($sqlDeleteNota);
-                $stmtDeleteNota->execute([$id]);
+
+                // Marcar como anulado si existe la columna 'anulado' en nota_de_salida; si no, eliminar (legacy)
+                if ($this->hasColumn('nota_de_salida', 'anulado')) {
+                    $setParts = ['anulado = 1'];
+                    $params = [':id' => $id];
+                    if ($this->hasColumn('nota_de_salida', 'motivo_anulacion')) {
+                        $setParts[] = 'motivo_anulacion = :motivo';
+                        $params[':motivo'] = '';
+                    }
+                    if ($this->hasColumn('nota_de_salida', 'id_usuario_anulo')) {
+                        $setParts[] = 'id_usuario_anulo = :id_usuario_anulo';
+                        $params[':id_usuario_anulo'] = null;
+                    }
+                    if ($this->hasColumn('nota_de_salida', 'fecha_anulacion')) {
+                        $setParts[] = 'fecha_anulacion = NOW()';
+                    }
+
+                    $sqlUpd = "UPDATE nota_de_salida SET " . implode(', ', $setParts) . " WHERE id_nota_salida = :id";
+                    $stmtUpd = $this->db->prepare($sqlUpd);
+                    $stmtUpd->execute($params);
+                    // conservar detalles para trazabilidad
+                } else {
+                    $sqlDeleteDet = "DELETE FROM detalle_salida WHERE id_nota_salida = ?";
+                    $stmtDeleteDet = $this->db->prepare($sqlDeleteDet);
+                    $stmtDeleteDet->execute([$id]);
+
+                    $sqlDeleteNota = "DELETE FROM nota_de_salida WHERE id_nota_salida = ?";
+                    $stmtDeleteNota = $this->db->prepare($sqlDeleteNota);
+                    $stmtDeleteNota->execute([$id]);
+                }
                 
                 $this->db->commit();
                 return true;

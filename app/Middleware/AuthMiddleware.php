@@ -3,6 +3,7 @@ namespace App\Pirotecnicafenix\Middleware;
 
 class AuthMiddleware
 {
+    //averigua que el usuario este logueado 
     public static function isLoggedIn(): bool
     {
         return isset($_SESSION['id_usuario']) && !empty($_SESSION['id_usuario']);
@@ -38,6 +39,7 @@ class AuthMiddleware
             exit();
         }
 
+// verifica que el usuario sea administrador 
         if (!self::isAdmin()) {
             $_SESSION['error'] = 'Acceso denegado. Se requieren permisos de administrador.';
             header('Location: ?url=dashboard');

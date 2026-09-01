@@ -115,17 +115,17 @@ class ProductoModel {
 
     public function actualizarProducto($id, $datos) {
         try {
+            // NOTA: El campo 'cantidad' (stock) NO se actualiza aquí. Las existencias
+            // deben gestionarse mediante notas de entrada/salida para mantener trazabilidad.
             $sql = "UPDATE producto SET 
                         descripcion = :descripcion,
-                        cantidad = :cantidad,
                         costo_unitario = :costo_unitario,
                         id_categoria = :id_categoria
                     WHERE id_producto = :id";
-            
+
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':descripcion' => $datos['descripcion'],
-                ':cantidad' => $datos['cantidad'],
                 ':costo_unitario' => $datos['costo_unitario'],
                 ':id_categoria' => $datos['id_categoria'] ?? null,
                 ':id' => $id

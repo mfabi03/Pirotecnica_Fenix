@@ -120,25 +120,27 @@ $proveedorProcessor = new ProveedorProcessor($db);
 // VALIDADOR DE PRODUCTOS
 
 class ProductoValidator {
-    public static function validarDatos($datos) {
+    public static function validarDatos($datos, $requireCantidad = true) {
         $errores = [];
-        
+
         if (empty($datos['descripcion'])) {
             $errores[] = "La descripción del producto es obligatoria.";
         }
-        
-        if (empty($datos['cantidad']) || $datos['cantidad'] <= 0) {
-            $errores[] = "La cantidad debe ser mayor a 0.";
+
+        if ($requireCantidad) {
+            if (!isset($datos['cantidad']) || $datos['cantidad'] === '' || $datos['cantidad'] < 0) {
+                $errores[] = "La cantidad debe ser mayor o igual a 0.";
+            }
         }
-        
+
         if (empty($datos['costo_unitario']) || $datos['costo_unitario'] <= 0) {
             $errores[] = "El costo unitario debe ser mayor a 0.";
         }
-        
+
         if (empty($datos['id_categoria']) || $datos['id_categoria'] <= 0) {
             $errores[] = "Debe seleccionar una categoría válida.";
         }
-        
+
         return $errores;
     }
 }
@@ -179,12 +181,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             
             // REDIRIGIR DE VUELTA (si viene de registro rápido)
-            if (isset($_GET['return'])) {
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
                 $_SESSION['nuevo_producto_id'] = $id_producto;
                 $_SESSION['nuevo_producto_nombre'] = $datos['descripcion'];
                 $_SESSION['mensaje_rapido'] = "✅ Producto '{$datos['descripcion']}' registrado exitosamente";
                 $_SESSION['tipo_rapido'] = 'success';
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
             
@@ -233,20 +236,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['tipo_rapido'] = 'success';
             
             // REDIRIGIR DE VUELTA (si viene de registro rápido)
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
-            
+
             header("Location: ?url=productos&type=list");
             exit;
             
         } catch (Exception $e) {
             $_SESSION['mensaje_rapido'] = "❌ " . $e->getMessage();
             $_SESSION['tipo_rapido'] = 'danger';
-            
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
             header("Location: ?url=productos&type=list");
@@ -260,14 +265,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
             
+            // No permitir modificar la cantidad (stock) desde el formulario de edición.
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
-                'cantidad' => intval($_POST['cantidad'] ?? 0),
                 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
-            
-            $errores = ProductoValidator::validarDatos($datos);
+
+            // Validar sin requerir el campo cantidad (se actualiza solo por entradas/salidas)
+            $errores = ProductoValidator::validarDatos($datos, false);
             if (!empty($errores)) {
                 throw new Exception(implode(' ', $errores));
             }
@@ -408,9 +414,32 @@ try {
     }
     
     $sql .= " ORDER BY p.id_producto DESC";
-    
-    $stmt = $db->prepare($sql);
-    $stmt->execute($params);
+
+    // Paginación: calcular total y aplicar LIMIT/OFFSET
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset = ($pagina - 1) * $por_pagina;
+
+    // Contar total con la misma condición
+    $sqlCount = preg_replace('/SELECT\s+[\s\S]*?FROM\s+producto\s+p/i', 'SELECT COUNT(*) AS cnt FROM producto p', $sqlBase);
+    if (!empty($buscar)) {
+        $sqlCount .= " WHERE p.descripcion LIKE :termino";
+    }
+    $stmtCount = $db->prepare($sqlCount);
+    $stmtCount->execute($params);
+    $totalProductos = (int) ($stmtCount->fetchColumn() ?? 0);
+
+    if ($por_pagina > 0) {
+        $sql .= " LIMIT :limit OFFSET :offset";
+        $stmt = $db->prepare($sql);
+        foreach ($params as $k => $v) $stmt->bindValue($k, $v);
+        $stmt->bindValue(':limit', $por_pagina, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+    } else {
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+    }
     $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     foreach ($productos as &$producto) {

@@ -175,11 +175,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['tipo_rapido'] = 'success';
                 
                 // REDIRIGIR DE VUELTA (si viene de registro rápido)
-                if (isset($_GET['return'])) {
-                    header("Location: ?url=" . $_GET['return'] . "&type=create");
+                $return = $_REQUEST['return'] ?? null;
+                if ($return) {
+                    header("Location: ?url=" . urlencode($return) . "&type=create");
                     exit;
                 }
-                
+
                 header("Location: ?url=notaentrada&type=create");
                 exit;
             } else {
@@ -189,8 +190,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Exception $e) {
             $_SESSION['error'] = '❌ ' . $e->getMessage();
             
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
             header("Location: ?url=notaentrada&type=create");
@@ -227,11 +229,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['tipo_rapido'] = 'success';
                 
                 // REDIRIGIR DE VUELTA (si viene de registro rápido)
-                if (isset($_GET['return'])) {
-                    header("Location: ?url=" . $_GET['return'] . "&type=create");
+                $return = $_REQUEST['return'] ?? null;
+                if ($return) {
+                    header("Location: ?url=" . urlencode($return) . "&type=create");
                     exit;
                 }
-                
+
                 header("Location: ?url=notaentrada&type=create");
                 exit;
             } else {
@@ -241,8 +244,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Exception $e) {
             $_SESSION['error'] = '❌ ' . $e->getMessage();
             
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
             header("Location: ?url=notaentrada&type=create");
@@ -331,8 +335,17 @@ if ($type === 'show' && $id) {
 
 // LISTAR
 try {
-    $notas = $modelo->obtenerNotasEntrada();
+    $notas_full = $modelo->obtenerNotasEntrada();
     $resumen = $modelo->getResumen();
+
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset = ($pagina - 1) * $por_pagina;
+    if ($por_pagina > 0) {
+        $notas = array_slice($notas_full, $offset, $por_pagina);
+    } else {
+        $notas = $notas_full;
+    }
     
     if (isset($_SESSION['mensaje'])) {
         $success = $_SESSION['mensaje'];

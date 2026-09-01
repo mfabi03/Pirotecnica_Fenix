@@ -20,7 +20,12 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             Gestiona las notas de entrada de productos
                         </small>
                     </div>
-                    <div class="col-auto">
+                    <div class="col-auto d-flex align-items-center">
+                        <form method="GET" class="me-3">
+                            <input type="hidden" name="url" value="notaentrada">
+                            <input type="hidden" name="type" value="list">
+                            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
+                        </form>
                         <a href="?url=notaentrada&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Nota de Entrada
                         </a>
@@ -183,11 +188,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <td>
                                             <?php if ($anulada): ?>
                                                 <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                                    <i class="fas fa-ban me-1"></i> ANULADA
+                                                    <i class="fas fa-ban me-1"></i> inactivo
                                                 </span>
                                             <?php else: ?>
                                                 <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                                    <i class="fas fa-check-circle me-1"></i> ACTIVA
+                                                    <i class="fas fa-check-circle me-1"></i> activo
                                                 </span>
                                             <?php endif; ?>
                                         </td>

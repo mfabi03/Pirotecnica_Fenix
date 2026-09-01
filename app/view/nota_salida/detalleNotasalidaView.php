@@ -65,7 +65,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     <div class="text-center mb-4">
                         <?php if (($nota['estado'] ?? 'ACTIVA') === 'ANULADA'): ?>
                             <span class="badge" style="background: #dc3545; color: #fff; padding: 10px 24px; border-radius: 50px; font-size: 1.1rem;">
-                                <i class="fas fa-times-circle me-2"></i> ANULADA
+                                <i class="fas fa-times-circle me-2"></i> inactivo
                             </span>
                             <p style="color: #6c757d; margin-top: 8px; font-size: 0.85rem;">
                                 <i class="fas fa-clock me-1"></i>
@@ -73,7 +73,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             </p>
                         <?php else: ?>
                             <span class="badge" style="background: #28a745; color: #fff; padding: 10px 24px; border-radius: 50px; font-size: 1.1rem;">
-                                <i class="fas fa-check-circle me-2"></i> ACTIVA
+                                <i class="fas fa-check-circle me-2"></i> activo
                             </span>
                         <?php endif; ?>
                     </div>

@@ -155,7 +155,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                     <option value="">No hay productos disponibles</option>
                                                 <?php endif; ?>
                                             </select>
-                                            <a href="?url=productos&type=create&return=notaentrada" 
+                                                                                        <a href="?url=productos&type=create&return=notaentrada" 
                                                class="btn" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
                                                title="Registrar nuevo producto">
                                                 <i class="fas fa-plus"></i>

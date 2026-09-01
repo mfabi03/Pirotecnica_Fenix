@@ -22,6 +22,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         </small>
                     </div>
                     <div class="col-xl-6 text-end">
+                        <form method="GET" class="d-inline-block me-2">
+                            <input type="hidden" name="url" value="categorias">
+                            <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
+                        </form>
                         <a href="?url=categorias&action=registrar" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Categoría
                         </a>

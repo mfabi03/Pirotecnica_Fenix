@@ -19,11 +19,16 @@ require_once __DIR__ . '/../header.php';
                             Gestiona las notas de salida de productos
                         </small>
                     </div>
-                    <div class="col-auto">
-                        <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
-                            <i class="fas fa-plus me-1"></i> Registrar Nota
-                        </a>
-                    </div>
+                        <div class="col-auto d-flex align-items-center">
+                            <form method="GET" class="me-3">
+                                <input type="hidden" name="url" value="notasalida">
+                                <input type="hidden" name="type" value="list">
+                                <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
+                            </form>
+                            <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                                <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
+                            </a>
+                        </div>
                 </div>
             </div>
 
@@ -163,11 +168,7 @@ require_once __DIR__ . '/../header.php';
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <!-- Editar -->
-                                                <a href="?url=notasalida&type=edit&id=<?= $n['id_nota_salida'] ?>" 
-                                                   class="btn-action-circle btn-edit" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
+                                                <!-- Editar (eliminado por configuración) -->
                                                 
                                                 <!-- Eliminar -->
                                                 <button type="button" class="btn-action-circle btn-delete" 

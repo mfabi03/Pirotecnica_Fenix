@@ -63,6 +63,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 
                 <div class="card-body">
                     <form method="POST" action="?url=proveedores&type=store<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>">
+                        <?php if (isset($_GET['return'])): ?>
+                            <input type="hidden" name="return" value="<?= htmlspecialchars($_GET['return']) ?>">
+                        <?php endif; ?>
                         
                         <div class="row g-3">
                             

@@ -54,13 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $resultado = $modelo->registrarProveedor($datos);
                 if ($resultado) {
                     // REDIRIGIR DE VUELTA (si viene de registro rápido)
-                    if (isset($_GET['return'])) {
+                    $return = $_REQUEST['return'] ?? null;
+                    if ($return) {
                         $id_proveedor = $db->lastInsertId();
                         $_SESSION['nuevo_proveedor_id'] = $id_proveedor;
                         $_SESSION['nuevo_proveedor_nombre'] = $datos['razon_social'];
                         $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datos['razon_social']}' registrado exitosamente";
                         $_SESSION['tipo_rapido'] = 'success';
-                        header("Location: ?url=" . $_GET['return'] . "&type=create");
+                        header("Location: ?url=" . urlencode($return) . "&type=create");
                         exit;
                     }
                     
@@ -107,11 +108,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['tipo_rapido'] = 'success';
             
             // REDIRIGIR DE VUELTA (si viene de registro rápido)
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
-            
+
             header("Location: ?url=proveedores&type=list");
             exit;
             
@@ -119,8 +121,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensaje_rapido'] = "❌ " . $e->getMessage();
             $_SESSION['tipo_rapido'] = 'danger';
             
-            if (isset($_GET['return'])) {
-                header("Location: ?url=" . $_GET['return'] . "&type=create");
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
             header("Location: ?url=proveedores&type=list");
@@ -211,10 +214,21 @@ if ($type === 'show') {
 try {
     $buscar = trim($_GET['buscar'] ?? '');
     if (!empty($buscar)) {
-        $proveedores = $modelo->buscarProveedores($buscar);
+        $proveedores_full = $modelo->buscarProveedores($buscar);
     } else {
-        $proveedores = $modelo->obtenerProveedores();
+        $proveedores_full = $modelo->obtenerProveedores();
     }
+
+    // Paginación simple (array slice)
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset = ($pagina - 1) * $por_pagina;
+    if ($por_pagina > 0) {
+        $proveedores = array_slice($proveedores_full, $offset, $por_pagina);
+    } else {
+        $proveedores = $proveedores_full;
+    }
+
     if (isset($_SESSION['mensaje'])) {
         $success = $_SESSION['mensaje'];
         unset($_SESSION['mensaje']);

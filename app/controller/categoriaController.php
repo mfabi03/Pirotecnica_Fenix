@@ -148,9 +148,18 @@ $basePath = __DIR__ . "/../view/configuracion/";
 // === LISTA === (Visible para todos)
 if ($action === 'lista' || $action === '' || $action === 'list') {
     if (!empty($busqueda)) {
-        $categorias = $modelo->buscarCategorias($busqueda);
+        $categorias_full = $modelo->buscarCategorias($busqueda);
     } else {
-        $categorias = $modelo->obtenerCategorias();
+        $categorias_full = $modelo->obtenerCategorias();
+    }
+
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset = ($pagina - 1) * $por_pagina;
+    if ($por_pagina > 0) {
+        $categorias = array_slice($categorias_full, $offset, $por_pagina);
+    } else {
+        $categorias = $categorias_full;
     }
     
     if (!is_array($categorias)) {
