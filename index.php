@@ -87,37 +87,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $url === 'login' && isset($_POST['u
 // 10. RUTAS DE LOS MÓDULOS
 // ==========================================
 
-// NOTA: El middleware se ejecuta DENTRO de cada caso, no antes del switch
-
 switch ($url) {
     
     // ==========================================
-    // 🏠 MAIN (BIENVENIDA) - PÁGINA PRINCIPAL
+    // 🏠 MAIN (BIENVENIDA)
     // ==========================================
-case 'main':
-case '':
-    if (isLoggedIn()) {
-        // CORREGIDO: Ambos roles van al dashboard
-        header('Location: ?url=dashboard');
-        exit();
-    }
-    require_once __DIR__ . '/app/view/configuracion/main.php';
-    break;
+    case 'main':
+    case '':
+        if (isLoggedIn()) {
+            header('Location: ?url=dashboard');
+            exit();
+        }
+        require_once __DIR__ . '/app/view/configuracion/main.php';
+        break;
+
     // ==========================================
     // 🔐 LOGIN
     // ==========================================
     case 'login':
         if (isLoggedIn()) {
-            if (getUserRole() === 1) {
-                header('Location: ?url=usuarios');
-            } else {
-                header('Location: ?url=dashboard');
-            }
+            header('Location: ?url=dashboard');
             exit();
         }
         require_once __DIR__ . '/app/Controller/LoginController.php';
         break;
-    
+
     // ==========================================
     // 📊 DASHBOARD
     // ==========================================
@@ -127,7 +121,55 @@ case '':
         $dashboardController = new DashboardController($pdo);
         $dashboardController->index();
         break;
-    
+
+    // ==========================================
+    // 👥 CLIENTES
+    // ==========================================
+    case 'clientes':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/clientesController.php';
+        break;
+
+    // ==========================================
+    // 📤 NOTA DE SALIDA
+    // ==========================================
+    case 'notasalida':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/notasalidaController.php';
+        break;
+
+    // ==========================================
+    // 📥 NOTA DE ENTRADA
+    // ==========================================
+    case 'notaentrada':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/notaentradaController.php';
+        break;
+
+    // ==========================================
+    // 📦 PRODUCTOS
+    // ==========================================
+    case 'productos':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/productosController.php';
+        break;
+
+    // ==========================================
+    // 🚚 PROVEEDORES
+    // ==========================================
+    case 'proveedores':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/proveedoresController.php';
+        break;
+
+    // ==========================================
+    // 🏷️ CATEGORÍAS
+    // ==========================================
+    case 'categorias':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/CategoriaController.php';
+        break;
+
     // ==========================================
     // 👤 USUARIOS (Solo Admin)
     // ==========================================
@@ -135,74 +177,34 @@ case '':
         AuthMiddleware::requireAdmin();
         require_once __DIR__ . '/app/Controller/UsuarioController.php';
         break;
-    
+
     // ==========================================
     // 🔑 ROLES (Solo Admin)
     // ==========================================
-    //case 'roles':
-    //   AuthMiddleware::requireAdmin();
-    //   require_once __DIR__ . '/app/Controller/RolController.php';
-    //    break;
-    
-    // ==========================================
-    // 🏷️ CATEGORÍAS (Requiere autenticación)
-    // ==========================================
-    case 'categorias':
-        AuthMiddleware::requireAuth();
-        require_once __DIR__ . '/app/Controller/CategoriaController.php';
+    case 'roles':
+        AuthMiddleware::requireAdmin();
+        require_once __DIR__ . '/app/Controller/RolController.php';
         break;
-    
+
     // ==========================================
-    // 📦 PRODUCTOS (Requiere autenticación)
+    // 📊 REPORTES
     // ==========================================
-    case 'productos':
-        AuthMiddleware::requireAuth();
-        require_once __DIR__ . '/app/Controller/ProductosController.php';
-        break;
-    
-    // ==========================================
-    // 🚚 PROVEEDORES (Requiere autenticación)
-    // ==========================================
-    case 'proveedores':
-        AuthMiddleware::requireAuth();
-        require_once __DIR__ . '/app/Controller/ProveedoresController.php';
-        break;
-    
-    // ==========================================
-    // 👥 CLIENTES (Requiere autenticación)
-    // ==========================================
-    case 'clientes':
-        AuthMiddleware::requireAuth();
-        require_once __DIR__ . '/app/Controller/ClientesController.php';
-        break;
-    
-    // ==========================================
-    // 📥 NOTA DE ENTRADA (Requiere autenticación)
-    // ==========================================
-    case 'notaentrada':
-        AuthMiddleware::requireAuth();
-        require_once __DIR__ . '/app/Controller/NotaEntradaController.php';
-        break;
-    
-    // ==========================================
-    // 📤 NOTA DE SALIDA (Requiere autenticación)
-    // ==========================================
-    case 'notasalida':
-        AuthMiddleware::requireAuth();
-        require_once __DIR__ . '/app/Controller/NotaSalidaController.php';
-        break;
-    
-   // ==========================================
-   // 📊 REPORTES
-   // ==========================================
     case 'reportes':
-    AuthMiddleware::requireAuth();
-    require_once __DIR__ . '/app/Controller/ReportesController.php';
-    $reporteController = new App\Pirotecnicafenix\Controller\ReportesController($pdo);
-    $reporteController->index();
-    break;
-    
-    
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/ReportesController.php';
+        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
+        $reportesController->index();
+        break;
+
+    // ==========================================
+    // 📊 EXPORTAR CSV (REPORTES)
+    // ==========================================
+    case 'exportar_csv':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/ReportesController.php';
+        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
+        $reportesController->exportarCSV();
+
     // ==========================================
     // 404 - PÁGINA NO ENCONTRADA
     // ==========================================

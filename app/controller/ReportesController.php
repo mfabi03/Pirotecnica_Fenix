@@ -40,13 +40,46 @@ class ReportesController {
         $totalPaginas = ceil($totalRegistros / $porPagina);
         $paginaActual = $pagina;
         $porPaginaActual = $porPagina;
-        $totalEntradas = $totalesGlobales['total_entradas'];
-        $totalVentas = $totalesGlobales['total_salidas'];
+        $totalEntradas = $totalesGlobales['total_entradas'] ?? 0;
+        $totalSalidas = $totalesGlobales['total_salidas'] ?? 0;
 
         // Pasar $db a la vista para obtener categorías
         $db = $this->db;
 
         // Cargar vista
         require_once __DIR__ . '/../view/reportes/reportesView.php';
+    }
+
+    /**
+     * Exportar a CSV (Excel)
+     */
+    public function exportarCSV() {
+        $movimientos = $this->modelo->obtenerMovimientosDiarios(null, null, null, null, null, 999999, 0);
+        
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="reporte_movimientos_' . date('Y-m-d') . '.csv"');
+        
+        $output = fopen('php://output', 'w');
+        fwrite($output, "\xEF\xBB\xBF");
+        fputcsv($output, ['Producto', 'Tipo de Movimiento', 'Cantidad', 'Costo Unitario', 'Fecha y Hora', 'Responsable']);
+        
+        foreach ($movimientos as $m) {
+            $cantidad = $m['cantidad'];
+            if ($m['tipo_movimiento'] === 'Salida') {
+                $cantidad = '-' . abs($cantidad);
+            }
+            
+            fputcsv($output, [
+                $m['nombre_producto'],
+                $m['tipo_movimiento'],
+                $cantidad,
+                $m['costo_proveedor'] ?? 0,
+                $m['fecha_movimiento'],
+                $m['usuario_activo']
+            ]);
+        }
+        
+        fclose($output);
+        exit();
     }
 }
