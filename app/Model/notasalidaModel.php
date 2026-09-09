@@ -35,7 +35,6 @@ class notasalidaModel {
                         p.id_producto, 
                         p.descripcion, 
                         p.cantidad AS stock,
-                        p.costo_unitario,
                         c.nombre_categoria,
                         c.id_categoria
                     FROM producto p
@@ -89,7 +88,7 @@ class notasalidaModel {
     }
 
     /**
-     * REGISTRAR SALIDA (CON COSTO GUARDADO EN detalle_salida)
+     * REGISTRAR SALIDA
      */
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
@@ -147,34 +146,23 @@ class notasalidaModel {
                 
                 $idNota = $this->db->lastInsertId();
                 
-                // 🔥 INSERTAR DETALLES CON COSTO UNITARIO
                 $sqlDetalle = "INSERT INTO detalle_salida (
                                   id_nota_salida, 
                                   id_producto, 
-                                  cantidad,
-                                  costo_unitario
-                              ) VALUES (?, ?, ?, ?)";
+                                  cantidad
+                              ) VALUES (?, ?, ?)";
                 $stmtDetalle = $this->db->prepare($sqlDetalle);
                 
                 $sqlUpdateStock = "UPDATE producto SET cantidad = cantidad - ? WHERE id_producto = ?";
                 $stmtUpdate = $this->db->prepare($sqlUpdateStock);
                 
                 foreach ($detalles as $d) {
-                    // 🔥 OBTENER EL COSTO ACTUAL DEL PRODUCTO
-                    $sqlCosto = "SELECT costo_unitario FROM producto WHERE id_producto = ?";
-                    $stmtCosto = $this->db->prepare($sqlCosto);
-                    $stmtCosto->execute([$d['id_producto']]);
-                    $costoUnitario = $stmtCosto->fetchColumn();
-                    
-                    // Insertar detalle CON EL COSTO
                     $stmtDetalle->execute([
                         $idNota,
                         $d['id_producto'],
-                        $d['cantidad'],
-                        $costoUnitario  // ✅ GUARDAMOS EL COSTO
+                        $d['cantidad']
                     ]);
                     
-                    // Descontar stock
                     $stmtUpdate->execute([
                         $d['cantidad'],
                         $d['id_producto']
@@ -263,8 +251,7 @@ class notasalidaModel {
                 $sqlProductos = "SELECT 
                                     p.descripcion AS producto,
                                     c.nombre_categoria AS categoria,
-                                    ds.cantidad,
-                                    ds.costo_unitario
+                                    ds.cantidad
                                 FROM detalle_salida ds
                                 JOIN producto p ON ds.id_producto = p.id_producto
                                 LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
@@ -353,7 +340,6 @@ class notasalidaModel {
                             ds.id_detalle_salida,
                             ds.id_producto,
                             ds.cantidad,
-                            ds.costo_unitario,
                             p.descripcion AS nombre_producto,
                             c.nombre_categoria
                         FROM detalle_salida ds
