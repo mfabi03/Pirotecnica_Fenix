@@ -6,9 +6,7 @@ require_once __DIR__ . '/../header.php';
     <div class="row">
         <div class="col-md-9 col-lg-10">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -19,22 +17,61 @@ require_once __DIR__ . '/../header.php';
                             Gestiona las notas de salida de productos
                         </small>
                     </div>
-                        <div class="col-auto d-flex align-items-center">
-                            <form method="GET" class="me-3">
-                                <input type="hidden" name="url" value="notasalida">
-                                <input type="hidden" name="type" value="list">
-                                <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
-                            </form>
-                            <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
-                                <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
-                            </a>
-                        </div>
+                    <div class="col-auto d-flex align-items-center">
+                        <form method="GET" class="me-3">
+                            <input type="hidden" name="url" value="notasalida">
+                            <input type="hidden" name="type" value="list">
+                            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
+                        </form>
+                        <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                            <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- FILTRO DE BÚSQUEDA -->
+            <div class="card shadow-sm p-3 mb-4 bg-white">
+                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                    <input type="hidden" name="url" value="notasalida">
+                    <input type="hidden" name="type" value="list">
+                    
+                    <div class="col-md-8">
+                        <input type="text" name="busqueda" class="form-control" 
+                               list="listaNotasSalida"
+                               placeholder="Buscar por cliente, encargado o ID..."
+                               value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
+                        <datalist id="listaNotasSalida">
+                            <?php if (isset($notas) && is_array($notas)): ?>
+                                <?php foreach ($notas as $n): 
+                                    $nombreCliente = !empty($n['cliente_razon_social']) 
+                                        ? $n['cliente_razon_social'] 
+                                        : trim(($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? ''));
+                                    $nombreEncargado = trim(($n['usuario_nombre'] ?? '') . ' ' . ($n['usuario_apellido'] ?? ''));
+                                ?>
+                                    <option value="<?= htmlspecialchars($nombreCliente) ?>">
+                                    <option value="<?= htmlspecialchars($nombreEncargado) ?>">
+                                    <option value="<?= $n['id_nota_salida'] ?>">
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </datalist>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-gold w-100">
+                            <i class="fas fa-search me-1"></i> Buscar
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <a href="?url=notasalida&type=list" class="btn btn-secondary w-100">
+                            <i class="fas fa-times me-1"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- MENSAJES -->
             <?php if (isset($success)): ?>
                 <div class="alert dark-alert-success alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -55,9 +92,7 @@ require_once __DIR__ . '/../header.php';
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 CUADROS DE RESUMEN - ESTILO OSCURO
-                 ========================================== -->
+            <!-- CUADROS DE RESUMEN -->
             <div class="row mb-4 g-3">
                 <div class="col-md-6">
                     <div class="dark-card card shadow-sm">
@@ -93,9 +128,7 @@ require_once __DIR__ . '/../header.php';
                 </div>
             </div>
 
-            <!-- ==========================================
-                 TABLA DE NOTAS DE SALIDA - CABECERA OSCURA
-                 ========================================== -->
+            <!-- TABLA DE NOTAS DE SALIDA -->
             <div class="dark-card card shadow-sm dark-table-header">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h5 class="m-0">
@@ -162,15 +195,10 @@ require_once __DIR__ . '/../header.php';
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <!-- Ver -->
                                                 <a href="?url=notasalida&type=show&id=<?= $n['id_nota_salida'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                
-                                                <!-- Editar (eliminado por configuración) -->
-                                                
-                                                <!-- Eliminar -->
                                                 <button type="button" class="btn-action-circle btn-delete" 
                                                         data-bs-toggle="modal" data-bs-target="#eliminarModal"
                                                         data-id="<?= $n['id_nota_salida'] ?>"
@@ -193,22 +221,18 @@ require_once __DIR__ . '/../header.php';
                     </table>
                 </div>
                 
-                <!-- Footer de la tabla -->
                 <div class="card-footer py-2 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-file-invoice me-1"></i> 
                         Total: <?= isset($notas) ? count($notas) : 0 ?> notas
                     </span>
-                   
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ==========================================
-MODAL ELIMINAR - CON ESTILO OSCURO
-========================================== -->
+<!-- MODAL ELIMINAR -->
 <div class="modal fade" id="eliminarModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content" style="background: #0d0d14; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
@@ -235,10 +259,10 @@ MODAL ELIMINAR - CON ESTILO OSCURO
                     <input type="hidden" name="id_nota_salida" id="modalNotaId">
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.04);">
-                    <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 8px 20px; font-weight: 600; transition: all 0.3s ease;">
+                    <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 8px 20px; font-weight: 600;">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; border-radius: 50px; padding: 8px 20px; font-weight: 600; transition: all 0.3s ease;">
+                    <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; border-radius: 50px; padding: 8px 20px; font-weight: 600;">
                         <i class="fas fa-trash me-1"></i> Eliminar
                     </button>
                 </div>
@@ -247,12 +271,8 @@ MODAL ELIMINAR - CON ESTILO OSCURO
     </div>
 </div>
 
-<!-- ==========================================
-SCRIPTS
-========================================== -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-cierre de alertas
     const alertElement = document.querySelector('.alert');
     if (alertElement) {
         setTimeout(() => {
@@ -261,7 +281,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Modal Eliminar
     const eliminarModal = document.getElementById('eliminarModal');
     if (eliminarModal) {
         eliminarModal.addEventListener('show.bs.modal', function(event) {

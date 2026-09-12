@@ -7,23 +7,21 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <div class="row">
         <div class="col-md-9 col-lg-10">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">
-                <div class="row align-items-center g-3">
-                    <div class="col-xl-6">
+                <div class="row align-items-center">
+                    <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-tags text-gold me-2"></i> Categorías
+                            <i class="fas fa-tags text-gold me-2"></i> lista de Categorías
                         </h3>
-                        <small style="color: rgba(255, 255, 255, 0.6) !important;">
-                            <i class="fas fa-database me-2"></i> 
-                            <?= isset($categorias) ? count($categorias) : 0 ?> categorías registradas
+                        <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
+                            Gestiona las categorías de productos
                         </small>
                     </div>
-                    <div class="col-xl-6 text-end">
-                        <form method="GET" class="d-inline-block me-2">
+                    <div class="col-auto d-flex align-items-center">
+                        <form method="GET" class="me-3">
                             <input type="hidden" name="url" value="categorias">
+                            <input type="hidden" name="action" value="lista">
                             <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
                         </form>
                         <a href="?url=categorias&action=registrar" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
@@ -33,9 +31,52 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- FILTRO DE BÚSQUEDA -->
+            <div class="card shadow-sm p-3 mb-4 bg-white">
+                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                    <input type="hidden" name="url" value="categorias">
+                    <input type="hidden" name="action" value="lista">
+                    
+                    <div class="col-md-8">
+                        <input type="text" name="busqueda" class="form-control" 
+                               list="listaCategorias"
+                               placeholder="Buscar por nombre o ID..."
+                               value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
+                        <datalist id="listaCategorias">
+                            <?php
+                            // Recolectar sugerencias únicas
+                            $sugerencias = [];
+                            if (!empty($categorias) && is_array($categorias)):
+                                foreach ($categorias as $cat):
+                                    $nombre = trim($cat['nombre_categoria'] ?? '');
+                                    $id     = trim((string)($cat['id_categoria'] ?? ''));
+                                    if ($nombre !== '') $sugerencias[$nombre]   = 1;
+                                    if ($id     !== '') $sugerencias['#' . $id] = 1;
+                                endforeach;
+                            endif;
+
+                            // Pintar opciones
+                            foreach (array_keys($sugerencias) as $s): ?>
+                                <option value="<?= htmlspecialchars($s) ?>">
+                            <?php endforeach; ?>
+                        </datalist>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-gold w-100">
+                            <i class="fas fa-search me-1"></i> Buscar
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <a href="?url=categorias&action=lista" class="btn btn-secondary w-100">
+                            <i class="fas fa-times me-1"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- MENSAJES -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
                 <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -46,9 +87,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 TABLA DE CATEGORÍAS - CON FILAS DELGADAS
-                 ========================================== -->
+            <!-- TABLA DE CATEGORÍAS -->
             <div class="dark-card card shadow-sm dark-table-header">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h5 class="m-0">
@@ -75,7 +114,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <tr>
                                     <td colspan="4" class="text-center py-5 dark-empty">
                                         <div class="py-4">
-                                            <i class="fas fa-inbox fa-3x d-block mb-3" style="opacity: 0.3;"></i>
+                                            <i class="fas fa-tags fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                             <p class="mb-0">No hay categorías registradas</p>
                                             <small>Comienza registrando una nueva categoría</small>
                                         </div>
@@ -84,20 +123,20 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             <?php else: ?>
                                 <?php foreach ($categorias as $cat): ?>
                                     <tr>
-                                        <td class="ps-4 fw-bold" style="font-size: 0.9rem;"><?= htmlspecialchars($cat['id_categoria'] ?? 'N/A') ?></td>
-                                        <td style="font-size: 0.9rem;"><?= htmlspecialchars($cat['nombre_categoria'] ?? '') ?></td>
-                                        <td style="font-size: 0.9rem;"><?= htmlspecialchars($cat['descripcion'] ?? 'N/A') ?></td>
+                                        <td class="ps-4 fw-bold"><?= htmlspecialchars($cat['id_categoria'] ?? 'N/A') ?></td>
+                                        <td><?= htmlspecialchars($cat['nombre_categoria'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($cat['descripcion'] ?? 'N/A') ?></td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
                                                 <!-- Ver -->
                                                 <a href="?url=categorias&action=ver&id=<?= $cat['id_categoria'] ?>" 
-                                                   class="btn-action-circle btn-view" title="Ver" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                                                   class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
                                                 <!-- Editar -->
                                                 <a href="?url=categorias&action=editar&id=<?= $cat['id_categoria'] ?>" 
-                                                   class="btn-action-circle btn-edit" title="Editar" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                                                   class="btn-action-circle btn-edit" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 
@@ -105,7 +144,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                 <form method="POST" action="?url=categorias&action=eliminar" class="d-inline">
                                                     <input type="hidden" name="accion" value="eliminar">
                                                     <input type="hidden" name="id_categoria" value="<?= $cat['id_categoria'] ?>">
-                                                    <button type="submit" class="btn-action-circle btn-delete" title="Eliminar" style="width: 36px; height: 36px; font-size: 0.85rem;"
+                                                    <button type="submit" class="btn-action-circle btn-delete" title="Eliminar"
                                                             onclick="return confirm('¿Estás seguro de eliminar esta categoría?')">
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
@@ -119,15 +158,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     </table>
                 </div>
                 
-                <!-- Footer de la tabla -->
                 <div class="card-footer py-2 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-tags me-1"></i> 
                         Total: <?= isset($categorias) ? count($categorias) : 0 ?> categorías
-                    </span>
-                    <span class="text-muted small">
-                        <i class="fas fa-clock me-1"></i> 
-                        <?= date('d/m/Y H:i') ?>
                     </span>
                 </div>
             </div>

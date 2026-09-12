@@ -7,50 +7,78 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <div class="row">
         <div class="col-md-9 col-lg-10">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">
-                <div class="row align-items-center g-3">
-                    <div class="col-xl-6">
+                <div class="row align-items-center">
+                    <div class="col">
                         <h3 class="m-0 dark-title">
                             <i class="fas fa-users text-gold me-2"></i> lista de Clientes
                         </h3>
-                        <small style="color: rgba(255, 255, 255, 0.6) !important;">
-                            <i class="fas fa-database me-2"></i> 
-                            <?= isset($clientes) ? count($clientes) : 0 ?> clientes registrados
+                        <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
+                            Gestiona los clientes registrados en el sistema
                         </small>
                     </div>
-                    <div class="col-xl-6">
-                        <form method="GET" id="formFiltros" class="row g-2">
+                    <div class="col-auto d-flex align-items-center">
+                        <form method="GET" class="me-3">
                             <input type="hidden" name="url" value="clientes">
                             <input type="hidden" name="type" value="list">
-                            <div class="col-7">
-                                <div class="dark-search input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-search"></i>
-                                    </span>
-                                    <input type="text" name="busqueda" class="form-control shadow-none" 
-                                           placeholder="Buscar por nombre, cédula, teléfono..."
-                                           value="<?= htmlspecialchars($busqueda ?? '') ?>">
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
-                            </div>
-                            <div class="col-2">
-                                <button class="btn btn-dark-search w-100" type="submit">
-                                    <i class="fas fa-search me-1"></i> Buscar
-                                </button>
-                            </div>
+                            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                         </form>
+                        <a href="?url=clientes&type=register" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                            <i class="fas fa-plus me-1"></i> Registrar Cliente
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- FILTRO DE BÚSQUEDA -->
+            <div class="card shadow-sm p-3 mb-4 bg-white">
+                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                    <input type="hidden" name="url" value="clientes">
+                    <input type="hidden" name="type" value="list">
+                    
+                    <div class="col-md-8">
+                        <input type="text" name="busqueda" class="form-control" 
+                               list="listaClientes"
+                               placeholder="Buscar por nombre, cédula, RIF o razón social..."
+                               value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
+                        <datalist id="listaClientes">
+                            <?php
+                            // Recolectar sugerencias únicas
+                            $sugerencias = [];
+                            if (!empty($clientes) && is_array($clientes)):
+                                foreach ($clientes as $c):
+                                    $razon  = trim($c['razon_social'] ?? '');
+                                    $nombre = trim(($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? ''));
+                                    $doc    = trim($c['cedula'] ?? $c['rif'] ?? '');
+                                    if ($razon  !== '') $sugerencias[$razon]  = 1;
+                                    if ($nombre !== '') $sugerencias[$nombre] = 1;
+                                    if ($doc    !== '') $sugerencias[$doc]    = 1;
+                                endforeach;
+                            endif;
+
+                            // Pintar opciones
+                            foreach (array_keys($sugerencias) as $s): ?>
+                                <option value="<?= htmlspecialchars($s) ?>">
+                            <?php endforeach; ?>
+                        </datalist>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-gold w-100">
+                            <i class="fas fa-search me-1"></i> Buscar
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <a href="?url=clientes&type=list" class="btn btn-secondary w-100">
+                            <i class="fas fa-times me-1"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- MENSAJES -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
                 <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -61,17 +89,16 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 TABLA DE CLIENTES - CABECERA OSCURA
-                 ========================================== -->
+            <!-- TABLA DE CLIENTES -->
             <div class="dark-card card shadow-sm dark-table-header">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h5 class="m-0">
                         <i class="fas fa-users me-2"></i> Clientes Registrados
                     </h5>
-                    <a href="?url=clientes&type=register" class="btn btn-dark-gold">
-                        <i class="fas fa-plus me-1"></i> Registrar
-                    </a>
+                    <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
+                        <i class="fas fa-database me-1"></i> 
+                        <?= isset($clientes) ? count($clientes) : 0 ?> registros
+                    </span>
                 </div>
                 
                 <div class="table-responsive">
@@ -100,11 +127,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         </td>
                                         <td>
                                             <?php if (($c['tipo_cliente'] ?? '') === 'Jurídico'): ?>
-                                                <span class="badge bg-warning text-dark">
+                                                <span class="badge" style="background: rgba(13,110,253,0.15); color: #0d6efd; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
                                                     <i class="fas fa-building me-1"></i> Jurídico
                                                 </span>
                                             <?php else: ?>
-                                                <span class="badge bg-primary text-white">
+                                                <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
                                                     <i class="fas fa-user me-1"></i> Natural
                                                 </span>
                                             <?php endif; ?>
@@ -138,7 +165,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <tr>
                                     <td colspan="6" class="text-center py-5 dark-empty">
                                         <div class="py-4">
-                                            <i class="fas fa-users fa-3x d-block mb-3"></i>
+                                            <i class="fas fa-users fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                             <p class="mb-0">No hay clientes registrados</p>
                                             <small>Comienza registrando un nuevo cliente</small>
                                         </div>
@@ -149,8 +176,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     </table>
                 </div>
                 
-                <!-- Footer -->
-                <div class="card-footer py-3 d-flex justify-content-between align-items-center">
+                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-users me-1"></i> 
                         Total: <?= isset($clientes) ? count($clientes) : 0 ?> clientes

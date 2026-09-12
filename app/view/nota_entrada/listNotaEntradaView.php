@@ -7,14 +7,12 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <div class="row">
         <div class="col-md-9 col-lg-10">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-sign-in-alt text-gold me-2"></i> Lista de Notas de Entrada
+                            <i class="fas fa-sign-in-alt text-gold me-2"></i> lista de Notas de Entrada
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona las notas de entrada de productos
@@ -33,9 +31,53 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- FILTRO DE BÚSQUEDA -->
+            <div class="card shadow-sm p-3 mb-4 bg-white">
+                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                    <input type="hidden" name="url" value="notaentrada">
+                    <input type="hidden" name="type" value="list">
+                    
+                    <div class="col-md-8">
+                        <input type="text" name="busqueda" class="form-control" 
+                               list="listaNotasEntrada"
+                               placeholder="Buscar por proveedor, encargado o ID..."
+                               value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
+                        <datalist id="listaNotasEntrada">
+                            <?php
+                            // Recolectar sugerencias únicas
+                            $sugerencias = [];
+                            if (!empty($notas) && is_array($notas)):
+                                foreach ($notas as $n):
+                                    $prov = trim($n['razon_social'] ?? '');
+                                    $enc  = trim($n['encargado_nombre'] ?? '');
+                                    if ($prov !== '') $sugerencias[$prov] = 1;
+                                    if ($enc  !== '') $sugerencias[$enc]  = 1;
+                                    $sugerencias[(string)$n['id_nota_entrada']] = 1;
+                                endforeach;
+                            endif;
+
+                            // Pintar opciones
+                            foreach (array_keys($sugerencias) as $s): ?>
+                                <option value="<?= htmlspecialchars($s) ?>">
+                            <?php endforeach; ?>
+                        </datalist>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-gold w-100">
+                            <i class="fas fa-search me-1"></i> Buscar
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <a href="?url=notaentrada&type=list" class="btn btn-secondary w-100">
+                            <i class="fas fa-times me-1"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- MENSAJES -->
             <?php if (isset($success)): ?>
                 <div class="alert dark-alert-success alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -56,20 +98,18 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 CUADROS DE RESUMEN - CORREGIDOS
-                 ========================================== -->
+            <!-- CUADROS DE RESUMEN -->
             <div class="row mb-4 g-3">
                 <div class="col-md-4">
                     <div class="dark-card card shadow-sm">
-                        <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px; background: rgba(255,255,255,0.03);">
+                        <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
                             <div>
-                                <h6 class="card-title" style="color: rgba(17, 16, 16, 0.93); font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-file-invoice me-1"></i> TOTAL NOTAS
+                                <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                                    <i class="fas fa-file-invoice me-1"></i> Total Notas
                                 </h6>
-                                <h2 style="color: #030303; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $resumen['total_notas'] ?? 0 ?></h2>
+                                <h2 style="color: #fdc304; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $resumen['total_notas'] ?? 0 ?></h2>
                             </div>
-                            <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(243,156,18,0.15); display: flex; align-items: center; justify-content: center; color: #f39c12; font-size: 1.5rem;">
+                            <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(243,156,18,0.12); display: flex; align-items: center; justify-content: center; color: #f39c12; font-size: 1.5rem;">
                                 <i class="fas fa-file-invoice"></i>
                             </div>
                         </div>
@@ -77,14 +117,14 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
                 <div class="col-md-4">
                     <div class="dark-card card shadow-sm">
-                        <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px; background: rgba(255,255,255,0.03);">
+                        <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
                             <div>
-                                <h6 class="card-title" style="color: rgba(14, 13, 13, 0.89); font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-dollar-sign me-1"></i> TOTAL COMPRAS
+                                <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                                    <i class="fas fa-dollar-sign me-1"></i> Total Compras
                                 </h6>
-                                <h2 style="color: #0a0a0a; font-weight: 700; font-size: 2.2rem; margin: 0;">$<?= number_format($resumen['total_compras'] ?? 0, 2) ?></h2>
+                                <h2 style="color: #28a745; font-weight: 700; font-size: 2.2rem; margin: 0;">$<?= number_format($resumen['total_compras'] ?? 0, 2) ?></h2>
                             </div>
-                            <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(40,167,69,0.15); display: flex; align-items: center; justify-content: center; color: #28a745; font-size: 1.5rem;">
+                            <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(40,167,69,0.12); display: flex; align-items: center; justify-content: center; color: #28a745; font-size: 1.5rem;">
                                 <i class="fas fa-dollar-sign"></i>
                             </div>
                         </div>
@@ -92,14 +132,14 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
                 <div class="col-md-4">
                     <div class="dark-card card shadow-sm">
-                        <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px; background: rgba(255,255,255,0.03);">
+                        <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
                             <div>
-                                <h6 class="card-title" style="color: rgba(12, 12, 12, 0.9); font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-ban me-1"></i> ANULADAS
+                                <h6 class="card-title" style="color: rgb(10, 1, 1); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                                    <i class="fas fa-ban me-1"></i> Anuladas
                                 </h6>
-                                <h2 style="color: #0a0a0a; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $resumen['total_anuladas'] ?? 0 ?></h2>
+                                <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $resumen['total_anuladas'] ?? 0 ?></h2>
                             </div>
-                            <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.15); display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 1.5rem;">
+                            <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 1.5rem;">
                                 <i class="fas fa-ban"></i>
                             </div>
                         </div>
@@ -107,12 +147,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
-            <!-- ==========================================
-                 TABLA DE NOTAS DE ENTRADA - CORREGIDA
-                 ========================================== -->
+            <!-- TABLA DE NOTAS DE ENTRADA -->
             <div class="dark-card card shadow-sm dark-table-header">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important;">
-                    <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0">
                         <i class="fas fa-list me-2"></i> Notas Registradas
                     </h5>
                     <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
@@ -125,14 +163,14 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     <table class="table table-hover align-middle m-0">
                         <thead>
                             <tr>
-                                <th class="ps-4 py-3" style="color: #495057; background: #f8f9fa; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">ID</th>
-                                <th class="py-3" style="color: #495057; background: #f8f9fa; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Fecha</th>
-                                <th class="py-3" style="color: #495057; background: #f8f9fa; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Proveedor</th>
-                                <th class="py-3" style="color: #495057; background: #f8f9fa; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Encargado</th>
-                                <th class="py-3" style="color: #495057; background: #f8f9fa; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Productos</th>
-                                <th class="py-3" style="color: #495057; background: #f8f9fa; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Total</th>
-                                <th class="py-3" style="color: #495057; background: #f8f9fa; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
-                                <th class="pe-4 py-3 text-center" style="color: #495057; background: #f8f9fa; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Acciones</th>
+                                <th class="ps-4 py-3">ID</th>
+                                <th class="py-3">Fecha</th>
+                                <th class="py-3">Proveedor</th>
+                                <th class="py-3">Encargado</th>
+                                <th class="py-3">Productos</th>
+                                <th class="py-3">Total</th>
+                                <th class="py-3">Estado</th>
+                                <th class="pe-4 py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -152,33 +190,33 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                     $anulada = ($n['estado'] ?? 'ACTIVA') === 'ANULADA';
                                     ?>
                                     <tr <?= $anulada ? 'style="opacity: 0.6;"' : '' ?>>
-                                        <td class="ps-4 fw-bold" style="color: #212529;">
+                                        <td class="ps-4 fw-bold">
                                             <?php if ($anulada): ?>
                                                 <del style="color: #6c757d;">#<?= htmlspecialchars($n['id_nota_entrada']) ?></del>
                                             <?php else: ?>
                                                 #<?= htmlspecialchars($n['id_nota_entrada']) ?>
                                             <?php endif; ?>
                                         </td>
-                                        <td style="color: #212529;"><?= date('d/m/Y', strtotime($n['fecha_ingreso'])) ?></td>
-                                        <td style="color: #212529;"><?= htmlspecialchars($n['razon_social'] ?? 'N/A') ?></td>
-                                        <td style="color: #212529;"><?= htmlspecialchars($n['encargado_nombre'] ?? 'Sin asignar') ?></td>
+                                        <td><?= date('d/m/Y', strtotime($n['fecha_ingreso'])) ?></td>
+                                        <td><?= htmlspecialchars($n['razon_social'] ?? 'N/A') ?></td>
+                                        <td><?= htmlspecialchars($n['encargado_nombre'] ?? 'Sin asignar') ?></td>
                                         <td>
                                             <?php if (!empty($n['productos_lista'])): ?>
                                                 <?php 
                                                 $productos = explode(', ', $n['productos_lista']);
-                                                $total = count($productos);
+                                                $totalProd = count($productos);
                                                 ?>
-                                                <?php for ($i = 0; $i < min(3, $total); $i++): ?>
+                                                <?php for ($i = 0; $i < min(3, $totalProd); $i++): ?>
                                                     <span class="badge" style="background: #e9ecef; color: #495057; padding: 4px 10px; border-radius: 50px; font-weight: 500; font-size: 0.7rem;"><?= htmlspecialchars($productos[$i]) ?></span>
                                                 <?php endfor; ?>
-                                                <?php if ($total > 3): ?>
-                                                    <span class="badge" style="background: rgba(243,156,18,0.12); color: #f39c12; padding: 4px 10px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">+<?= $total - 3 ?> más</span>
+                                                <?php if ($totalProd > 3): ?>
+                                                    <span class="badge" style="background: rgba(243,156,18,0.12); color: #f39c12; padding: 4px 10px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">+<?= $totalProd - 3 ?> más</span>
                                                 <?php endif; ?>
                                             <?php else: ?>
                                                 <span style="color: #adb5bd;">Sin productos</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="fw-bold" style="color: #212529;">
+                                        <td class="fw-bold">
                                             <?php if ($anulada): ?>
                                                 <del style="color: #6c757d;">$<?= number_format($n['costo_total'] ?? 0, 2) ?></del>
                                             <?php else: ?>
@@ -188,11 +226,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <td>
                                             <?php if ($anulada): ?>
                                                 <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                                    <i class="fas fa-ban me-1"></i> inactivo
+                                                    <i class="fas fa-ban me-1"></i> Inactivo
                                                 </span>
                                             <?php else: ?>
                                                 <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                                    <i class="fas fa-check-circle me-1"></i> activo
+                                                    <i class="fas fa-check-circle me-1"></i> Activo
                                                 </span>
                                             <?php endif; ?>
                                         </td>
@@ -224,22 +262,18 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     </table>
                 </div>
                 
-                <!-- Footer de la tabla -->
-                <div class="card-footer py-2 d-flex justify-content-between align-items-center" style="background: #f8f9fa; border-top: 1px solid rgba(0,0,0,0.04); border-radius: 0 0 16px 16px !important;">
-                    <span class="text-muted small" style="color: #6c757d !important;">
+                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">
                         <i class="fas fa-file-invoice me-1"></i> 
                         Total: <?= isset($notas) ? count($notas) : 0 ?> notas
                     </span>
-                  
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ==========================================
-MODAL ANULAR
-========================================== -->
+<!-- MODAL ANULAR -->
 <div class="modal fade" id="anularModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content" style="background: #0d0d14; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
@@ -266,10 +300,10 @@ MODAL ANULAR
                     <input type="hidden" name="id_nota_entrada" id="modalNotaId">
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.04);">
-                    <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 8px 20px; font-weight: 600; transition: all 0.3s ease;">
+                    <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 8px 20px; font-weight: 600;">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; border-radius: 50px; padding: 8px 20px; font-weight: 600; transition: all 0.3s ease;">
+                    <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; border-radius: 50px; padding: 8px 20px; font-weight: 600;">
                         <i class="fas fa-ban me-1"></i> Anular Nota
                     </button>
                 </div>
@@ -278,9 +312,6 @@ MODAL ANULAR
     </div>
 </div>
 
-<!-- ==========================================
-SCRIPTS
-========================================== -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const alertElement = document.querySelector('.alert');

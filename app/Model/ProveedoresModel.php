@@ -12,9 +12,8 @@ class ProveedoresModel {
         $this->db = $db;
     }
 
-    /**
-     * Obtener todos los proveedores con datos de persona (JOIN)
-     */
+    // OBTENER TODOS LOS PROVEEDORES
+
     public function obtenerProveedores() {
         try {
             $sql = "SELECT 
@@ -31,6 +30,7 @@ class ProveedoresModel {
                         pe.correo_electronico
                     FROM proveedor p
                     LEFT JOIN persona pe ON p.id_persona = pe.id_persona
+                    WHERE p.eliminado = 0
                     ORDER BY p.id_proveedor DESC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -40,9 +40,8 @@ class ProveedoresModel {
         }
     }
 
-    /**
-     * Obtener un proveedor por ID con datos de persona (JOIN)
-     */
+    // OBTENER PROVEEDOR POR ID
+
     public function obtenerProveedorPorId($id) {
         try {
             $sql = "SELECT 
@@ -59,7 +58,7 @@ class ProveedoresModel {
                         pe.correo_electronico
                     FROM proveedor p
                     LEFT JOIN persona pe ON p.id_persona = pe.id_persona
-                    WHERE p.id_proveedor = :id";
+                    WHERE p.id_proveedor = :id AND p.eliminado = 0";
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['id' => $id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -68,59 +67,33 @@ class ProveedoresModel {
         }
     }
 
-    /**
-     * Registrar un nuevo proveedor (con persona asociada)
-     */
+    // REGISTRAR PROVEEDOR
+
     public function registrarProveedor(array $datos) {
         $this->db->beginTransaction();
         try {
-            // 1. Verificar si el RIF ya existe
-            $checkSql = "SELECT COUNT(*) FROM proveedor WHERE rif = :rif";
+            $checkSql = "SELECT COUNT(*) FROM proveedor WHERE rif = :rif AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute(['rif' => $datos['rif']]);
             if ($checkStmt->fetchColumn() > 0) {
                 throw new Exception("El RIF '{$datos['rif']}' ya está registrado.");
             }
 
-            // 2. Insertar en persona (los datos de contacto)
-            $sqlPersona = "INSERT INTO persona (
-                                nombre, 
-                                apellido, 
-                                cedula, 
-                                telefono, 
-                                direccion, 
-                                correo_electronico
-                            ) VALUES (
-                                :nombre, 
-                                :apellido, 
-                                :cedula, 
-                                :telefono, 
-                                :direccion, 
-                                :correo_electronico
-                            )";
+            $sqlPersona = "INSERT INTO persona (nombre, apellido, cedula, telefono, direccion, correo_electronico, eliminado) 
+                           VALUES (:nombre, :apellido, :cedula, :telefono, :direccion, :correo_electronico, 0)";
             $stmtPersona = $this->db->prepare($sqlPersona);
             $stmtPersona->execute([
                 ':nombre' => $datos['nombre_contacto'] ?? 'Proveedor',
                 ':apellido' => $datos['apellido_contacto'] ?? '',
-                ':cedula' => $datos['rif'], // Usamos el RIF como cédula
+                ':cedula' => $datos['rif'],
                 ':telefono' => $datos['numero_contacto'],
                 ':direccion' => $datos['direccion'],
                 ':correo_electronico' => $datos['correo_electronico'] ?? null
             ]);
             $idPersona = $this->db->lastInsertId();
 
-            // 3. Insertar en proveedor (con referencia a persona)
-            $sqlProveedor = "INSERT INTO proveedor (
-                                rif, 
-                                razon_social, 
-                                numero_contacto, 
-                                id_persona
-                            ) VALUES (
-                                :rif, 
-                                :razon_social, 
-                                :numero_contacto, 
-                                :id_persona
-                            )";
+            $sqlProveedor = "INSERT INTO proveedor (rif, razon_social, numero_contacto, id_persona, eliminado) 
+                             VALUES (:rif, :razon_social, :numero_contacto, :id_persona, 0)";
             $stmtProveedor = $this->db->prepare($sqlProveedor);
             $stmtProveedor->execute([
                 ':rif' => $datos['rif'],
@@ -137,14 +110,12 @@ class ProveedoresModel {
         }
     }
 
-    /**
-     * Actualizar un proveedor y su persona asociada
-     */
+    // ACTUALIZAR PROVEEDOR
+
     public function actualizarProveedor($id, array $datos) {
         $this->db->beginTransaction();
         try {
-            // 1. Verificar si el proveedor existe
-            $checkSql = "SELECT id_persona FROM proveedor WHERE id_proveedor = :id";
+            $checkSql = "SELECT id_persona FROM proveedor WHERE id_proveedor = :id AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute(['id' => $id]);
             $proveedor = $checkStmt->fetch(PDO::FETCH_ASSOC);
@@ -152,15 +123,13 @@ class ProveedoresModel {
                 throw new Exception("El proveedor con ID {$id} no existe.");
             }
 
-            // 2. Verificar si el RIF ya existe (excluyendo el actual)
-            $checkRifSql = "SELECT COUNT(*) FROM proveedor WHERE rif = :rif AND id_proveedor != :id";
+            $checkRifSql = "SELECT COUNT(*) FROM proveedor WHERE rif = :rif AND id_proveedor != :id AND eliminado = 0";
             $checkRifStmt = $this->db->prepare($checkRifSql);
             $checkRifStmt->execute(['rif' => $datos['rif'], 'id' => $id]);
             if ($checkRifStmt->fetchColumn() > 0) {
                 throw new Exception("El RIF '{$datos['rif']}' ya está registrado en otro proveedor.");
             }
 
-            // 3. Actualizar persona
             $sqlPersona = "UPDATE persona SET 
                                 nombre = :nombre, 
                                 apellido = :apellido, 
@@ -180,12 +149,11 @@ class ProveedoresModel {
                 ':id_persona' => $proveedor['id_persona']
             ]);
 
-            // 4. Actualizar proveedor
             $sqlProveedor = "UPDATE proveedor SET 
                                 rif = :rif, 
                                 razon_social = :razon_social, 
                                 numero_contacto = :numero_contacto
-                            WHERE id_proveedor = :id";
+                            WHERE id_proveedor = :id AND eliminado = 0";
             $stmtProveedor = $this->db->prepare($sqlProveedor);
             $stmtProveedor->execute([
                 ':rif' => $datos['rif'],
@@ -202,34 +170,29 @@ class ProveedoresModel {
         }
     }
 
-    /**
-     * Eliminar un proveedor (y su persona asociada)
-     */
+    // ELIMINAR PROVEEDOR
+
     public function eliminarProveedor($id) {
         $this->db->beginTransaction();
         try {
-            // 1. Verificar si tiene notas de entrada asociadas
-            $checkSql = "SELECT COUNT(*) FROM nota_de_entrada WHERE id_proveedor = :id";
+            $checkSql = "SELECT COUNT(*) FROM nota_de_entrada WHERE id_proveedor = :id AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute(['id' => $id]);
             if ($checkStmt->fetchColumn() > 0) {
                 throw new Exception("No se puede eliminar el proveedor porque tiene notas de entrada asociadas.");
             }
 
-            // 2. Obtener id_persona
             $sqlPersona = "SELECT id_persona FROM proveedor WHERE id_proveedor = :id";
             $stmtPersona = $this->db->prepare($sqlPersona);
             $stmtPersona->execute(['id' => $id]);
             $proveedor = $stmtPersona->fetch(PDO::FETCH_ASSOC);
 
-            // 3. Eliminar proveedor
-            $sql = "DELETE FROM proveedor WHERE id_proveedor = :id";
+            $sql = "UPDATE proveedor SET eliminado = 1 WHERE id_proveedor = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['id' => $id]);
 
-            // 4. Eliminar persona asociada
             if ($proveedor) {
-                $sqlDeletePersona = "DELETE FROM persona WHERE id_persona = :id_persona";
+                $sqlDeletePersona = "UPDATE persona SET eliminado = 1 WHERE id_persona = :id_persona";
                 $stmtDeletePersona = $this->db->prepare($sqlDeletePersona);
                 $stmtDeletePersona->execute(['id_persona' => $proveedor['id_persona']]);
             }
@@ -242,42 +205,41 @@ class ProveedoresModel {
         }
     }
 
-    /**
-     * Buscar proveedores por término con datos de persona
-     */
-    public function buscarProveedores($termino) {
-    try {
-        $sql = "SELECT 
-                    p.id_proveedor, 
-                    p.rif, 
-                    p.razon_social, 
-                    p.numero_contacto,
-                    p.id_persona,
-                    pe.nombre, 
-                    pe.apellido, 
-                    pe.cedula, 
-                    pe.telefono, 
-                    pe.direccion, 
-                    pe.correo_electronico
-                FROM proveedor p
-                LEFT JOIN persona pe ON p.id_persona = pe.id_persona
-                WHERE p.rif LIKE :termino 
-                   OR p.razon_social LIKE :termino 
-                   OR p.numero_contacto LIKE :termino
-                   OR pe.direccion LIKE :termino
-                   OR pe.correo_electronico LIKE :termino
-                ORDER BY p.id_proveedor DESC";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(['termino' => "%{$termino}%"]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        throw new Exception("Error en la consulta SQL: " . $e->getMessage());
-    }
-}
+    // BUSCAR PROVEEDORES
 
-    /**
-     * Obtener proveedores para select
-     */
+    public function buscarProveedores($termino) {
+        try {
+            $sql = "SELECT 
+                        p.id_proveedor, 
+                        p.rif, 
+                        p.razon_social, 
+                        p.numero_contacto,
+                        p.id_persona,
+                        pe.nombre, 
+                        pe.apellido, 
+                        pe.cedula, 
+                        pe.telefono, 
+                        pe.direccion, 
+                        pe.correo_electronico
+                    FROM proveedor p
+                    LEFT JOIN persona pe ON p.id_persona = pe.id_persona
+                    WHERE p.eliminado = 0
+                    AND (p.rif LIKE :termino 
+                       OR p.razon_social LIKE :termino 
+                       OR p.numero_contacto LIKE :termino
+                       OR pe.direccion LIKE :termino
+                       OR pe.correo_electronico LIKE :termino)
+                    ORDER BY p.id_proveedor DESC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['termino' => "%{$termino}%"]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Error en la consulta SQL: " . $e->getMessage());
+        }
+    }
+
+    // OBTENER PROVEEDORES PARA SELECT
+
     public function obtenerProveedoresParaSelect() {
         try {
             $sql = "SELECT 
@@ -285,6 +247,7 @@ class ProveedoresModel {
                         p.razon_social,
                         p.rif
                     FROM proveedor p
+                    WHERE p.eliminado = 0
                     ORDER BY p.razon_social ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();

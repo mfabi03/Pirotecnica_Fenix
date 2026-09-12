@@ -1,5 +1,5 @@
 <?php
-// app/view/proveedores/proveedores_lista.php
+// app/view/configuracion/rolLista.php
 require_once __DIR__ . '/../header.php';
 ?>
 
@@ -12,20 +12,20 @@ require_once __DIR__ . '/../header.php';
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-truck text-gold me-2"></i> lista de Proveedores
+                            <i class="fas fa-user-shield text-gold me-2"></i> lista de Roles
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                            Gestiona los proveedores registrados en el sistema
+                            Gestiona los roles del sistema
                         </small>
                     </div>
                     <div class="col-auto d-flex align-items-center">
                         <form method="GET" class="me-3">
-                            <input type="hidden" name="url" value="proveedores">
-                            <input type="hidden" name="type" value="list">
+                            <input type="hidden" name="url" value="roles">
+                            <input type="hidden" name="action" value="lista">
                             <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
                         </form>
-                        <a href="?url=proveedores&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
-                            <i class="fas fa-plus me-1"></i> Registrar Proveedor
+                        <a href="?url=roles&action=registrar" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                            <i class="fas fa-plus me-1"></i> Registrar Rol
                         </a>
                     </div>
                 </div>
@@ -34,26 +34,24 @@ require_once __DIR__ . '/../header.php';
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
                 <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
-                    <input type="hidden" name="url" value="proveedores">
-                    <input type="hidden" name="type" value="list">
+                    <input type="hidden" name="url" value="roles">
+                    <input type="hidden" name="action" value="lista">
                     
                     <div class="col-md-8">
                         <input type="text" name="busqueda" class="form-control" 
-                               list="listaProveedores"
-                               placeholder="Buscar por RIF, razón social, contacto o dirección..."
+                               list="listaRoles"
+                               placeholder="Buscar por nombre del rol o ID..."
                                value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
-                        <datalist id="listaProveedores">
+                        <datalist id="listaRoles">
                             <?php
                             // Recolectar sugerencias únicas
                             $sugerencias = [];
-                            if (!empty($proveedores) && is_array($proveedores)):
-                                foreach ($proveedores as $p):
-                                    $rif     = trim($p['rif'] ?? '');
-                                    $razon   = trim($p['razon_social'] ?? '');
-                                    $contact = trim($p['numero_contacto'] ?? '');
-                                    if ($rif     !== '') $sugerencias[$rif]     = 1;
-                                    if ($razon   !== '') $sugerencias[$razon]   = 1;
-                                    if ($contact !== '') $sugerencias[$contact] = 1;
+                            if (!empty($roles) && is_array($roles)):
+                                foreach ($roles as $rol):
+                                    $nombre = trim((string)($rol['nombre_rol'] ?? ''));
+                                    $id     = trim((string)($rol['id_rol'] ?? ''));
+                                    if ($nombre !== '') $sugerencias[$nombre]    = 1;
+                                    if ($id     !== '') $sugerencias['#' . $id]  = 1;
                                 endforeach;
                             endif;
 
@@ -71,7 +69,7 @@ require_once __DIR__ . '/../header.php';
                     </div>
                     
                     <div class="col-md-2">
-                        <a href="?url=proveedores&type=list" class="btn btn-secondary w-100">
+                        <a href="?url=roles&action=lista" class="btn btn-secondary w-100">
                             <i class="fas fa-times me-1"></i> Limpiar
                         </a>
                     </div>
@@ -89,56 +87,55 @@ require_once __DIR__ . '/../header.php';
                 </div>
             <?php endif; ?>
 
-            <!-- TABLA DE PROVEEDORES -->
+            <!-- TABLA DE ROLES -->
             <div class="dark-card card shadow-sm dark-table-header">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h5 class="m-0">
-                        <i class="fas fa-truck me-2"></i> Proveedores Registrados
+                        <i class="fas fa-user-shield me-2"></i> Roles Registrados
                     </h5>
                     <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
                         <i class="fas fa-database me-1"></i> 
-                        <?= isset($proveedores) ? count($proveedores) : 0 ?> registros
+                        <?= isset($roles) ? count($roles) : 0 ?> registros
                     </span>
                 </div>
-                
+
                 <div class="table-responsive">
                     <table class="table table-hover align-middle m-0">
                         <thead>
                             <tr>
                                 <th class="ps-4 py-3">ID</th>
-                                <th class="py-3">RIF</th>
-                                <th class="py-3">Razón Social</th>
-                                <th class="py-3">Contacto</th>
-                                <th class="py-3">Dirección</th>
-                                <th class="py-3">Correo</th>
+                                <th class="py-3">Nombre del Rol</th>
+                                <th class="py-3">Usuarios</th>
                                 <th class="pe-4 py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (isset($proveedores) && is_array($proveedores) && count($proveedores) > 0): ?>
-                                <?php foreach ($proveedores as $p): ?>
+                            <?php if (isset($roles) && is_array($roles) && count($roles) > 0): ?>
+                                <?php foreach ($roles as $rol): ?>
                                     <tr>
-                                        <td class="ps-4 fw-bold"><?= htmlspecialchars($p['id_proveedor'] ?? 'N/A') ?></td>
-                                        <td><?= htmlspecialchars($p['rif'] ?? '') ?></td>
-                                        <td><?= htmlspecialchars($p['razon_social'] ?? '') ?></td>
-                                        <td><?= htmlspecialchars($p['numero_contacto'] ?? 'N/A') ?></td>
-                                        <td><?= htmlspecialchars($p['direccion'] ?? 'N/A') ?></td>
-                                        <td><?= htmlspecialchars($p['correo_electronico'] ?? 'N/A') ?></td>
+                                        <td class="ps-4 fw-bold"><?= htmlspecialchars($rol['id_rol'] ?? 'N/A') ?></td>
+                                        <td><?= htmlspecialchars($rol['nombre_rol'] ?? '') ?></td>
+                                        <td>
+                                            <span class="badge" style="background: rgba(108,117,125,0.15); color: #6c757d; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                                <?= htmlspecialchars($rol['total_usuarios'] ?? 0) ?> usuarios
+                                            </span>
+                                        </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <a href="?url=proveedores&type=show&id=<?= $p['id_proveedor'] ?>" 
+                                                <a href="?url=roles&action=ver&id=<?= $rol['id_rol'] ?? 0 ?>"
                                                    class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="?url=proveedores&type=edit&id=<?= $p['id_proveedor'] ?>" 
+                                                <a href="?url=roles&action=editar&id=<?= $rol['id_rol'] ?? 0 ?>"
                                                    class="btn-action-circle btn-edit" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <form method="POST" action="?url=proveedores&type=delete" class="d-inline">
-                                                    <input type="hidden" name="id_proveedor" value="<?= $p['id_proveedor'] ?>">
+                                                <form method="POST" action="?url=roles&action=lista" class="d-inline">
+                                                    <input type="hidden" name="accion" value="eliminar">
+                                                    <input type="hidden" name="id_rol" value="<?= $rol['id_rol'] ?? 0 ?>">
                                                     <button type="submit" class="btn-action-circle btn-delete"
                                                             title="Eliminar"
-                                                            onclick="return confirm('¿Estás seguro de eliminar este proveedor?')">
+                                                            onclick="return confirm('¿Estás seguro de eliminar este rol?')">
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
                                                 </form>
@@ -148,11 +145,11 @@ require_once __DIR__ . '/../header.php';
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="7" class="text-center py-5 dark-empty">
+                                    <td colspan="4" class="text-center py-5 dark-empty">
                                         <div class="py-4">
-                                            <i class="fas fa-truck fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                            <p class="mb-0">No hay proveedores registrados</p>
-                                            <small>Comienza registrando un nuevo proveedor</small>
+                                            <i class="fas fa-user-shield fa-3x d-block mb-3" style="opacity: 0.3;"></i>
+                                            <p class="mb-0">No hay roles registrados</p>
+                                            <small>Comienza registrando un nuevo rol</small>
                                         </div>
                                     </td>
                                 </tr>
@@ -160,11 +157,11 @@ require_once __DIR__ . '/../header.php';
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div class="card-footer py-2 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
-                        <i class="fas fa-truck me-1"></i> 
-                        Total: <?= isset($proveedores) ? count($proveedores) : 0 ?> proveedores
+                        <i class="fas fa-user-shield me-1"></i>
+                        Total: <?= isset($roles) ? count($roles) : 0 ?> roles
                     </span>
                 </div>
             </div>

@@ -89,11 +89,24 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </select>
             </div>
 
+            <!-- 🔥 INPUT CON DATALIST -->
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Producto</label>
                 <input type="text" name="busqueda" class="form-control form-control-sm" 
+                       list="listaProductosReporte"
                        placeholder="Buscar..." 
                        value="<?= isset($_GET['busqueda']) ? htmlspecialchars($_GET['busqueda']) : '' ?>">
+                <datalist id="listaProductosReporte">
+                    <?php 
+                    $sqlProd = "SELECT descripcion FROM producto WHERE eliminado = 0 ORDER BY descripcion ASC";
+                    $stmtProd = $db->prepare($sqlProd);
+                    $stmtProd->execute();
+                    $productosDatalist = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($productosDatalist as $prod): 
+                    ?>
+                        <option value="<?= htmlspecialchars($prod['descripcion']) ?>">
+                    <?php endforeach; ?>
+                </datalist>
             </div>
 
             <div class="col-md-2">
@@ -146,7 +159,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 
     <!-- ========================================== -->
-    <!-- TABLA CON BOTÓN "VER MOTIVO" -->
+    <!-- TABLA CON BOTÓN "VER MOTIVO" ESTÁTICO -->
     <!-- ========================================== -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -166,7 +179,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         <th class="py-3">COSTO</th>
                         <th class="py-3">FECHA</th>
                         <th class="py-3">RESPONSABLE</th>
-                        <th class="pe-4 py-3 text-center">ACCIÓN</th>  <!-- 🔥 NUEVA COLUMNA -->
+                        <th class="pe-4 py-3 text-center">ACCIÓN</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -183,7 +196,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             $fechaObj = new DateTime($movimiento['fecha_movimiento']);
                             $fechaFormateada = $fechaObj->format('d/m/Y');
                             $costo = isset($movimiento['costo_proveedor']) ? $movimiento['costo_proveedor'] : 0;
-                            $motivo = isset($movimiento['motivo_anulacion']) && !empty($movimiento['motivo_anulacion']) ? $movimiento['motivo_anulacion'] : '';
                         ?>
                             <tr>
                                 <td class="ps-4 fw-medium"><?= htmlspecialchars($movimiento['nombre_producto']) ?></td>
@@ -206,22 +218,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </td>
                                 <td><?= $fechaFormateada ?></td>
                                 <td><?= htmlspecialchars($movimiento['usuario_activo']) ?></td>
+                                <!-- BOTÓN ESTÁTICO -->
                                 <td class="pe-4 text-center">
-                                    <?php if ($esAnulacion && !empty($motivo)): ?>
-                                        <!-- 🔥 BOTÓN VER MOTIVO (solo para anulaciones) -->
-                                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalMotivo"
-                                                data-motivo="<?= htmlspecialchars($motivo) ?>"
-                                                data-producto="<?= htmlspecialchars($movimiento['nombre_producto']) ?>"
-                                                data-usuario="<?= htmlspecialchars($movimiento['usuario_activo']) ?>"
-                                                data-fecha="<?= $fechaFormateada ?>"
-                                                title="Ver motivo de anulación">
-                                            <i class="fas fa-eye"></i> Ver Motivo
-                                        </button>
-                                    <?php else: ?>
-                                        <span class="text-muted">—</span>
-                                    <?php endif; ?>
+                                    <button type="button" class="btn btn-sm btn-outline-info" disabled title="Disponible en Fase 2">
+                                        <i class="fas fa-eye"></i> Ver Motivo
+                                    </button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -251,63 +252,5 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 
 </div>
-
-<!-- ========================================== -->
-<!-- MODAL PARA VER MOTIVO DE ANULACIÓN -->
-<!-- ========================================== -->
-<div class="modal fade" id="modalMotivo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header" style="background: #dc3545; color: #fff;">
-                <h5 class="modal-title">
-                    <i class="fas fa-ban me-2"></i> Motivo de Anulación
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="fw-bold text-dark">Producto:</label>
-                    <p id="modalProducto" class="border-bottom pb-2 text-dark"></p>
-                </div>
-                <div class="mb-3">
-                    <label class="fw-bold text-dark">Usuario Responsable:</label>
-                    <p id="modalUsuario" class="border-bottom pb-2 text-dark"></p>
-                </div>
-                <div class="mb-3">
-                    <label class="fw-bold text-dark">Fecha de Anulación:</label>
-                    <p id="modalFecha" class="border-bottom pb-2 text-dark"></p>
-                </div>
-                <div class="mb-3">
-                    <label class="fw-bold text-dark">Motivo:</label>
-                    <div id="modalMotivoTexto" class="p-3 bg-light rounded border" style="white-space: pre-wrap; color: #000;"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Modal de motivo de anulación
-    const modalMotivo = document.getElementById('modalMotivo');
-    if (modalMotivo) {
-        modalMotivo.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const motivo = button.getAttribute('data-motivo');
-            const producto = button.getAttribute('data-producto');
-            const usuario = button.getAttribute('data-usuario');
-            const fecha = button.getAttribute('data-fecha');
-            
-            document.getElementById('modalProducto').textContent = producto || 'N/A';
-            document.getElementById('modalUsuario').textContent = usuario || 'N/A';
-            document.getElementById('modalFecha').textContent = fecha || 'N/A';
-            document.getElementById('modalMotivoTexto').textContent = motivo || 'No se especificó motivo.';
-        });
-    }
-});
-</script>
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

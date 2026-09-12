@@ -12,23 +12,8 @@ class NotaentradaModel {
         $this->db = $db;
     }
 
-    /**
-     * Comprueba si una tabla tiene una columna específica en la BD actual
-     */
-    private function hasColumn($table, $column) {
-        try {
-            $sql = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':table' => $table, ':column' => $column]);
-            return (int)$stmt->fetchColumn() > 0;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
+    // OBTENER PRODUCTOS
 
-    /**
-     * Obtener productos para el selector
-     */
     public function obtenerProductos() {
         try {
             $sql = "SELECT 
@@ -37,6 +22,7 @@ class NotaentradaModel {
                         costo_unitario, 
                         cantidad 
                     FROM producto 
+                    WHERE eliminado = 0
                     ORDER BY descripcion ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -46,9 +32,8 @@ class NotaentradaModel {
         }
     }
 
-    /**
-     * Obtener proveedores para el selector
-     */
+    // OBTENER PROVEEDORES
+
     public function obtenerProveedores() {
         try {
             $sql = "SELECT 
@@ -60,6 +45,7 @@ class NotaentradaModel {
                         pe.telefono
                     FROM proveedor p
                     INNER JOIN persona pe ON p.id_persona = pe.id_persona
+                    WHERE p.eliminado = 0 AND pe.eliminado = 0
                     ORDER BY p.razon_social ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -69,9 +55,8 @@ class NotaentradaModel {
         }
     }
 
-    /**
-     * Listado de notas de entrada con datos del proveedor
-     */
+    // LISTADO DE NOTAS DE ENTRADA
+
     public function obtenerNotasEntrada() {
         try {
             $sql = "SELECT 
@@ -93,6 +78,7 @@ class NotaentradaModel {
                     LEFT JOIN persona pe ON u.id_persona = pe.id_persona
                     LEFT JOIN detalle_entrada d ON n.id_nota_entrada = d.id_nota_entrada
                     LEFT JOIN producto prod ON d.id_producto = prod.id_producto
+                    WHERE n.eliminado = 0
                     GROUP BY n.id_nota_entrada, n.fecha_ingreso, n.descripcion, n.costo_total, p.razon_social, p.rif, pe.nombre, pe.apellido
                     ORDER BY n.id_nota_entrada DESC";
             $stmt = $this->db->prepare($sql);
@@ -103,9 +89,8 @@ class NotaentradaModel {
         }
     }
 
-    /**
-     * Obtener una nota completa con proveedor y detalles
-     */
+    // OBTENER NOTA POR ID
+
     public function obtenerNotaEntradaPorId($id) {
         try {
             $stmt = $this->db->prepare("
@@ -122,7 +107,7 @@ class NotaentradaModel {
                 LEFT JOIN proveedor p ON n.id_proveedor = p.id_proveedor
                 LEFT JOIN usuario u ON n.id_usuario = u.id_usuario
                 LEFT JOIN persona pe ON u.id_persona = pe.id_persona
-                WHERE n.id_nota_entrada = :id
+                WHERE n.id_nota_entrada = :id AND n.eliminado = 0
             ");
             $stmt->execute([':id' => $id]);
             $nota = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -148,9 +133,8 @@ class NotaentradaModel {
         }
     }
 
-    /**
-     * Guardar una nota completa (cabecera + detalles)
-     */
+    // GUARDAR NOTA COMPLETA
+
     public function guardarNotaEntradaCompleta(array $datos, array $detalles, $idUsuario) {
         $this->db->beginTransaction();
         try {
@@ -165,13 +149,15 @@ class NotaentradaModel {
                     id_proveedor, 
                     id_usuario, 
                     descripcion, 
-                    costo_total
+                    costo_total,
+                    eliminado
                 ) VALUES (
                     :fecha_ingreso, 
                     :id_proveedor, 
                     :id_usuario, 
                     :descripcion, 
-                    :costo_total
+                    :costo_total,
+                    0
                 )
             ");
             $stmt->execute([
@@ -223,13 +209,19 @@ class NotaentradaModel {
         }
     }
 
-    /**
-     * ANULAR NOTA DE ENTRADA (marca como anulado cuando la columna existe y revierte stock)
-     */
+    // ANULAR NOTA DE ENTRADA
+
     public function anularNotaEntrada($id, $motivo, $idUsuario) {
         $this->db->beginTransaction();
         try {
-            // 1. Obtener detalles para revertir stock
+            $stmtCheck = $this->db->prepare("
+                SELECT id_nota_entrada FROM nota_de_entrada WHERE id_nota_entrada = :id AND eliminado = 0
+            ");
+            $stmtCheck->execute([':id' => $id]);
+            if ($stmtCheck->rowCount() === 0) {
+                throw new Exception("La nota no existe o ya fue anulada");
+            }
+
             $stmtDet = $this->db->prepare("
                 SELECT id_producto, cantidad FROM detalle_entrada WHERE id_nota_entrada = :id
             ");
@@ -240,7 +232,6 @@ class NotaentradaModel {
                 throw new Exception("La nota no tiene productos asociados");
             }
 
-            // 2. Revertir stock (restar)
             $stmtStock = $this->db->prepare("
                 UPDATE producto SET cantidad = cantidad - :cantidad WHERE id_producto = :id_producto
             ");
@@ -251,33 +242,8 @@ class NotaentradaModel {
                 ]);
             }
 
-            // 3. Marcar como anulado si existe la columna 'anulado' en nota_de_entrada; sino, eliminar (legacy)
-            if ($this->hasColumn('nota_de_entrada', 'anulado')) {
-                $setParts = ['anulado = 1'];
-                $params = [':id' => $id];
-                if ($this->hasColumn('nota_de_entrada', 'motivo_anulacion')) {
-                    $setParts[] = 'motivo_anulacion = :motivo';
-                    $params[':motivo'] = $motivo;
-                }
-                if ($this->hasColumn('nota_de_entrada', 'id_usuario_anulo')) {
-                    $setParts[] = 'id_usuario_anulo = :id_usuario_anulo';
-                    $params[':id_usuario_anulo'] = $idUsuario;
-                }
-                if ($this->hasColumn('nota_de_entrada', 'fecha_anulacion')) {
-                    $setParts[] = 'fecha_anulacion = NOW()';
-                }
-
-                $sqlUpd = "UPDATE nota_de_entrada SET " . implode(', ', $setParts) . " WHERE id_nota_entrada = :id";
-                $stmtUpd = $this->db->prepare($sqlUpd);
-                $stmtUpd->execute($params);
-                // conservar detalles para trazabilidad
-            } else {
-                $stmtDelDet = $this->db->prepare("DELETE FROM detalle_entrada WHERE id_nota_entrada = :id");
-                $stmtDelDet->execute([':id' => $id]);
-
-                $stmtDel = $this->db->prepare("DELETE FROM nota_de_entrada WHERE id_nota_entrada = :id");
-                $stmtDel->execute([':id' => $id]);
-            }
+            $stmtDel = $this->db->prepare("UPDATE nota_de_entrada SET eliminado = 1 WHERE id_nota_entrada = :id");
+            $stmtDel->execute([':id' => $id]);
 
             $this->db->commit();
             return true;
@@ -287,26 +253,28 @@ class NotaentradaModel {
         }
     }
 
-    /**
-     * Obtener resumen de notas de entrada
-     */
+    // OBTENER RESUMEN
+
     public function getResumen() {
         try {
             $sql = "SELECT 
                         COUNT(*) AS total_notas,
                         COALESCE(SUM(costo_total), 0) AS total_compras
-                    FROM nota_de_entrada";
+                    FROM nota_de_entrada
+                    WHERE eliminado = 0";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            // CONTAR ANULADAS DESDE SESSION (igual que nota de salida)
-            $totalAnuladas = $_SESSION['contador_anulaciones_notaentrada'] ?? 0;
+            $sqlAnuladas = "SELECT COUNT(*) AS total FROM nota_de_entrada WHERE eliminado = 1";
+            $stmtAnuladas = $this->db->prepare($sqlAnuladas);
+            $stmtAnuladas->execute();
+            $anuladas = $stmtAnuladas->fetch(PDO::FETCH_ASSOC);
             
             return [
                 'total_notas' => $result['total_notas'] ?? 0,
                 'total_compras' => $result['total_compras'] ?? 0,
-                'total_anuladas' => $totalAnuladas
+                'total_anuladas' => $anuladas['total'] ?? 0
             ];
         } catch (PDOException $e) {
             return [

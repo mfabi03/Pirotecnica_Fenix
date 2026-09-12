@@ -8,21 +8,17 @@ use PDOException;
 class CategoriaModel {
     private $db;
 
-    /**
-     * CAMBIO: Ajuste de nombre según BD - Inyección de dependencia en lugar de new ConnectDB()
-     */
     public function __construct($db) {
         $this->db = $db;
     }
 
-    /**
-     * Obtener todas las categorías
-     * CAMBIO: Ajuste de nombre según BD - Tabla 'categoria' en lugar de 'categorias'
-     */
+    // OBTENER TODAS LAS CATEGORIAS
+
     public function obtenerCategorias() {
         try {
             $sql = "SELECT id_categoria, nombre_categoria, descripcion 
                     FROM categoria 
+                    WHERE eliminado = 0
                     ORDER BY id_categoria DESC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -32,15 +28,13 @@ class CategoriaModel {
         }
     }
 
-    /**
-     * Obtener una categoría por ID
-     * CAMBIO: Ajuste de nombre según BD - Tabla 'categoria'
-     */
+    // OBTENER CATEGORIA POR ID
+
     public function obtenerCategoriaPorId($id) {
         try {
             $sql = "SELECT id_categoria, nombre_categoria, descripcion 
                     FROM categoria 
-                    WHERE id_categoria = :id";
+                    WHERE id_categoria = :id AND eliminado = 0";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -49,22 +43,19 @@ class CategoriaModel {
         }
     }
 
-    /**
-     * Registrar una nueva categoría
-     * CAMBIO: Ajuste de nombre según BD - Tabla 'categoria'
-     */
+    // REGISTRAR CATEGORIA
+
     public function registrarCategoria(array $datos) {
         try {
-            // Verificar si ya existe una categoría con el mismo nombre
-            $checkSql = "SELECT COUNT(*) FROM categoria WHERE nombre_categoria = :nombre";
+            $checkSql = "SELECT COUNT(*) FROM categoria WHERE nombre_categoria = :nombre AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute([':nombre' => $datos['nombre_categoria']]);
             if ($checkStmt->fetchColumn() > 0) {
                 throw new Exception("Ya existe una categoría con el nombre '{$datos['nombre_categoria']}'.");
             }
 
-            $sql = "INSERT INTO categoria (nombre_categoria, descripcion) 
-                    VALUES (:nombre_categoria, :descripcion)";
+            $sql = "INSERT INTO categoria (nombre_categoria, descripcion, eliminado) 
+                    VALUES (:nombre_categoria, :descripcion, 0)";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':nombre_categoria' => $datos['nombre_categoria'],
@@ -75,23 +66,19 @@ class CategoriaModel {
         }
     }
 
-    /**
-     * Actualizar una categoría
-     * CAMBIO: Ajuste de nombre según BD - Tabla 'categoria'
-     */
+    // ACTUALIZAR CATEGORIA
+
     public function actualizarCategoria($id, array $datos) {
         try {
-            // Verificar si la categoría existe
-            $checkSql = "SELECT COUNT(*) FROM categoria WHERE id_categoria = :id";
+            $checkSql = "SELECT COUNT(*) FROM categoria WHERE id_categoria = :id AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute([':id' => $id]);
             if ($checkStmt->fetchColumn() == 0) {
                 throw new Exception("La categoría con ID {$id} no existe.");
             }
 
-            // Verificar si ya existe otra categoría con el mismo nombre
             $checkNombreSql = "SELECT COUNT(*) FROM categoria 
-                               WHERE nombre_categoria = :nombre AND id_categoria != :id";
+                               WHERE nombre_categoria = :nombre AND id_categoria != :id AND eliminado = 0";
             $checkNombreStmt = $this->db->prepare($checkNombreSql);
             $checkNombreStmt->execute([
                 ':nombre' => $datos['nombre_categoria'],
@@ -104,7 +91,7 @@ class CategoriaModel {
             $sql = "UPDATE categoria 
                     SET nombre_categoria = :nombre_categoria, 
                         descripcion = :descripcion 
-                    WHERE id_categoria = :id";
+                    WHERE id_categoria = :id AND eliminado = 0";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':id' => $id,
@@ -116,21 +103,18 @@ class CategoriaModel {
         }
     }
 
-    /**
-     * Eliminar una categoría
-     * CAMBIO: Ajuste de nombre según BD - Tabla 'categoria' y verificación de dependencias
-     */
+    // ELIMINAR CATEGORIA
+
     public function eliminarCategoria($id) {
         try {
-            // Verificar si la categoría tiene productos asociados
-            $checkSql = "SELECT COUNT(*) FROM producto WHERE id_categoria = :id";
+            $checkSql = "SELECT COUNT(*) FROM producto WHERE id_categoria = :id AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute([':id' => $id]);
             if ($checkStmt->fetchColumn() > 0) {
                 throw new Exception("No se puede eliminar la categoría porque tiene productos asociados.");
             }
 
-            $sql = "DELETE FROM categoria WHERE id_categoria = :id";
+            $sql = "UPDATE categoria SET eliminado = 1 WHERE id_categoria = :id";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
@@ -138,16 +122,15 @@ class CategoriaModel {
         }
     }
 
-    /**
-     * Buscar categorías por término
-     * CAMBIO: Ajuste de nombre según BD - Nuevo método
-     */
+    // BUSCAR CATEGORIAS
+
     public function buscarCategorias($termino) {
         try {
             $sql = "SELECT id_categoria, nombre_categoria, descripcion 
                     FROM categoria 
-                    WHERE nombre_categoria LIKE :termino 
-                       OR descripcion LIKE :termino
+                    WHERE eliminado = 0
+                    AND (nombre_categoria LIKE :termino 
+                       OR descripcion LIKE :termino)
                     ORDER BY nombre_categoria ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':termino' => "%{$termino}%"]);
@@ -157,14 +140,13 @@ class CategoriaModel {
         }
     }
 
-    /**
-     * Obtener categorías para select (solo id y nombre)
-     * CAMBIO: Ajuste de nombre según BD - Método para formularios
-     */
+    // OBTENER CATEGORIAS PARA SELECT
+
     public function obtenerCategoriasParaSelect() {
         try {
             $sql = "SELECT id_categoria, nombre_categoria 
                     FROM categoria 
+                    WHERE eliminado = 0
                     ORDER BY nombre_categoria ASC";
             $stmt = $this->db->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

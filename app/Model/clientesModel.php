@@ -58,22 +58,8 @@ class clientesModel {
                 throw new \Exception("Ya existe un cliente con la cédula: " . $datos['cedula']);
             }
 
-            $sql = "INSERT INTO persona (
-                        cedula,
-                        nombre,
-                        apellido,
-                        telefono,
-                        correo_electronico,
-                        direccion
-                    ) VALUES (
-                        :cedula,
-                        :nombre,
-                        :apellido,
-                        :telefono,
-                        :correo_electronico,
-                        :direccion
-                    )";
-
+            $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, eliminado) 
+                    VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 0)";
             $stmt = $this->db->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
@@ -90,8 +76,8 @@ class clientesModel {
 
             $idPersona = $this->db->lastInsertId();
 
-            $sql2 = "INSERT INTO cliente_natural (id_persona, fecha_de_nacimiento) 
-                     VALUES (:id_persona, :fecha_de_nacimiento)";
+            $sql2 = "INSERT INTO cliente_natural (id_persona, fecha_de_nacimiento, eliminado) 
+                     VALUES (:id_persona, :fecha_de_nacimiento, 0)";
             $stmt2 = $this->db->prepare($sql2);
             $resultado2 = $stmt2->execute([
                 ':id_persona' => $idPersona,
@@ -128,22 +114,8 @@ class clientesModel {
                 throw new \Exception("Ya existe un cliente con el RIF: " . $datos['rif']);
             }
 
-            $sql = "INSERT INTO persona (
-                        cedula,
-                        nombre,
-                        apellido,
-                        telefono,
-                        correo_electronico,
-                        direccion
-                    ) VALUES (
-                        :cedula,
-                        :nombre,
-                        :apellido,
-                        :telefono,
-                        :correo_electronico,
-                        :direccion
-                    )";
-
+            $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, eliminado) 
+                    VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 0)";
             $stmt = $this->db->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
@@ -160,8 +132,8 @@ class clientesModel {
 
             $idPersona = $this->db->lastInsertId();
 
-            $sql2 = "INSERT INTO cliente_juridico (id_persona, rif, razon_social) 
-                     VALUES (:id_persona, :rif, :razon_social)";
+            $sql2 = "INSERT INTO cliente_juridico (id_persona, rif, razon_social, eliminado) 
+                     VALUES (:id_persona, :rif, :razon_social, 0)";
             $stmt2 = $this->db->prepare($sql2);
             $resultado2 = $stmt2->execute([
                 ':id_persona' => $idPersona,
@@ -197,8 +169,7 @@ class clientesModel {
                         telefono = :telefono,
                         correo_electronico = :correo_electronico,
                         direccion = :direccion
-                    WHERE id_persona = :id";
-
+                    WHERE id_persona = :id AND eliminado = 0";
             $stmt = $this->db->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
@@ -215,7 +186,7 @@ class clientesModel {
             }
 
             $sql2 = "UPDATE cliente_natural SET fecha_de_nacimiento = :fecha_de_nacimiento 
-                     WHERE id_persona = :id";
+                     WHERE id_persona = :id AND eliminado = 0";
             $stmt2 = $this->db->prepare($sql2);
             return $stmt2->execute([
                 ':fecha_de_nacimiento' => $datos['fecha_de_nacimiento'],
@@ -242,8 +213,7 @@ class clientesModel {
                         telefono = :telefono,
                         correo_electronico = :correo_electronico,
                         direccion = :direccion
-                    WHERE id_persona = :id";
-
+                    WHERE id_persona = :id AND eliminado = 0";
             $stmt = $this->db->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
@@ -261,7 +231,7 @@ class clientesModel {
             $sql2 = "UPDATE cliente_juridico SET 
                         rif = :rif,
                         razon_social = :razon_social
-                    WHERE id_persona = :id";
+                    WHERE id_persona = :id AND eliminado = 0";
             $stmt2 = $this->db->prepare($sql2);
             return $stmt2->execute([
                 ':rif' => $datos['rif'],
@@ -275,7 +245,7 @@ class clientesModel {
         }
     }
 
-    //  BUSCAR CLIENTES 
+    // BUSCAR CLIENTES
 
     public function buscarClientes($termino) {
         try {
@@ -294,8 +264,8 @@ class clientesModel {
                     FROM persona p
                     LEFT JOIN cliente_natural cn ON p.id_persona = cn.id_persona
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
-                    WHERE (cj.id_cliente_juridico IS NOT NULL 
-                        OR cn.id_cliente_natural IS NOT NULL)
+                    WHERE (cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)
+                    AND p.eliminado = 0
                     AND (p.nombre LIKE :termino 
                         OR p.apellido LIKE :termino 
                         OR p.cedula LIKE :termino
@@ -313,12 +283,12 @@ class clientesModel {
         }
     }
 
-    // BUSCAR CLIENTES CON FILTRO (BÚSQUEDA GENERAL Y TIPO)
+    // BUSCAR CLIENTES CON FILTRO
 
     public function buscarClientesFiltrados($termino = null, $tipo = 'todos') {
         try {
             $params = [];
-            $where = [];
+            $where = ["p.eliminado = 0"];
 
             $sql = "SELECT
                         p.id_persona AS id_cliente,
@@ -377,7 +347,7 @@ class clientesModel {
         }
     }
 
-    // OBTENER TODOS LOS CLIENTES 
+    // OBTENER TODOS LOS CLIENTES
 
     public function obtenerClientes() {
         try {
@@ -400,8 +370,8 @@ class clientesModel {
                 FROM persona p
                 LEFT JOIN cliente_natural cn ON p.id_persona = cn.id_persona
                 LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
-                WHERE cj.id_cliente_juridico IS NOT NULL 
-                   OR cn.id_cliente_natural IS NOT NULL
+                WHERE (cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)
+                AND p.eliminado = 0
                 ORDER BY p.nombre ASC";
 
             $stmt = $this->db->prepare($sql);
@@ -435,7 +405,7 @@ class clientesModel {
                     FROM persona p
                     LEFT JOIN cliente_natural cn ON p.id_persona = cn.id_persona
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
-                    WHERE p.id_persona = :id";
+                    WHERE p.id_persona = :id AND p.eliminado = 0";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
@@ -456,7 +426,7 @@ class clientesModel {
 
         $this->db->beginTransaction();
         try {
-            $sqlCheck = "SELECT id_persona FROM persona WHERE id_persona = :id";
+            $sqlCheck = "SELECT id_persona FROM persona WHERE id_persona = :id AND eliminado = 0";
             $stmtCheck = $this->db->prepare($sqlCheck);
             $stmtCheck->execute([':id' => $id]);
 
@@ -464,7 +434,7 @@ class clientesModel {
                 throw new \Exception("El cliente no existe en la base de datos");
             }
 
-            $sqlNotaSalida = "SELECT 1 FROM nota_de_salida WHERE id_persona = :id LIMIT 1";
+            $sqlNotaSalida = "SELECT 1 FROM nota_de_salida WHERE id_persona = :id AND eliminado = 0 LIMIT 1";
             $stmtNotaSalida = $this->db->prepare($sqlNotaSalida);
             $stmtNotaSalida->execute([':id' => $id]);
 
@@ -474,8 +444,8 @@ class clientesModel {
 
             $sqlTipo = "SELECT 
                             CASE 
-                                WHEN EXISTS (SELECT 1 FROM cliente_natural WHERE id_persona = :id) THEN 'Natural'
-                                WHEN EXISTS (SELECT 1 FROM cliente_juridico WHERE id_persona = :id) THEN 'Jurídico'
+                                WHEN EXISTS (SELECT 1 FROM cliente_natural WHERE id_persona = :id AND eliminado = 0) THEN 'Natural'
+                                WHEN EXISTS (SELECT 1 FROM cliente_juridico WHERE id_persona = :id AND eliminado = 0) THEN 'Jurídico'
                                 ELSE 'Desconocido'
                             END AS tipo";
             $stmtTipo = $this->db->prepare($sqlTipo);
@@ -483,18 +453,18 @@ class clientesModel {
             $tipoCliente = $stmtTipo->fetchColumn();
 
             if ($tipoCliente === 'Natural' || $tipoCliente === 'Desconocido') {
-                $sql1 = "DELETE FROM cliente_natural WHERE id_persona = :id";
+                $sql1 = "UPDATE cliente_natural SET eliminado = 1 WHERE id_persona = :id";
                 $stmt1 = $this->db->prepare($sql1);
                 $stmt1->execute([':id' => $id]);
             }
 
             if ($tipoCliente === 'Jurídico' || $tipoCliente === 'Desconocido') {
-                $sql2 = "DELETE FROM cliente_juridico WHERE id_persona = :id";
+                $sql2 = "UPDATE cliente_juridico SET eliminado = 1 WHERE id_persona = :id";
                 $stmt2 = $this->db->prepare($sql2);
                 $stmt2->execute([':id' => $id]);
             }
 
-            $sql3 = "DELETE FROM persona WHERE id_persona = :id";
+            $sql3 = "UPDATE persona SET eliminado = 1 WHERE id_persona = :id";
             $stmt3 = $this->db->prepare($sql3);
             $resultado = $stmt3->execute([':id' => $id]);
 
@@ -516,7 +486,7 @@ class clientesModel {
 
     public function existeCedula($cedula) {
         try {
-            $sql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula";
+            $sql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula AND eliminado = 0";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':cedula' => $cedula]);
             return $stmt->fetchColumn() > 0;
@@ -528,7 +498,7 @@ class clientesModel {
 
     public function existeRif($rif) {
         try {
-            $sql = "SELECT COUNT(*) FROM cliente_juridico WHERE rif = :rif";
+            $sql = "SELECT COUNT(*) FROM cliente_juridico WHERE rif = :rif AND eliminado = 0";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':rif' => $rif]);
             return $stmt->fetchColumn() > 0;
