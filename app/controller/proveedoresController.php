@@ -3,6 +3,8 @@ namespace App\Pirotecnicafenix\Controller;
 
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\proveedoresModel;
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
 use Exception;
 
 error_reporting(E_ALL);
@@ -39,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRAR PROVEEDOR
 
     if ($type === 'store') {
+        CheckPermiso::verificar($db, 'Proveedores', 'crear', '?url=proveedores&type=list');
         $datos = [
             'rif' => trim($_POST['rif'] ?? ''),
             'razon_social' => trim($_POST['razon_social'] ?? ''),
@@ -78,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     //REGISTRO RÁPIDO PROVEEDOR 
 
     if ($type === 'store_rapido') {
+        CheckPermiso::verificar($db, 'Proveedores', 'crear', '?url=proveedores&type=list');
         try {
             // Validar campos requeridos
             if (empty($_POST['rif']) || empty($_POST['razon_social']) || empty($_POST['numero_contacto']) || empty($_POST['direccion'])) {
@@ -134,6 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACTUALIZAR PROVEEDOR
 
     if ($type === 'update') {
+        CheckPermiso::verificar($db, 'Proveedores', 'actualizar', '?url=proveedores&type=list');
         $id = $_POST['id_proveedor'] ?? 0;
         $datos = [
             'rif' => trim($_POST['rif'] ?? ''),
@@ -161,6 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ELIMINAR PROVEEDOR
 
     if ($type === 'delete') {
+        CheckPermiso::verificar($db, 'Proveedores', 'eliminar', '?url=proveedores&type=list');
         $id = $_POST['id_proveedor'] ?? 0;
         try {
             if ($modelo->eliminarProveedor($id)) {

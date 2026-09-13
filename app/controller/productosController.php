@@ -6,6 +6,8 @@ use Exception;
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\ProductoModel;
 use App\Pirotecnicafenix\Model\proveedoresModel;
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
 
 // CONFIGURACIÓN INICIAL
 
@@ -141,6 +143,10 @@ class ProductoValidator {
             $errores[] = "Debe seleccionar una categoría válida.";
         }
 
+        if (isset($datos['stock_minimo']) && $datos['stock_minimo'] < 1) {
+            $errores[] = "El stock mínimo debe ser mayor o igual a 1.";
+        }
+
         return $errores;
     }
 }
@@ -152,10 +158,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRAR PRODUCTO
 
     if ($type === 'store') {
+        CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
         try {
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
                 'cantidad' => intval($_POST['cantidad'] ?? 0),
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
                 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
@@ -204,6 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRO RÁPIDO PRODUCTO 
 
     if ($type === 'store_rapido') {
+        CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
         try {
             // Validar campos requeridos
             if (empty($_POST['descripcion']) || empty($_POST['id_categoria'])) {
@@ -213,6 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datosProducto = [
                 'descripcion' => trim($_POST['descripcion']),
                 'cantidad' => intval($_POST['cantidad'] ?? 0),
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
                 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0.0),
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
@@ -262,12 +272,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACTUALIZAR PRODUCTO
 
     if ($type === 'update') {
+        CheckPermiso::verificar($db, 'Productos', 'actualizar', '?url=productos');
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
             
             // No permitir modificar la cantidad (stock) desde el formulario de edición.
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
                 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
@@ -305,6 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ELIMINAR PRODUCTO
    
     if ($type === 'delete') {
+        CheckPermiso::verificar($db, 'Productos', 'eliminar', '?url=productos');
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
             
@@ -399,6 +412,7 @@ try {
                     p.id_producto,
                     p.descripcion,
                     p.cantidad AS stock,
+                    p.stock_minimo,
                     p.costo_unitario,
                     p.id_categoria,
                     c.nombre_categoria

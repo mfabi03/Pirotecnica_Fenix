@@ -5,6 +5,8 @@ use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\notasalidaModel;
 use App\Pirotecnicafenix\Model\ProductoModel;
 use App\Pirotecnicafenix\Model\clientesModel;
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
 use Exception;
 
 error_reporting(E_ALL);
@@ -91,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRAR NOTA DE SALIDA
    
     if ($type === 'store') {
+        CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
             $idUsuario = obtenerIdUsuarioValido($db);
             
@@ -139,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRO RÁPIDO DE PRODUCTO 
 
     if ($type === 'store_rapido_producto') {
+        CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
             // Validar campos requeridos
             if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) {
@@ -194,6 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRO RÁPIDO DE CLIENTE 
 
     if ($type === 'store_rapido_cliente') {
+        CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
             $tipo = $_POST['tipo_cliente'] ?? 'natural';
             
@@ -269,6 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACTUALIZAR
 
     if ($type === 'update') {
+        CheckPermiso::verificar($db, 'Notas de Salida', 'actualizar', '?url=notasalida&type=list');
         try {
             $id = $_POST['id_nota_salida'] ?? 0;
             $idUsuario = obtenerIdUsuarioValido($db);
@@ -318,6 +324,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ELIMINAR
 
     if ($type === 'eliminar') {
+        CheckPermiso::verificar($db, 'Notas de Salida', 'eliminar', '?url=notasalida&type=list');
         try {
             $idNota = $_POST['id_nota_salida'] ?? 0;
             $motivo = trim($_POST['motivo_eliminacion'] ?? '');

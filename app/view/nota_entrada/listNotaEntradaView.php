@@ -1,13 +1,30 @@
 <?php
-// app/view/notaentrada/notaentradaLista.php
+// app/view/nota_entrada/listNotaEntradaView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'crear') : false;
+$puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'eliminar') : false;
 ?>
 
 <div class="container-fluid px-4">
     <div class="row">
         <div class="col-md-9 col-lg-10">
             
-            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+            <!-- TARJETA DE TÍTULO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -24,9 +41,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             <input type="hidden" name="type" value="list">
                             <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                         </form>
+                        <?php if ($puede_crear_nota): ?>
                         <a href="?url=notaentrada&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Nota de Entrada
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -44,7 +63,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                         <datalist id="listaNotasEntrada">
                             <?php
-                            // Recolectar sugerencias únicas
                             $sugerencias = [];
                             if (!empty($notas) && is_array($notas)):
                                 foreach ($notas as $n):
@@ -56,7 +74,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 endforeach;
                             endif;
 
-                            // Pintar opciones
                             foreach (array_keys($sugerencias) as $s): ?>
                                 <option value="<?= htmlspecialchars($s) ?>">
                             <?php endforeach; ?>
@@ -147,7 +164,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
-            <!-- TABLA DE NOTAS DE ENTRADA -->
+            <!-- TABLA -->
             <div class="dark-card card shadow-sm dark-table-header">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h5 class="m-0">
@@ -236,12 +253,14 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
+                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=notaentrada&type=show&id=<?= $n['id_nota_entrada'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <?php if (!$anulada): ?>
+                                                <!-- Anular: solo si tiene permiso -->
+                                                <?php if (!$anulada && $puede_anular_nota): ?>
                                                     <button type="button" class="btn-action-circle btn-delete" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#anularModal"
@@ -250,7 +269,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                             title="Anular Nota">
                                                         <i class="fas fa-ban"></i>
                                                     </button>
-                                                <?php else: ?>
+                                                <?php elseif ($anulada): ?>
                                                     <span style="color: #adb5bd; font-size: 0.7rem;">Anulada</span>
                                                 <?php endif; ?>
                                             </div>
@@ -294,46 +313,4 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     <div class="mb-3">
                         <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Motivo de Anulación <span class="text-danger">*</span></label>
                         <textarea name="motivo_anulacion" class="form-control" rows="3" required 
-                                  placeholder="Describe el motivo por el cual se anula esta nota..."
-                                  style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 12px 16px;"></textarea>
-                    </div>
-                    <input type="hidden" name="id_nota_entrada" id="modalNotaId">
-                </div>
-                <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.04);">
-                    <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 8px 20px; font-weight: 600;">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; border-radius: 50px; padding: 8px 20px; font-weight: 600;">
-                        <i class="fas fa-ban me-1"></i> Anular Nota
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const alertElement = document.querySelector('.alert');
-    if (alertElement) {
-        setTimeout(() => {
-            const bsAlert = bootstrap.Alert.getInstance(alertElement);
-            if (bsAlert) bsAlert.close();
-        }, 5000);
-    }
-
-    const anularModal = document.getElementById('anularModal');
-    if (anularModal) {
-        anularModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const id = button.getAttribute('data-id');
-            const proveedor = button.getAttribute('data-proveedor');
-            
-            document.getElementById('modalNotaId').value = id;
-            document.getElementById('modalProveedor').textContent = proveedor;
-        });
-    }
-});
-</script>
-
-<?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>
+                                  placeholder="Describe el motivo por el cual se anula esta nota

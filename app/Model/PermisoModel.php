@@ -59,20 +59,22 @@ public function actualizarPermisos($id_rol, $permisosPost) {
             $actualizar = array_key_exists('actualizar', $accionesModulo) ? 1 : 0;
             $eliminar = array_key_exists('eliminar', $accionesModulo) ? 1 : 0;
 
-            // 3.3 INSERTAR la fila
+            // 3.3 INSERTAR la fila usando bindValue para manejar correctamente campos bit(1)
             $sqlInsert = "INSERT INTO permisos 
                             (id_rol, id_modulo, crear, leer, actualizar, eliminar) 
                           VALUES 
                             (:id_rol, :id_modulo, :crear, :leer, :actualizar, :eliminar)";
             $stmtInsert = $this->db->prepare($sqlInsert);
-            $stmtInsert->execute([
-                'id_rol'     => $id_rol,
-                'id_modulo'  => $id_modulo,
-                'crear'      => $crear,
-                'leer'       => $leer,
-                'actualizar' => $actualizar,
-                'eliminar'   => $eliminar,
-            ]);
+            
+            // Usar bindValue con PDO::PARAM_INT para campos bit(1)
+            $stmtInsert->bindValue(':id_rol', $id_rol, PDO::PARAM_INT);
+            $stmtInsert->bindValue(':id_modulo', $id_modulo, PDO::PARAM_INT);
+            $stmtInsert->bindValue(':crear', $crear, PDO::PARAM_INT);
+            $stmtInsert->bindValue(':leer', $leer, PDO::PARAM_INT);
+            $stmtInsert->bindValue(':actualizar', $actualizar, PDO::PARAM_INT);
+            $stmtInsert->bindValue(':eliminar', $eliminar, PDO::PARAM_INT);
+            
+            $stmtInsert->execute();
         }
 
         $this->db->commit();
@@ -93,10 +95,12 @@ public function actualizarPermisos($id_rol, $permisosPost) {
             $stmt = $this->db->prepare("INSERT INTO permisos 
                 (id_rol, id_modulo, crear, leer, actualizar, eliminar) 
                 VALUES (:id_rol, :id_modulo, 0, 0, 0, 0)");
-            $stmt->execute([
-                'id_rol'    => $id_rol,
-                'id_modulo' => $m['id_modulo'],
-            ]);
+            
+            // Usar bindValue con PDO::PARAM_INT para campos bit(1)
+            $stmt->bindValue(':id_rol', $id_rol, PDO::PARAM_INT);
+            $stmt->bindValue(':id_modulo', $m['id_modulo'], PDO::PARAM_INT);
+            
+            $stmt->execute();
         }
         return true;
     }

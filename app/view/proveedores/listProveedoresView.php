@@ -1,6 +1,24 @@
 <?php
-// app/view/proveedores/proveedores_lista.php
+// app/view/proveedores/listProveedoresView.php
 require_once __DIR__ . '/../header.php';
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_crear_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'crear') : false;
+$puede_editar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'actualizar') : false;
+$puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'eliminar') : false;
 ?>
 
 <div class="container-fluid px-4">
@@ -24,9 +42,11 @@ require_once __DIR__ . '/../header.php';
                             <input type="hidden" name="type" value="list">
                             <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
                         </form>
+                        <?php if ($puede_crear_proveedor): ?>
                         <a href="?url=proveedores&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Proveedor
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -44,7 +64,6 @@ require_once __DIR__ . '/../header.php';
                                value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                         <datalist id="listaProveedores">
                             <?php
-                            // Recolectar sugerencias únicas
                             $sugerencias = [];
                             if (!empty($proveedores) && is_array($proveedores)):
                                 foreach ($proveedores as $p):
@@ -57,7 +76,6 @@ require_once __DIR__ . '/../header.php';
                                 endforeach;
                             endif;
 
-                            // Pintar opciones
                             foreach (array_keys($sugerencias) as $s): ?>
                                 <option value="<?= htmlspecialchars($s) ?>">
                             <?php endforeach; ?>
@@ -84,6 +102,16 @@ require_once __DIR__ . '/../header.php';
                     <div class="d-flex align-items-center">
                         <i class="fas <?= ($tipo_mensaje ?? '') === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?> me-3 fs-4"></i>
                         <span><?= htmlspecialchars($mensaje) ?></span>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($success) && !empty($success)): ?>
+                <div class="alert dark-alert-success alert-dismissible fade show shadow-sm border-0">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle me-3 fs-4"></i>
+                        <span><?= htmlspecialchars($success) ?></span>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
@@ -126,14 +154,22 @@ require_once __DIR__ . '/../header.php';
                                         <td><?= htmlspecialchars($p['correo_electronico'] ?? 'N/A') ?></td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
+                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=proveedores&type=show&id=<?= $p['id_proveedor'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
+                                                
+                                                <!-- Editar: solo si tiene permiso -->
+                                                <?php if ($puede_editar_proveedor): ?>
                                                 <a href="?url=proveedores&type=edit&id=<?= $p['id_proveedor'] ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
+                                                <?php endif; ?>
+                                                
+                                                <!-- Eliminar: solo si tiene permiso -->
+                                                <?php if ($puede_eliminar_proveedor): ?>
                                                 <form method="POST" action="?url=proveedores&type=delete" class="d-inline">
                                                     <input type="hidden" name="id_proveedor" value="<?= $p['id_proveedor'] ?>">
                                                     <button type="submit" class="btn-action-circle btn-delete"
@@ -142,6 +178,7 @@ require_once __DIR__ . '/../header.php';
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
                                                 </form>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>

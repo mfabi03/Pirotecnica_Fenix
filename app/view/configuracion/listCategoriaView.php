@@ -1,13 +1,31 @@
 <?php
 // app/view/configuracion/listCategoriaView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_crear_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'crear') : false;
+$puede_editar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'actualizar') : false;
+$puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'eliminar') : false;
 ?>
 
 <div class="container-fluid px-4">
     <div class="row">
         <div class="col-md-9 col-lg-10">
             
-            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+            <!-- TARJETA DE TÍTULO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -24,9 +42,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             <input type="hidden" name="action" value="lista">
                             <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
                         </form>
+                        <?php if ($puede_crear_categoria): ?>
                         <a href="?url=categorias&action=registrar" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Categoría
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -44,7 +64,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                         <datalist id="listaCategorias">
                             <?php
-                            // Recolectar sugerencias únicas
                             $sugerencias = [];
                             if (!empty($categorias) && is_array($categorias)):
                                 foreach ($categorias as $cat):
@@ -55,7 +74,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 endforeach;
                             endif;
 
-                            // Pintar opciones
                             foreach (array_keys($sugerencias) as $s): ?>
                                 <option value="<?= htmlspecialchars($s) ?>">
                             <?php endforeach; ?>
@@ -128,19 +146,22 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <td><?= htmlspecialchars($cat['descripcion'] ?? 'N/A') ?></td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <!-- Ver -->
+                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=categorias&action=ver&id=<?= $cat['id_categoria'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <!-- Editar -->
+                                                <!-- Editar: solo si tiene permiso -->
+                                                <?php if ($puede_editar_categoria): ?>
                                                 <a href="?url=categorias&action=editar&id=<?= $cat['id_categoria'] ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
+                                                <?php endif; ?>
                                                 
-                                                <!-- Eliminar -->
+                                                <!-- Eliminar: solo si tiene permiso -->
+                                                <?php if ($puede_eliminar_categoria): ?>
                                                 <form method="POST" action="?url=categorias&action=eliminar" class="d-inline">
                                                     <input type="hidden" name="accion" value="eliminar">
                                                     <input type="hidden" name="id_categoria" value="<?= $cat['id_categoria'] ?>">
@@ -149,6 +170,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
                                                 </form>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>

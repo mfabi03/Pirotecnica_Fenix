@@ -1,9 +1,26 @@
 <?php
-// app/view/clientes/clientes_view.php
+// app/view/clientes/detalleClientView.php
 if (!isset($cliente) || empty($cliente)) {
     die('Cliente no encontrado');
 }
 require_once dirname(__DIR__, 2) . "/view/header.php"; 
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_editar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Clientes', 'actualizar') : false;
+$puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Clientes', 'eliminar') : false;
 ?>
 
 <div class="container-fluid px-4">
@@ -135,16 +152,21 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     </div>
                     
                     <!-- ==========================================
-                         BOTONES DE ACCIÓN
+                         BOTONES DE ACCIÓN (SOLO SE MODIFICAN ESTOS)
                          ========================================== -->
                     <div class="text-center mt-4" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px;">
                         <?php 
                         $editType = ($cliente['tipo_cliente'] ?? '') === 'Jurídico' ? 'edit_juridico' : 'edit';
                         ?>
+                        
+                        <?php if ($puede_editar_cliente): ?>
                         <a href="?url=clientes&type=<?= $editType ?>&id=<?= htmlspecialchars($cliente['id_cliente'] ?? '') ?>" 
                            class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-edit me-2"></i> Editar cliente
                         </a>
+                        <?php endif; ?>
+                        
+                        <?php if ($puede_eliminar_cliente): ?>
                         <form method="POST" action="?url=clientes&type=delete" style="display: inline;">
                             <input type="hidden" name="accion" value="eliminar">
                             <input type="hidden" name="id_cliente" value="<?= htmlspecialchars($cliente['id_cliente'] ?? 0) ?>">
@@ -155,6 +177,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <i class="fas fa-trash-alt me-2"></i> Eliminar cliente
                             </button>
                         </form>
+                        <?php endif; ?>
+                        
                         <a href="?url=clientes&type=list" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-left: 10px;">
                             <i class="fas fa-list me-1"></i> Ver todos
                         </a>

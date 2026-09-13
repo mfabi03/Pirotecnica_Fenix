@@ -6,13 +6,14 @@ ini_set('display_errors', 1);
 
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\clientesModel;
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
 use Exception;
 
 // Iniciar sesión
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
 
 // 1. CARGA DEL MODELO
 
@@ -24,7 +25,6 @@ if (file_exists($pathModel)) {
 } else {
     die("ERROR CRÍTICO: No se encuentra el archivo: " . $pathModel);
 }
-
 
 // 2. INICIALIZACIÓN DE CONEXIÓN Y MODELO
 
@@ -50,6 +50,7 @@ $tipo = trim((string) ($_GET['tipo'] ?? 'todos'));
 // ELIMINAR 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
+    CheckPermiso::verificar($db, 'Clientes', 'eliminar', '?url=clientes&type=list');
     try {
         $id = $_POST['id_cliente'] ?? null;
         if (!$id || !is_numeric($id) || $id <= 0) {
@@ -69,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
 // REGISTRO NATURAL
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_natural') {
+    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
     try {
         if (empty(trim($_POST['cedula']))) {
             throw new Exception("La cédula es obligatoria.");
@@ -103,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 // REGISTRO RÁPIDO CLIENTE 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
+    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
     try {
         // Validar campos requeridos
         if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) {
@@ -158,6 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
 // REGISTRO JURIDICO
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_juridico') {
+    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
     try {
         if (empty(trim($_POST['rif']))) {
             throw new Exception("El RIF es obligatorio.");
@@ -188,10 +192,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-
 // EDITAR NATURAL
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_natural') {
+    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
     try {
         $id = $_POST['id_cliente'] ?? null;
         if (!$id) throw new Exception("ID de cliente no proporcionado");
@@ -217,10 +221,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-
 // EDITAR JURIDICO
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_juridico') {
+    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
     try {
         $id = $_POST['id_cliente'] ?? null;
         if (!$id) throw new Exception("ID de cliente no proporcionado");
@@ -245,9 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-
 // 4. CARGAR VISTAS
-
 
 $basePath = __DIR__ . "/../view/clientes/";
 
@@ -273,7 +275,7 @@ if ($type === 'list' || $type === '') {
         $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
     }
 
-    // Paginación (client-side slice cuando el modelo devuelve array)
+    // Paginación
     $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
     $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
     $total_registros = is_array($clientes_full) ? count($clientes_full) : 0;

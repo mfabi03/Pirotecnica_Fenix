@@ -1,6 +1,24 @@
 <?php
-// app/view/productos/productos_lista.php
+// app/view/productos/listProductsView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_crear_producto = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Productos', 'crear') : false;
+$puede_editar_producto = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Productos', 'actualizar') : false;
+$puede_eliminar_producto = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Productos', 'eliminar') : false;
 
 $jsonPath = __DIR__ . '/../../../public/uploads/products_imagenes.json';
 $productosData = [];
@@ -30,9 +48,11 @@ if (file_exists($jsonPath)) {
                             <input type="hidden" name="type" value="list">
                             <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                         </form>
+                        <?php if ($puede_crear_producto): ?>
                         <a href="?url=productos&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Producto
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -239,14 +259,22 @@ if (file_exists($jsonPath)) {
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
+                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=productos&type=show&id=<?= $p['id_producto'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
+                                                
+                                                <!-- Editar: solo si tiene permiso -->
+                                                <?php if ($puede_editar_producto): ?>
                                                 <a href="?url=productos&type=edit&id=<?= $p['id_producto'] ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
+                                                <?php endif; ?>
+                                                
+                                                <!-- Eliminar: solo si tiene permiso -->
+                                                <?php if ($puede_eliminar_producto): ?>
                                                 <form method="POST" action="?url=productos&type=delete" class="d-inline">
                                                     <input type="hidden" name="id_producto" value="<?= $p['id_producto'] ?>">
                                                     <button type="submit" class="btn-action-circle btn-delete"
@@ -255,6 +283,7 @@ if (file_exists($jsonPath)) {
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
                                                 </form>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>

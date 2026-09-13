@@ -20,6 +20,7 @@ class ProductoModel {
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
+                        p.stock_minimo,
                         p.costo_unitario,
                         p.id_categoria,
                         c.nombre_categoria
@@ -44,6 +45,7 @@ class ProductoModel {
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
+                        p.stock_minimo,
                         p.costo_unitario,
                         p.id_categoria,
                         c.nombre_categoria
@@ -76,18 +78,20 @@ class ProductoModel {
         }
     }
 
-    // REGISTRAR PRODUCTO
+    // REGISTRAR PRODUCTO (CON STOCK MÍNIMO)
 
     public function registrarProducto($datos) {
         try {
             $sql = "INSERT INTO producto (
                         descripcion,
                         cantidad,
+                        stock_minimo,
                         costo_unitario,
                         id_categoria
                     ) VALUES (
                         :descripcion,
                         :cantidad,
+                        :stock_minimo,
                         :costo_unitario,
                         :id_categoria
                     )";
@@ -96,6 +100,7 @@ class ProductoModel {
             $success = $stmt->execute([
                 ':descripcion' => $datos['descripcion'],
                 ':cantidad' => $datos['cantidad'],
+                ':stock_minimo' => $datos['stock_minimo'] ?? 10,
                 ':costo_unitario' => $datos['costo_unitario'],
                 ':id_categoria' => $datos['id_categoria'] ?? null
             ]);
@@ -111,14 +116,16 @@ class ProductoModel {
         }
     }
 
-    // ACTUALIZAR PRODUCTO
+    // ACTUALIZAR PRODUCTO (CON STOCK MÍNIMO)
 
     public function actualizarProducto($id, $datos) {
         try {
             // NOTA: El campo 'cantidad' (stock) NO se actualiza aquí. Las existencias
             // deben gestionarse mediante notas de entrada/salida para mantener trazabilidad.
+            // El stock_minimo SÍ se puede actualizar.
             $sql = "UPDATE producto SET 
                         descripcion = :descripcion,
+                        stock_minimo = :stock_minimo,
                         costo_unitario = :costo_unitario,
                         id_categoria = :id_categoria
                     WHERE id_producto = :id";
@@ -126,6 +133,7 @@ class ProductoModel {
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':descripcion' => $datos['descripcion'],
+                ':stock_minimo' => $datos['stock_minimo'] ?? 10,
                 ':costo_unitario' => $datos['costo_unitario'],
                 ':id_categoria' => $datos['id_categoria'] ?? null,
                 ':id' => $id
@@ -188,6 +196,7 @@ class ProductoModel {
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
+                        p.stock_minimo,
                         p.costo_unitario,
                         p.id_categoria,
                         c.nombre_categoria

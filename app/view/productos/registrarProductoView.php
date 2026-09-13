@@ -1,5 +1,5 @@
 <?php
-// app/view/productos/productos_create.php
+// app/view/productos/registrarProductoView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 ?>
 
@@ -7,9 +7,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <div class="row">       
         <div class="col-md-9 col-lg-10">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -28,9 +26,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- MENSAJES -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
                 <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -51,9 +47,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 FORMULARIO
-                 ========================================== -->
+            <!-- FORMULARIO -->
             <div class="dark-card card shadow-sm">
                 <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                     <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -71,7 +65,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         
                         <div class="row g-3">
                             
-                            <!-- ===== DATOS DEL PRODUCTO ===== -->
+                            <!-- DATOS DEL PRODUCTO -->
                             <div class="col-12">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
                                     <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Datos del Producto
@@ -135,20 +129,30 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </div>
                             </div>
 
-                            <!-- ===== DATOS DE INVENTARIO ===== -->
+                            <!-- DATOS DE INVENTARIO -->
                             <div class="col-12">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
                                     <i class="fas fa-chart-line me-2" style="color: #f39c12;"></i> Datos de Inventario
                                 </h6>
                                 <div class="row g-3">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <label for="cantidad" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cantidad (Stock) *</label>
                                         <input type="number" name="cantidad" id="cantidad" class="form-control" 
                                                style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
                                                min="0" placeholder="0" required
                                                value="<?= htmlspecialchars($_POST['cantidad'] ?? 0) ?>">
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
+                                        <label for="stock_minimo" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo *</label>
+                                        <input type="number" name="stock_minimo" id="stock_minimo" class="form-control" 
+                                               style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
+                                               min="1" placeholder="10" required
+                                               value="<?= htmlspecialchars($_POST['stock_minimo'] ?? 10) ?>">
+                                        <small style="color: #6c757d; font-size: 0.7rem;">
+                                            <i class="fas fa-info-circle me-1"></i> Alerta cuando el stock baje a este nivel
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4">
                                         <label for="costo_unitario" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Costo Unitario *</label>
                                         <div class="input-group">
                                             <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 1.5px solid rgba(0,0,0,0.08); border-right: none; background: #f8f9fa;">$</span>
@@ -161,7 +165,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </div>
                             </div>
 
-                            <!-- ===== ESPECIFICACIONES ===== -->
+                            <!-- ESPECIFICACIONES -->
                             <div class="col-12">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
                                     <i class="fas fa-list me-2" style="color: #f39c12;"></i> Especificaciones Técnicas
@@ -177,9 +181,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </div>
                             </div>
 
-                            <!-- ==========================================
-                                 BOTONES DE ACCIÓN
-                                 ========================================== -->
+                            <!-- BOTONES DE ACCIÓN -->
                             <div class="col-12 text-end" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px; margin-top: 10px;">
                                 <?php if (isset($_GET['return'])): ?>
                                     <a href="?url=<?= $_GET['return'] ?>&type=create" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
