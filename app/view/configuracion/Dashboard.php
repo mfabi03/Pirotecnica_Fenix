@@ -46,10 +46,29 @@ if (!empty($_SESSION['error'])): ?>
                     </div>
                 </div>
             </div>
-
-            <!-- ==========================================
-                 TARJETAS DE ESTADÍSTICAS - ESTILO DARK
+                        <!-- ==========================================
+                 ALERTA DE STOCK MÍNIMO (RF-11 / CU-11)
                  ========================================== -->
+                <?php if (($stats['productos_criticos'] ?? 0) > 0): ?>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert dark-alert-warning alert-dismissible fade show shadow-sm border-0 mb-0" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-triangle me-3 fs-4 text-warning"></i>
+                                    <div class="flex-grow-1">
+                                        <strong>Alerta de Stock Mínimo:</strong>
+                                        Hay <?= (int)($stats['productos_criticos'] ?? 0) ?> 
+                                        producto<?= (($stats['productos_criticos'] ?? 0) > 1) ? 's' : '' ?> 
+                                        con existencias críticas. 
+                                        <span class="text-warning">Revise el módulo de Productos.</span>
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="alert"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            
             <div class="row g-4 mb-4">
                 <!-- Tarjeta 1: Productos -->
                 <div class="col-12 col-md-3">
@@ -68,8 +87,7 @@ if (!empty($_SESSION['error'])): ?>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Tarjeta 2: Usuarios -->
+               
                 <div class="col-12 col-md-3">
                     <div class="stat-card stat-card-success">
                         <div class="stat-card-icon">
@@ -87,7 +105,7 @@ if (!empty($_SESSION['error'])): ?>
                     </div>
                 </div>
                 
-                <!-- Tarjeta 3: Stock Crítico -->
+                
                 <div class="col-12 col-md-3">
                     <div class="stat-card stat-card-warning">
                         <div class="stat-card-icon">
@@ -104,7 +122,7 @@ if (!empty($_SESSION['error'])): ?>
                         </div>
                     </div>
                 </div>
-                
+                            
                 <!-- Tarjeta 4: Clientes -->
                 <div class="col-12 col-md-3">
                     <div class="stat-card stat-card-info">

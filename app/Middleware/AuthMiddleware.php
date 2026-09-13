@@ -1,9 +1,11 @@
 <?php
 namespace App\Pirotecnicafenix\Middleware;
 
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+
 class AuthMiddleware
 {
-    //averigua que el usuario este logueado 
+    // Averigua que el usuario esté logueado
     public static function isLoggedIn(): bool
     {
         return isset($_SESSION['id_usuario']) && !empty($_SESSION['id_usuario']);
@@ -39,9 +41,31 @@ class AuthMiddleware
             exit();
         }
 
-// verifica que el usuario sea administrador 
         if (!self::isAdmin()) {
             $_SESSION['error'] = 'Acceso denegado. Se requieren permisos de administrador.';
+            header('Location: ?url=dashboard');
+            exit();
+        }
+    }
+
+    /**
+     * ⭐ NUEVO: Verifica si el usuario tiene permiso para un módulo y acción
+     * 
+     * @param \PDO $db Conexión a la BD
+     * @param string $modulo Nombre del módulo (ej: 'Productos', 'Clientes')
+     * @param string $accion 'crear', 'leer', 'actualizar', 'eliminar'
+     */
+    public static function requirePermiso($db, string $modulo, string $accion = 'leer'): void
+    {
+        if (!self::isLoggedIn()) {
+            header('Location: ?url=login');
+            exit();
+        }
+
+        $id_rol = self::getUserRole() ?? 0;
+
+        if (!PermisoHelper::tienePermiso($db, $id_rol, $modulo, $accion)) {
+            $_SESSION['error'] = "No tienes permiso para acceder al módulo de {$modulo}.";
             header('Location: ?url=dashboard');
             exit();
         }
@@ -50,7 +74,7 @@ class AuthMiddleware
     public static function checkAccess(string $url): bool
     {
         $publicRoutes = ['main', 'login', ''];
-        $authRoutes = ['dashboard', 'productos', 'proveedores', 'clientes', 'categorias', 'notaentrada', 'notasalida', 'reportes'];
+        $authRoutes = ['dashboard', 'productos', 'proveedores', 'clientes', 'categorias', 'notaentrada', 'notasalida', 'reportes', 'permisos'];
         $adminRoutes = ['usuarios', 'roles'];
 
         if (in_array($url, $publicRoutes, true)) {

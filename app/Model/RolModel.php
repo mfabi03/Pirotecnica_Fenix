@@ -14,75 +14,75 @@ class RolModel {
 
     // 1. OBTENER TODOS LOS ROLES
 
-    public function getAllRoles() {
-        try {
-            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
-            $sql = "SELECT 
-                        r.id_rol, 
-                        r.nombre_rol,
-                        (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol) as total_usuarios
-                    FROM rol r 
-                    ORDER BY r.id_rol ASC";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
-            error_log("Error en getAllRoles: " . $e->getMessage());
-            return [];
-        }
+   public function getAllRoles() {
+    try {
+        $sql = "SELECT 
+                    r.id_rol, 
+                    r.nombre_rol,
+                    (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol AND u.eliminado = 0) as total_usuarios
+                FROM rol r 
+                WHERE r.eliminado = 0
+                ORDER BY r.id_rol ASC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("Error en getAllRoles: " . $e->getMessage());
+        return [];
     }
+}
 
     // 2. OBTENER ROL POR ID
 
-    public function getRolById($id) {
-        try {
-            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
-            $sql = "SELECT 
-                        r.id_rol, 
-                        r.nombre_rol,
-                        (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol) as total_usuarios
-                    FROM rol r 
-                    WHERE r.id_rol = :id 
-                    LIMIT 1";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute(['id' => $id]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
-            error_log("Error en getRolById: " . $e->getMessage());
-            return null;
-        }
+   public function getRolById($id) {
+    try {
+        $sql = "SELECT 
+                    r.id_rol, 
+                    r.nombre_rol,
+                    (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol AND u.eliminado = 0) as total_usuarios
+                FROM rol r 
+                WHERE r.id_rol = :id 
+                  AND r.eliminado = 0
+                LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("Error en getRolById: " . $e->getMessage());
+        return null;
     }
+}
 
     // 3. BUSCAR ROLES POR NOMBRE
 
     public function buscarRoles($busqueda) {
-        try {
-            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
-            $sql = "SELECT 
-                        r.id_rol, 
-                        r.nombre_rol,
-                        (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol) as total_usuarios
-                    FROM rol r 
-                    WHERE r.nombre_rol LIKE :busqueda
-                    ORDER BY r.id_rol ASC";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute(['busqueda' => '%' . $busqueda . '%']);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
-            error_log("Error en buscarRoles: " . $e->getMessage());
-            return [];
-        }
+    try {
+        $sql = "SELECT 
+                    r.id_rol, 
+                    r.nombre_rol,
+                    (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol AND u.eliminado = 0) as total_usuarios
+                FROM rol r 
+                WHERE r.nombre_rol LIKE :busqueda
+                  AND r.eliminado = 0
+                ORDER BY r.id_rol ASC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['busqueda' => '%' . $busqueda . '%']);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("Error en buscarRoles: " . $e->getMessage());
+        return [];
     }
+}
 
     // 4. CREAR NUEVO ROL
 
     public function crearRol($nombre) {
         try {
             // Verificar si ya existe un rol con ese nombre
-            $sqlCheck = "SELECT COUNT(*) as total FROM rol WHERE nombre_rol = :nombre";
+            $sqlCheck = "SELECT COUNT(*) as total FROM rol WHERE nombre_rol = :nombre AND eliminado = 0";
             $stmtCheck = $this->db->prepare($sqlCheck);
             $stmtCheck->execute(['nombre' => $nombre]);
             $existe = $stmtCheck->fetchColumn();
@@ -117,7 +117,7 @@ class RolModel {
             }
             
             // Verificar si ya existe otro rol con ese nombre
-            $sqlCheck = "SELECT COUNT(*) as total FROM rol WHERE nombre_rol = :nombre AND id_rol != :id";
+            $sqlCheck = "SELECT COUNT(*) as total FROM rol WHERE nombre_rol = :nombre AND id_rol != :id AND eliminado = 0";
             $stmtCheck = $this->db->prepare($sqlCheck);
             $stmtCheck->execute(['nombre' => $nombre, 'id' => $id]);
             $existe = $stmtCheck->fetchColumn();
@@ -137,37 +137,45 @@ class RolModel {
 
     // 6. ELIMINAR ROL
 
-    public function eliminarRol($id) {
-        try {
-            // Verificar si el rol existe
-            $rol = $this->getRolById($id);
-            if (!$rol) {
-                throw new Exception("El rol no existe");
-            }
-            
-            // No permitir eliminar el rol de Administrador (id = 1)
-            if ($id == 1) {
-                throw new Exception("No puedes eliminar el rol de Administrador");
-            }
-            
-            //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
-            $sqlCheck = "SELECT COUNT(*) as total FROM usuario WHERE id_rol = :id";
-            $stmtCheck = $this->db->prepare($sqlCheck);
-            $stmtCheck->execute(['id' => $id]);
-            $total = $stmtCheck->fetchColumn();
-            
-            if ($total > 0) {
-                throw new Exception("No puedes eliminar este rol porque tiene $total usuarios asignados");
-            }
-            
-            $sql = "DELETE FROM rol WHERE id_rol = :id";
-            $stmt = $this->db->prepare($sql);
-            return $stmt->execute(['id' => $id]);
-        } catch (Exception $e) {
-            error_log("Error en eliminarRol: " . $e->getMessage());
-            return false;
+   // 6. ELIMINAR ROL (LÓGICO - Cambia eliminado a 1)
+
+public function eliminarRol($id) {
+    try {
+        // Verificar si el rol existe y está activo
+        $sqlCheck = "SELECT id_rol FROM rol WHERE id_rol = :id AND eliminado = 0 LIMIT 1";
+        $stmtCheck = $this->db->prepare($sqlCheck);
+        $stmtCheck->execute(['id' => $id]);
+        $rol = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$rol) {
+            throw new Exception("El rol no existe o ya fue eliminado");
         }
+        
+        // No permitir eliminar el rol de Administrador (id = 1)
+        if ($id == 1) {
+            throw new Exception("No puedes eliminar el rol de Administrador");
+        }
+        
+        // Verificar que no tenga usuarios asignados
+        $sqlUser = "SELECT COUNT(*) FROM usuario WHERE id_rol = :id AND eliminado = 0";
+        $stmtUser = $this->db->prepare($sqlUser);
+        $stmtUser->execute(['id' => $id]);
+        $total = $stmtUser->fetchColumn();
+        
+        if ($total > 0) {
+            throw new Exception("No puedes eliminar este rol porque tiene $total usuarios asignados");
+        }
+        
+        // ✅ BORRADO LÓGICO: cambiar eliminado a 1
+        $sql = "UPDATE rol SET eliminado = 1 WHERE id_rol = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute(['id' => $id]);
+        
+    } catch (Exception $e) {
+        error_log("Error en eliminarRol: " . $e->getMessage());
+        return false;
     }
+}
 
     // 7. OBTENER ROLES CON CONTEO DE USUARIOS
 

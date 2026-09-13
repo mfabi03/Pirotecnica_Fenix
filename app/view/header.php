@@ -1,3 +1,28 @@
+<?php
+// ==========================================
+// CARGAR PERMISOS DEL USUARIO ACTUAL
+// ==========================================
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+
+try {
+    $db_menu = (new ConnectDB())->getConnection();
+    $id_rol_actual = $_SESSION['id_rol'] ?? 0;
+    $modulosVisibles = $id_rol_actual > 0
+        ? PermisoHelper::modulosVisibles($db_menu, $id_rol_actual)
+        : [];
+} catch (Exception $e) {
+    $modulosVisibles = [];
+}
+
+// Helper rápido para verificar si el usuario tiene acceso a un módulo
+$tieneModulo = function($nombre) use ($modulosVisibles) {
+    return in_array($nombre, $modulosVisibles);
+};
+
+$currentUrl = $_GET['url'] ?? 'main';
+?>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -12,11 +37,10 @@
 <body>
 
 <!-- ==========================================
-NAVBAR - CORREGIDO
+NAVBAR
 ========================================== -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="min-height: 60px; padding: 5px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1050;">
     <div class="container-fluid">
-        <!-- LOGO CON TAMAÑO CORRECTO -->
         <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 10px;">
             <img src="assets/imagenes/logo.png" alt="Logo" 
                  style="width: 40px !important; height: 40px !important; object-fit: contain; border-radius: 50%; background: #ffffff; padding: 4px;">
@@ -53,8 +77,8 @@ CONTENEDOR PRINCIPAL
 <div class="container-fluid" style="margin-top: 70px;">
     <div class="row">
         
- <!-- ==========================================
-SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
+<!-- ==========================================
+SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
 ========================================== -->
 <div class="col-md-3 col-lg-2" style="padding: 0; height: 100%;">
     <div class="card shadow-sm border-0 rounded-0" style="background: #1a1a2e; border: 1px solid rgba(255,255,255,0.05); height: 100%; min-height: calc(100vh - 70px); border-radius: 0 !important;">
@@ -62,10 +86,10 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
             <h6 class="text-uppercase small fw-bold mb-3" style="color: rgba(255,255,255,0.4); letter-spacing: 0.5px;">
                 <i class="fas fa-compass me-2" style="color: #f39c12;"></i> Navegación
             </h6>
-            <?php $currentUrl = $_GET['url'] ?? 'main'; ?>
+            
             <div class="list-group list-group-flush" style="display: flex; flex-direction: column; gap: 2px;">
                 
-                <!-- ===== INICIO ===== -->
+                <!-- ===== INICIO (SIEMPRE VISIBLE) ===== -->
                 <a href="?url=main" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'main' ? 'active' : '' ?>"
                    style="border: none; background: <?= $currentUrl == 'main' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'main' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'main' ? '600' : '400' ?>; transition: all 0.3s ease;">
@@ -74,31 +98,44 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
                 </a>
                 
                 <!-- ===== PROVEEDORES ===== -->
+                <?php if ($tieneModulo('Proveedores')): ?>
                 <a href="?url=proveedores" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'proveedores' ? 'active' : '' ?>"
                    style="border: none; background: <?= $currentUrl == 'proveedores' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'proveedores' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'proveedores' ? '600' : '400' ?>; transition: all 0.3s ease;">
                     <i class="fas fa-truck" style="width: 20px; color: <?= $currentUrl == 'proveedores' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
                     <span>Proveedores</span>
                 </a>
+                <?php endif; ?>
                 
                 <!-- ===== CLIENTES ===== -->
+                <?php if ($tieneModulo('Clientes')): ?>
                 <a href="?url=clientes" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'clientes' ? 'active' : '' ?>"
                    style="border: none; background: <?= $currentUrl == 'clientes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'clientes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'clientes' ? '600' : '400' ?>; transition: all 0.3s ease;">
                     <i class="fas fa-users" style="width: 20px; color: <?= $currentUrl == 'clientes' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
                     <span>Clientes</span>
                 </a>
+                <?php endif; ?>
                 
                 <!-- ===== PRODUCTOS ===== -->
+                <?php if ($tieneModulo('Productos')): ?>
                 <a href="?url=productos" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'productos' ? 'active' : '' ?>"
                    style="border: none; background: <?= $currentUrl == 'productos' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'productos' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'productos' ? '600' : '400' ?>; transition: all 0.3s ease;">
                     <i class="fas fa-box" style="width: 20px; color: <?= $currentUrl == 'productos' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
                     <span>Productos</span>
                 </a>
+                <?php endif; ?>
                 
-                <!-- ===== NOTAS (DROPDOWN) ===== -->
-                <?php $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']); ?>
+                <!-- ===== NOTAS (DROPDOWN DINÁMICO) ===== -->
+                <?php 
+                $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']);
+                $verNotaEntrada = $tieneModulo('Notas de Entrada');
+                $verNotaSalida = $tieneModulo('Notas de Salida');
+                $verNotas = $verNotaEntrada || $verNotaSalida;
+                ?>
+                
+                <?php if ($verNotas): ?>
                 <div class="dropdown w-100">
                     <a class="dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isNotasActive ? 'active' : '' ?>" 
                        href="#" data-bs-toggle="dropdown" 
@@ -108,6 +145,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
                         <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
                     </a>
                     <ul class="dropdown-menu w-100 border-0 shadow-sm rounded-3" style="background: #0D0D1A; border: 1px solid rgba(255,255,255,0.05); margin-top: 4px; padding: 6px;">
+                        <?php if ($verNotaEntrada): ?>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notaentrada" 
                                style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
@@ -116,6 +154,8 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
                                 <i class="fas fa-sign-in-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Entrada
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <?php if ($verNotaSalida): ?>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notasalida" 
                                style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
@@ -124,11 +164,21 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
                                 <i class="fas fa-sign-out-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Salida
                             </a>
                         </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
+                <?php endif; ?>
                 
-                <!-- ===== CONFIGURACIÓN (DROPDOWN) ===== -->
-                <?php $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']); ?>
+                <!-- ===== CONFIGURACIÓN (DROPDOWN DINÁMICO) ===== -->
+                <?php 
+                $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']);
+                $verCategorias = $tieneModulo('Categorias');
+                $verUsuarios = $tieneModulo('Usuarios');
+                $verRoles = $tieneModulo('Roles');
+                $verConfig = $verCategorias || $verUsuarios || $verRoles;
+                ?>
+                
+                <?php if ($verConfig): ?>
                 <div class="dropdown w-100">
                     <a class="dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isConfigActive ? 'active' : '' ?>" 
                        href="#" data-bs-toggle="dropdown" 
@@ -138,6 +188,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
                         <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
                     </a>
                     <ul class="dropdown-menu w-100 border-0 shadow-sm rounded-3" style="background: #0D0D1A; border: 1px solid rgba(255,255,255,0.05); margin-top: 4px; padding: 6px;">
+                        <?php if ($verCategorias): ?>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded-2" href="?url=categorias" 
                                style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
@@ -146,6 +197,8 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
                                 <i class="fas fa-tags me-2" style="color: rgba(255,255,255,0.3);"></i> Categorías
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <?php if ($verUsuarios): ?>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded-2" href="?url=usuarios" 
                                style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
@@ -154,6 +207,8 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
                                 <i class="fas fa-users-cog me-2" style="color: rgba(255,255,255,0.3);"></i> Usuarios
                             </a>
                         </li>
+                        <?php endif; ?>
+                        <?php if ($verRoles): ?>
                         <li>
                             <a class="dropdown-item py-2 px-3 rounded-2" href="?url=roles" 
                                style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
@@ -162,21 +217,25 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
                                 <i class="fas fa-user-shield me-2" style="color: rgba(255,255,255,0.3);"></i> Roles
                             </a>
                         </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
+                <?php endif; ?>
                 
                 <!-- ===== REPORTES ===== -->
+                <?php if ($tieneModulo('Reportes')): ?>
                 <a href="?url=reportes" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'reportes' ? 'active' : '' ?>"
                    style="border: none; background: <?= $currentUrl == 'reportes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'reportes' ? '600' : '400' ?>; transition: all 0.3s ease;">
                     <i class="fas fa-file-alt" style="width: 20px; color: <?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
                     <span>Reportes</span>
                 </a>
+                <?php endif; ?>
                 
-                <!-- ===== ESPACIO EMPUJA EL CONTENIDO HACIA ABAJO ===== -->
+                <!-- ===== ESPACIO ===== -->
                 <div style="flex: 1;"></div>
                 
-                <!-- ===== VERSIÓN DEL SISTEMA ===== -->
+                <!-- ===== VERSIÓN ===== -->
                 <div class="mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
                     <small style="color: rgba(255,255,255,0.2); font-size: 0.65rem; display: block; text-align: center;">
                         <i class="fas fa-code-branch me-1"></i> v1.0.0
