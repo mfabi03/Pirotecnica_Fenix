@@ -6,6 +6,11 @@ ini_set('display_errors', 1);
 
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\clientesModel;
+<<<<<<< HEAD
+=======
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 use Exception;
 
 // Iniciar sesión
@@ -13,7 +18,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 // 1. CARGA DEL MODELO
 
 $rutaRaiz = dirname(__DIR__, 2);
@@ -25,7 +33,10 @@ if (file_exists($pathModel)) {
     die("ERROR CRÍTICO: No se encuentra el archivo: " . $pathModel);
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 // 2. INICIALIZACIÓN DE CONEXIÓN Y MODELO
 
 try {
@@ -50,6 +61,10 @@ $tipo = trim((string) ($_GET['tipo'] ?? 'todos'));
 // ELIMINAR 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
+<<<<<<< HEAD
+=======
+    CheckPermiso::verificar($db, 'Clientes', 'eliminar', '?url=clientes&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     try {
         $id = $_POST['id_cliente'] ?? null;
         if (!$id || !is_numeric($id) || $id <= 0) {
@@ -69,6 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
 // REGISTRO NATURAL
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_natural') {
+<<<<<<< HEAD
+=======
+    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     try {
         if (empty(trim($_POST['cedula']))) {
             throw new Exception("La cédula es obligatoria.");
@@ -103,6 +122,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 // REGISTRO RÁPIDO CLIENTE 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
+<<<<<<< HEAD
+=======
+    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     try {
         // Validar campos requeridos
         if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) {
@@ -158,6 +181,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
 // REGISTRO JURIDICO
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_juridico') {
+<<<<<<< HEAD
+=======
+    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     try {
         if (empty(trim($_POST['rif']))) {
             throw new Exception("El RIF es obligatorio.");
@@ -188,10 +215,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
+<<<<<<< HEAD
 
 // EDITAR NATURAL
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_natural') {
+=======
+// EDITAR NATURAL
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_natural') {
+    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     try {
         $id = $_POST['id_cliente'] ?? null;
         if (!$id) throw new Exception("ID de cliente no proporcionado");
@@ -217,10 +251,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
+<<<<<<< HEAD
 
 // EDITAR JURIDICO
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_juridico') {
+=======
+// EDITAR JURIDICO
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_juridico') {
+    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     try {
         $id = $_POST['id_cliente'] ?? null;
         if (!$id) throw new Exception("ID de cliente no proporcionado");
@@ -245,10 +286,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
+<<<<<<< HEAD
 
 // 4. CARGAR VISTAS
 
 
+=======
+// 4. CARGAR VISTAS
+
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 $basePath = __DIR__ . "/../view/clientes/";
 
 // OBTENER CLIENTE PARA DETALLE O EDICIÓN
@@ -273,7 +319,11 @@ if ($type === 'list' || $type === '') {
         $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
     }
 
+<<<<<<< HEAD
     // Paginación (client-side slice cuando el modelo devuelve array)
+=======
+    // Paginación
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
     $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
     $total_registros = is_array($clientes_full) ? count($clientes_full) : 0;

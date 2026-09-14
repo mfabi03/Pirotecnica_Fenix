@@ -3,6 +3,11 @@ namespace App\Pirotecnicafenix\Controller;
 
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\proveedoresModel;
+<<<<<<< HEAD
+=======
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 use Exception;
 
 error_reporting(E_ALL);
@@ -39,6 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRAR PROVEEDOR
 
     if ($type === 'store') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Proveedores', 'crear', '?url=proveedores&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         $datos = [
             'rif' => trim($_POST['rif'] ?? ''),
             'razon_social' => trim($_POST['razon_social'] ?? ''),
@@ -78,6 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     //REGISTRO RÁPIDO PROVEEDOR 
 
     if ($type === 'store_rapido') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Proveedores', 'crear', '?url=proveedores&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             // Validar campos requeridos
             if (empty($_POST['rif']) || empty($_POST['razon_social']) || empty($_POST['numero_contacto']) || empty($_POST['direccion'])) {
@@ -134,6 +147,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACTUALIZAR PROVEEDOR
 
     if ($type === 'update') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Proveedores', 'actualizar', '?url=proveedores&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         $id = $_POST['id_proveedor'] ?? 0;
         $datos = [
             'rif' => trim($_POST['rif'] ?? ''),
@@ -161,6 +178,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ELIMINAR PROVEEDOR
 
     if ($type === 'delete') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Proveedores', 'eliminar', '?url=proveedores&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         $id = $_POST['id_proveedor'] ?? 0;
         try {
             if ($modelo->eliminarProveedor($id)) {

@@ -6,6 +6,11 @@ use Exception;
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\ProductoModel;
 use App\Pirotecnicafenix\Model\proveedoresModel;
+<<<<<<< HEAD
+=======
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 
 // CONFIGURACIÓN INICIAL
 
@@ -127,7 +132,11 @@ class ProductoValidator {
             $errores[] = "La descripción del producto es obligatoria.";
         }
 
+<<<<<<< HEAD
        /* if ($requireCantidad) {
+=======
+        if ($requireCantidad) {
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             if (!isset($datos['cantidad']) || $datos['cantidad'] === '' || $datos['cantidad'] < 0) {
                 $errores[] = "La cantidad debe ser mayor o igual a 0.";
             }
@@ -135,12 +144,23 @@ class ProductoValidator {
 
         if (empty($datos['costo_unitario']) || $datos['costo_unitario'] <= 0) {
             $errores[] = "El costo unitario debe ser mayor a 0.";
+<<<<<<< HEAD
         } */
+=======
+        }
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 
         if (empty($datos['id_categoria']) || $datos['id_categoria'] <= 0) {
             $errores[] = "Debe seleccionar una categoría válida.";
         }
 
+<<<<<<< HEAD
+=======
+        if (isset($datos['stock_minimo']) && $datos['stock_minimo'] < 1) {
+            $errores[] = "El stock mínimo debe ser mayor o igual a 1.";
+        }
+
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         return $errores;
     }
 }
@@ -152,10 +172,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRAR PRODUCTO
 
     if ($type === 'store') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
                 'cantidad' => intval($_POST['cantidad'] ?? 0),
+<<<<<<< HEAD
+=======
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
@@ -204,6 +232,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRO RÁPIDO PRODUCTO 
 
     if ($type === 'store_rapido') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             // Validar campos requeridos
             if (empty($_POST['descripcion']) || empty($_POST['id_categoria'])) {
@@ -213,6 +245,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datosProducto = [
                 'descripcion' => trim($_POST['descripcion']),
                 'cantidad' => intval($_POST['cantidad'] ?? 0),
+<<<<<<< HEAD
+=======
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0.0),
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
@@ -262,12 +298,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACTUALIZAR PRODUCTO
 
     if ($type === 'update') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Productos', 'actualizar', '?url=productos');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
             
             // No permitir modificar la cantidad (stock) desde el formulario de edición.
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
+<<<<<<< HEAD
+=======
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
@@ -305,6 +349,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ELIMINAR PRODUCTO
    
     if ($type === 'delete') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Productos', 'eliminar', '?url=productos');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
             
@@ -399,6 +447,10 @@ try {
                     p.id_producto,
                     p.descripcion,
                     p.cantidad AS stock,
+<<<<<<< HEAD
+=======
+                    p.stock_minimo,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     p.costo_unitario,
                     p.id_categoria,
                     c.nombre_categoria

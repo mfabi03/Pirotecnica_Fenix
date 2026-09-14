@@ -1,13 +1,42 @@
 <?php
+<<<<<<< HEAD
 // app/view/clientes/clientes_lista.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
+=======
+// app/view/clientes/listClienteView.php
+require_once dirname(__DIR__, 2) . "/view/header.php";
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_crear_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Clientes', 'crear') : false;
+$puede_editar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Clientes', 'actualizar') : false;
+$puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Clientes', 'eliminar') : false;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 ?>
 
 <div class="container-fluid px-4">
     <div class="row">
+<<<<<<< HEAD
         <div class="col-12">
             
             <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+=======
+        <div class="col-md-9 col-lg-10">
+            
+            <!-- TARJETA DE TÍTULO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -24,9 +53,17 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             <input type="hidden" name="type" value="list">
                             <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                         </form>
+<<<<<<< HEAD
                         <a href="?url=clientes&type=register" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Cliente
                         </a>
+=======
+                        <?php if ($puede_crear_cliente): ?>
+                        <a href="?url=clientes&type=register" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                            <i class="fas fa-plus me-1"></i> Registrar Cliente
+                        </a>
+                        <?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     </div>
                 </div>
             </div>
@@ -44,7 +81,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                         <datalist id="listaClientes">
                             <?php
+<<<<<<< HEAD
                             // Recolectar sugerencias únicas
+=======
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                             $sugerencias = [];
                             if (!empty($clientes) && is_array($clientes)):
                                 foreach ($clientes as $c):
@@ -57,7 +97,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 endforeach;
                             endif;
 
+<<<<<<< HEAD
                             // Pintar opciones
+=======
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                             foreach (array_keys($sugerencias) as $s): ?>
                                 <option value="<?= htmlspecialchars($s) ?>">
                             <?php endforeach; ?>
@@ -140,14 +183,31 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <td><?= htmlspecialchars($c['correo_electronico'] ?? 'N/A') ?></td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
+<<<<<<< HEAD
+=======
+                                                <!-- Ver: siempre visible -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                                 <a href="?url=clientes&type=view&id=<?= $c['id_cliente'] ?? 0 ?>" 
                                                    class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
+<<<<<<< HEAD
+=======
+                                                
+                                                <!-- Editar: solo si tiene permiso -->
+                                                <?php if ($puede_editar_cliente): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                                 <a href="?url=clientes&type=<?= ($c['tipo_cliente'] ?? '') === 'Jurídico' ? 'edit_juridico' : 'edit' ?>&id=<?= $c['id_cliente'] ?? 0 ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
+<<<<<<< HEAD
+=======
+                                                <?php endif; ?>
+                                                
+                                                <!-- Eliminar: solo si tiene permiso -->
+                                                <?php if ($puede_eliminar_cliente): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                                 <form method="POST" action="?url=clientes&type=delete" class="d-inline">
                                                     <input type="hidden" name="accion" value="eliminar">
                                                     <input type="hidden" name="id_cliente" value="<?= $c['id_cliente'] ?? 0 ?>">
@@ -157,6 +217,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
                                                 </form>
+<<<<<<< HEAD
+=======
+                                                <?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                             </div>
                                         </td>
                                     </tr>

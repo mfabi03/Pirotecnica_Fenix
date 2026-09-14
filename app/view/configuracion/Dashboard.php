@@ -10,7 +10,11 @@ if (session_status() === PHP_SESSION_NONE) {
 if (!empty($_SESSION['error'])): ?>
     <div class="container-fluid px-4">
         <div class="row">
+<<<<<<< HEAD
             <div class="col-12">
+=======
+            <div class="col-md-9 col-lg-10">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-exclamation-circle me-3 fs-4"></i>
@@ -26,7 +30,11 @@ if (!empty($_SESSION['error'])): ?>
 
 <div class="container-fluid px-4">
     <div class="row">
+<<<<<<< HEAD
         <div class="col-12">
+=======
+        <div class="col-md-9 col-lg-10">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             
             <!-- ==========================================
                  TARJETA DE TÍTULO - FONDO OSCURO
@@ -46,10 +54,36 @@ if (!empty($_SESSION['error'])): ?>
                     </div>
                 </div>
             </div>
+<<<<<<< HEAD
 
             <!-- ==========================================
                  TARJETAS DE ESTADÍSTICAS - ESTILO DARK
                  ========================================== -->
+=======
+                        <!-- ==========================================
+                 ALERTA DE STOCK MÍNIMO (RF-11 / CU-11)
+                 ========================================== -->
+                <?php if (($stats['productos_criticos'] ?? 0) > 0): ?>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert dark-alert-warning alert-dismissible fade show shadow-sm border-0 mb-0" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-triangle me-3 fs-4 text-warning"></i>
+                                    <div class="flex-grow-1">
+                                        <strong>Alerta de Stock Mínimo:</strong>
+                                        Hay <?= (int)($stats['productos_criticos'] ?? 0) ?> 
+                                        producto<?= (($stats['productos_criticos'] ?? 0) > 1) ? 's' : '' ?> 
+                                        con existencias críticas. 
+                                        <span class="text-warning">Revise el módulo de Productos.</span>
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="alert"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="row g-4 mb-4">
                 <!-- Tarjeta 1: Productos -->
                 <div class="col-12 col-md-3">
@@ -68,8 +102,12 @@ if (!empty($_SESSION['error'])): ?>
                         </div>
                     </div>
                 </div>
+<<<<<<< HEAD
                 
                 <!-- Tarjeta 2: Usuarios -->
+=======
+               
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 <div class="col-12 col-md-3">
                     <div class="stat-card stat-card-success">
                         <div class="stat-card-icon">
@@ -87,7 +125,11 @@ if (!empty($_SESSION['error'])): ?>
                     </div>
                 </div>
                 
+<<<<<<< HEAD
                 <!-- Tarjeta 3: Stock Crítico -->
+=======
+                
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 <div class="col-12 col-md-3">
                     <div class="stat-card stat-card-warning">
                         <div class="stat-card-icon">
@@ -104,7 +146,11 @@ if (!empty($_SESSION['error'])): ?>
                         </div>
                     </div>
                 </div>
+<<<<<<< HEAD
                 
+=======
+                            
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 <!-- Tarjeta 4: Clientes -->
                 <div class="col-12 col-md-3">
                     <div class="stat-card stat-card-info">

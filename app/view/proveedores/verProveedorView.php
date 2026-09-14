@@ -1,19 +1,49 @@
 <?php
+<<<<<<< HEAD
 // app/view/proveedores/proveedores_show.php
+=======
+// app/view/proveedores/verProveedorView.php
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 if (!isset($proveedor) || empty($proveedor)) {
     die('Proveedor no encontrado');
 }
 require_once dirname(__DIR__, 2) . "/view/header.php";
+<<<<<<< HEAD
+=======
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_editar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'actualizar') : false;
+$puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'eliminar') : false;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 ?>
 
 <div class="container-fluid px-4">
     <div class="row">
         <!-- Contenido Principal -->
+<<<<<<< HEAD
         <div class="col-12">
             
             <!-- ==========================================
                  TARJETA DE TÍTULO - FONDO OSCURO
                  ========================================== -->
+=======
+        <div class="col-md-9 col-lg-10">
+            
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -32,9 +62,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
+<<<<<<< HEAD
             <!-- ==========================================
                  DETALLE DEL PROVEEDOR
                  ========================================== -->
+=======
+            <!-- DETALLE DEL PROVEEDOR -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-card card shadow-sm">
                 <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                     <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -45,7 +79,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <div class="card-body">
                     <div class="row g-4">
                         
+<<<<<<< HEAD
                         <!-- ===== COLUMNA IZQUIERDA ===== -->
+=======
+                        <!-- COLUMNA IZQUIERDA -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <div class="col-md-6">
                             <div class="p-3" style="background: #f8f9fa; border-radius: 12px;">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.15); padding-bottom: 8px; margin-bottom: 16px;">
@@ -74,7 +112,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             </div>
                         </div>
                         
+<<<<<<< HEAD
                         <!-- ===== COLUMNA DERECHA ===== -->
+=======
+                        <!-- COLUMNA DERECHA -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <div class="col-md-6">
                             <div class="p-3" style="background: #f8f9fa; border-radius: 12px;">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.15); padding-bottom: 8px; margin-bottom: 16px;">
@@ -107,15 +149,28 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         </div>
                     </div>
                     
+<<<<<<< HEAD
                     <!-- ==========================================
                          BOTONES DE ACCIÓN - ESTILO USUARIO VER
                          ========================================== -->
                     <div class="text-center mt-4" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px;">
+=======
+                    <!-- BOTONES DE ACCIÓN -->
+                    <div class="text-center mt-4" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px;">
+                        
+                        <?php if ($puede_editar_proveedor): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <a href="?url=proveedores&type=edit&id=<?= htmlspecialchars($proveedor['id_proveedor'] ?? '') ?>" 
                            class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-edit me-2"></i> Editar proveedor
                         </a>
+<<<<<<< HEAD
                         
+=======
+                        <?php endif; ?>
+                        
+                        <?php if ($puede_eliminar_proveedor): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <form method="POST" action="?url=proveedores&type=delete" style="display: inline;">
                             <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars($proveedor['id_proveedor'] ?? '') ?>">
                             <button type="submit" class="btn" style="background: #dc3545; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; border: none; transition: all 0.3s ease; margin-left: 10px;"
@@ -125,6 +180,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <i class="fas fa-trash-alt me-2"></i> Eliminar proveedor
                             </button>
                         </form>
+<<<<<<< HEAD
+=======
+                        <?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         
                         <a href="?url=proveedores&type=list" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-left: 10px;">
                             <i class="fas fa-list me-1"></i> Ver todos

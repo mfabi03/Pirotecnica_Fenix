@@ -1,10 +1,34 @@
 <?php
+<<<<<<< HEAD
 // app/view/productos/productos_show.php
+=======
+// app/view/productos/detalleProductoView.php
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 if (!isset($producto) || empty($producto)) {
     die('Producto no encontrado');
 }
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
+<<<<<<< HEAD
+=======
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_editar_producto = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Productos', 'actualizar') : false;
+$puede_eliminar_producto = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Productos', 'eliminar') : false;
+
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 $jsonPath = __DIR__ . '/../../../public/uploads/products_imagenes.json';
 $productosData = [];
 if (file_exists($jsonPath)) {
@@ -16,6 +40,7 @@ $especificaciones = $productosData[$productoKey]['especificaciones'] ?? 'No hay 
 $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
 ?>
 
+<<<<<<< HEAD
 <div class="container-fluid px-9">
     <div class="row">
         <!-- Contenido Principal -->
@@ -24,6 +49,14 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
             <!-- ==========================================
                  TARJETA DE TÍTULO - FONDO OSCURO
                  ========================================== -->
+=======
+<div class="container-fluid px-4">
+    <div class="row">
+        <!-- Contenido Principal -->
+        <div class="col-md-9 col-lg-10">
+            
+            <!-- TARJETA DE TÍTULO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -42,9 +75,13 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                 </div>
             </div>
 
+<<<<<<< HEAD
             <!-- ==========================================
                  DETALLE DEL PRODUCTO
                  ========================================== -->
+=======
+            <!-- DETALLE DEL PRODUCTO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-card card shadow-sm">
                 <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                     <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -55,7 +92,11 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                 <div class="card-body">
                     <div class="row g-4">
                         
+<<<<<<< HEAD
                         <!-- ===== COLUMNA IZQUIERDA ===== -->
+=======
+                        <!-- COLUMNA IZQUIERDA -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <div class="col-md-6">
                             <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.15); padding-bottom: 8px; margin-bottom: 16px;">
@@ -80,7 +121,11 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                             </div>
                         </div>
                         
+<<<<<<< HEAD
                         <!-- ===== COLUMNA DERECHA ===== -->
+=======
+                        <!-- COLUMNA DERECHA -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <div class="col-md-6">
                             <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.15); padding-bottom: 8px; margin-bottom: 16px;">
@@ -129,9 +174,13 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                         </div>
                     </div>
 
+<<<<<<< HEAD
                     <!-- ==========================================
                          ESPECIFICACIONES TÉCNICAS
                          ========================================== -->
+=======
+                    <!-- ESPECIFICACIONES TÉCNICAS -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     <div class="mt-4">
                         <div class="p-3" style="background: #f8f9fa; border-radius: 12px;">
                             <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.15); padding-bottom: 8px; margin-bottom: 16px;">
@@ -150,15 +199,28 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                         </div>
                     </div>
                     
+<<<<<<< HEAD
                     <!-- ==========================================
                          BOTONES DE ACCIÓN
                          ========================================== -->
                     <div class="text-center mt-4" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+=======
+                    <!-- BOTONES DE ACCIÓN -->
+                    <div class="text-center mt-4" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+                        
+                        <?php if ($puede_editar_producto): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <a href="?url=productos&type=edit&id=<?= htmlspecialchars($producto['id_producto'] ?? '') ?>" 
                            class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-edit me-2"></i> Editar Producto
                         </a>
+<<<<<<< HEAD
                         
+=======
+                        <?php endif; ?>
+                        
+                        <?php if ($puede_eliminar_producto): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <form method="POST" action="?url=productos&type=delete" style="display: inline;">
                             <input type="hidden" name="id_producto" value="<?= htmlspecialchars($producto['id_producto'] ?? '') ?>">
                             <button type="submit" class="btn" style="background: #dc3545; color: #fff !important; font-weight: 600; padding: 10px 30px; border-radius: 50px; border: none; transition: all 0.3s ease; margin-left: 10px;"
@@ -168,6 +230,10 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                                 <i class="fas fa-trash-alt me-2"></i> Eliminar Producto
                             </button>
                         </form>
+<<<<<<< HEAD
+=======
+                        <?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         
                         <a href="?url=productos&type=list" class="btn" style="background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6) !important; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-left: 10px;">
                             <i class="fas fa-list me-1"></i> Ver todos

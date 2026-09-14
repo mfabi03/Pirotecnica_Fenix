@@ -1,15 +1,42 @@
 <?php
+<<<<<<< HEAD
 // app/view/notasalida/detalleNotaSalida.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
+=======
+// app/view/nota_salida/detalleNotasalidaView.php
+require_once dirname(__DIR__, 2) . "/view/header.php";
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'eliminar') : false;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 ?>
 
 <div class="container-fluid px-4">
     <div class="row">
+<<<<<<< HEAD
         <div class="col-12">
             
             <!-- ==========================================
                  TARJETA DE TÍTULO - FONDO OSCURO
                  ========================================== -->
+=======
+        <div class="col-md-9 col-lg-10">
+            
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-header-card card p-4 mb-4 no-print">
                 <div class="row align-items-center">
                     <div class="col">
@@ -31,9 +58,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
+<<<<<<< HEAD
             <!-- ==========================================
                  MENSAJES
                  ========================================== -->
+=======
+            <!-- MENSAJES -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <?php if (isset($error)): ?>
                 <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0 no-print">
                     <div class="d-flex align-items-center">
@@ -54,6 +85,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             <?php else: ?>
 
+<<<<<<< HEAD
                 <!-- ==========================================
                 CONTENIDO QUE SE VA A IMPRIMIR
                 ========================================== -->
@@ -62,6 +94,12 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     <!-- ==========================================
                     ESTADO DE LA NOTA
                     ========================================== -->
+=======
+                <!-- CONTENIDO QUE SE VA A IMPRIMIR -->
+                <div id="contenidoImprimir">
+
+                    <!-- ESTADO DE LA NOTA -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     <div class="text-center mb-4">
                         <?php if (($nota['estado'] ?? 'ACTIVA') === 'ANULADA'): ?>
                             <span class="badge" style="background: #dc3545; color: #fff; padding: 10px 24px; border-radius: 50px; font-size: 1.1rem;">
@@ -78,9 +116,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         <?php endif; ?>
                     </div>
 
+<<<<<<< HEAD
                     <!-- ==========================================
                     ALERTA DE ANULADA
                     ========================================== -->
+=======
+                    <!-- ALERTA DE ANULADA -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     <?php if (($nota['estado'] ?? 'ACTIVA') === 'ANULADA'): ?>
                         <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
                             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -90,9 +132,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         </div>
                     <?php endif; ?>
 
+<<<<<<< HEAD
                     <!-- ==========================================
                     INFORMACIÓN GENERAL - TEXTO OSCURO (CORREGIDO)
                     ========================================== -->
+=======
+                    <!-- INFORMACIÓN GENERAL -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     <div class="row g-4 mb-4">
                         <div class="col-md-6">
                             <div class="card" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 12px; padding: 16px 20px;">
@@ -123,9 +169,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         </div>
                     </div>
 
+<<<<<<< HEAD
                     <!-- ==========================================
                     TABLA DE PRODUCTOS - ESTILO OSCURO
                     ========================================== -->
+=======
+                    <!-- TABLA DE PRODUCTOS -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     <div class="dark-card card shadow-sm">
                         <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                             <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -178,6 +228,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     </div>
 
                 </div>
+<<<<<<< HEAD
                 <!-- ==========================================
                 FIN DEL CONTENIDO QUE SE IMPRIME
                 ========================================== -->
@@ -185,6 +236,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <!-- ==========================================
                 BOTONES DE ACCIÓN (NO se imprimen)
                 ========================================== -->
+=======
+                <!-- FIN DEL CONTENIDO QUE SE IMPRIME -->
+
+                <!-- BOTONES DE ACCIÓN (NO se imprimen) -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 <div class="mt-4 text-center no-print" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 20px;">
                     <a href="?url=notasalida&type=list" class="btn" style="background: #f8f9fa; color: #495057; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px; border: 1px solid #dee2e6;">
                         <i class="fas fa-arrow-left me-1"></i> Volver
@@ -192,7 +248,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     <button class="btn btn-dark-gold" onclick="window.print();" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; transition: all 0.3s ease; margin-right: 10px;">
                         <i class="fas fa-print me-2"></i> Imprimir
                     </button>
+<<<<<<< HEAD
                     <?php if (($nota['estado'] ?? 'ACTIVA') !== 'ANULADA'): ?>
+=======
+                    <?php if (($nota['estado'] ?? 'ACTIVA') !== 'ANULADA' && $puede_anular_nota): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#anularModal" style="background: #dc3545; border: none; color: #fff; border-radius: 50px; padding: 10px 25px; font-weight: 600; transition: all 0.3s ease;">
                             <i class="fas fa-ban me-1"></i> Anular
                         </button>
@@ -203,10 +263,15 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 </div>
 
+<<<<<<< HEAD
 <!-- ==========================================
 MODAL ANULAR - ESTILO OSCURO
 ========================================== -->
 <?php if (isset($nota) && ($nota['estado'] ?? 'ACTIVA') !== 'ANULADA'): ?>
+=======
+<!-- MODAL ANULAR -->
+<?php if (isset($nota) && ($nota['estado'] ?? 'ACTIVA') !== 'ANULADA' && $puede_anular_nota): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 <div class="modal fade" id="anularModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content" style="background: #0d0d14; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
@@ -216,7 +281,11 @@ MODAL ANULAR - ESTILO OSCURO
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.3;"></button>
             </div>
+<<<<<<< HEAD
             <form method="POST" action="?url=notasalida&type=anular">
+=======
+            <form method="POST" action="?url=notasalida&type=eliminar">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 <div class="modal-body" style="color: rgba(255,255,255,0.8);">
                     <p>¿Estás seguro de anular esta nota de salida?</p>
                     <p><strong style="color: rgba(255,255,255,0.5);">Cliente:</strong> <span style="color: #ffffff;"><?= htmlspecialchars($nota['cliente'] ?? '') ?></span></p>
@@ -227,7 +296,11 @@ MODAL ANULAR - ESTILO OSCURO
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Motivo <span class="text-danger">*</span></label>
+<<<<<<< HEAD
                         <textarea name="motivo_anulacion" class="form-control" rows="3" required
+=======
+                        <textarea name="motivo_eliminacion" class="form-control" rows="3" required
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                   style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 12px 16px;"></textarea>
                     </div>
                     <input type="hidden" name="id_nota_salida" value="<?= $nota['id_nota_salida'] ?>">

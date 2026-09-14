@@ -1,11 +1,38 @@
 <?php
+<<<<<<< HEAD
 // app/view/proveedores/proveedores_lista.php
 require_once __DIR__ . '/../header.php';
+=======
+// app/view/proveedores/listProveedoresView.php
+require_once __DIR__ . '/../header.php';
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_crear_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'crear') : false;
+$puede_editar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'actualizar') : false;
+$puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'eliminar') : false;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 ?>
 
 <div class="container-fluid px-4">
     <div class="row">
+<<<<<<< HEAD
         <div class="col-12">
+=======
+        <div class="col-md-9 col-lg-10">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             
             <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">
@@ -24,9 +51,17 @@ require_once __DIR__ . '/../header.php';
                             <input type="hidden" name="type" value="list">
                             <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
                         </form>
+<<<<<<< HEAD
                         <a href="?url=proveedores&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Proveedor
                         </a>
+=======
+                        <?php if ($puede_crear_proveedor): ?>
+                        <a href="?url=proveedores&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                            <i class="fas fa-plus me-1"></i> Registrar Proveedor
+                        </a>
+                        <?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     </div>
                 </div>
             </div>
@@ -44,7 +79,10 @@ require_once __DIR__ . '/../header.php';
                                value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                         <datalist id="listaProveedores">
                             <?php
+<<<<<<< HEAD
                             // Recolectar sugerencias únicas
+=======
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                             $sugerencias = [];
                             if (!empty($proveedores) && is_array($proveedores)):
                                 foreach ($proveedores as $p):
@@ -57,7 +95,10 @@ require_once __DIR__ . '/../header.php';
                                 endforeach;
                             endif;
 
+<<<<<<< HEAD
                             // Pintar opciones
+=======
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                             foreach (array_keys($sugerencias) as $s): ?>
                                 <option value="<?= htmlspecialchars($s) ?>">
                             <?php endforeach; ?>
@@ -89,6 +130,19 @@ require_once __DIR__ . '/../header.php';
                 </div>
             <?php endif; ?>
 
+<<<<<<< HEAD
+=======
+            <?php if (isset($success) && !empty($success)): ?>
+                <div class="alert dark-alert-success alert-dismissible fade show shadow-sm border-0">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle me-3 fs-4"></i>
+                        <span><?= htmlspecialchars($success) ?></span>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <!-- TABLA DE PROVEEDORES -->
             <div class="dark-card card shadow-sm dark-table-header">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -126,14 +180,31 @@ require_once __DIR__ . '/../header.php';
                                         <td><?= htmlspecialchars($p['correo_electronico'] ?? 'N/A') ?></td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
+<<<<<<< HEAD
+=======
+                                                <!-- Ver: siempre visible -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                                 <a href="?url=proveedores&type=show&id=<?= $p['id_proveedor'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
+<<<<<<< HEAD
+=======
+                                                
+                                                <!-- Editar: solo si tiene permiso -->
+                                                <?php if ($puede_editar_proveedor): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                                 <a href="?url=proveedores&type=edit&id=<?= $p['id_proveedor'] ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
+<<<<<<< HEAD
+=======
+                                                <?php endif; ?>
+                                                
+                                                <!-- Eliminar: solo si tiene permiso -->
+                                                <?php if ($puede_eliminar_proveedor): ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                                 <form method="POST" action="?url=proveedores&type=delete" class="d-inline">
                                                     <input type="hidden" name="id_proveedor" value="<?= $p['id_proveedor'] ?>">
                                                     <button type="submit" class="btn-action-circle btn-delete"
@@ -142,6 +213,10 @@ require_once __DIR__ . '/../header.php';
                                                         <i class="fas fa-trash-alt"></i>
                                                     </button>
                                                 </form>
+<<<<<<< HEAD
+=======
+                                                <?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                             </div>
                                         </td>
                                     </tr>

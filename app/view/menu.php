@@ -5,10 +5,18 @@ $currentUrl = $_GET['url'] ?? 'main';
 <div class="container-fluid px-4">
     <div class="row">
         
+<<<<<<< HEAD
 
        <div class="col-md-3 col-lg-2 mb-4">
 
     <div class="col-md-3 col-lg-2 mb-4">
+=======
+<<<<<<< HEAD
+       <div class="col-md-3 col-lg-2 mb-4">
+=======
+    <div class="col-md-3 col-lg-2 mb-4" style="margin-top: 20px;">
+>>>>>>> c5c3b40379f2362ad2daa9e1291a696bed94d298
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     <div class="card card-custom p-3">
         <h6 class="text-muted text-uppercase font-weight-bold mb-3 small">Navegación</h6>
         <div class="d-flex flex-column">

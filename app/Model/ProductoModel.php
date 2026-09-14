@@ -20,6 +20,10 @@ class ProductoModel {
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
+<<<<<<< HEAD
+=======
+                        p.stock_minimo,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         p.costo_unitario,
                         p.id_categoria,
                         c.nombre_categoria
@@ -44,6 +48,10 @@ class ProductoModel {
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
+<<<<<<< HEAD
+=======
+                        p.stock_minimo,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         p.costo_unitario,
                         p.id_categoria,
                         c.nombre_categoria
@@ -76,18 +84,30 @@ class ProductoModel {
         }
     }
 
+<<<<<<< HEAD
     // REGISTRAR PRODUCTO
+=======
+    // REGISTRAR PRODUCTO (CON STOCK MÍNIMO)
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 
     public function registrarProducto($datos) {
         try {
             $sql = "INSERT INTO producto (
                         descripcion,
                         cantidad,
+<<<<<<< HEAD
+=======
+                        stock_minimo,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         costo_unitario,
                         id_categoria
                     ) VALUES (
                         :descripcion,
                         :cantidad,
+<<<<<<< HEAD
+=======
+                        :stock_minimo,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         :costo_unitario,
                         :id_categoria
                     )";
@@ -96,6 +116,10 @@ class ProductoModel {
             $success = $stmt->execute([
                 ':descripcion' => $datos['descripcion'],
                 ':cantidad' => $datos['cantidad'],
+<<<<<<< HEAD
+=======
+                ':stock_minimo' => $datos['stock_minimo'] ?? 10,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 ':costo_unitario' => $datos['costo_unitario'],
                 ':id_categoria' => $datos['id_categoria'] ?? null
             ]);
@@ -111,14 +135,25 @@ class ProductoModel {
         }
     }
 
+<<<<<<< HEAD
     // ACTUALIZAR PRODUCTO
+=======
+    // ACTUALIZAR PRODUCTO (CON STOCK MÍNIMO)
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 
     public function actualizarProducto($id, $datos) {
         try {
             // NOTA: El campo 'cantidad' (stock) NO se actualiza aquí. Las existencias
             // deben gestionarse mediante notas de entrada/salida para mantener trazabilidad.
+<<<<<<< HEAD
             $sql = "UPDATE producto SET 
                         descripcion = :descripcion,
+=======
+            // El stock_minimo SÍ se puede actualizar.
+            $sql = "UPDATE producto SET 
+                        descripcion = :descripcion,
+                        stock_minimo = :stock_minimo,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         costo_unitario = :costo_unitario,
                         id_categoria = :id_categoria
                     WHERE id_producto = :id";
@@ -126,6 +161,10 @@ class ProductoModel {
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':descripcion' => $datos['descripcion'],
+<<<<<<< HEAD
+=======
+                ':stock_minimo' => $datos['stock_minimo'] ?? 10,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 ':costo_unitario' => $datos['costo_unitario'],
                 ':id_categoria' => $datos['id_categoria'] ?? null,
                 ':id' => $id
@@ -188,6 +227,10 @@ class ProductoModel {
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
+<<<<<<< HEAD
+=======
+                        p.stock_minimo,
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                         p.costo_unitario,
                         p.id_categoria,
                         c.nombre_categoria

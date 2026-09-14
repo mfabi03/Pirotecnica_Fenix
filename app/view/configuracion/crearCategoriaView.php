@@ -2,7 +2,11 @@
 require_once __DIR__ . '/../header.php';
 ?>
 
+<<<<<<< HEAD
 <div class="col-12">
+=======
+<div class="col-md-9 col-lg-10">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     <div class="card card-custom p-4 mb-4 bg-white">
         <div class="row align-items-center g-3">
             <div class="col-md-8 col-lg-7">

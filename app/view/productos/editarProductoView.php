@@ -1,5 +1,9 @@
 <?php
+<<<<<<< HEAD
 // app/view/productos/productos_edit.php
+=======
+// app/view/productos/editarProductoView.php
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 if (!isset($producto) || empty($producto)) {
     die('Producto no encontrado');
 }
@@ -18,12 +22,18 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
 
 <div class="container-fluid px-4">
     <div class="row">
+<<<<<<< HEAD
         <!-- Contenido Principal -->
         <div class="col-12">
             
             <!-- ==========================================
                  TARJETA DE TÍTULO - FONDO OSCURO
                  ========================================== -->
+=======
+        <div class="col-md-9 col-lg-10">
+            
+            <!-- TARJETA DE TÍTULO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -42,9 +52,13 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                 </div>
             </div>
 
+<<<<<<< HEAD
             <!-- ==========================================
                  MENSAJES
                  ========================================== -->
+=======
+            <!-- MENSAJES -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
                 <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -65,9 +79,13 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                 </div>
             <?php endif; ?>
 
+<<<<<<< HEAD
             <!-- ==========================================
                  FORMULARIO DE EDICIÓN
                  ========================================== -->
+=======
+            <!-- FORMULARIO DE EDICIÓN -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-card card shadow-sm">
                 <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                     <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -81,7 +99,11 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                         
                         <div class="row g-3">
                             
+<<<<<<< HEAD
                             <!-- ===== DATOS DEL PRODUCTO ===== -->
+=======
+                            <!-- DATOS DEL PRODUCTO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                             <div class="col-12">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
                                     <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Información del Producto
@@ -131,21 +153,45 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                                 </div>
                             </div>
 
+<<<<<<< HEAD
                             <!-- ===== DATOS DE INVENTARIO ===== -->
+=======
+                            <!-- DATOS DE INVENTARIO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                             <div class="col-12">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
                                     <i class="fas fa-chart-line me-2" style="color: #f39c12;"></i> Datos de Inventario
                                 </h6>
                                 <div class="row g-3">
+<<<<<<< HEAD
                                     <div class="col-md-6">
+=======
+                                    <div class="col-md-4">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                         <label for="cantidad" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cantidad (Stock)</label>
                                         <input type="number" id="cantidad" class="form-control" 
                                                value="<?= htmlspecialchars($producto['stock'] ?? 0) ?>"
                                                style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); background: #f8f9fa; color: #495057;"
                                                min="0" disabled readonly>
+<<<<<<< HEAD
                                         <small class="form-text text-muted">El stock no se puede editar aquí. Las existencias se actualizan únicamente mediante 'Registrar Entrada' o 'Registrar Salida' (o sus anulaciones).</small>
                                     </div>
                                     <div class="col-md-6">
+=======
+                                        <small class="form-text text-muted" style="font-size: 0.7rem;">Se actualiza solo con notas de entrada/salida.</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="stock_minimo" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo *</label>
+                                        <input type="number" name="stock_minimo" id="stock_minimo" class="form-control" 
+                                               value="<?= htmlspecialchars($producto['stock_minimo'] ?? 10) ?>"
+                                               style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
+                                               min="1" required>
+                                        <small class="form-text text-muted" style="font-size: 0.7rem;">
+                                            <i class="fas fa-info-circle me-1"></i> Alerta cuando el stock baje a este nivel
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                         <label for="costo_unitario" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Costo Unitario *</label>
                                         <div class="input-group">
                                             <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 1.5px solid rgba(0,0,0,0.08); border-right: none; background: #f8f9fa;">$</span>
@@ -158,7 +204,11 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                                 </div>
                             </div>
 
+<<<<<<< HEAD
                             <!-- ===== ESPECIFICACIONES ===== -->
+=======
+                            <!-- ESPECIFICACIONES -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                             <div class="col-12">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
                                     <i class="fas fa-list me-2" style="color: #f39c12;"></i> Especificaciones Técnicas
@@ -174,9 +224,13 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                                 </div>
                             </div>
 
+<<<<<<< HEAD
                             <!-- ==========================================
                                  BOTONES DE ACCIÓN
                                  ========================================== -->
+=======
+                            <!-- BOTONES DE ACCIÓN -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                             <div class="col-12 text-end" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px; margin-top: 10px;">
                                 <a href="?url=productos&type=list" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
                                     <i class="fas fa-times me-1"></i> Cancelar

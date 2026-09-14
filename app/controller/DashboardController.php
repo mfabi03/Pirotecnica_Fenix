@@ -16,8 +16,12 @@ class DashboardController {
             $model = new DashboardModel($this->db);
             $stats = $model->getEstadisticas();
             
+<<<<<<< HEAD
             // Pasar estadísticas a la vista
             require_once __DIR__ . '/../View/configuracion/Dashboard.php';
+=======
+            require_once __DIR__ . '/../view/configuracion/Dashboard.php';
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             
         } catch (Exception $e) {
             error_log("Error en DashboardController: " . $e->getMessage());
@@ -29,7 +33,11 @@ class DashboardController {
                 'productos_criticos' => 0,
                 'total_clientes' => 0
             ];
+<<<<<<< HEAD
             require_once __DIR__ . '/../View/configuracion/Dashboard.php';
+=======
+            require_once __DIR__ . '/../view/configuracion/Dashboard.php';
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         }
     }
 }

@@ -1,12 +1,40 @@
 <?php
+<<<<<<< HEAD
 require_once __DIR__ . '/../header.php';
+=======
+// app/view/nota_salida/listNotasalidaView.php
+require_once __DIR__ . '/../header.php';
+
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+
+// Crear conexión si no existe
+if (!isset($db) || $db === null) {
+    try {
+        $db = (new ConnectDB())->getConnection();
+    } catch (Exception $e) {
+        $db = null;
+    }
+}
+
+// Obtener permisos del usuario actual
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'crear') : false;
+$puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'eliminar') : false;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 ?>
 
 <div class="container-fluid px-4">
     <div class="row">
+<<<<<<< HEAD
         <div class="col-12">
             
             <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+=======
+        <div class="col-md-9 col-lg-10">
+            
+            <!-- TARJETA DE TÍTULO -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -23,9 +51,17 @@ require_once __DIR__ . '/../header.php';
                             <input type="hidden" name="type" value="list">
                             <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                         </form>
+<<<<<<< HEAD
                         <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
                         </a>
+=======
+                        <?php if ($puede_crear_nota): ?>
+                        <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                            <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
+                        </a>
+                        <?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     </div>
                 </div>
             </div>
@@ -114,10 +150,17 @@ require_once __DIR__ . '/../header.php';
                         <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
                             <div>
                                 <h6 class="card-title" style="color: rgb(10, 1, 1); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+<<<<<<< HEAD
                                     <i class="fas fa-ban me-1"></i> Eliminadas
                                 </h6>
                                 <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;" id="totalEliminadas">
                                     <?= $_SESSION['contador_eliminaciones'] ?? 0 ?>
+=======
+                                    <i class="fas fa-ban me-1"></i> Anuladas
+                                </h6>
+                                <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;" id="totalAnuladas">
+                                    <?= $_SESSION['contador_anulaciones_notasalida'] ?? 0 ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                 </h2>
                             </div>
                             <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 1.5rem;">
@@ -195,12 +238,24 @@ require_once __DIR__ . '/../header.php';
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
+<<<<<<< HEAD
+=======
+                                                <!-- Ver: siempre visible -->
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                                 <a href="?url=notasalida&type=show&id=<?= $n['id_nota_salida'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
+<<<<<<< HEAD
                                                 <button type="button" class="btn-action-circle btn-delete" 
                                                         data-bs-toggle="modal" data-bs-target="#eliminarModal"
+=======
+                                                
+                                                <!-- Anular: solo si tiene permiso -->
+                                                <?php if ($puede_anular_nota): ?>
+                                                <button type="button" class="btn-action-circle btn-delete" 
+                                                        data-bs-toggle="modal" data-bs-target="#anularModal"
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                                         data-id="<?= $n['id_nota_salida'] ?>"
                                                         data-cliente="<?php 
                                                             if (!empty($n['cliente_razon_social'])) {
@@ -209,9 +264,16 @@ require_once __DIR__ . '/../header.php';
                                                                 echo htmlspecialchars(($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? ''));
                                                             }
                                                         ?>"
+<<<<<<< HEAD
                                                         title="Eliminar Nota">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
+=======
+                                                        title="Anular Nota">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                                <?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                             </div>
                                         </td>
                                     </tr>
@@ -232,18 +294,29 @@ require_once __DIR__ . '/../header.php';
     </div>
 </div>
 
+<<<<<<< HEAD
 <!-- MODAL ELIMINAR -->
 <div class="modal fade" id="eliminarModal" tabindex="-1" aria-hidden="true">
+=======
+<!-- MODAL ANULAR -->
+<?php if ($puede_anular_nota): ?>
+<div class="modal fade" id="anularModal" tabindex="-1" aria-hidden="true">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     <div class="modal-dialog">
         <div class="modal-content" style="background: #0d0d14; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
             <div class="modal-header" style="background: rgba(220,53,69,0.1); border-bottom: 1px solid rgba(255,255,255,0.05); border-radius: 16px 16px 0 0;">
                 <h5 class="modal-title" style="color: #ffffff;">
+<<<<<<< HEAD
                     <i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Eliminar Nota de Salida
+=======
+                    <i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Anular Nota de Salida
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.3;"></button>
             </div>
             <form method="POST" action="?url=notasalida&type=eliminar">
                 <div class="modal-body" style="color: rgba(255,255,255,0.8);">
+<<<<<<< HEAD
                     <p>¿Estás seguro de eliminar esta nota de salida?</p>
                     <p><strong style="color: rgba(255,255,255,0.5);">Cliente:</strong> <span id="modalCliente" style="color: #ffffff;"></span></p>
                     <div class="alert" style="background: rgba(220,53,69,0.08); border: 1px solid rgba(220,53,69,0.12); color: #ea868f; border-radius: 12px; padding: 12px 16px;">
@@ -254,6 +327,18 @@ require_once __DIR__ . '/../header.php';
                         <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Motivo de Eliminación <span class="text-danger">*</span></label>
                         <textarea name="motivo_eliminacion" class="form-control" rows="3" required 
                                   placeholder="Describe el motivo de la eliminación..."
+=======
+                    <p>¿Estás seguro de anular esta nota de salida?</p>
+                    <p><strong style="color: rgba(255,255,255,0.5);">Cliente:</strong> <span id="modalCliente" style="color: #ffffff;"></span></p>
+                    <div class="alert" style="background: rgba(220,53,69,0.08); border: 1px solid rgba(220,53,69,0.12); color: #ea868f; border-radius: 12px; padding: 12px 16px;">
+                        <i class="fas fa-info-circle me-2"></i> 
+                        Al anular, el stock se revertirá automáticamente.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Motivo de Anulación <span class="text-danger">*</span></label>
+                        <textarea name="motivo_eliminacion" class="form-control" rows="3" required 
+                                  placeholder="Describe el motivo de la anulación..."
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                                   style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 12px 16px;"></textarea>
                     </div>
                     <input type="hidden" name="id_nota_salida" id="modalNotaId">
@@ -263,13 +348,21 @@ require_once __DIR__ . '/../header.php';
                         Cancelar
                     </button>
                     <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; border-radius: 50px; padding: 8px 20px; font-weight: 600;">
+<<<<<<< HEAD
                         <i class="fas fa-trash me-1"></i> Eliminar
+=======
+                        <i class="fas fa-ban me-1"></i> Anular
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+<<<<<<< HEAD
+=======
+<?php endif; ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -281,9 +374,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
+<<<<<<< HEAD
     const eliminarModal = document.getElementById('eliminarModal');
     if (eliminarModal) {
         eliminarModal.addEventListener('show.bs.modal', function(event) {
+=======
+    const anularModal = document.getElementById('anularModal');
+    if (anularModal) {
+        anularModal.addEventListener('show.bs.modal', function(event) {
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             const button = event.relatedTarget;
             const id = button.getAttribute('data-id');
             const cliente = button.getAttribute('data-cliente');

@@ -15,7 +15,11 @@ class ConnectDB {
             return $pdo;
         } catch (PDOException $e) {
             // Lanzar excepción para que el llamador decida cómo mostrarla
+<<<<<<< HEAD
             throw new \Exception('ERROR DE CONEXIÓN: ' . $e->getMessage());
+=======
+            throw new \Exception('ERROR DE CONEXIÓN');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         }
     }
 }

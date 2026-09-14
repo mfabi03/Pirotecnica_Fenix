@@ -3,6 +3,7 @@
 require_once dirname(__DIR__, 2) . "/view/header.php"; 
 ?>
 
+<<<<<<< HEAD
 <div class="container-fluid px-4">
     <div class="row">
         <div class="col-12">
@@ -31,10 +32,38 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0" role="alert">
             <i class="fas fa-<?= ($tipo_mensaje ?? '') === 'success' ? 'check-circle' : 'exclamation-circle' ?> me-2"></i>
                 <?= htmlspecialchars($mensaje ?? '') ?>
+=======
+<div class="col-md-8 col-lg-12">
+    <!-- Tarjeta de título -->
+    <div class="card card-custom p-4 mb-4 bg-white">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8 col-lg-7">
+                <h3 class="m-0 font-weight-bold text-dark">
+                    <i class="fas fa-user-plus me-2"></i> Registror de Cliente Natural
+                </h3>
+                <p class="text-muted mb-0">Registra un nuevo cliente persona natural en el sistema.</p>
+            </div>
+            <div class="col-md-4 col-lg-5 text-md-end">
+                <a href="?url=clientes&type=register_juridico<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>" class="btn btn-gold btn-sm fw-bold">
+                    <i class="fas fa-building me-1"></i> Cliente Jurídico
+                </a>
+                <a href="?url=clientes&type=list" class="btn btn-secondary btn-sm fw-bold ms-1">
+                    <i class="fas fa-list me-1"></i> Ver Clientes
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <?php if (!empty($mensaje)): ?>
+        <div class="alert alert-<?= $tipo_mensaje === 'success' ? 'success' : 'danger' ?> alert-custom alert-dismissible fade show" role="alert">
+            <i class="fas fa-<?= $tipo_mensaje === 'success' ? 'check-circle' : 'exclamation-circle' ?> me-2"></i>
+            <?= htmlspecialchars($mensaje) ?>
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
 
+<<<<<<< HEAD
     <div class="dark-card card shadow-sm mb-4">
         <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
             <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -42,6 +71,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
             </h5>
         </div>
         <div class="card-body">
+=======
+    <div class="card card-custom p-4 mb-4 bg-white" style="max-width: 800px; margin: 0 auto;">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         <form method="post" action="?url=clientes&type=register<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>" class="row g-3">
             <?php if (isset($_GET['return'])): ?>
                 <input type="hidden" name="return" value="<?= htmlspecialchars($_GET['return']) ?>">
@@ -130,10 +162,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </form>
     </div>
 </div>
+<<<<<<< HEAD
         </div>
     </div>
 </div>
 </div>
+=======
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

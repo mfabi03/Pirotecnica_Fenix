@@ -5,6 +5,11 @@ use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\NotaentradaModel;
 use App\Pirotecnicafenix\Model\ProductoModel;
 use App\Pirotecnicafenix\Model\ProveedoresModel;
+<<<<<<< HEAD
+=======
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 use Exception;
 
 error_reporting(E_ALL);
@@ -91,6 +96,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRAR NOTA DE ENTRADA 
 
     if ($type === 'store') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Entrada', 'crear', '?url=notaentrada&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $idUsuario = obtenerIdUsuarioValido($db);
             
@@ -146,6 +155,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRO RÁPIDO DE PRODUCTO
 
     if ($type === 'store_rapido_producto') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Entrada', 'crear', '?url=notaentrada&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             // Validar campos requeridos
             if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) {
@@ -203,6 +216,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRO RÁPIDO DE PROVEEDOR 
 
     if ($type === 'store_rapido_proveedor') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Entrada', 'crear', '?url=notaentrada&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             // Validar campos requeridos
             if (empty($_POST['rif']) || empty($_POST['razon_social']) || empty($_POST['numero_contacto']) || empty($_POST['direccion'])) {
@@ -257,6 +274,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ANULAR
 
     if ($type === 'anular') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Entrada', 'eliminar', '?url=notaentrada&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $id = $_POST['id_nota_entrada'] ?? 0;
             $motivo = trim($_POST['motivo_anulacion'] ?? '');

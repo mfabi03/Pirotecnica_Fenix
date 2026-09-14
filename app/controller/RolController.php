@@ -119,7 +119,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         }
         
         // CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
+<<<<<<< HEAD
         $sql = "SELECT COUNT(*) as total FROM usuario WHERE id_rol = :id";
+=======
+        $sql = "SELECT COUNT(*) as total FROM usuario WHERE id_rol = :id AND eliminado = 0";
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
         $total = $stmt->fetchColumn();
@@ -139,6 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
+<<<<<<< HEAD
 // ===== ELIMINAR ROL (Vía GET) =====
 if (isset($_GET['action']) && $_GET['action'] === 'eliminar' && isset($_GET['id'])) {
     try {
@@ -167,13 +172,59 @@ if (isset($_GET['action']) && $_GET['action'] === 'eliminar' && isset($_GET['id'
         $_SESSION['tipo_mensaje'] = "danger";
     }
     header("Location: ?url=roles&action=lista");
+=======
+
+// ===== GUARDAR PERMISOS DE UN ROL =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'guardar_permisos') {
+ // ⭐ DEBUG
+    error_log("========== GUARDAR_PERMISOS INICIADO ==========");
+    error_log("POST: " . json_encode($_POST));
+    error_log("permisosPost: " . json_encode($_POST['permisos'] ?? 'VACIO'));
+        
+
+
+try {
+        $id_rol = (int) ($_POST['id_rol'] ?? 0);
+        $permisosPost = $_POST['permisos'] ?? [];
+        
+        if ($id_rol <= 0) {
+            throw new Exception("Rol inválido");
+        }
+        
+        if ($id_rol === 1) {
+            throw new Exception("No se pueden modificar los permisos del Administrador");
+        }
+        
+        // Cargar el PermisoModel
+        require_once $rutaRaiz . '/app/Model/PermisoModel.php';
+        $permisoModel = new \App\Pirotecnicafenix\Model\PermisoModel($db);
+        
+        $resultado = $permisoModel->actualizarPermisos($id_rol, $permisosPost);
+
+         error_log("Resultado de actualizarPermisos: " . var_export($resultado, true));
+        
+        $_SESSION['mensaje'] = $resultado ? "✅ Permisos actualizados correctamente" : "Error al actualizar permisos";
+        $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
+        
+    } catch (Exception $e) {
+        $_SESSION['mensaje'] = "Error: " . $e->getMessage();
+        $_SESSION['tipo_mensaje'] = "danger";
+    }
+    
+    header("Location: ?url=roles&action=permisos&id=" . ($id_rol ?? 0));
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     exit();
 }
 
 // 6. OBTENER DATOS PARA VISTAS
 
+<<<<<<< HEAD
 // Obtener rol para edición o visualización
 if (in_array($action, ['editar', 'ver']) && $id) {
+=======
+// Obtener rol para edición, visualización o permisos
+if (in_array($action, ['editar', 'ver', 'permisos']) && $id) {
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     $rol = $modelo->getRolById($id);
     if (!$rol) {
         $_SESSION['mensaje'] = "Rol no encontrado";
@@ -183,6 +234,10 @@ if (in_array($action, ['editar', 'ver']) && $id) {
     }
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 // 7. CARGAR VISTAS
 
 $basePath = __DIR__ . "/../view/configuracion/";
@@ -191,6 +246,7 @@ $basePath = __DIR__ . "/../view/configuracion/";
 if ($action === 'lista' || $action === '' || $action === 'roles') {
     $busqueda_trim = is_string($busqueda) ? trim($busqueda) : '';
     
+<<<<<<< HEAD
     //CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
     $sql = "SELECT 
                 r.id_rol, 
@@ -200,6 +256,17 @@ if ($action === 'lista' || $action === '' || $action === 'roles') {
     
     if ($busqueda_trim !== '') {
         $sql .= " WHERE r.nombre_rol LIKE :busqueda";
+=======
+    $sql = "SELECT 
+                r.id_rol, 
+                r.nombre_rol,
+                (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol AND u.eliminado = 0) as total_usuarios
+            FROM rol r
+            WHERE r.eliminado = 0";
+    
+    if ($busqueda_trim !== '') {
+        $sql .= " AND r.nombre_rol LIKE :busqueda";
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         $stmt = $db->prepare($sql);
         $stmt->execute(['busqueda' => '%' . $busqueda_trim . '%']);
     } else {
@@ -213,7 +280,11 @@ if ($action === 'lista' || $action === '' || $action === 'roles') {
         $roles = [];
     }
     
+<<<<<<< HEAD
     require_once $basePath . "rolLista.php";
+=======
+    require_once $basePath . "rolListar.php";
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
     exit();
 }
 
@@ -235,10 +306,31 @@ if ($action === 'editar' && $id) {
     exit();
 }
 
+<<<<<<< HEAD
+=======
+// ===== GESTIONAR PERMISOS DE UN ROL =====
+if ($action === 'permisos' && $id) {
+    require_once $rutaRaiz . '/app/Model/PermisoModel.php';
+    $permisoModel = new \App\Pirotecnicafenix\Model\PermisoModel($db);
+    
+    $modulos = $permisoModel->obtenerModulos();
+    
+    // ⭐ El modelo YA devuelve los permisos indexados por id_modulo
+    $permisosActuales = $permisoModel->obtenerPermisosPorRol($id);
+    
+    require_once $basePath . "rolPermisos.php";
+    exit();
+}
+
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 // ===== DEFAULT: LISTA =====
 $roles = $modelo->getAllRoles();
 if (!is_array($roles)) {
     $roles = [];
 }
+<<<<<<< HEAD
 require_once $basePath . "rolLista.php";
+=======
+require_once $basePath . "rolListar.php";
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 ?>

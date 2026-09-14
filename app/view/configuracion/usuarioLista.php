@@ -5,7 +5,11 @@ require_once __DIR__ . '/../header.php';
 
 <div class="container-fluid px-4">
     <div class="row">
+<<<<<<< HEAD
         <div class="col-12">
+=======
+        <div class="col-md-9 col-lg-10">
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
             
             <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">

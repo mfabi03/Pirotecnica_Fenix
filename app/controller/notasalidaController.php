@@ -5,6 +5,11 @@ use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\notasalidaModel;
 use App\Pirotecnicafenix\Model\ProductoModel;
 use App\Pirotecnicafenix\Model\clientesModel;
+<<<<<<< HEAD
+=======
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\CheckPermiso;
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
 use Exception;
 
 error_reporting(E_ALL);
@@ -91,6 +96,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRAR NOTA DE SALIDA
    
     if ($type === 'store') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $idUsuario = obtenerIdUsuarioValido($db);
             
@@ -139,6 +148,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRO RÁPIDO DE PRODUCTO 
 
     if ($type === 'store_rapido_producto') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             // Validar campos requeridos
             if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) {
@@ -194,6 +207,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // REGISTRO RÁPIDO DE CLIENTE 
 
     if ($type === 'store_rapido_cliente') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $tipo = $_POST['tipo_cliente'] ?? 'natural';
             
@@ -269,6 +286,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ACTUALIZAR
 
     if ($type === 'update') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Salida', 'actualizar', '?url=notasalida&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $id = $_POST['id_nota_salida'] ?? 0;
             $idUsuario = obtenerIdUsuarioValido($db);
@@ -318,6 +339,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ELIMINAR
 
     if ($type === 'eliminar') {
+<<<<<<< HEAD
+=======
+        CheckPermiso::verificar($db, 'Notas de Salida', 'eliminar', '?url=notasalida&type=list');
+>>>>>>> ad45ea0e9124a6b1afc884906470819cabf7986d
         try {
             $idNota = $_POST['id_nota_salida'] ?? 0;
             $motivo = trim($_POST['motivo_eliminacion'] ?? '');
