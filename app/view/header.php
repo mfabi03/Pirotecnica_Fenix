@@ -127,71 +127,96 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </a>
                 <?php endif; ?>
                 
-                <!-- ===== NOTAS (DROPDOWN DINÁMICO) ===== -->
-                <?php $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']); ?>
-<div class="w-100">
-    <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isNotasActive ? 'active' : '' ?>" 
-       data-bs-toggle="collapse" href="#menuNotas" role="button" aria-expanded="false" aria-controls="menuNotas"
-       style="border: none; width: 100%; background: <?= $isNotasActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isNotasActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
-        <i class="fas fa-file-invoice" style="width: 20px; color: <?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-        <span style="flex: 1;">Notas</span>
-        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
-    </a>
-    
-    <!-- Menú desplegable que empuja hacia abajo -->
-    <div class="collapse" id="menuNotas">
-        <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
-            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notaentrada" 
-               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
-               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
-                <i class="fas fa-sign-in-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Entrada
-            </a>
-            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notasalida" 
-               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
-               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
-                <i class="fas fa-sign-out-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Salida
-            </a>
-        </div>
-    </div>
-</div>
+                <!-- ===== NOTAS (DROPDOWN DINÁMICO CON PERMISOS) ===== -->
+                <?php 
+                $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']);
+                $verNotaEntrada = $tieneModulo('Notas de Entrada');
+                $verNotaSalida = $tieneModulo('Notas de Salida');
+                $verNotas = $verNotaEntrada || $verNotaSalida;
+                ?>
                 
-                <!-- ===== CONFIGURACIÓN (DROPDOWN DINÁMICO) ===== -->
-                <?php $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']); ?>
-<div class="w-100">
-    <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isConfigActive ? 'active' : '' ?>" 
-       data-bs-toggle="collapse" href="#menuConfiguracion" role="button" aria-expanded="false" aria-controls="menuConfiguracion"
-       style="border: none; width: 100%; background: <?= $isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isConfigActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
-        <i class="fas fa-cog" style="width: 20px; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-        <span style="flex: 1;">Configuración</span>
-        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
-    </a>
-    
-    <!-- Menú desplegable que empuja hacia abajo -->
-    <div class="collapse" id="menuConfiguracion">
-        <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
-            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=categorias" 
-               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
-               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
-                <i class="fas fa-tags me-2" style="color: rgba(255,255,255,0.3);"></i> Categorías
-            </a>
-            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=usuarios" 
-               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
-               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
-                <i class="fas fa-users-cog me-2" style="color: rgba(255,255,255,0.3);"></i> Usuarios
-            </a>
-            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=roles" 
-               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
-               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
-                <i class="fas fa-user-shield me-2" style="color: rgba(255,255,255,0.3);"></i> Roles
-            </a>
-        </div>
-    </div>
-</div>
+                <?php if ($verNotas): ?>
+                <div class="w-100">
+                    <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isNotasActive ? 'active' : '' ?>" 
+                       data-bs-toggle="collapse" href="#menuNotas" role="button" aria-expanded="false" aria-controls="menuNotas"
+                       style="border: none; width: 100%; background: <?= $isNotasActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isNotasActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
+                        <i class="fas fa-file-invoice" style="width: 20px; color: <?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                        <span style="flex: 1;">Notas</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
+                    </a>
+                    
+                    <div class="collapse" id="menuNotas">
+                        <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
+                            <?php if ($verNotaEntrada): ?>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notaentrada" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-sign-in-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Entrada
+                            </a>
+                            <?php endif; ?>
+                            <?php if ($verNotaSalida): ?>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notasalida" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-sign-out-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Salida
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- ===== CONFIGURACIÓN (DROPDOWN DINÁMICO CON PERMISOS) ===== -->
+                <?php 
+                $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']);
+                $verCategorias = $tieneModulo('Categorias');
+                $verUsuarios = $tieneModulo('Usuarios');
+                $verRoles = $tieneModulo('Roles');
+                $verConfig = $verCategorias || $verUsuarios || $verRoles;
+                ?>
+                
+                <?php if ($verConfig): ?>
+                <div class="w-100">
+                    <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isConfigActive ? 'active' : '' ?>" 
+                       data-bs-toggle="collapse" href="#menuConfiguracion" role="button" aria-expanded="false" aria-controls="menuConfiguracion"
+                       style="border: none; width: 100%; background: <?= $isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isConfigActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
+                        <i class="fas fa-cog" style="width: 20px; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+                        <span style="flex: 1;">Configuración</span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
+                    </a>
+                    
+                    <div class="collapse" id="menuConfiguracion">
+                        <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
+                            <?php if ($verCategorias): ?>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=categorias" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-tags me-2" style="color: rgba(255,255,255,0.3);"></i> Categorías
+                            </a>
+                            <?php endif; ?>
+                            <?php if ($verUsuarios): ?>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=usuarios" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-users-cog me-2" style="color: rgba(255,255,255,0.3);"></i> Usuarios
+                            </a>
+                            <?php endif; ?>
+                            <?php if ($verRoles): ?>
+                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=roles" 
+                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                                <i class="fas fa-user-shield me-2" style="color: rgba(255,255,255,0.3);"></i> Roles
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 
                 <!-- ===== REPORTES ===== -->
                 <?php if ($tieneModulo('Reportes')): ?>
