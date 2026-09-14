@@ -8,7 +8,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
 <div class="container-fluid px-4">
     <div class="row">       
-        <div class="col-md-9 col-lg-10">
+        <div class="col-12">
             
             <!-- ==========================================
                  TARJETA DE TÍTULO - FONDO OSCURO

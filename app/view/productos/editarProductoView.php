@@ -19,7 +19,7 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
 <div class="container-fluid px-4">
     <div class="row">
         <!-- Contenido Principal -->
-        <div class="col-md-9 col-lg-10">
+        <div class="col-12">
             
             <!-- ==========================================
                  TARJETA DE TÍTULO - FONDO OSCURO

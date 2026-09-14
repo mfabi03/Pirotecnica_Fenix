@@ -19,7 +19,7 @@ NAVBAR - CORREGIDO
         <!-- LOGO CON TAMAÑO CORRECTO -->
         <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 10px;">
             <img src="assets/imagenes/logo.png" alt="Logo" 
-                 style="width: 40px !important; height: 40px !important; object-fit: contain; border-radius: 50%; background: #ffffff; padding: 4px;">
+                 style="width: 40px !important; height: 40px !important; object-fit: contain; border-radius: 50%; background: rgba(255, 247, 22, 0.72); padding: 0.5px;">
             <span style="font-size: 1.1rem; font-weight: 700; color: #ffffff; white-space: nowrap;">
                 <span style="color: #DAA520;">Sistema</span> Pirotecnica Fénix
             </span>
@@ -50,15 +50,15 @@ NAVBAR - CORREGIDO
 <!-- ==========================================
 CONTENEDOR PRINCIPAL
 ========================================== -->
-<div class="container-fluid" style="margin-top: 70px;">
-    <div class="row">
+    <div class="container-fluid" style="margin-top: 60px; padding-left: 0; padding-right: 0;">
+    <div class="row align-items-stretch" style="min-height: calc(100vh - 60px); margin-left: 0; margin-right: 0;">
         
  <!-- ==========================================
 SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
 ========================================== -->
-<div class="col-md-3 col-lg-2" style="padding: 0; height: 100%;">
-    <div class="card shadow-sm border-0 rounded-0" style="background: #1a1a2e; border: 1px solid rgba(255,255,255,0.05); height: 100%; min-height: calc(100vh - 70px); border-radius: 0 !important;">
-        <div class="card-body p-3" style="height: 100%; overflow-y: auto;">
+<div class="col-md-3 col-lg-2" style="padding: 0; min-height: calc(100vh - 60px);">
+    <div class="card shadow-sm border-0 rounded-0" style="background: #1a1a2e; border: 1px solid rgba(255,255,255,0.05); height: 100%; min-height: calc(100vh - 60px); border-radius: 0 !important;">
+        <div class="card-body p-3" style="height: 100%; min-height: calc(100vh - 60px); overflow-y: auto;">
             <h6 class="text-uppercase small fw-bold mb-3" style="color: rgba(255,255,255,0.4); letter-spacing: 0.5px;">
                 <i class="fas fa-compass me-2" style="color: #f39c12;"></i> Navegación
             </h6>
@@ -127,43 +127,41 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
     </div>
 </div>
                 
-                <!-- ===== CONFIGURACIÓN (DROPDOWN) ===== -->
-                <?php $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']); ?>
-                <div class="dropdown w-100">
-                    <a class="dropdown-toggle d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isConfigActive ? 'active' : '' ?>" 
-                       href="#" data-bs-toggle="dropdown" 
-                       style="border: none; width: 100%; background: <?= $isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isConfigActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
-                        <i class="fas fa-cog" style="width: 20px; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-                        <span style="flex: 1;">Configuración</span>
-                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
-                    </a>
-                    <ul class="dropdown-menu w-100 border-0 shadow-sm rounded-3" style="background: #0D0D1A; border: 1px solid rgba(255,255,255,0.05); margin-top: 4px; padding: 6px;">
-                        <li>
-                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=categorias" 
-                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
-                                <i class="fas fa-tags me-2" style="color: rgba(255,255,255,0.3);"></i> Categorías
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=usuarios" 
-                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
-                                <i class="fas fa-users-cog me-2" style="color: rgba(255,255,255,0.3);"></i> Usuarios
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=roles" 
-                               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
-                                <i class="fas fa-user-shield me-2" style="color: rgba(255,255,255,0.3);"></i> Roles
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+                <!-- ===== CONFIGURACIÓN (COLLAPSE) ===== -->
+<?php $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']); ?>
+<div class="w-100">
+    <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isConfigActive ? 'active' : '' ?>" 
+       data-bs-toggle="collapse" href="#menuConfiguracion" role="button" aria-expanded="false" aria-controls="menuConfiguracion"
+       style="border: none; width: 100%; background: <?= $isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isConfigActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
+        <i class="fas fa-cog" style="width: 20px; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
+        <span style="flex: 1;">Configuración</span>
+        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
+    </a>
+    
+    <!-- Menú desplegable que empuja hacia abajo -->
+    <div class="collapse" id="menuConfiguracion">
+        <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
+            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=categorias" 
+               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                <i class="fas fa-tags me-2" style="color: rgba(255,255,255,0.3);"></i> Categorías
+            </a>
+            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=usuarios" 
+               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                <i class="fas fa-users-cog me-2" style="color: rgba(255,255,255,0.3);"></i> Usuarios
+            </a>
+            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=roles" 
+               style="color: rgba(255,255,255,0.6); transition: all 0.3s ease;"
+               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+               onmouseout="this.style.background='transparent'; this.style.color='rgba(255,255,255,0.6)';">
+                <i class="fas fa-user-shield me-2" style="color: rgba(255,255,255,0.3);"></i> Roles
+            </a>
+        </div>
+    </div>
+</div>
                 
                 <!-- ===== REPORTES ===== -->
                 <a href="?url=reportes" 
@@ -191,6 +189,6 @@ SIDEBAR - MENÚ DE NAVEGACIÓN CON ALTO COMPLETO
     </div>
 </div>
         <!-- CONTENIDO PRINCIPAL -->
-        <div class="col-md-9 col-lg-10">
-            <div class="content-wrapper p-3">
+        <div class="col-md-9 col-lg-10" style="padding-left: 0; padding-right: 0;">
+        <div class="content-wrapper px-3 py-3">
                 <!-- Las vistas se inyectan aquí -->

@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 if (!empty($_SESSION['error'])): ?>
     <div class="container-fluid px-4">
         <div class="row">
-            <div class="col-md-9 col-lg-10">
+            <div class="col-12">
                 <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-exclamation-circle me-3 fs-4"></i>
@@ -26,7 +26,7 @@ if (!empty($_SESSION['error'])): ?>
 
 <div class="container-fluid px-4">
     <div class="row">
-        <div class="col-md-9 col-lg-10">
+        <div class="col-12">
             
             <!-- ==========================================
                  TARJETA DE TÍTULO - FONDO OSCURO
