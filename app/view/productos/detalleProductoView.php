@@ -186,6 +186,6 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                     </div>
                 </div>
             </div>
-</div>
+        </div>
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>
