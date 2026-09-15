@@ -1,145 +1,157 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Transformar selects dentro de formularios en input con datalist para búsqueda rápida
+document.addEventListener('DOMContentLoaded', function () {
     const selects = document.querySelectorAll('form select.form-select');
 
-    selects.forEach(function(select) {
-        // No volver a transformar si ya se hizo
-        if (select.dataset.searchable === 'true') return;
+    selects.forEach(function (select) {
+        if (select.dataset.searchable === 'true' || !select.parentNode) {
+            return;
+        }
 
-        // Recolectar opciones
-        document.addEventListener('DOMContentLoaded', function() {
-            // Aplicar autocompletado avanzado a selects dentro de formularios
-            const selects = document.querySelectorAll('form select.form-select');
+        const options = Array.from(select.options).map(function (option) {
+            return {
+                value: option.value,
+                label: option.textContent.trim(),
+                disabled: option.disabled
+            };
+        });
 
-            selects.forEach(function(select) {
-                if (select.dataset.searchable === 'true') return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'ss-wrapper';
+        wrapper.style.position = 'relative';
 
-                const options = Array.from(select.options).map(o => ({ value: o.value, label: o.textContent.trim(), disabled: o.disabled }));
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = select.className + ' ss-input';
+        input.setAttribute('autocomplete', 'off');
 
-                // Crear wrapper
-                const wrapper = document.createElement('div');
-                wrapper.className = 'ss-wrapper';
-                wrapper.style.position = 'relative';
+        const disabledOption = select.querySelector('option[disabled]');
+        input.placeholder = disabledOption ? disabledOption.textContent.trim() : '';
 
-                // Crear input visible
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = select.className + ' ss-input';
-                input.setAttribute('autocomplete', 'off');
-                input.placeholder = select.querySelector('option[disabled]') ? select.querySelector('option[disabled]').textContent.trim() : '';
-                // Si hay una opción seleccionada en el select, mostrarla en el input visible
-                const selectedOption = select.options[select.selectedIndex];
-                if (selectedOption && selectedOption.value) {
-                    input.value = selectedOption.textContent.trim();
+        const selectedOption = select.options[select.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            input.value = selectedOption.textContent.trim();
+        }
+
+        const dropdown = document.createElement('ul');
+        dropdown.className = 'ss-dropdown list-group';
+        dropdown.style.position = 'absolute';
+        dropdown.style.zIndex = 1050;
+        dropdown.style.display = 'none';
+        dropdown.style.maxHeight = '220px';
+        dropdown.style.overflowY = 'auto';
+        dropdown.style.left = '0';
+        dropdown.style.right = '0';
+        dropdown.style.marginTop = '4px';
+
+        function renderItems(filter) {
+            dropdown.innerHTML = '';
+            const query = (filter || '').toLowerCase();
+            const matches = options.filter(function (option) {
+                return !option.disabled && (query === '' || option.label.toLowerCase().includes(query));
+            });
+
+            matches.forEach(function (option) {
+                const item = document.createElement('li');
+                item.className = 'list-group-item list-group-item-action ss-item';
+                item.style.cursor = 'pointer';
+                item.textContent = option.label;
+                item.dataset.value = option.value;
+                dropdown.appendChild(item);
+            });
+
+            if (matches.length === 0) {
+                const item = document.createElement('li');
+                item.className = 'list-group-item text-muted';
+                item.textContent = 'No hay coincidencias';
+                dropdown.appendChild(item);
+            }
+        }
+
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.appendChild(input);
+        wrapper.appendChild(dropdown);
+        wrapper.appendChild(select);
+        select.style.display = 'none';
+        select.dataset.searchable = 'true';
+
+        input.addEventListener('focus', function () {
+            renderItems('');
+            dropdown.style.display = 'block';
+        });
+
+        let highlighted = null;
+        input.addEventListener('input', function () {
+            renderItems(this.value);
+            highlighted = null;
+            dropdown.style.display = 'block';
+        });
+
+        input.addEventListener('keydown', function (event) {
+            const items = dropdown.querySelectorAll('.ss-item');
+            if (!items.length) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                if (highlighted === null) {
+                    highlighted = 0;
+                } else {
+                    highlighted = Math.min(highlighted + 1, items.length - 1);
                 }
-
-                // Crear dropdown
-                const dropdown = document.createElement('ul');
-                dropdown.className = 'ss-dropdown list-group';
-                dropdown.style.position = 'absolute';
-                dropdown.style.zIndex = 1050;
-                dropdown.style.display = 'none';
-                dropdown.style.maxHeight = '220px';
-                dropdown.style.overflowY = 'auto';
-                dropdown.style.left = '0';
-                dropdown.style.right = '0';
-                dropdown.style.marginTop = '4px';
-
-                // Llenar dropdown con items
-                function renderItems(filter) {
-                    dropdown.innerHTML = '';
-                    const q = (filter || '').toLowerCase();
-                    const matches = options.filter(o => !o.disabled && (q === '' || o.label.toLowerCase().includes(q)));
-                    matches.forEach(o => {
-                        const li = document.createElement('li');
-                        li.className = 'list-group-item list-group-item-action ss-item';
-                        li.style.cursor = 'pointer';
-                        li.textContent = o.label;
-                        li.dataset.value = o.value;
-                        dropdown.appendChild(li);
-                    });
-                    if (matches.length === 0) {
-                        const li = document.createElement('li');
-                        li.className = 'list-group-item text-muted';
-                        li.textContent = 'No hay coincidencias';
-                        dropdown.appendChild(li);
-                    }
+                items.forEach(function (item, index) {
+                    item.classList.toggle('active', index === highlighted);
+                });
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                if (highlighted === null) {
+                    highlighted = items.length - 1;
+                } else {
+                    highlighted = Math.max(highlighted - 1, 0);
                 }
-
-                // Insertar wrapper antes del select y mover select dentro
-                select.parentNode.insertBefore(wrapper, select);
-                wrapper.appendChild(input);
-                wrapper.appendChild(dropdown);
-                wrapper.appendChild(select);
-                select.style.display = 'none';
-                select.dataset.searchable = 'true';
-
-                // Mostrar dropdown al enfocar
-                input.addEventListener('focus', function() {
-                    renderItems('');
-                    dropdown.style.display = 'block';
+                items.forEach(function (item, index) {
+                    item.classList.toggle('active', index === highlighted);
                 });
-
-                // Filtrado en vivo
-                let highlighted = null;
-                input.addEventListener('input', function() {
-                    renderItems(this.value);
-                    highlighted = null;
-                    dropdown.style.display = 'block';
-                });
-
-                // Navegación por teclado
-                input.addEventListener('keydown', function(e) {
-                    const items = dropdown.querySelectorAll('.ss-item');
-                    if (!items.length) return;
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        if (highlighted === null) highlighted = 0;
-                        else highlighted = Math.min(highlighted + 1, items.length - 1);
-                        items.forEach((it, idx) => it.classList.toggle('active', idx === highlighted));
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        if (highlighted === null) highlighted = items.length - 1;
-                        else highlighted = Math.max(highlighted - 1, 0);
-                        items.forEach((it, idx) => it.classList.toggle('active', idx === highlighted));
-                    } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (highlighted !== null) {
-                            const it = items[highlighted];
-                            select.value = it.dataset.value;
-                            input.value = it.textContent;
-                            dropdown.style.display = 'none';
-                        }
-                    } else if (e.key === 'Escape') {
-                        dropdown.style.display = 'none';
-                    }
-                });
-
-                // Click en item
-                dropdown.addEventListener('click', function(e) {
-                    const li = e.target.closest('.ss-item');
-                    if (!li) return;
-                    select.value = li.dataset.value;
-                    input.value = li.textContent;
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                if (highlighted !== null) {
+                    const item = items[highlighted];
+                    select.value = item.dataset.value;
+                    input.value = item.textContent;
                     dropdown.style.display = 'none';
-                });
+                }
+            } else if (event.key === 'Escape') {
+                dropdown.style.display = 'none';
+            }
+        });
 
-                // Click fuera -> ocultar
-                document.addEventListener('click', function(e) {
-                    if (!wrapper.contains(e.target)) {
-                        dropdown.style.display = 'none';
-                    }
-                });
+        dropdown.addEventListener('click', function (event) {
+            const item = event.target.closest('.ss-item');
+            if (!item) {
+                return;
+            }
+            select.value = item.dataset.value;
+            input.value = item.textContent;
+            dropdown.style.display = 'none';
+        });
 
-                // Al enviar el formulario, si select vacío intentar encontrar por texto
-                const form = select.closest('form');
-                if (form) {
-                    form.addEventListener('submit', function() {
-                        if (!select.value && input.value.trim() !== '') {
-                            const match = options.find(o => o.label.toLowerCase().includes(input.value.trim().toLowerCase()));
-                            if (match) select.value = match.value;
-                        }
+        document.addEventListener('click', function (event) {
+            if (!wrapper.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        const form = select.closest('form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                if (!select.value && input.value.trim() !== '') {
+                    const match = options.find(function (option) {
+                        return option.label.toLowerCase().includes(input.value.trim().toLowerCase());
                     });
+                    if (match) {
+                        select.value = match.value;
+                    }
                 }
             });
-        });
+        }
+    });
+});
