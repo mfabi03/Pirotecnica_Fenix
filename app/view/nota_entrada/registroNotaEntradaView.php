@@ -63,13 +63,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
                 
                 <div class="card-body">
-<<<<<<< Updated upstream
-=======
                     <?php
                         $idProveedorSeleccionado = isset($_GET['id_proveedor']) ? (int) $_GET['id_proveedor'] : (isset($_SESSION['nuevo_proveedor_id']) ? (int) $_SESSION['nuevo_proveedor_id'] : 0);
                         unset($_SESSION['nuevo_proveedor_id']);
                     ?>
->>>>>>> Stashed changes
                     <form method="POST" action="?url=notaentrada&type=store" id="notaEntradaForm">
                         
                         <!-- ==========================================
@@ -83,11 +80,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <i class="fas fa-calendar-alt me-1" style="color: #f39c12;"></i> Fecha de Ingreso <span class="text-danger">*</span>
                                     </label>
                                     <input type="datetime-local" name="fecha_ingreso" class="form-control" 
-<<<<<<< Updated upstream
-                                           value="<?= fechaParaDateTimeLocal() ?>" required
-=======
                                            value="<?= date('Y-m-d\TH:i') ?>" required
->>>>>>> Stashed changes
                                            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
                                 </div>
                             </div>
@@ -99,23 +92,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <i class="fas fa-truck me-1" style="color: #28a745;"></i> Proveedor <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
-<<<<<<< Updated upstream
-                                        <?php 
-                                            $idProveedorHeredado = $_GET['id_proveedor'] ?? $_SESSION['nuevo_proveedor_id'] ?? '';
-                                        ?>
-=======
->>>>>>> Stashed changes
                                         <select id="id_proveedor" name="id_proveedor" class="form-select" required
                                                 style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
                                             <option value="">Seleccione un proveedor...</option>
                                             <?php if (!empty($proveedores)): ?>
                                                 <?php foreach ($proveedores as $prov): ?>
                                                     <option value="<?= $prov['id_proveedor'] ?>"
-<<<<<<< Updated upstream
-                                                        <?= ($idProveedorHeredado != '' && $idProveedorHeredado == $prov['id_proveedor']) ? 'selected' : '' ?>>
-=======
                                                         <?= ($idProveedorSeleccionado > 0 && $idProveedorSeleccionado == (int) $prov['id_proveedor']) ? 'selected' : '' ?>>
->>>>>>> Stashed changes
                                                         <?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?>
                                                     </option>
                                                 <?php endforeach; ?>
@@ -129,7 +112,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                             <i class="fas fa-plus"></i>
                                         </a>
                                     </div>
-                                    <?php unset($_SESSION['nuevo_proveedor_id']); ?>
                                 </div>
                             </div>
 
