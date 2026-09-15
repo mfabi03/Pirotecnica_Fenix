@@ -5,6 +5,12 @@ error_reporting(E_ALL);
 
 require __DIR__ . '/vendor/autoload.php';
 
+// ==========================================
+// CONFIGURAR ZONA HORARIA DE VENEZUELA
+// Venezuela usa America/Caracas (UTC-4)
+// ==========================================
+require __DIR__ . '/app/Config/timezone.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

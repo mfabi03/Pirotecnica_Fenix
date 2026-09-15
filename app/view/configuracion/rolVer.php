@@ -36,10 +36,6 @@ require_once __DIR__ . '/../header.php';
                                     <i class="fas fa-info-circle me-1"></i> Información del Rol
                                 </h6>
                                 <hr>
-                                <div class="mb-3">
-                                    <label class="fw-bold text-muted small">ID:</label>
-                                    <p class="mb-0 fs-5">#<?= htmlspecialchars($rol['id_rol'] ?? 'N/A') ?></p>
-                                </div>
                                 <div class="mb-0">
                                     <label class="fw-bold text-muted small">Nombre del Rol:</label>
                                     <p class="mb-0 fs-5">

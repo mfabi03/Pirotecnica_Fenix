@@ -219,7 +219,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                                 #<?= htmlspecialchars($n['id_nota_entrada']) ?>
                                             <?php endif; ?>
                                         </td>
-                                        <td><?= date('d/m/Y', strtotime($n['fecha_ingreso'])) ?></td>
+                                        <td><?= formatoFechaVenezuela($n['fecha_ingreso']) ?></td>
                                         <td><?= htmlspecialchars($n['razon_social'] ?? 'N/A') ?></td>
                                         <td><?= htmlspecialchars($n['encargado_nombre'] ?? 'Sin asignar') ?></td>
                                         <td>

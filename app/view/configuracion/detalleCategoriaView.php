@@ -76,12 +76,7 @@ $puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                             <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Datos de la Categoría
                         </h6>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">ID:</label>
-                                <p style="color: #1a1a2e; font-weight: 600; margin-bottom: 0;">
-                                    <span class="badge" style="background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; padding: 4px 12px; border-radius: 50px;">#<?= htmlspecialchars($categoria['id_categoria'] ?? 'N/A') ?></span>
-                                </p>
-                            </div>
+                           
                             <div class="col-md-6">
                                 <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombre:</label>
                                 <p style="color: #1a1a2e; margin-bottom: 0; font-weight: 500;"><?= htmlspecialchars($categoria['nombre_categoria'] ?? '') ?></p>

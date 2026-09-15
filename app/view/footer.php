@@ -18,7 +18,7 @@ FOOTER - VERSIÓN PEQUEÑA
             </span>
             <span style="color: #d4af37; font-size: 0.55rem; opacity: 0.5;">✦</span>
             <span style="color: rgba(255,255,255,0.06);">|</span>
-            <span style="color: #e5c158; font-size: 0.5rem; opacity: 0.4;">&copy; <?= date('Y') ?></span>
+            <span style="color: #e5c158; font-size: 0.5rem; opacity: 0.4;">&copy; <?= anioActualVenezuela() ?></span>
         </div>
     </div>
 </footer>

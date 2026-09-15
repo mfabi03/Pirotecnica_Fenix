@@ -76,7 +76,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <i class="fas fa-calendar-alt me-1" style="color: #f39c12;"></i> Fecha de Ingreso <span class="text-danger">*</span>
                                     </label>
                                     <input type="datetime-local" name="fecha_ingreso" class="form-control" 
-                                           value="<?= date('Y-m-d\TH:i') ?>" required
+                                           value="<?= fechaParaDateTimeLocal() ?>" required
                                            style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
                                 </div>
                             </div>
@@ -86,7 +86,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; border-left: 4px solid #28a745; padding: 16px 20px;">
                                     <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 8px;">
                                         <i class="fas fa-truck me-1" style="color: #28a745;"></i> Proveedor <span class="text-danger">*</span>
-                                    </label>                                    <div class="input-group">
+                                    </label>
+                                    <div class="input-group">
                                         <?php 
                                             $idProveedorHeredado = $_GET['id_proveedor'] ?? $_SESSION['nuevo_proveedor_id'] ?? '';
                                         ?>

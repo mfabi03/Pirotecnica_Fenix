@@ -120,7 +120,7 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                                     <div class="mb-3">
                                         <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Fecha de Nacimiento:</label>
                                         <p style="color: #1a1a2e; margin-bottom: 0;">
-                                            <?= !empty($cliente['fecha_de_nacimiento']) ? date('d/m/Y', strtotime($cliente['fecha_de_nacimiento'])) : 'No registrada' ?>
+                                            <?= !empty($cliente['fecha_de_nacimiento']) ? formatoFechaVenezuela($cliente['fecha_de_nacimiento']) : 'No registrada' ?>
                                         </p>
                                     </div>
                                 <?php endif; ?>

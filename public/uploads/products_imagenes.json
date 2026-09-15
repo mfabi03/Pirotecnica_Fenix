@@ -20,8 +20,13 @@
         "id_proveedor": 18
     },
     "25": {
-        "especificaciones": "moloo belo",
-        "proveedor": "YUCA.PQ",
-        "id_proveedor": 33
+        "especificaciones": "gGA",
+        "proveedor": "BOLO",
+        "id_proveedor": 17
+    },
+    "24": {
+        "especificaciones": "",
+        "proveedor": "",
+        "id_proveedor": 0
     }
 }

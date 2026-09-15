@@ -65,10 +65,6 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                     <i class="fas fa-building me-2" style="color: #f39c12;"></i> Información del Proveedor
                                 </h6>
                                 <div class="mb-3">
-                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">ID:</label>
-                                    <p style="color: #1a1a2e; margin-bottom: 0; font-weight: 700;">#<?= htmlspecialchars($proveedor['id_proveedor'] ?? '') ?></p>
-                                </div>
-                                <div class="mb-3">
                                     <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF:</label>
                                     <p style="color: #1a1a2e; margin-bottom: 0;">
                                         <span class="badge" style="background: #e9ecef; color: #1a1a2e; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.8rem;">
@@ -113,7 +109,7 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                 <div class="mb-3">
                                     <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Fecha de Registro:</label>
                                     <p style="color: #1a1a2e; margin-bottom: 0;">
-                                        <?= isset($proveedor['fecha_creacion']) ? date('d/m/Y H:i', strtotime($proveedor['fecha_creacion'])) : 'N/A' ?>
+                                        <?= isset($proveedor['fecha_creacion']) ? formatoFechaHoraVenezuela($proveedor['fecha_creacion']) : 'N/A' ?>
                                     </p>
                                 </div>
                             </div>

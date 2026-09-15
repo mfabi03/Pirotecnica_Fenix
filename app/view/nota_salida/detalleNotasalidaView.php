@@ -77,7 +77,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                             </span>
                             <p style="color: #6c757d; margin-top: 8px; font-size: 0.85rem;">
                                 <i class="fas fa-clock me-1"></i>
-                                Anulada: <?= date('d/m/Y H:i', strtotime($nota['fecha_anulacion'] ?? 'now')) ?>
+                                Anulada: <?= formatoFechaHoraVenezuela($nota['fecha_anulacion'] ?? fechaHoraVenezuela()) ?>
                             </p>
                         <?php else: ?>
                             <span class="badge" style="background: #28a745; color: #fff; padding: 10px 24px; border-radius: 50px; font-size: 1.1rem;">
@@ -91,7 +91,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                         <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>NOTA ANULADA</strong> - 
-                            <?= date('d/m/Y H:i', strtotime($nota['fecha_anulacion'] ?? 'now')) ?>
+                            <?= formatoFechaHoraVenezuela($nota['fecha_anulacion'] ?? fechaHoraVenezuela()) ?>
                             <br><small style="color: #6c757d;">El stock ha sido restaurado.</small>
                         </div>
                     <?php endif; ?>
@@ -104,8 +104,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                     <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Datos de la Nota
                                 </h6>
                                 <div style="color: #212529;">
-                                    <p><strong style="color: #495057;">ID:</strong> <span class="badge" style="background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; padding: 4px 12px; border-radius: 50px;">#<?= $nota['id_nota_salida'] ?></span></p>
-                                    <p><strong style="color: #495057;">Fecha:</strong> <?= date('d/m/Y', strtotime($nota['fecha'])) ?></p>
+                                    <p><strong style="color: #495057;">Fecha:</strong> <?= formatoFechaVenezuela($nota['fecha']) ?></p>
                                     <p><strong style="color: #495057;">Encargado:</strong> <?= htmlspecialchars($nota['usuario_responsable'] ?? 'N/A') ?></p>
                                 </div>
                             </div>

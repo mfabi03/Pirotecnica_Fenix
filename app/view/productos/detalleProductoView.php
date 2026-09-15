@@ -72,10 +72,6 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                                     <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Información del Producto
                                 </h6>
                                 <div class="mb-3">
-                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">ID Producto:</label>
-                                    <p style="color: #1a1a2e; margin-bottom: 0; font-weight: 700;">#<?= htmlspecialchars($producto['id_producto'] ?? 'N/A') ?></p>
-                                </div>
-                                <div class="mb-3">
                                     <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombre:</label>
                                     <p style="color: #1a1a2e; margin-bottom: 0; font-weight: 600;"><?= htmlspecialchars($producto['descripcion'] ?? '') ?></p>
                                 </div>
@@ -97,16 +93,17 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                                     <i class="fas fa-chart-line me-2" style="color: #f39c12;"></i> Datos de Inventario
                                 </h6>
                                 <div class="mb-3">
-                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock:</label>
+                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Actual:</label>
                                     <p style="margin-bottom: 0;">
                                         <?php 
                                             $stock = $producto['stock'] ?? 0;
-                                            if ($stock <= 5):
+                                            $stockMin = $producto['stock_minimo'] ?? 10;
+                                            if ($stock <= $stockMin):
                                         ?>
                                             <span class="badge" style="background: #dc3545; color: #fff; padding: 4px 14px; border-radius: 50px; font-weight: 600;">
                                                 <?= htmlspecialchars($stock) ?> ⚠️
                                             </span>
-                                        <?php elseif ($stock <= 15): ?>
+                                        <?php elseif ($stock <= ($stockMin * 2)): ?>
                                             <span class="badge" style="background: #ffc107; color: #1a1a2e; padding: 4px 14px; border-radius: 50px; font-weight: 600;">
                                                 <?= htmlspecialchars($stock) ?>
                                             </span>
@@ -117,12 +114,23 @@ $proveedor = $productosData[$productoKey]['proveedor'] ?? 'No especificado';
                                         <?php endif; ?>
                                     </p>
                                 </div>
+                                
+                                <div class="mb-3">
+                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo:</label>
+                                    <p style="margin-bottom: 0;">
+                                        <span class="badge" style="background: rgba(243,156,18,0.15); color: #e67e22; padding: 4px 14px; border-radius: 50px; font-weight: 600;">
+                                            <i class="fas fa-exclamation-triangle me-1"></i> <?= htmlspecialchars($stockMin) ?>
+                                        </span>
+                                    </p>
+                                </div>
+                                
                                 <div class="mb-3">
                                     <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Costo Unitario:</label>
                                     <p style="color: #f39c12; margin-bottom: 0; font-weight: 700; font-size: 1.2rem;">
                                         $<?= number_format($producto['costo_unitario'] ?? 0, 2, ',', '.') ?>
                                     </p>
                                 </div>
+                                
                                 <div class="mb-3">
                                     <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor:</label>
                                     <p style="margin-bottom: 0;">

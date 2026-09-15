@@ -85,7 +85,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                             </h6>
                             <div style="color: #212529;">
                                 <p><strong style="color: #495057;">Código:</strong> <span class="badge" style="background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; padding: 4px 12px; border-radius: 50px;">#<?= $nota['id_nota_entrada'] ?></span></p>
-                                <p><strong style="color: #495057;">Fecha:</strong> <?= date('d/m/Y H:i', strtotime($nota['fecha_ingreso'])) ?></p>
+                                <p><strong style="color: #495057;">Fecha:</strong> <?= formatoFechaHoraVenezuela($nota['fecha_ingreso']) ?></p>
                                 <p><strong style="color: #495057;">Encargado:</strong> <?= htmlspecialchars($nota['encargado_nombre'] ?? 'Sin asignar') ?></p>
                                 <p><strong style="color: #495057;">Comentarios:</strong> <?= nl2br(htmlspecialchars($nota['descripcion'] ?? 'Sin comentarios')) ?></p>
                                 <p><strong style="color: #495057;">Costo Total:</strong> <span style="color: #28a745; font-weight: 700;">$<?= number_format($nota['costo_total'] ?? 0, 2) ?></span></p>

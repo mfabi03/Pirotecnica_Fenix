@@ -195,7 +195,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <?php foreach ($notas as $n): ?>
                                     <tr>
                                         <td class="ps-4 fw-bold">#<?= $n['id_nota_salida'] ?></td>
-                                        <td><?= date('d/m/Y', strtotime($n['fecha'])) ?></td>
+                                        <td><?= formatoFechaVenezuela($n['fecha']) ?></td>
                                         <td>
                                             <?php 
                                             if (!empty($n['cliente_razon_social'])) {
