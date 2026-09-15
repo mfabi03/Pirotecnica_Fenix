@@ -13,7 +13,6 @@ class CategoriaModel {
     }
 
     // OBTENER TODAS LAS CATEGORIAS
-
     public function obtenerCategorias() {
         try {
             $sql = "SELECT id_categoria, nombre_categoria, descripcion 
@@ -28,8 +27,30 @@ class CategoriaModel {
         }
     }
 
-    // OBTENER CATEGORIA POR ID
+    // ✅ CONTAR CATEGORÍAS (para paginación)
+    public function contarCategorias($termino = null) {
+        try {
+            $termino = trim((string) $termino);
+            
+            if ($termino !== '') {
+                $sql = "SELECT COUNT(*) FROM categoria 
+                        WHERE eliminado = 0
+                        AND (nombre_categoria LIKE :termino OR descripcion LIKE :termino)";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':termino' => "%{$termino}%"]);
+            } else {
+                $sql = "SELECT COUNT(*) FROM categoria WHERE eliminado = 0";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute();
+            }
+            
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new Exception("Error al contar categorías: " . $e->getMessage());
+        }
+    }
 
+    // OBTENER CATEGORIA POR ID
     public function obtenerCategoriaPorId($id) {
         try {
             $sql = "SELECT id_categoria, nombre_categoria, descripcion 
@@ -44,7 +65,6 @@ class CategoriaModel {
     }
 
     // REGISTRAR CATEGORIA
-
     public function registrarCategoria(array $datos) {
         try {
             $checkSql = "SELECT COUNT(*) FROM categoria WHERE nombre_categoria = :nombre AND eliminado = 0";
@@ -67,7 +87,6 @@ class CategoriaModel {
     }
 
     // ACTUALIZAR CATEGORIA
-
     public function actualizarCategoria($id, array $datos) {
         try {
             $checkSql = "SELECT COUNT(*) FROM categoria WHERE id_categoria = :id AND eliminado = 0";
@@ -104,7 +123,6 @@ class CategoriaModel {
     }
 
     // ELIMINAR CATEGORIA
-
     public function eliminarCategoria($id) {
         try {
             $checkSql = "SELECT COUNT(*) FROM producto WHERE id_categoria = :id AND eliminado = 0";
@@ -123,7 +141,6 @@ class CategoriaModel {
     }
 
     // BUSCAR CATEGORIAS
-
     public function buscarCategorias($termino) {
         try {
             $sql = "SELECT id_categoria, nombre_categoria, descripcion 
@@ -141,7 +158,6 @@ class CategoriaModel {
     }
 
     // OBTENER CATEGORIAS PARA SELECT
-
     public function obtenerCategoriasParaSelect() {
         try {
             $sql = "SELECT id_categoria, nombre_categoria 

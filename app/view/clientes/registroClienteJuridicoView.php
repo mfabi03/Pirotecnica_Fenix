@@ -54,6 +54,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <div class="card-body">
                     <form method="post" action="?url=clientes&type=register_juridico<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>">
                         <input type="hidden" name="accion" value="register_juridico">
+                        <?php if (isset($_GET['return'])): ?>
+                            <input type="hidden" name="return" value="<?= htmlspecialchars($_GET['return']) ?>">
+                        <?php endif; ?>
                         
                         <div class="row g-3">
                             
@@ -105,9 +108,15 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                  BOTONES DE ACCIÓN
                                  ========================================== -->
                             <div class="col-12 text-end" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px; margin-top: 10px;">
-                                <a href="?url=clientes&type=list" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
-                                    <i class="fas fa-times me-1"></i> Cancelar
-                                </a>
+                                <?php if (isset($_GET['return'])): ?>
+                                    <a href="?url=<?= htmlspecialchars($_GET['return']) ?>&type=create" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
+                                        <i class="fas fa-times me-1"></i> Cancelar
+                                    </a>
+                                <?php else: ?>
+                                    <a href="?url=clientes&type=list" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
+                                        <i class="fas fa-times me-1"></i> Cancelar
+                                    </a>
+                                <?php endif; ?>
                                 <a href="?url=clientes&type=register<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>" 
                                    class="btn" style="background: rgba(40, 167, 69, 0.1); color: #28a745; border: 1px solid rgba(40, 167, 69, 0.2); border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
                                     <i class="fas fa-user me-1"></i> Cliente Natural

@@ -1,27 +1,28 @@
 <?php
 // app/view/configuracion/usuarioLista.php
 require_once __DIR__ . '/../header.php';
+
+// Paginación
+$por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
+$totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($usuarios) ? count($usuarios) : 0);
+$pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
+$totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 ?>
 
 <div class="col-md-8 col-lg-12">
             
-            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+            <!-- TARJETA DE TÍTULO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-users text-gold me-2"></i> lista de Usuarios
+                            <i class="fas fa-users text-gold me-2"></i> Lista de Usuarios
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona los usuarios del sistema
                         </small>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <form method="GET" class="me-3">
-                            <input type="hidden" name="url" value="usuarios">
-                            <input type="hidden" name="action" value="lista">
-                            <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
-                        </form>
+                    <div class="col-auto">
                         <a href="?url=usuarios&action=registrar" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Usuario
                         </a>
@@ -31,18 +32,27 @@ require_once __DIR__ . '/../header.php';
 
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
-                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
                     <input type="hidden" name="url" value="usuarios">
                     <input type="hidden" name="action" value="lista">
                     
-                    <div class="col-md-8">
+                    <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
+                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <?php foreach ([5, 10, 25, 50] as $o): ?>
+                                <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
                         <input type="text" name="busqueda" class="form-control" 
                                list="listaUsuarios"
                                placeholder="Buscar por nombre, apellido, cédula o correo..."
                                value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                         <datalist id="listaUsuarios">
                             <?php
-                            // Recolectar sugerencias únicas
                             $sugerencias = [];
                             if (!empty($usuarios) && is_array($usuarios)):
                                 foreach ($usuarios as $u):
@@ -55,7 +65,6 @@ require_once __DIR__ . '/../header.php';
                                 endforeach;
                             endif;
 
-                            // Pintar opciones
                             foreach (array_keys($sugerencias) as $s): ?>
                                 <option value="<?= htmlspecialchars($s) ?>">
                             <?php endforeach; ?>
@@ -93,10 +102,6 @@ require_once __DIR__ . '/../header.php';
                     <h5 class="m-0">
                         <i class="fas fa-user me-2"></i> Usuarios Registrados
                     </h5>
-                    <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
-                        <i class="fas fa-database me-1"></i> 
-                        <?= isset($usuarios) ? count($usuarios) : 0 ?> registros
-                    </span>
                 </div>
                 
                 <div class="table-responsive">
@@ -176,11 +181,13 @@ require_once __DIR__ . '/../header.php';
                     </table>
                 </div>
                 
-                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                <!-- ✅ PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-users me-1"></i> 
-                        Total: <?= isset($usuarios) ? count($usuarios) : 0 ?> usuarios
+                        Total: <?= $totalRegistros ?> usuarios
                     </span>
+                    <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
                 </div>
             </div>
 </div>

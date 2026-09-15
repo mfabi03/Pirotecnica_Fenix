@@ -77,6 +77,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <div class="mb-3">
                                             <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Cliente <span class="text-danger">*</span></label>
                                             <div class="input-group">
+                                                <?php 
+                                                    $idClienteHeredado = $_GET['id_cliente'] ?? $_SESSION['nuevo_cliente_id'] ?? '';
+                                                ?>
                                                 <select name="id_cliente" id="id_cliente" class="form-select" required style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
                                                     <option value="">Seleccione un cliente...</option>
                                                     <?php foreach ($clientes as $c): ?>
@@ -86,7 +89,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                                 : trim(($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? ''));
                                                         ?>
                                                         <option value="<?= $c['id_cliente'] ?>"
-                                                            <?= (isset($_SESSION['nuevo_cliente_id']) && $_SESSION['nuevo_cliente_id'] == $c['id_cliente']) ? 'selected' : '' ?>>
+                                                            <?= ($idClienteHeredado != '' && $idClienteHeredado == $c['id_cliente']) ? 'selected' : '' ?>>
                                                             <?= htmlspecialchars($nombreCliente !== '' ? $nombreCliente : 'Cliente #' . $c['id_cliente']) ?>
                                                         </option>
                                                     <?php endforeach; ?>
@@ -117,19 +120,21 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <div class="mb-3">
                                             <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Producto <span class="text-danger">*</span></label>
                                             <div class="input-group">
+                                                <?php 
+                                                    $idProductoHeredado = $_GET['id_producto'] ?? $_SESSION['nuevo_producto_id'] ?? '';
+                                                ?>
                                                 <select id="producto" class="form-select" required style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
                                                     <option value="">Seleccione un producto...</option>
                                                     <?php foreach ($productos as $p): ?>
                                                         <option value="<?= $p['id_producto'] ?>" 
                                                                 data-categoria="<?= htmlspecialchars($p['nombre_categoria'] ?? 'Sin categoría') ?>"
                                                                 data-stock="<?= $p['stock'] ?>"
-                                                            <?= (isset($_SESSION['nuevo_producto_id']) && $_SESSION['nuevo_producto_id'] == $p['id_producto']) ? 'selected' : '' ?>>
+                                                            <?= ($idProductoHeredado != '' && $idProductoHeredado == $p['id_producto']) ? 'selected' : '' ?>>
                                                             <?= htmlspecialchars($p['descripcion']) ?> 
                                                             (Stock: <?= $p['stock'] ?>)
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
-                                                
                                             </div>
                                             <?php unset($_SESSION['nuevo_producto_id']); ?>
                                         </div>

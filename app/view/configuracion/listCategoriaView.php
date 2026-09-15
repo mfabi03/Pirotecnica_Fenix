@@ -19,6 +19,12 @@ $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'crear') : false;
 $puede_editar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'actualizar') : false;
 $puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'eliminar') : false;
+
+// Paginación
+$por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
+$totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($categorias) ? count($categorias) : 0);
+$pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
+$totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 ?>
 
 <div class="col-md-8 col-lg-12">
@@ -28,18 +34,13 @@ $puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-tags text-gold me-2"></i> lista de Categorías
+                            <i class="fas fa-tags text-gold me-2"></i> Lista de Categorías
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona las categorías de productos
                         </small>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <form method="GET" class="me-3">
-                            <input type="hidden" name="url" value="categorias">
-                            <input type="hidden" name="action" value="lista">
-                            <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
-                        </form>
+                    <div class="col-auto">
                         <?php if ($puede_crear_categoria): ?>
                         <a href="?url=categorias&action=registrar" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Categoría
@@ -51,11 +52,21 @@ $puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
 
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
-                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
                     <input type="hidden" name="url" value="categorias">
                     <input type="hidden" name="action" value="lista">
                     
-                    <div class="col-md-8">
+                    <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
+                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <?php foreach ([5, 10, 25, 50] as $o): ?>
+                                <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
                         <input type="text" name="busqueda" class="form-control" 
                                list="listaCategorias"
                                placeholder="Buscar por nombre o ID..."
@@ -109,10 +120,6 @@ $puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                     <h5 class="m-0">
                         <i class="fas fa-tags me-2"></i> Categorías Registradas
                     </h5>
-                    <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
-                        <i class="fas fa-database me-1"></i> 
-                        <?= isset($categorias) ? count($categorias) : 0 ?> registros
-                    </span>
                 </div>
                 
                 <div class="table-responsive">
@@ -144,13 +151,11 @@ $puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                         <td><?= htmlspecialchars($cat['descripcion'] ?? 'N/A') ?></td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=categorias&action=ver&id=<?= $cat['id_categoria'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <!-- Editar: solo si tiene permiso -->
                                                 <?php if ($puede_editar_categoria): ?>
                                                 <a href="?url=categorias&action=editar&id=<?= $cat['id_categoria'] ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
@@ -158,7 +163,6 @@ $puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                                 </a>
                                                 <?php endif; ?>
                                                 
-                                                <!-- Eliminar: solo si tiene permiso -->
                                                 <?php if ($puede_eliminar_categoria): ?>
                                                 <form method="POST" action="?url=categorias&action=eliminar" class="d-inline">
                                                     <input type="hidden" name="accion" value="eliminar">
@@ -178,11 +182,13 @@ $puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                     </table>
                 </div>
                 
-                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                <!-- ✅ PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-tags me-1"></i> 
-                        Total: <?= isset($categorias) ? count($categorias) : 0 ?> categorías
+                        Total: <?= $totalRegistros ?> categorías
                     </span>
+                    <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                 </div>
             </div>
 </div>

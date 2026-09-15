@@ -37,9 +37,9 @@ $currentUrl = $_GET['url'] ?? 'main';
 <body>
 
 <!-- ==========================================
-NAVBAR
+NAVBAR (MISMO COLOR QUE EL MENÚ)
 ========================================== -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" style="min-height: 60px; padding: 5px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1050;">
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background: #1a1a2e !important; min-height: 60px; padding: 5px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1050; border-bottom: 1px solid rgba(255,255,255,0.05);">
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 10px;">
             <img src="assets/imagenes/logo.png" alt="Logo" 
@@ -89,7 +89,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
             
             <div class="list-group list-group-flush" style="display: flex; flex-direction: column; gap: 2px;">
                 
-                <!-- ===== INICIO (SIEMPRE VISIBLE) ===== -->
+                <!-- ===== INICIO ===== -->
                 <a href="?url=main" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'main' ? 'active' : '' ?>"
                    style="border: none; background: <?= $currentUrl == 'main' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'main' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'main' ? '600' : '400' ?>; transition: all 0.3s ease;">
@@ -127,7 +127,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </a>
                 <?php endif; ?>
                 
-                <!-- ===== NOTAS (DROPDOWN DINÁMICO CON PERMISOS) ===== -->
+                <!-- ===== NOTAS (DROPDOWN) ===== -->
                 <?php 
                 $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']);
                 $verNotaEntrada = $tieneModulo('Notas de Entrada');
@@ -168,7 +168,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </div>
                 <?php endif; ?>
                 
-                <!-- ===== CONFIGURACIÓN (DROPDOWN DINÁMICO CON PERMISOS) ===== -->
+                <!-- ===== CONFIGURACIÓN (DROPDOWN) ===== -->
                 <?php 
                 $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']);
                 $verCategorias = $tieneModulo('Categorias');

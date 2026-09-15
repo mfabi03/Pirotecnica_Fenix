@@ -106,8 +106,8 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                                     </div>
                                     <div class="col-md-6">
                                         <label for="id_proveedor" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
-                                        <select name="id_proveedor" id="id_proveedor" class="form-select" required
-                                                style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                                        <select name="id_proveedor" id="id_proveedor" class="form-select" required disabled
+                                                style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); background: #f8f9fa; color: #495057;">
                                             <option value="">Seleccione un proveedor</option>
                                             <?php if (!empty($proveedores)): ?>
                                                 <?php foreach ($proveedores as $p): ?>
@@ -120,6 +120,9 @@ $idProveedorActual = $productosData[$productoKey]['id_proveedor'] ?? 0;
                                                 <option value="">No hay proveedores disponibles</option>
                                             <?php endif; ?>
                                         </select>
+                                        <!-- Campo oculto para enviar el proveedor bloqueado -->
+                                        <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars($idProveedorActual) ?>">
+                                        <small class="form-text text-muted" style="font-size: 0.7rem;">El proveedor se asigna desde la nota de entrada.</small>
                                     </div>
                                 </div>
                             </div>

@@ -13,7 +13,6 @@ class NotaentradaModel {
     }
 
     // OBTENER PRODUCTOS
-
     public function obtenerProductos() {
         try {
             $sql = "SELECT 
@@ -33,7 +32,6 @@ class NotaentradaModel {
     }
 
     // OBTENER PROVEEDORES
-
     public function obtenerProveedores() {
         try {
             $sql = "SELECT 
@@ -56,7 +54,6 @@ class NotaentradaModel {
     }
 
     // LISTADO DE NOTAS DE ENTRADA
-
     public function obtenerNotasEntrada() {
         try {
             $sql = "SELECT 
@@ -89,8 +86,19 @@ class NotaentradaModel {
         }
     }
 
-    // OBTENER NOTA POR ID
+    // ✅ CONTAR NOTAS DE ENTRADA (para paginación)
+    public function contarNotasEntrada() {
+        try {
+            $sql = "SELECT COUNT(*) FROM nota_de_entrada WHERE eliminado = 0";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new Exception("Error al contar notas de entrada: " . $e->getMessage());
+        }
+    }
 
+    // OBTENER NOTA POR ID
     public function obtenerNotaEntradaPorId($id) {
         try {
             $stmt = $this->db->prepare("
@@ -134,7 +142,6 @@ class NotaentradaModel {
     }
 
     // GUARDAR NOTA COMPLETA
-
     public function guardarNotaEntradaCompleta(array $datos, array $detalles, $idUsuario) {
         $this->db->beginTransaction();
         try {
@@ -210,7 +217,6 @@ class NotaentradaModel {
     }
 
     // ANULAR NOTA DE ENTRADA
-
     public function anularNotaEntrada($id, $motivo, $idUsuario) {
         $this->db->beginTransaction();
         try {
@@ -254,7 +260,6 @@ class NotaentradaModel {
     }
 
     // OBTENER RESUMEN
-
     public function getResumen() {
         try {
             $sql = "SELECT 

@@ -39,7 +39,6 @@ $proveedores = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // REGISTRAR PROVEEDOR
-
     if ($type === 'store') {
         CheckPermiso::verificar($db, 'Proveedores', 'crear', '?url=proveedores&type=list');
         $datos = [
@@ -56,7 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $resultado = $modelo->registrarProveedor($datos);
                 if ($resultado) {
-                    // REDIRIGIR DE VUELTA (si viene de registro rápido)
                     $return = $_REQUEST['return'] ?? null;
                     if ($return) {
                         $id_proveedor = $db->lastInsertId();
@@ -64,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_SESSION['nuevo_proveedor_nombre'] = $datos['razon_social'];
                         $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datos['razon_social']}' registrado exitosamente";
                         $_SESSION['tipo_rapido'] = 'success';
-                        header("Location: ?url=" . urlencode($return) . "&type=create");
+                        header("Location: ?url=" . urlencode($return) . "&type=create&id_proveedor=" . $id_proveedor);
                         exit;
                     }
                     
@@ -78,12 +76,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    //REGISTRO RÁPIDO PROVEEDOR 
-
+    // REGISTRO RÁPIDO PROVEEDOR
     if ($type === 'store_rapido') {
         CheckPermiso::verificar($db, 'Proveedores', 'crear', '?url=proveedores&type=list');
         try {
-            // Validar campos requeridos
             if (empty($_POST['rif']) || empty($_POST['razon_social']) || empty($_POST['numero_contacto']) || empty($_POST['direccion'])) {
                 throw new Exception('RIF, razón social, contacto y dirección son obligatorios.');
             }
@@ -105,16 +101,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $idProveedor = $db->lastInsertId();
             
-            //GUARDAR EN SESIÓN PARA EL RETORNO
             $_SESSION['nuevo_proveedor_id'] = $idProveedor;
             $_SESSION['nuevo_proveedor_nombre'] = $datosProveedor['razon_social'];
             $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datosProveedor['razon_social']}' registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
             
-            // REDIRIGIR DE VUELTA (si viene de registro rápido)
             $return = $_REQUEST['return'] ?? null;
             if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create");
+                header("Location: ?url=" . urlencode($return) . "&type=create&id_proveedor=" . $idProveedor);
                 exit;
             }
 
@@ -136,7 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ACTUALIZAR PROVEEDOR
-
     if ($type === 'update') {
         CheckPermiso::verificar($db, 'Proveedores', 'actualizar', '?url=proveedores&type=list');
         $id = $_POST['id_proveedor'] ?? 0;
@@ -164,7 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ELIMINAR PROVEEDOR
-
     if ($type === 'delete') {
         CheckPermiso::verificar($db, 'Proveedores', 'eliminar', '?url=proveedores&type=list');
         $id = $_POST['id_proveedor'] ?? 0;
@@ -183,7 +175,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // VISTAS
-
 if ($type === 'create') {
     require_once 'C:/xampp/htdocs/Pirotecnica_Fenix/app/view/proveedores/registroProveedoresView.php';
     exit();
@@ -225,10 +216,18 @@ try {
         $proveedores_full = $modelo->obtenerProveedores();
     }
 
-    // Paginación simple (array slice)
-    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
-    $offset = ($pagina - 1) * $por_pagina;
+    // ✅ PAGINACIÓN COMPLETA
+    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset        = ($pagina_actual - 1) * $por_pagina;
+    
+    // Total de registros
+    $totalRegistros = count($proveedores_full);
+    
+    // Total de páginas
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    
+    // Cortar el array para la página actual
     if ($por_pagina > 0) {
         $proveedores = array_slice($proveedores_full, $offset, $por_pagina);
     } else {

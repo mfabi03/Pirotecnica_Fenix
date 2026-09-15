@@ -11,7 +11,6 @@ use Exception;
 use PDO;
 
 // 1. INICIAR SESIÓN Y VERIFICAR PERMISOS
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -23,7 +22,6 @@ if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
 }
 
 // 2. CARGA DEL MODELO
-
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'RolModel.php';
 
@@ -34,7 +32,6 @@ if (file_exists($pathModel)) {
 }
 
 // 3. INICIALIZACIÓN DE CONEXIÓN Y MODELO
-
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new \App\Pirotecnicafenix\Model\RolModel($db);
@@ -43,7 +40,6 @@ try {
 }
 
 // 4. PARÁMETROS DE LA URL
-
 $action = $_GET['action'] ?? 'lista';
 $id = $_GET['id'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
@@ -87,7 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             throw new Exception("El nombre del rol es obligatorio.");
         }
 
-        //No permitir modificar el rol de administrador (id_rol = 1)
         if ($id == 1) {
             throw new Exception("No puedes modificar el rol de Administrador");
         }
@@ -113,12 +108,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             throw new Exception("ID de rol inválido");
         }
         
-        // No permitir eliminar el rol de administrador (id_rol = 1)
         if ($id == 1) {
             throw new Exception("No puedes eliminar el rol de Administrador");
         }
         
-        // CORREGIDO: tabla 'usuario' (singular) y columna 'id_rol'
         $sql = "SELECT COUNT(*) as total FROM usuario WHERE id_rol = :id AND eliminado = 0";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
@@ -139,17 +132,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-
 // ===== GUARDAR PERMISOS DE UN ROL =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'guardar_permisos') {
- // ⭐ DEBUG
-    error_log("========== GUARDAR_PERMISOS INICIADO ==========");
-    error_log("POST: " . json_encode($_POST));
-    error_log("permisosPost: " . json_encode($_POST['permisos'] ?? 'VACIO'));
-        
-
-
-try {
+    try {
         $id_rol = (int) ($_POST['id_rol'] ?? 0);
         $permisosPost = $_POST['permisos'] ?? [];
         
@@ -161,13 +146,10 @@ try {
             throw new Exception("No se pueden modificar los permisos del Administrador");
         }
         
-        // Cargar el PermisoModel
         require_once $rutaRaiz . '/app/Model/PermisoModel.php';
         $permisoModel = new \App\Pirotecnicafenix\Model\PermisoModel($db);
         
         $resultado = $permisoModel->actualizarPermisos($id_rol, $permisosPost);
-
-         error_log("Resultado de actualizarPermisos: " . var_export($resultado, true));
         
         $_SESSION['mensaje'] = $resultado ? "✅ Permisos actualizados correctamente" : "Error al actualizar permisos";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
@@ -182,8 +164,6 @@ try {
 }
 
 // 6. OBTENER DATOS PARA VISTAS
-
-// Obtener rol para edición, visualización o permisos
 if (in_array($action, ['editar', 'ver', 'permisos']) && $id) {
     $rol = $modelo->getRolById($id);
     if (!$rol) {
@@ -194,35 +174,40 @@ if (in_array($action, ['editar', 'ver', 'permisos']) && $id) {
     }
 }
 
-
 // 7. CARGAR VISTAS
-
 $basePath = __DIR__ . "/../view/configuracion/";
 
 // ===== LISTA DE ROLES =====
 if ($action === 'lista' || $action === '' || $action === 'roles') {
     $busqueda_trim = is_string($busqueda) ? trim($busqueda) : '';
     
-    $sql = "SELECT 
-                r.id_rol, 
-                r.nombre_rol,
-                (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol AND u.eliminado = 0) as total_usuarios
-            FROM rol r
-            WHERE r.eliminado = 0";
-    
+    // Obtener todos los roles (con o sin búsqueda)
     if ($busqueda_trim !== '') {
-        $sql .= " AND r.nombre_rol LIKE :busqueda";
-        $stmt = $db->prepare($sql);
-        $stmt->execute(['busqueda' => '%' . $busqueda_trim . '%']);
+        $roles_full = $modelo->buscarRoles($busqueda_trim);
     } else {
-        $stmt = $db->prepare($sql);
-        $stmt->execute();
+        $roles_full = $modelo->getAllRoles();
     }
     
-    $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!is_array($roles_full)) {
+        $roles_full = [];
+    }
+
+    // ✅ PAGINACIÓN COMPLETA
+    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset        = ($pagina_actual - 1) * $por_pagina;
     
-    if (!is_array($roles)) {
-        $roles = [];
+    // Total de registros
+    $totalRegistros = count($roles_full);
+    
+    // Total de páginas
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    
+    // Cortar el array para la página actual
+    if ($por_pagina > 0) {
+        $roles = array_slice($roles_full, $offset, $por_pagina);
+    } else {
+        $roles = $roles_full;
     }
     
     require_once $basePath . "rolListar.php";
@@ -253,8 +238,6 @@ if ($action === 'permisos' && $id) {
     $permisoModel = new \App\Pirotecnicafenix\Model\PermisoModel($db);
     
     $modulos = $permisoModel->obtenerModulos();
-    
-    // ⭐ El modelo YA devuelve los permisos indexados por id_modulo
     $permisosActuales = $permisoModel->obtenerPermisosPorRol($id);
     
     require_once $basePath . "rolPermisos.php";
@@ -262,9 +245,24 @@ if ($action === 'permisos' && $id) {
 }
 
 // ===== DEFAULT: LISTA =====
-$roles = $modelo->getAllRoles();
-if (!is_array($roles)) {
-    $roles = [];
+$roles_full = $modelo->getAllRoles();
+if (!is_array($roles_full)) {
+    $roles_full = [];
 }
+
+// ✅ PAGINACIÓN COMPLETA
+$por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+$pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+$offset        = ($pagina_actual - 1) * $por_pagina;
+
+$totalRegistros = count($roles_full);
+$totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+
+if ($por_pagina > 0) {
+    $roles = array_slice($roles_full, $offset, $por_pagina);
+} else {
+    $roles = $roles_full;
+}
+
 require_once $basePath . "rolListar.php";
 ?>

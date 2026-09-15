@@ -13,7 +13,6 @@ class ProductoModel {
     }
 
     // OBTENER TODOS LOS PRODUCTOS
-
     public function obtenerProductos() {
         try {
             $sql = "SELECT 
@@ -37,8 +36,33 @@ class ProductoModel {
         }
     }
 
-    // OBTENER PRODUCTO POR ID
+    // ✅ CONTAR PRODUCTOS (para paginación)
+    public function contarProductos($termino = null) {
+        try {
+            $termino = trim((string) $termino);
+            
+            if ($termino !== '') {
+                $sql = "SELECT COUNT(*) 
+                        FROM producto p
+                        LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
+                        WHERE p.descripcion LIKE :termino 
+                           OR c.nombre_categoria LIKE :termino";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute(['termino' => "%{$termino}%"]);
+            } else {
+                $sql = "SELECT COUNT(*) FROM producto";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute();
+            }
+            
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Error en contarProductos: " . $e->getMessage());
+            return 0;
+        }
+    }
 
+    // OBTENER PRODUCTO POR ID
     public function obtenerProductoPorId($id) {
         try {
             $sql = "SELECT 
@@ -63,7 +87,6 @@ class ProductoModel {
     }
 
     // OBTENER CATEGORÍAS
-
     public function obtenerCategorias() {
         try {
             $sql = "SELECT id_categoria, nombre_categoria 
@@ -79,7 +102,6 @@ class ProductoModel {
     }
 
     // REGISTRAR PRODUCTO (CON STOCK MÍNIMO)
-
     public function registrarProducto($datos) {
         try {
             $sql = "INSERT INTO producto (
@@ -117,12 +139,8 @@ class ProductoModel {
     }
 
     // ACTUALIZAR PRODUCTO (CON STOCK MÍNIMO)
-
     public function actualizarProducto($id, $datos) {
         try {
-            // NOTA: El campo 'cantidad' (stock) NO se actualiza aquí. Las existencias
-            // deben gestionarse mediante notas de entrada/salida para mantener trazabilidad.
-            // El stock_minimo SÍ se puede actualizar.
             $sql = "UPDATE producto SET 
                         descripcion = :descripcion,
                         stock_minimo = :stock_minimo,
@@ -145,7 +163,6 @@ class ProductoModel {
     }
 
     // VERIFICAR SI EL PRODUCTO ESTÁ ASOCIADO A NOTAS
-
     public function verificarAsociaciones($id) {
         try {
             $stmtEntrada = $this->db->prepare("SELECT COUNT(*) FROM detalle_entrada WHERE id_producto = ?");
@@ -168,7 +185,6 @@ class ProductoModel {
     }
 
     // ELIMINAR PRODUCTO
-
     public function eliminarProducto($id) {
         try {
             $asociaciones = $this->verificarAsociaciones($id);
@@ -189,7 +205,6 @@ class ProductoModel {
     }
 
     // BUSCAR PRODUCTOS
-
     public function buscarProductos($termino) {
         try {
             $sql = "SELECT 
@@ -215,7 +230,6 @@ class ProductoModel {
     }
 
     // OBTENER RESUMEN
-
     public function getResumen() {
         try {
             $sql = "SELECT 
@@ -237,4 +251,3 @@ class ProductoModel {
         }
     }
 }
-?>

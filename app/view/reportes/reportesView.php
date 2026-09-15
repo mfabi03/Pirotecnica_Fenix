@@ -32,7 +32,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 <div class="col-md-8 col-lg-12">
     
     <!-- ========================================== -->
-    <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+    <!-- TARJETA DE TÍTULO -->
     <!-- ========================================== -->
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center g-3">
@@ -55,9 +55,14 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         <form method="GET" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportes">
             
+            <!-- Select Mostrar -->
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Mostrar</label>
-                <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
+                <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <?php foreach ([5, 10, 25, 50] as $o): ?>
+                        <option value="<?= $o ?>" <?= ($porPaginaActual == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
             <div class="col-md-2">
@@ -89,7 +94,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </select>
             </div>
 
-            <!-- 🔥 INPUT CON DATALIST -->
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Producto</label>
                 <input type="text" name="busqueda" class="form-control form-control-sm" 
@@ -159,7 +163,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 
     <!-- ========================================== -->
-    <!-- TABLA CON BOTÓN "VER MOTIVO" ESTÁTICO -->
+    <!-- TABLA -->
     <!-- ========================================== -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -186,7 +190,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     <?php if (!empty($movimientos)): ?>
                         <?php foreach ($movimientos as $movimiento): 
                             $esEntrada = ($movimiento['tipo_movimiento'] === 'Entrada');
-                            $esSalida = ($movimiento['tipo_movimiento'] === 'Salida');
                             $esAnulacion = ($movimiento['tipo_movimiento'] === 'Anulación');
                             
                             $signo = $esEntrada ? '+' : ($esAnulacion ? '↺' : '-');
@@ -218,7 +221,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </td>
                                 <td><?= $fechaFormateada ?></td>
                                 <td><?= htmlspecialchars($movimiento['usuario_activo']) ?></td>
-                                <!-- BOTÓN ESTÁTICO -->
                                 <td class="pe-4 text-center">
                                     <button type="button" class="btn btn-sm btn-outline-info" disabled title="Disponible en Fase 2">
                                         <i class="fas fa-eye"></i> Ver Motivo
@@ -241,7 +243,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
             </table>
         </div>
         
-        <!-- Paginación -->
+        <!-- ========================================== -->
+        <!-- PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+        <!-- ========================================== -->
         <div class="card-footer py-3 d-flex justify-content-between align-items-center">
             <span class="text-muted small">
                 <i class="fas fa-history me-1"></i> 

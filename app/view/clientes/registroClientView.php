@@ -127,9 +127,15 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <button type="submit" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; transition: all 0.3s ease;">
                     <i class="fas fa-save me-1"></i> Registrar Cliente
                 </button>
-                <a href="?url=clientes&type=list" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
-                    <i class="fas fa-times me-1"></i> Cancelar
-                </a>
+                <?php if (isset($_GET['return'])): ?>
+                    <a href="?url=<?= htmlspecialchars($_GET['return']) ?>&type=create" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </a>
+                <?php else: ?>
+                    <a href="?url=clientes&type=list" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </a>
+                <?php endif; ?>
             </div>
         </form>
         </div>

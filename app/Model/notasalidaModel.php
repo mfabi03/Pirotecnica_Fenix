@@ -13,7 +13,6 @@ class notasalidaModel {
     }
 
     // OBTENER PRODUCTOS CON CATEGORIA
-
     public function obtenerProductosConCategoria() {
         try {
             $sql = "SELECT 
@@ -36,7 +35,6 @@ class notasalidaModel {
     }
 
     // OBTENER CLIENTES
-
     public function obtenerClientes() {
         try {
             $sql = "SELECT 
@@ -72,7 +70,6 @@ class notasalidaModel {
     }
 
     // REGISTRAR SALIDA
-
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
             $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0";
@@ -152,7 +149,6 @@ class notasalidaModel {
     }
 
     // LISTAR NOTAS DE SALIDA
-
     public function listarNotasSalida() {
         try {
             $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario 
@@ -245,8 +241,20 @@ class notasalidaModel {
         }
     }
 
-    // OBTENER NOTA POR ID
+    // ✅ CONTAR NOTAS DE SALIDA (para paginación)
+    public function contarNotasSalida() {
+        try {
+            $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Error en contarNotasSalida: " . $e->getMessage());
+            return 0;
+        }
+    }
 
+    // OBTENER NOTA POR ID
     public function obtenerNotaPorId($id) {
         try {
             $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario
@@ -311,7 +319,6 @@ class notasalidaModel {
     }
 
     // ACTUALIZAR NOTA
-
     public function actualizarNota($id, $datos, $detalles, $idUsuario) {
         try {
             $sqlCheck = "SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0";
@@ -405,7 +412,6 @@ class notasalidaModel {
     }
 
     // ELIMINAR NOTA
-
     public function eliminarNota($id) {
         try {
             $sqlCheck = "SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0";
@@ -450,7 +456,6 @@ class notasalidaModel {
     }
 
     // OBTENER RESUMEN
-
     public function getResumen() {
         try {
             $sql = "SELECT COUNT(*) AS total_notas FROM nota_de_salida WHERE eliminado = 0";

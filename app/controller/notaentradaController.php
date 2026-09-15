@@ -18,7 +18,6 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 1. CARGA DE MODELOS
-
 $rutaRaiz = dirname(__DIR__, 2);
 
 $pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'NotaentradaModel.php';
@@ -63,41 +62,36 @@ $proveedores = [];
 $resumen = [];
 $tipo_mensaje = '';
 
-// 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO
-
+// 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO (CORREGIDA)
 function obtenerIdUsuarioValido($db) {
-    $idUsuario = $_SESSION['usuario_id'] ?? null;
+    // ✅ Buscar en la sesión con el nombre CORRECTO
+    $idUsuario = $_SESSION['id_usuario'] 
+              ?? $_SESSION['usuario_id'] 
+              ?? null;
     
-    if ($idUsuario) {
-        $stmt = $db->prepare("SELECT id_usuario FROM usuario WHERE id_usuario = ?");
-        $stmt->execute([$idUsuario]);
-        if ($stmt->fetch()) {
-            return $idUsuario;
-        }
+    if (!$idUsuario) {
+        throw new Exception("No hay usuario en sesión. Por favor, cierre sesión y vuelva a entrar.");
     }
     
-    $stmt = $db->query("SELECT id_usuario FROM usuario LIMIT 1");
-    $usuario = $stmt->fetch();
-    if ($usuario) {
-        $_SESSION['usuario_id'] = $usuario['id_usuario'];
-        return $usuario['id_usuario'];
+    $stmt = $db->prepare("SELECT id_usuario FROM usuario WHERE id_usuario = ? AND eliminado = 0");
+    $stmt->execute([$idUsuario]);
+    
+    if (!$stmt->fetch()) {
+        throw new Exception("El usuario en sesión no existe o está inactivo.");
     }
     
-    throw new Exception("No hay usuarios disponibles en la base de datos.");
+    return (int) $idUsuario;
 }
 
 // 3. PROCESAMIENTO POST
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // REGISTRAR NOTA DE ENTRADA 
-
     if ($type === 'store') {
         CheckPermiso::verificar($db, 'Notas de Entrada', 'crear', '?url=notaentrada&type=list');
         try {
             $idUsuario = obtenerIdUsuarioValido($db);
             
-            // RECIBIR DETALLES COMO ARRAYS 
             $detalles = [];
             $productos_ids = $_POST['detalle_producto'] ?? [];
             $cantidades = $_POST['detalle_cantidad'] ?? [];
@@ -147,45 +141,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // REGISTRO RÁPIDO DE PRODUCTO
-
     if ($type === 'store_rapido_producto') {
         CheckPermiso::verificar($db, 'Notas de Entrada', 'crear', '?url=notaentrada&type=list');
         try {
-            // Validar campos requeridos
             if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) {
                 throw new Exception("Por favor complete todos los campos requeridos (*)");
             }
             
-            // Preparar datos del producto
+            $cantidadOriginal = intval($_POST['cantidad'] ?? 1);
+            $costoOriginal = floatval($_POST['costo_unitario'] ?? 0);
+            $idProveedorOriginal = intval($_POST['id_proveedor'] ?? 0);
+
             $datosProducto = [
                 'descripcion' => trim($_POST['descripcion']),
                 'id_categoria' => intval($_POST['id_categoria']),
-                'id_proveedor' => intval($_POST['id_proveedor']),
-                'cantidad' => intval($_POST['cantidad'] ?? 0),
-                'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
+                'id_proveedor' => $idProveedorOriginal,
+                'cantidad' => 0,
+                'costo_unitario' => $costoOriginal,
                 'especificaciones' => ''
             ];
             
-            // Guardar producto usando el modelo
             $id_producto = $productoModel->registrarProducto($datosProducto);
             
             if ($id_producto) {
-
-                // GUARDAR EN SESIÓN PARA EL RETORNO
                 $_SESSION['nuevo_producto_id'] = $id_producto;
                 $_SESSION['nuevo_producto_nombre'] = $datosProducto['descripcion'];
-                $_SESSION['nuevo_producto_costo'] = $datosProducto['costo_unitario'];
+                $_SESSION['nuevo_producto_costo'] = $costoOriginal;
                 $_SESSION['mensaje_rapido'] = "✅ Producto '{$datosProducto['descripcion']}' registrado exitosamente";
                 $_SESSION['tipo_rapido'] = 'success';
                 
-                // REDIRIGIR DE VUELTA (si viene de registro rápido)
-                $return = $_REQUEST['return'] ?? null;
-                if ($return) {
-                    header("Location: ?url=" . urlencode($return) . "&type=create");
-                    exit;
-                }
-
-                header("Location: ?url=notaentrada&type=create");
+                $return = $_REQUEST['return'] ?? 'notaentrada';
+                $params = [
+                    'url' => $return,
+                    'type' => 'create',
+                    'id_producto' => $id_producto,
+                    'id_proveedor' => $idProveedorOriginal,
+                    'cantidad' => $cantidadOriginal,
+                    'costo' => $costoOriginal
+                ];
+                header("Location: ?" . http_build_query($params));
                 exit;
             } else {
                 throw new Exception("Error al guardar el producto");
@@ -205,16 +199,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // REGISTRO RÁPIDO DE PROVEEDOR 
-
     if ($type === 'store_rapido_proveedor') {
         CheckPermiso::verificar($db, 'Notas de Entrada', 'crear', '?url=notaentrada&type=list');
         try {
-            // Validar campos requeridos
             if (empty($_POST['rif']) || empty($_POST['razon_social']) || empty($_POST['numero_contacto']) || empty($_POST['direccion'])) {
                 throw new Exception("Por favor complete todos los campos requeridos (*)");
             }
             
-            // Preparar datos del proveedor
             $datosProveedor = [
                 'rif' => trim($_POST['rif']),
                 'razon_social' => trim($_POST['razon_social']),
@@ -223,24 +214,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'correo_electronico' => trim($_POST['correo_electronico'] ?? '')
             ];
             
-            // Guardar proveedor usando el modelo
             $id_proveedor = $proveedorModel->registrarProveedor($datosProveedor);
             
             if ($id_proveedor) {
-                // GUARDAR EN SESIÓN PARA EL RETORNO
                 $_SESSION['nuevo_proveedor_id'] = $id_proveedor;
                 $_SESSION['nuevo_proveedor_nombre'] = $datosProveedor['razon_social'];
                 $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datosProveedor['razon_social']}' registrado exitosamente";
                 $_SESSION['tipo_rapido'] = 'success';
                 
-                // REDIRIGIR DE VUELTA (si viene de registro rápido)
-                $return = $_REQUEST['return'] ?? null;
-                if ($return) {
-                    header("Location: ?url=" . urlencode($return) . "&type=create");
-                    exit;
-                }
-
-                header("Location: ?url=notaentrada&type=create");
+                $return = $_REQUEST['return'] ?? 'notaentrada';
+                header("Location: ?url=" . urlencode($return) . "&type=create&id_proveedor=" . $id_proveedor);
                 exit;
             } else {
                 throw new Exception("Error al guardar el proveedor");
@@ -260,7 +243,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // ANULAR
-
     if ($type === 'anular') {
         CheckPermiso::verificar($db, 'Notas de Entrada', 'eliminar', '?url=notaentrada&type=list');
         try {
@@ -299,7 +281,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 4. VISTAS
-
 $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'nota_entrada';
 
 // CREAR
@@ -344,9 +325,18 @@ try {
     $notas_full = $modelo->obtenerNotasEntrada();
     $resumen = $modelo->getResumen();
 
-    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
-    $offset = ($pagina - 1) * $por_pagina;
+    // ✅ PAGINACIÓN COMPLETA
+    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset        = ($pagina_actual - 1) * $por_pagina;
+    
+    // Total de registros
+    $totalRegistros = is_array($notas_full) ? count($notas_full) : 0;
+    
+    // Total de páginas
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    
+    // Cortar el array para la página actual
     if ($por_pagina > 0) {
         $notas = array_slice($notas_full, $offset, $por_pagina);
     } else {

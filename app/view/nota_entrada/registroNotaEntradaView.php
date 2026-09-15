@@ -86,15 +86,17 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; border-left: 4px solid #28a745; padding: 16px 20px;">
                                     <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 8px;">
                                         <i class="fas fa-truck me-1" style="color: #28a745;"></i> Proveedor <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group">
+                                    </label>                                    <div class="input-group">
+                                        <?php 
+                                            $idProveedorHeredado = $_GET['id_proveedor'] ?? $_SESSION['nuevo_proveedor_id'] ?? '';
+                                        ?>
                                         <select id="id_proveedor" name="id_proveedor" class="form-select" required
                                                 style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
                                             <option value="">Seleccione un proveedor...</option>
                                             <?php if (!empty($proveedores)): ?>
                                                 <?php foreach ($proveedores as $prov): ?>
                                                     <option value="<?= $prov['id_proveedor'] ?>"
-                                                        <?= (isset($_SESSION['nuevo_proveedor_id']) && $_SESSION['nuevo_proveedor_id'] == $prov['id_proveedor']) ? 'selected' : '' ?>>
+                                                        <?= ($idProveedorHeredado != '' && $idProveedorHeredado == $prov['id_proveedor']) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?>
                                                     </option>
                                                 <?php endforeach; ?>
@@ -139,6 +141,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                     <div class="col-md-5">
                                         <label class="form-label" style="color: rgba(255,255,255,0.4); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Producto</label>
                                         <div class="input-group">
+                                            <?php 
+                                                $idProductoHeredado = $_GET['id_producto'] ?? $_SESSION['nuevo_producto_id'] ?? '';
+                                                $cantidadHeredada = $_GET['cantidad'] ?? '';
+                                                $costoHeredado = $_GET['costo'] ?? '';
+                                            ?>
                                             <select id="productoSelect" class="form-select" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
                                                 <option value="">Seleccione un producto...</option>
                                                 <?php if (!empty($productos)): ?>
@@ -147,7 +154,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                                 data-descripcion="<?= htmlspecialchars($p['descripcion']) ?>"
                                                                 data-costo="<?= $p['costo_unitario'] ?>"
                                                                 data-stock="<?= $p['cantidad'] ?>"
-                                                            <?= (isset($_SESSION['nuevo_producto_id']) && $_SESSION['nuevo_producto_id'] == $p['id_producto']) ? 'selected' : '' ?>>
+                                                            <?= ($idProductoHeredado != '' && $idProductoHeredado == $p['id_producto']) ? 'selected' : '' ?>>
                                                             <?= htmlspecialchars($p['descripcion']) ?> (Stock: <?= $p['cantidad'] ?>)
                                                         </option>
                                                     <?php endforeach; ?>
@@ -155,7 +162,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                     <option value="">No hay productos disponibles</option>
                                                 <?php endif; ?>
                                             </select>
-                                                                                        <a href="?url=productos&type=create&return=notaentrada" 
+                                            <a href="?url=productos&type=create&return=notaentrada" 
                                                class="btn" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
                                                title="Registrar nuevo producto">
                                                 <i class="fas fa-plus"></i>
@@ -166,7 +173,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                     <div class="col-md-2">
                                         <label class="form-label" style="color: rgba(255,255,255,0.4); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Cantidad</label>
                                         <input type="number" id="cantidadInput" class="form-control" 
-                                               min="1" value="1"
+                                               min="1" value="<?= htmlspecialchars($cantidadHeredada !== '' ? $cantidadHeredada : '1') ?>"
                                                style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
                                     </div>
                                     <div class="col-md-3">
@@ -174,7 +181,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <div class="input-group">
                                             <span class="input-group-text" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-right: none; color: rgba(255,255,255,0.3); border-radius: 12px 0 0 12px;">$</span>
                                             <input type="number" id="costoInput" class="form-control" 
-                                                   step="0.01" min="0" value="0.00"
+                                                   step="0.01" min="0" value="<?= htmlspecialchars($costoHeredado !== '' ? number_format((float)$costoHeredado, 2, '.', '') : '0.00') ?>"
                                                    style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-left: none; border-radius: 0 12px 12px 0; color: #ffffff; padding: 10px 16px;">
                                         </div>
                                     </div>

@@ -10,7 +10,6 @@ use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Helpers\CheckPermiso;
 
 // CONFIGURACIÓN INICIAL
-
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -22,7 +21,6 @@ if (session_status() === PHP_SESSION_NONE) {
 $rutaRaiz = dirname(__DIR__, 2);
 
 // CARGA DE MODELOS
-
 function cargarModelo($nombre, $rutaRaiz) {
     $path = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . $nombre . '.php';
     if (!file_exists($path)) {
@@ -35,7 +33,6 @@ cargarModelo('ProductoModel', $rutaRaiz);
 cargarModelo('proveedoresModel', $rutaRaiz);
 
 // CONEXIÓN A BASE DE DATOS
-
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new ProductoModel($db);
@@ -45,7 +42,6 @@ try {
 }
 
 // VARIABLES GLOBALES
-
 $type = $_GET['type'] ?? 'list';
 $error = null;
 $success = null;
@@ -55,7 +51,6 @@ $categorias = [];
 $proveedores = [];
 
 // GESTOR DE ARCHIVO JSON (MANTENIDO PARA ESPECIFICACIONES)
-
 function getProductosJsonPath() {
     return __DIR__ . '/../../public/uploads/products_imagenes.json';
 }
@@ -87,7 +82,6 @@ function eliminarProductoJson($id) {
 }
 
 // PROCESADOR DE PROVEEDORES
-
 class ProveedorProcessor {
     private $db;
     
@@ -120,7 +114,6 @@ class ProveedorProcessor {
 $proveedorProcessor = new ProveedorProcessor($db);
 
 // VALIDADOR DE PRODUCTOS
-
 class ProductoValidator {
     public static function validarDatos($datos, $requireCantidad = true) {
         $errores = [];
@@ -135,8 +128,8 @@ class ProductoValidator {
             }
         }
 
-        if (empty($datos['costo_unitario']) || $datos['costo_unitario'] <= 0) {
-            $errores[] = "El costo unitario debe ser mayor a 0.";
+        if (!isset($datos['costo_unitario']) || $datos['costo_unitario'] < 0) {
+            $errores[] = "El costo unitario debe ser mayor o igual a 0.";
         }
 
         if (empty($datos['id_categoria']) || $datos['id_categoria'] <= 0) {
@@ -152,19 +145,24 @@ class ProductoValidator {
 }
 
 // PROCESAR POST
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // REGISTRAR PRODUCTO
-
     if ($type === 'store') {
         CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
         try {
+            $return = $_REQUEST['return'] ?? null;
+            $cantidadOriginal = intval($_POST['cantidad'] ?? 0);
+            $costoOriginal = floatval($_POST['costo_unitario'] ?? 0);
+            $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
+
+            $cantidadParaBd = ($return === 'notaentrada') ? 0 : $cantidadOriginal;
+
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
-                'cantidad' => intval($_POST['cantidad'] ?? 0),
-                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
-                'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
+                'cantidad' => $cantidadParaBd,
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
+                'costo_unitario' => $costoOriginal,
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
             
@@ -179,7 +177,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $id_producto = intval($resultado);
-            $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
             $nombreProveedor = $proveedorProcessor->obtenerNombre($id_proveedor);
             
             guardarProductoJson($id_producto, [
@@ -188,14 +185,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'id_proveedor' => $id_proveedor
             ]);
             
-            // REDIRIGIR DE VUELTA (si viene de registro rápido)
-            $return = $_REQUEST['return'] ?? null;
             if ($return) {
                 $_SESSION['nuevo_producto_id'] = $id_producto;
                 $_SESSION['nuevo_producto_nombre'] = $datos['descripcion'];
                 $_SESSION['mensaje_rapido'] = "✅ Producto '{$datos['descripcion']}' registrado exitosamente";
                 $_SESSION['tipo_rapido'] = 'success';
-                header("Location: ?url=" . urlencode($return) . "&type=create");
+
+                if ($return === 'notaentrada') {
+                    $params = [
+                        'url' => 'notaentrada',
+                        'type' => 'create',
+                        'id_producto' => $id_producto,
+                        'id_proveedor' => $id_proveedor,
+                        'cantidad' => $cantidadOriginal,
+                        'costo' => $costoOriginal
+                    ];
+                    header("Location: ?" . http_build_query($params));
+                } else {
+                    header("Location: ?url=" . urlencode($return) . "&type=create&id_producto=" . $id_producto);
+                }
                 exit;
             }
             
@@ -210,20 +218,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
    
     // REGISTRO RÁPIDO PRODUCTO 
-
     if ($type === 'store_rapido') {
         CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
         try {
-            // Validar campos requeridos
             if (empty($_POST['descripcion']) || empty($_POST['id_categoria'])) {
                 throw new Exception('Por favor complete todos los campos requeridos');
             }
+
+            $return = $_REQUEST['return'] ?? null;
+            $cantidadOriginal = intval($_POST['cantidad'] ?? 0);
+            $costoOriginal = floatval($_POST['costo_unitario'] ?? 0.0);
+            $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
+
+            $cantidadParaBd = ($return === 'notaentrada') ? 0 : $cantidadOriginal;
             
             $datosProducto = [
                 'descripcion' => trim($_POST['descripcion']),
-                'cantidad' => intval($_POST['cantidad'] ?? 0),
-                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
-                'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0.0),
+                'cantidad' => $cantidadParaBd,
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
+                'costo_unitario' => $costoOriginal,
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
             
@@ -239,16 +252,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $id_producto = intval($resultado);
             
-            // GUARDAR EN SESIÓN PARA EL RETORNO
             $_SESSION['nuevo_producto_id'] = $id_producto;
             $_SESSION['nuevo_producto_nombre'] = $datosProducto['descripcion'];
             $_SESSION['mensaje_rapido'] = "✅ Producto '{$datosProducto['descripcion']}' registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
             
-            // REDIRIGIR DE VUELTA (si viene de registro rápido)
-            $return = $_REQUEST['return'] ?? null;
             if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create");
+                if ($return === 'notaentrada') {
+                    $params = [
+                        'url' => 'notaentrada',
+                        'type' => 'create',
+                        'id_producto' => $id_producto,
+                        'id_proveedor' => $id_proveedor,
+                        'cantidad' => $cantidadOriginal,
+                        'costo' => $costoOriginal
+                    ];
+                    header("Location: ?" . http_build_query($params));
+                } else {
+                    header("Location: ?url=" . urlencode($return) . "&type=create&id_producto=" . $id_producto);
+                }
                 exit;
             }
 
@@ -264,27 +286,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: ?url=" . urlencode($return) . "&type=create");
                 exit;
             }
-            header("Location: ?url=productos&type=list");
+            header("Location: ?url=productos&type=create");
             exit;
         }
     }
     
     // ACTUALIZAR PRODUCTO
-
     if ($type === 'update') {
         CheckPermiso::verificar($db, 'Productos', 'actualizar', '?url=productos');
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
             
-            // No permitir modificar la cantidad (stock) desde el formulario de edición.
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
-                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),  // ⭐ NUEVO
+                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
                 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
                 'id_categoria' => intval($_POST['id_categoria'] ?? 0)
             ];
 
-            // Validar sin requerir el campo cantidad (se actualiza solo por entradas/salidas)
             $errores = ProductoValidator::validarDatos($datos, false);
             if (!empty($errores)) {
                 throw new Exception(implode(' ', $errores));
@@ -315,7 +334,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // ELIMINAR PRODUCTO
-   
     if ($type === 'delete') {
         CheckPermiso::verificar($db, 'Productos', 'eliminar', '?url=productos');
         try {
@@ -344,7 +362,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // FUNCIONES AUXILIARES PARA VISTAS
-
 function cargarDatosProducto($id_producto, $modelo, $proveedorProcessor) {
     $producto = $modelo->obtenerProductoPorId($id_producto);
     if (!$producto) {
@@ -366,7 +383,6 @@ function cargarDatosProducto($id_producto, $modelo, $proveedorProcessor) {
 }
 
 // RUTEO DE VISTAS
-
 if ($type === 'create') {
     try {
         $categorias = $modelo->obtenerCategorias();
@@ -403,7 +419,6 @@ if ($type === 'edit') {
 }
 
 // VISTA DE LISTA DE PRODUCTOS
-
 try {
     $buscar = trim($_GET['buscar'] ?? '');
     $dataJson = cargarProductosJson();
@@ -429,10 +444,10 @@ try {
     
     $sql .= " ORDER BY p.id_producto DESC";
 
-    // Paginación: calcular total y aplicar LIMIT/OFFSET
-    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
-    $offset = ($pagina - 1) * $por_pagina;
+    // ✅ PAGINACIÓN COMPLETA
+    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset        = ($pagina_actual - 1) * $por_pagina;
 
     // Contar total con la misma condición
     $sqlCount = preg_replace('/SELECT\s+[\s\S]*?FROM\s+producto\s+p/i', 'SELECT COUNT(*) AS cnt FROM producto p', $sqlBase);
@@ -441,7 +456,10 @@ try {
     }
     $stmtCount = $db->prepare($sqlCount);
     $stmtCount->execute($params);
-    $totalProductos = (int) ($stmtCount->fetchColumn() ?? 0);
+    $totalRegistros = (int) ($stmtCount->fetchColumn() ?? 0);
+
+    // ✅ Total de páginas
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
 
     if ($por_pagina > 0) {
         $sql .= " LIMIT :limit OFFSET :offset";

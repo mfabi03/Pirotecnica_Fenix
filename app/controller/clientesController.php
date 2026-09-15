@@ -16,7 +16,6 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 1. CARGA DEL MODELO
-
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'clientesModel.php';
 
@@ -27,7 +26,6 @@ if (file_exists($pathModel)) {
 }
 
 // 2. INICIALIZACIÓN DE CONEXIÓN Y MODELO
-
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new \App\Pirotecnicafenix\Model\clientesModel($db);
@@ -48,7 +46,6 @@ $busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 $tipo = trim((string) ($_GET['tipo'] ?? 'todos'));
 
 // ELIMINAR 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
     CheckPermiso::verificar($db, 'Clientes', 'eliminar', '?url=clientes&type=list');
     try {
@@ -68,7 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
 }
 
 // REGISTRO NATURAL
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_natural') {
     CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
     try {
@@ -89,13 +85,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         $resultado = $modelo->registrarClienteNatural($datos);
         $_SESSION['mensaje'] = $resultado ? "✅ Cliente Natural registrado exitosamente" : "Error al registrar";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
+        if ($resultado) {
+            $_SESSION['nuevo_cliente_id'] = $resultado;
+            $_SESSION['nuevo_cliente_nombre'] = $datos['nombre'] . ' ' . $datos['apellido'];
+            $_SESSION['mensaje_rapido'] = "✅ Cliente Natural registrado exitosamente";
+            $_SESSION['tipo_rapido'] = 'success';
+        }
     } catch (Exception $e) {
         $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
     $return = $_REQUEST['return'] ?? null;
     if ($return) {
-        header("Location: ?url=" . urlencode($return) . "&type=create");
+        $paramCliente = !empty($resultado) ? "&id_cliente=" . $resultado : "";
+        header("Location: ?url=" . urlencode($return) . "&type=create" . $paramCliente);
     } else {
         header("Location: ?url=clientes&type=list");
     }
@@ -103,11 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 }
 
 // REGISTRO RÁPIDO CLIENTE 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
     CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
     try {
-        // Validar campos requeridos
         if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) {
             throw new Exception("La cédula, nombre y apellido son obligatorios.");
         }
@@ -125,20 +126,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
         $id = $modelo->registrarClienteNatural($datosCliente);
         
         if ($id) {
-            //  GUARDAR EN SESIÓN PARA EL RETORNO
             $_SESSION['nuevo_cliente_id'] = $id;
             $_SESSION['nuevo_cliente_nombre'] = $datosCliente['nombre'] . ' ' . $datosCliente['apellido'];
             $_SESSION['mensaje_rapido'] = "✅ Cliente registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
             
-                //  REDIRIGIR DE VUELTA (si viene de registro rápido)
-                $return = $_REQUEST['return'] ?? null;
-                if ($return) {
-                    header("Location: ?url=" . urlencode($return) . "&type=create");
-                    exit;
-                }
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create&id_cliente=" . $id);
+                exit;
+            }
 
-                header("Location: ?url=clientes&type=list");
+            header("Location: ?url=clientes&type=list");
             exit;
         } else {
             throw new Exception("No se pudo registrar el cliente.");
@@ -159,7 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
 }
 
 // REGISTRO JURIDICO
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_juridico') {
     CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
     try {
@@ -179,13 +177,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         $resultado = $modelo->registrarClienteJuridico($datos);
         $_SESSION['mensaje'] = $resultado ? "✅ Cliente Jurídico registrado exitosamente" : "Error al registrar";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
+        if ($resultado) {
+            $_SESSION['nuevo_cliente_id'] = $resultado;
+            $_SESSION['nuevo_cliente_nombre'] = $datos['razon_social'];
+            $_SESSION['mensaje_rapido'] = "✅ Cliente Jurídico registrado exitosamente";
+            $_SESSION['tipo_rapido'] = 'success';
+        }
     } catch (Exception $e) {
         $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
     $return = $_REQUEST['return'] ?? null;
     if ($return) {
-        header("Location: ?url=" . urlencode($return) . "&type=create");
+        $paramCliente = !empty($resultado) ? "&id_cliente=" . $resultado : "";
+        header("Location: ?url=" . urlencode($return) . "&type=create" . $paramCliente);
     } else {
         header("Location: ?url=clientes&type=list");
     }
@@ -193,7 +198,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 }
 
 // EDITAR NATURAL
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_natural') {
     CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
     try {
@@ -222,7 +226,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 }
 
 // EDITAR JURIDICO
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_juridico') {
     CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
     try {
@@ -250,7 +253,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 }
 
 // 4. CARGAR VISTAS
-
 $basePath = __DIR__ . "/../view/clientes/";
 
 // OBTENER CLIENTE PARA DETALLE O EDICIÓN
@@ -275,11 +277,18 @@ if ($type === 'list' || $type === '') {
         $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
     }
 
-    // Paginación
-    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
-    $total_registros = is_array($clientes_full) ? count($clientes_full) : 0;
-    $offset = ($pagina - 1) * $por_pagina;
+    // ✅ PAGINACIÓN COMPLETA
+    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset        = ($pagina_actual - 1) * $por_pagina;
+    
+    // Total de registros
+    $totalRegistros = is_array($clientes_full) ? count($clientes_full) : 0;
+    
+    // Total de páginas
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    
+    // Cortar el array para la página actual
     if ($por_pagina > 0) {
         $clientes = array_slice($clientes_full, $offset, $por_pagina);
     } else {

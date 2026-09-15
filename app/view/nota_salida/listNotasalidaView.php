@@ -18,6 +18,12 @@ if (!isset($db) || $db === null) {
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'crear') : false;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'eliminar') : false;
+
+// Paginación
+$por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
+$totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($notas) ? count($notas) : 0);
+$pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
+$totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 ?>
 
 <div class="col-md-8 col-lg-12">
@@ -27,18 +33,13 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-sign-out-alt text-gold me-2"></i> lista de Notas de Salida
+                            <i class="fas fa-sign-out-alt text-gold me-2"></i> Lista de Notas de Salida
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona las notas de salida de productos
                         </small>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <form method="GET" class="me-3">
-                            <input type="hidden" name="url" value="notasalida">
-                            <input type="hidden" name="type" value="list">
-                            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
-                        </form>
+                    <div class="col-auto">
                         <?php if ($puede_crear_nota): ?>
                         <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
@@ -50,11 +51,21 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
 
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
-                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
                     <input type="hidden" name="url" value="notasalida">
                     <input type="hidden" name="type" value="list">
                     
-                    <div class="col-md-8">
+                    <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
+                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <?php foreach ([5, 10, 25, 50] as $o): ?>
+                                <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
                         <input type="text" name="busqueda" class="form-control" 
                                list="listaNotasSalida"
                                placeholder="Buscar por cliente, encargado o ID..."
@@ -119,7 +130,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                 <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
                                     <i class="fas fa-file-invoice me-1"></i> Total Notas
                                 </h6>
-                                <h2 style="color: #fdc304; font-weight: 700; font-size: 2.2rem; margin: 0;" id="totalNotas"><?= count($notas) ?></h2>
+                                <h2 style="color: #fdc304; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $totalRegistros ?></h2>
                             </div>
                             <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(243,156,18,0.12); display: flex; align-items: center; justify-content: center; color: #f39c12; font-size: 1.5rem;">
                                 <i class="fas fa-file-invoice"></i>
@@ -134,7 +145,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                 <h6 class="card-title" style="color: rgb(10, 1, 1); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
                                     <i class="fas fa-ban me-1"></i> Anuladas
                                 </h6>
-                                <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;" id="totalAnuladas">
+                                <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;">
                                     <?= $_SESSION['contador_anulaciones_notasalida'] ?? 0 ?>
                                 </h2>
                             </div>
@@ -152,10 +163,6 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                     <h5 class="m-0">
                         <i class="fas fa-list me-2"></i> Notas Registradas
                     </h5>
-                    <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
-                        <i class="fas fa-database me-1"></i> 
-                        <?= isset($notas) ? count($notas) : 0 ?> registros
-                    </span>
                 </div>
                 
                 <div class="table-responsive">
@@ -213,13 +220,11 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=notasalida&type=show&id=<?= $n['id_nota_salida'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <!-- Anular: solo si tiene permiso -->
                                                 <?php if ($puede_anular_nota): ?>
                                                 <button type="button" class="btn-action-circle btn-delete" 
                                                         data-bs-toggle="modal" data-bs-target="#anularModal"
@@ -244,11 +249,13 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                     </table>
                 </div>
                 
-                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                <!-- ✅ PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-file-invoice me-1"></i> 
-                        Total: <?= isset($notas) ? count($notas) : 0 ?> notas
+                        Total: <?= $totalRegistros ?> notas
                     </span>
+                    <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                 </div>
             </div>
 </div>

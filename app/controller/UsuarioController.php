@@ -12,20 +12,17 @@ use App\Pirotecnicafenix\Model\UsuarioModel;
 use Exception;
 
 // 1. INICIAR SESIÓN
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 // 2. VERIFICAR ADMIN
-
 if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
     header('Location: ?url=main');
     exit();
 }
 
 // 3. CARGAR MODELO
-
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'UsuarioModel.php';
 
@@ -36,7 +33,6 @@ if (file_exists($pathModel)) {
 }
 
 // 4. INICIALIZACIÓN
-
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new UsuarioModel($db);
@@ -45,7 +41,6 @@ try {
 }
 
 // 5. PARÁMETROS
-
 $action = $_GET['action'] ?? 'lista';
 $id = $_GET['id'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
@@ -58,23 +53,12 @@ $busqueda = trim((string) ($_GET['busqueda'] ?? ''));
 
 // 6. PROCESAR POST
 
-// DEPURACIÓN: Ver si llega POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    error_log("========== POST EN USUARIO CONTROLLER ==========");
-    error_log("POST data: " . print_r($_POST, true));
-    error_log("GET data: " . print_r($_GET, true));
-}
-
 // Guardar usuario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Obtener acción desde POST o GET
     $accion = $_POST['accion'] ?? $_GET['action'] ?? '';
     
     if ($accion === 'guardar') {
         try {
-            error_log("✅ PROCESANDO GUARDAR USUARIO");
-            
-            // Validar campos
             if (empty(trim($_POST['usuario']))) {
                 throw new Exception("El nombre de usuario es obligatorio.");
             }
@@ -85,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("El rol es obligatorio.");
             }
 
-            // Verificar si el usuario ya existe
             $checkSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario";
             $checkStmt = $db->prepare($checkSql);
             $checkStmt->execute(['usuario' => trim($_POST['usuario'])]);
@@ -93,7 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("El usuario '" . trim($_POST['usuario']) . "' ya existe.");
             }
 
-            // Datos de persona
             $datosPersona = [
                 'nombre' => trim($_POST['nombre']),
                 'apellido' => trim($_POST['apellido'] ?? ''),
@@ -102,7 +84,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'correo' => trim($_POST['correo_electronico'] ?? '')
             ];
 
-            // Datos de usuario
             $datosUsuario = [
                 'usuario' => trim($_POST['usuario']),
                 'clave' => password_hash(trim($_POST['clave']), PASSWORD_DEFAULT),
@@ -119,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['tipo_mensaje'] = "danger";
             }
         } catch (Exception $e) {
-            error_log("❌ Error en guardar: " . $e->getMessage());
             $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
             $_SESSION['tipo_mensaje'] = "danger";
         }
@@ -138,7 +118,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             throw new Exception("El nombre de usuario es obligatorio.");
         }
 
-        // Verificar usuario existente y obtener persona asociada
         $sqlGet = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
         $stmtGet = $db->prepare($sqlGet);
         $stmtGet->execute(['id' => $id]);
@@ -153,7 +132,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 
         $idPersona = $usuarioData['id_persona'];
 
-        // Actualizar PERSONA usando id_persona
         $sqlPersona = "UPDATE persona SET 
                           nombre = :nombre,
                           apellido = :apellido,
@@ -162,18 +140,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
                           correo_electronico = :correo
                           WHERE id_persona = :id_persona";
         $stmtP = $db->prepare($sqlPersona);
-        $paramsPersona = [
+        $stmtP->execute([
             'nombre' => trim($_POST['nombre'] ?? ''),
             'apellido' => trim($_POST['apellido'] ?? ''),
             'cedula' => trim($_POST['cedula'] ?? ''),
             'telefono' => trim($_POST['telefono'] ?? ''),
             'correo' => trim($_POST['correo_electronico'] ?? ''),
             'id_persona' => $idPersona
-        ];
-        error_log("DEBUG UsuarioController actualizar persona: $sqlPersona - params=" . json_encode($paramsPersona));
-        $stmtP->execute($paramsPersona);
+        ]);
 
-        // Actualizar USUARIO
         $sqlUsuario = "UPDATE usuario SET 
                           usuario = :usuario,
                           id_rol = :id_rol";
@@ -234,26 +209,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 }
 
 // 7. CARGAR VISTAS
-
 $basePath = __DIR__ . "/../view/configuracion/";
 
 // ===== LISTA DE USUARIOS =====
 if ($action === 'lista' || $action === '') {
+    // Obtener todos los usuarios (con o sin búsqueda)
     if (!empty($busqueda)) {
-        $usuarios = $modelo->buscarUsuarios($busqueda);
+        $usuarios_full = $modelo->buscarUsuarios($busqueda);
     } else {
-        $usuarios = $modelo->obtenerUsuariosConPersona();
+        $usuarios_full = $modelo->obtenerUsuariosConPersona();
     }
-    if (!is_array($usuarios)) {
-        $usuarios = [];
+    
+    if (!is_array($usuarios_full)) {
+        $usuarios_full = [];
     }
+
+    // ✅ PAGINACIÓN COMPLETA
+    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset        = ($pagina_actual - 1) * $por_pagina;
+    
+    // Total de registros
+    $totalRegistros = count($usuarios_full);
+    
+    // Total de páginas
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    
+    // Cortar el array para la página actual
+    if ($por_pagina > 0) {
+        $usuarios = array_slice($usuarios_full, $offset, $por_pagina);
+    } else {
+        $usuarios = $usuarios_full;
+    }
+    
     require_once $basePath . "usuarioLista.php";
     exit();
 }
 
 // ===== REGISTRAR USUARIO =====
 if ($action === 'registrar' || $action === 'crear') {
-    // Obtener roles de la base de datos
     $roles = [];
     try {
         $sql = "SELECT id_rol, nombre_rol FROM rol ORDER BY id_rol ASC";
@@ -277,7 +271,6 @@ if ($action === 'editar' && $id) {
         exit();
     }
     
-    // Obtener roles
     $roles = [];
     try {
         $sql = "SELECT id_rol, nombre_rol FROM rol ORDER BY id_rol ASC";
@@ -306,9 +299,24 @@ if ($action === 'ver' && $id) {
 }
 
 // ===== DEFAULT: LISTA =====
-$usuarios = $modelo->obtenerUsuariosConPersona();
-if (!is_array($usuarios)) {
-    $usuarios = [];
+$usuarios_full = $modelo->obtenerUsuariosConPersona();
+if (!is_array($usuarios_full)) {
+    $usuarios_full = [];
 }
+
+// ✅ PAGINACIÓN COMPLETA
+$por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+$pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+$offset        = ($pagina_actual - 1) * $por_pagina;
+
+$totalRegistros = count($usuarios_full);
+$totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+
+if ($por_pagina > 0) {
+    $usuarios = array_slice($usuarios_full, $offset, $por_pagina);
+} else {
+    $usuarios = $usuarios_full;
+}
+
 require_once $basePath . "usuarioLista.php";
 ?>

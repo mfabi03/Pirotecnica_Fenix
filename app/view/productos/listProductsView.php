@@ -25,27 +25,28 @@ $productosData = [];
 if (file_exists($jsonPath)) {
     $productosData = json_decode(file_get_contents($jsonPath), true) ?? [];
 }
+
+// Paginación
+$por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
+$totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($productos) ? count($productos) : 0);
+$pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
+$totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 ?>
 
 <div class="col-md-8 col-lg-12">
             
-            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
+            <!-- TARJETA DE TÍTULO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-cube text-gold me-2"></i> lista de Productos
+                            <i class="fas fa-cube text-gold me-2"></i> Lista de Productos
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona los productos registrados en el sistema
                         </small>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <form method="GET" class="me-3">
-                            <input type="hidden" name="url" value="productos">
-                            <input type="hidden" name="type" value="list">
-                            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
-                        </form>
+                    <div class="col-auto">
                         <?php if ($puede_crear_producto): ?>
                         <a href="?url=productos&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Producto
@@ -57,18 +58,27 @@ if (file_exists($jsonPath)) {
 
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
-                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
                     <input type="hidden" name="url" value="productos">
                     <input type="hidden" name="type" value="list">
                     
-                    <div class="col-md-8">
+                    <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
+                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <?php foreach ([5, 10, 25, 50] as $o): ?>
+                                <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
                         <input type="text" name="busqueda" class="form-control" 
                                list="listaProductos"
                                placeholder="Buscar por nombre, código o categoría..."
                                value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                         <datalist id="listaProductos">
                             <?php
-                            // Recolectar sugerencias únicas
                             $sugerencias = [];
                             if (!empty($productos) && is_array($productos)):
                                 foreach ($productos as $p):
@@ -81,7 +91,6 @@ if (file_exists($jsonPath)) {
                                 endforeach;
                             endif;
 
-                            // Pintar opciones
                             foreach (array_keys($sugerencias) as $s): ?>
                                 <option value="<?= htmlspecialchars($s) ?>">
                             <?php endforeach; ?>
@@ -188,10 +197,6 @@ if (file_exists($jsonPath)) {
                     <h5 class="m-0">
                         <i class="fas fa-cube me-2"></i> Productos Registrados
                     </h5>
-                    <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
-                        <i class="fas fa-database me-1"></i> 
-                        <?= isset($productos) ? count($productos) : 0 ?> registros
-                    </span>
                 </div>
                 
                 <div class="table-responsive">
@@ -257,13 +262,11 @@ if (file_exists($jsonPath)) {
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=productos&type=show&id=<?= $p['id_producto'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <!-- Editar: solo si tiene permiso -->
                                                 <?php if ($puede_editar_producto): ?>
                                                 <a href="?url=productos&type=edit&id=<?= $p['id_producto'] ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
@@ -271,7 +274,6 @@ if (file_exists($jsonPath)) {
                                                 </a>
                                                 <?php endif; ?>
                                                 
-                                                <!-- Eliminar: solo si tiene permiso -->
                                                 <?php if ($puede_eliminar_producto): ?>
                                                 <form method="POST" action="?url=productos&type=delete" class="d-inline">
                                                     <input type="hidden" name="id_producto" value="<?= $p['id_producto'] ?>">
@@ -301,11 +303,13 @@ if (file_exists($jsonPath)) {
                     </table>
                 </div>
                 
-                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                <!-- ✅ PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-cube me-1"></i> 
-                        Total: <?= isset($productos) ? count($productos) : 0 ?> productos
+                        Total: <?= $totalRegistros ?> productos
                     </span>
+                    <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                 </div>
             </div>
 </div>

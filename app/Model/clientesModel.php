@@ -13,7 +13,6 @@ class clientesModel {
     }
 
     // VALIDAR EDAD
-
     public function validarEdad($fechaNacimiento, $edadMinima = 18) {
         try {
             $fechaActual = new \DateTime();
@@ -37,7 +36,6 @@ class clientesModel {
     }
 
     // REGISTRAR CLIENTE NATURAL
-
     public function registrarClienteNatural($datos) {
         if (!$this->db) {
             throw new \Exception("No hay conexión a la base de datos");
@@ -98,7 +96,6 @@ class clientesModel {
     }
 
     // REGISTRAR CLIENTE JURIDICO
-
     public function registrarClienteJuridico($datos) {
         if (!$this->db) {
             throw new \Exception("No hay conexión a la base de datos");
@@ -155,7 +152,6 @@ class clientesModel {
     }
 
     // ACTUALIZAR CLIENTE NATURAL
-
     public function actualizarClienteNatural($id, $datos) {
         try {
             if (empty($datos['cedula'])) {
@@ -200,7 +196,6 @@ class clientesModel {
     }
 
     // ACTUALIZAR CLIENTE JURIDICO
-
     public function actualizarClienteJuridico($id, $datos) {
         try {
             if (empty($datos['rif'])) {
@@ -246,7 +241,6 @@ class clientesModel {
     }
 
     // BUSCAR CLIENTES
-
     public function buscarClientes($termino) {
         try {
             $sql = "SELECT 
@@ -284,7 +278,6 @@ class clientesModel {
     }
 
     // BUSCAR CLIENTES CON FILTRO
-
     public function buscarClientesFiltrados($termino = null, $tipo = 'todos') {
         try {
             $params = [];
@@ -347,8 +340,52 @@ class clientesModel {
         }
     }
 
-    // OBTENER TODOS LOS CLIENTES
+    // ✅ NUEVO: CONTAR CLIENTES (para paginación)
+    public function contarClientes($termino = null, $tipo = 'todos') {
+        try {
+            $params = [];
+            $where = ["p.eliminado = 0"];
+            $sql = "SELECT COUNT(*) 
+                    FROM persona p
+                    LEFT JOIN cliente_natural cn ON p.id_persona = cn.id_persona
+                    LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
+                    WHERE (cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)";
 
+            $termino = trim((string) $termino);
+            if ($termino !== '') {
+                $where[] = "(
+                    LOWER(CONCAT(COALESCE(p.nombre, ''), ' ', COALESCE(p.apellido, ''))) LIKE :termino
+                    OR LOWER(p.nombre) LIKE :termino
+                    OR LOWER(p.apellido) LIKE :termino
+                    OR LOWER(p.cedula) LIKE :termino
+                    OR LOWER(p.telefono) LIKE :termino
+                    OR LOWER(COALESCE(p.correo_electronico, '')) LIKE :termino
+                    OR LOWER(COALESCE(cj.razon_social, '')) LIKE :termino
+                    OR LOWER(COALESCE(cj.rif, '')) LIKE :termino
+                )";
+                $params[':termino'] = '%' . mb_strtolower($termino, 'UTF-8') . '%';
+            }
+
+            if ($tipo === 'Natural') {
+                $where[] = "cn.id_cliente_natural IS NOT NULL";
+            } elseif ($tipo === 'Jurídico' || $tipo === 'Juridico' || strtolower($tipo) === 'juridico') {
+                $where[] = "cj.id_cliente_juridico IS NOT NULL";
+            }
+
+            if (!empty($where)) {
+                $sql .= ' AND ' . implode(' AND ', $where);
+            }
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Error en contarClientes: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // OBTENER TODOS LOS CLIENTES
     public function obtenerClientes() {
         try {
             $sql = "SELECT 
@@ -384,7 +421,6 @@ class clientesModel {
     }
 
     // OBTENER CLIENTE POR ID
-
     public function obtenerClientePorId($id) {
         try {
             $sql = "SELECT 
@@ -418,7 +454,6 @@ class clientesModel {
     }
 
     // ELIMINAR CLIENTE
-
     public function eliminarCliente($id) {
         if (!$id || !is_numeric($id)) {
             throw new \Exception("ID de cliente inválido para eliminar");
@@ -483,7 +518,6 @@ class clientesModel {
     }
 
     // VALIDACIONES
-
     public function existeCedula($cedula) {
         try {
             $sql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula AND eliminado = 0";

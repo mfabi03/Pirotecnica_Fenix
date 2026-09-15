@@ -28,18 +28,13 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-truck text-gold me-2"></i> lista de Proveedores
+                            <i class="fas fa-truck text-gold me-2"></i> Lista de Proveedores
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona los proveedores registrados en el sistema
                         </small>
                     </div>
                     <div class="col-auto d-flex align-items-center">
-                        <form method="GET" class="me-3">
-                            <input type="hidden" name="url" value="proveedores">
-                            <input type="hidden" name="type" value="list">
-                            <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
-                        </form>
                         <?php if ($puede_crear_proveedor): ?>
                         <a href="?url=proveedores&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Proveedor
@@ -55,7 +50,17 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                     <input type="hidden" name="url" value="proveedores">
                     <input type="hidden" name="type" value="list">
                     
-                    <div class="col-md-8">
+                    <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
+                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <?php foreach ([5, 10, 25, 50] as $o): ?>
+                                <option value="<?= $o ?>" <?= (isset($por_pagina) && $por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
                         <input type="text" name="busqueda" class="form-control" 
                                list="listaProveedores"
                                placeholder="Buscar por RIF, razón social, contacto o dirección..."
@@ -121,10 +126,6 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                     <h5 class="m-0">
                         <i class="fas fa-truck me-2"></i> Proveedores Registrados
                     </h5>
-                    <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
-                        <i class="fas fa-database me-1"></i> 
-                        <?= isset($proveedores) ? count($proveedores) : 0 ?> registros
-                    </span>
                 </div>
                 
                 <div class="table-responsive">
@@ -152,13 +153,11 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                         <td><?= htmlspecialchars($p['correo_electronico'] ?? 'N/A') ?></td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=proveedores&type=show&id=<?= $p['id_proveedor'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <!-- Editar: solo si tiene permiso -->
                                                 <?php if ($puede_editar_proveedor): ?>
                                                 <a href="?url=proveedores&type=edit&id=<?= $p['id_proveedor'] ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
@@ -166,7 +165,6 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                                 </a>
                                                 <?php endif; ?>
                                                 
-                                                <!-- Eliminar: solo si tiene permiso -->
                                                 <?php if ($puede_eliminar_proveedor): ?>
                                                 <form method="POST" action="?url=proveedores&type=delete" class="d-inline">
                                                     <input type="hidden" name="id_proveedor" value="<?= $p['id_proveedor'] ?>">
@@ -196,11 +194,13 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                     </table>
                 </div>
                 
-                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                <!-- ✅ PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-truck me-1"></i> 
-                        Total: <?= isset($proveedores) ? count($proveedores) : 0 ?> proveedores
+                        Total: <?= isset($totalRegistros) ? $totalRegistros : (isset($proveedores) ? count($proveedores) : 0) ?> proveedores
                     </span>
+                    <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
                 </div>
             </div>
 </div>

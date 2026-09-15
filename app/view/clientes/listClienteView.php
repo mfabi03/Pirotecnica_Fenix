@@ -19,6 +19,12 @@ $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Clientes', 'crear') : false;
 $puede_editar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Clientes', 'actualizar') : false;
 $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Clientes', 'eliminar') : false;
+
+// Paginación
+$por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
+$totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($clientes) ? count($clientes) : 0);
+$pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
+$totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 ?>
 
 <div class="col-md-8 col-lg-12">
@@ -28,18 +34,13 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-users text-gold me-2"></i> lista de Clientes
+                            <i class="fas fa-users text-gold me-2"></i> Lista de Clientes
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona los clientes registrados en el sistema
                         </small>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <form method="GET" class="me-3">
-                            <input type="hidden" name="url" value="clientes">
-                            <input type="hidden" name="type" value="list">
-                            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
-                        </form>
+                    <div class="col-auto">
                         <?php if ($puede_crear_cliente): ?>
                         <a href="?url=clientes&type=register" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Cliente
@@ -51,11 +52,21 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
 
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
-                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
                     <input type="hidden" name="url" value="clientes">
                     <input type="hidden" name="type" value="list">
                     
-                    <div class="col-md-8">
+                    <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
+                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <?php foreach ([5, 10, 25, 50] as $o): ?>
+                                <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
                         <input type="text" name="busqueda" class="form-control" 
                                list="listaClientes"
                                placeholder="Buscar por nombre, cédula, RIF o razón social..."
@@ -111,10 +122,6 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                     <h5 class="m-0">
                         <i class="fas fa-users me-2"></i> Clientes Registrados
                     </h5>
-                    <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
-                        <i class="fas fa-database me-1"></i> 
-                        <?= isset($clientes) ? count($clientes) : 0 ?> registros
-                    </span>
                 </div>
                 
                 <div class="table-responsive">
@@ -156,13 +163,11 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                                         <td><?= htmlspecialchars($c['correo_electronico'] ?? 'N/A') ?></td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=clientes&type=view&id=<?= $c['id_cliente'] ?? 0 ?>" 
                                                    class="btn-action-circle btn-view" title="Ver">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <!-- Editar: solo si tiene permiso -->
                                                 <?php if ($puede_editar_cliente): ?>
                                                 <a href="?url=clientes&type=<?= ($c['tipo_cliente'] ?? '') === 'Jurídico' ? 'edit_juridico' : 'edit' ?>&id=<?= $c['id_cliente'] ?? 0 ?>" 
                                                    class="btn-action-circle btn-edit" title="Editar">
@@ -170,7 +175,6 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                                                 </a>
                                                 <?php endif; ?>
                                                 
-                                                <!-- Eliminar: solo si tiene permiso -->
                                                 <?php if ($puede_eliminar_cliente): ?>
                                                 <form method="POST" action="?url=clientes&type=delete" class="d-inline">
                                                     <input type="hidden" name="accion" value="eliminar">
@@ -201,11 +205,13 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                     </table>
                 </div>
                 
-                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                <!-- ✅ PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-users me-1"></i> 
-                        Total: <?= isset($clientes) ? count($clientes) : 0 ?> clientes
+                        Total: <?= $totalRegistros ?> clientes
                     </span>
+                    <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                 </div>
             </div>
 </div>

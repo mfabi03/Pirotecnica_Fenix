@@ -18,6 +18,12 @@ if (!isset($db) || $db === null) {
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'crear') : false;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'eliminar') : false;
+
+// Paginación
+$por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
+$totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($notas) ? count($notas) : 0);
+$pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
+$totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 ?>
 
 <div class="col-md-8 col-lg-12">
@@ -27,18 +33,13 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-sign-in-alt text-gold me-2"></i> lista de Notas de Entrada
+                            <i class="fas fa-sign-in-alt text-gold me-2"></i> Lista de Notas de Entrada
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona las notas de entrada de productos
                         </small>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <form method="GET" class="me-3">
-                            <input type="hidden" name="url" value="notaentrada">
-                            <input type="hidden" name="type" value="list">
-                            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
-                        </form>
+                    <div class="col-auto">
                         <?php if ($puede_crear_nota): ?>
                         <a href="?url=notaentrada&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                             <i class="fas fa-plus me-1"></i> Registrar Nota de Entrada
@@ -50,11 +51,21 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
 
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
-                <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
+                <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
                     <input type="hidden" name="url" value="notaentrada">
                     <input type="hidden" name="type" value="list">
                     
-                    <div class="col-md-8">
+                    <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
+                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <?php foreach ([5, 10, 25, 50] as $o): ?>
+                                <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
                         <input type="text" name="busqueda" class="form-control" 
                                list="listaNotasEntrada"
                                placeholder="Buscar por proveedor, encargado o ID..."
@@ -168,10 +179,6 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                     <h5 class="m-0">
                         <i class="fas fa-list me-2"></i> Notas Registradas
                     </h5>
-                    <span class="text-muted small" style="color: rgba(255,255,255,0.3) !important; font-size: 0.75rem;">
-                        <i class="fas fa-database me-1"></i> 
-                        <?= isset($notas) ? count($notas) : 0 ?> registros
-                    </span>
                 </div>
                 
                 <div class="table-responsive">
@@ -251,13 +258,11 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <!-- Ver: siempre visible -->
                                                 <a href="?url=notaentrada&type=show&id=<?= $n['id_nota_entrada'] ?>" 
                                                    class="btn-action-circle btn-view" title="Ver Detalle">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 
-                                                <!-- Anular: solo si tiene permiso -->
                                                 <?php if (!$anulada && $puede_anular_nota): ?>
                                                     <button type="button" class="btn-action-circle btn-delete" 
                                                             data-bs-toggle="modal" 
@@ -279,11 +284,13 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                     </table>
                 </div>
                 
-                <div class="card-footer py-2 d-flex justify-content-between align-items-center">
+                <!-- ✅ PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-file-invoice me-1"></i> 
-                        Total: <?= isset($notas) ? count($notas) : 0 ?> notas
+                        Total: <?= $totalRegistros ?> notas
                     </span>
+                    <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
                 </div>
             </div>
 </div>
@@ -306,7 +313,38 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                         <i class="fas fa-info-circle me-2"></i>
                         Al anular, el stock de los productos se revertirá automáticamente.
                     </div>
+                    <input type="hidden" name="id_nota_entrada" id="modalIdNota">
                     <div class="mb-3">
                         <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Motivo de Anulación <span class="text-danger">*</span></label>
                         <textarea name="motivo_anulacion" class="form-control" rows="3" required 
-                                  placeholder="Describe el motivo por el cual se anula esta nota
+                                  placeholder="Describe el motivo por el cual se anula esta nota"
+                                  style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ffffff; border-radius: 10px;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.05); border-radius: 0 0 16px 16px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-ban me-1"></i> Anular Nota
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const anularModal = document.getElementById('anularModal');
+    if (anularModal) {
+        anularModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const proveedor = button.getAttribute('data-proveedor');
+            document.getElementById('modalIdNota').value = id;
+            document.getElementById('modalProveedor').textContent = proveedor;
+        });
+    }
+});
+</script>
+
+<?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

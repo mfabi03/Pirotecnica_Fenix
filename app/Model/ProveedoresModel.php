@@ -13,7 +13,6 @@ class ProveedoresModel {
     }
 
     // OBTENER TODOS LOS PROVEEDORES
-
     public function obtenerProveedores() {
         try {
             $sql = "SELECT 
@@ -40,8 +39,19 @@ class ProveedoresModel {
         }
     }
 
-    // OBTENER PROVEEDOR POR ID
+    // CONTAR PROVEEDORES (para paginación)
+    public function contarProveedores() {
+        try {
+            $sql = "SELECT COUNT(*) FROM proveedor WHERE eliminado = 0";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new Exception("Error al contar proveedores: " . $e->getMessage());
+        }
+    }
 
+    // OBTENER PROVEEDOR POR ID
     public function obtenerProveedorPorId($id) {
         try {
             $sql = "SELECT 
@@ -68,7 +78,6 @@ class ProveedoresModel {
     }
 
     // REGISTRAR PROVEEDOR
-
     public function registrarProveedor(array $datos) {
         $this->db->beginTransaction();
         try {
@@ -111,7 +120,6 @@ class ProveedoresModel {
     }
 
     // ACTUALIZAR PROVEEDOR
-
     public function actualizarProveedor($id, array $datos) {
         $this->db->beginTransaction();
         try {
@@ -171,7 +179,6 @@ class ProveedoresModel {
     }
 
     // ELIMINAR PROVEEDOR
-
     public function eliminarProveedor($id) {
         $this->db->beginTransaction();
         try {
@@ -206,7 +213,6 @@ class ProveedoresModel {
     }
 
     // BUSCAR PROVEEDORES
-
     public function buscarProveedores($termino) {
         try {
             $sql = "SELECT 
@@ -239,7 +245,6 @@ class ProveedoresModel {
     }
 
     // OBTENER PROVEEDORES PARA SELECT
-
     public function obtenerProveedoresParaSelect() {
         try {
             $sql = "SELECT 

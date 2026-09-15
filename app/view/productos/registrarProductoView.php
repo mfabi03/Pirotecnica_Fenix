@@ -79,13 +79,15 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                     <div class="col-md-6">
                                         <label for="id_categoria" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Categoría *</label>
                                         <div class="input-group">
+                                            <?php 
+                                                $idCategoriaSelected = $_GET['id_categoria'] ?? $_SESSION['nueva_categoria_id'] ?? $_POST['id_categoria'] ?? ''; 
+                                            ?>
                                             <select name="id_categoria" id="id_categoria" class="form-select" required
                                                     style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                                 <option value="">Seleccione una categoría...</option>
                                                 <?php foreach ($categorias as $c): ?>
                                                     <option value="<?= $c['id_categoria'] ?>"
-                                                        <?= (isset($_SESSION['nueva_categoria_id']) && $_SESSION['nueva_categoria_id'] == $c['id_categoria']) ? 'selected' : '' ?>
-                                                        <?= (isset($_POST['id_categoria']) && $_POST['id_categoria'] == $c['id_categoria']) ? 'selected' : '' ?>>
+                                                        <?= ($idCategoriaSelected == $c['id_categoria']) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($c['nombre_categoria']) ?>
                                                     </option>
                                                 <?php endforeach; ?>
@@ -103,17 +105,26 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                     <div class="col-md-6">
                                         <label for="id_proveedor" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
                                         <div class="input-group">
+                                            <?php 
+                                                $idProveedorSelected = $_GET['id_proveedor'] ?? $_SESSION['nuevo_proveedor_id'] ?? $_POST['id_proveedor'] ?? ''; 
+                                            ?>
                                             <select name="id_proveedor" id="id_proveedor" class="form-select" required
                                                     style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                                 <option value="">Seleccione un proveedor...</option>
                                                 <?php foreach ($proveedores as $p): ?>
                                                     <option value="<?= $p['id_proveedor'] ?>"
-                                                        <?= (isset($_SESSION['nuevo_proveedor_id']) && $_SESSION['nuevo_proveedor_id'] == $p['id_proveedor']) ? 'selected' : '' ?>
-                                                        <?= (isset($_POST['id_proveedor']) && $_POST['id_proveedor'] == $p['id_proveedor']) ? 'selected' : '' ?>>
+                                                        <?= ($idProveedorSelected == $p['id_proveedor']) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($p['razon_social']) ?>
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
+                                            <a href="?url=proveedores&type=create&return=productos" 
+                                               class="btn" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 15px; display: flex; align-items: center; transition: all 0.3s ease;"
+                                               title="Registrar nuevo proveedor"
+                                               onmouseover="this.style.transform='scale(1.05)';"
+                                               onmouseout="this.style.transform='scale(1)';">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
                                         </div>
                                         <?php unset($_SESSION['nuevo_proveedor_id']); ?>
                                     </div>
@@ -127,14 +138,18 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </h6>
                                 <div class="row g-3">
                                     <div class="col-md-4">
-                                        <label for="cantidad" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cantidad (Stock) *</label>
-                                        <input type="number" name="cantidad" id="cantidad" class="form-control"readonly
-                                               style="background: #e9ecef; cursor: not-allowed; color: #6c757d; opacity: 0.8;"
-                                               value="<?= htmlspecialchars($_POST['cantidad'] ?? 0) ?>">
+                                        <label for="cantidad" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cantidad Inicial *</label>
+                                        <input type="number" name="cantidad" id="cantidad" class="form-control" min="0"
+                                               style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
+                                               value="<?= htmlspecialchars($_POST['cantidad'] ?? '0') ?>">
+                                        <small style="color: #6c757d; font-size: 0.7rem;">
+                                            <i class="fas fa-info-circle me-1"></i> <?= isset($_GET['return']) && $_GET['return'] === 'notaentrada' ? 'Se heredará en la Nota de Entrada' : 'Cantidad inicial en inventario' ?>
+                                        </small>
                                     </div>
                                     <div class="col-md-4">
                                         <label for="stock_minimo" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo *</label>
-                                        <input type="number" name="stock_minimo" id="stock_minimo" class="form-control"
+                                        <input type="number" name="stock_minimo" id="stock_minimo" class="form-control" min="1"
+                                               style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
                                                value="<?= htmlspecialchars($_POST['stock_minimo'] ?? 10) ?>">
                                         <small style="color: #6c757d; font-size: 0.7rem;">
                                             <i class="fas fa-info-circle me-1"></i> Alerta cuando el stock baje a este nivel
@@ -144,10 +159,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <label for="costo_unitario" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Costo Unitario *</label>
                                         <div class="input-group">
                                             <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 1.5px solid rgba(0,0,0,0.08); border-right: none; background: #f8f9fa;">$</span>
-                                            <input type="number" name="costo_unitario" id="costo_unitario" class="form-control" readonly
-                                                style="background: #e9ecef; cursor: not-allowed; color: #6c757d; opacity: 0.8;"
-                                                   value="<?= htmlspecialchars($_POST['costo_unitario'] ?? 0) ?>">
+                                            <input type="number" step="0.01" min="0" name="costo_unitario" id="costo_unitario" class="form-control"
+                                                   style="border-radius: 0 12px 12px 0; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
+                                                   value="<?= htmlspecialchars($_POST['costo_unitario'] ?? '0.00') ?>">
                                         </div>
+                                        <small style="color: #6c757d; font-size: 0.7rem;">
+                                            <i class="fas fa-info-circle me-1"></i> Costo de compra por unidad
+                                        </small>
                                     </div>
                                 </div>
                             </div>
