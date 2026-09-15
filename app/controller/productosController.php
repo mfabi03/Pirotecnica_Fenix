@@ -420,7 +420,7 @@ if ($type === 'edit') {
 
 // VISTA DE LISTA DE PRODUCTOS
 try {
-    $buscar = trim($_GET['buscar'] ?? '');
+    $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
     $dataJson = cargarProductosJson();
     
     $sqlBase = "SELECT 
@@ -438,7 +438,7 @@ try {
     $params = [];
     
     if (!empty($buscar)) {
-        $sql .= " WHERE p.descripcion LIKE :termino";
+        $sql .= " WHERE p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino OR CAST(p.id_producto AS CHAR) LIKE :termino";
         $params['termino'] = "%$buscar%";
     }
     

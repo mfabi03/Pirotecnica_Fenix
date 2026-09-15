@@ -55,7 +55,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? $_GET['type'] ?? 'lista';
 $id = $_GET['id'] ?? $_POST['id_categoria'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
 $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? null;
-$busqueda = $_GET['busqueda'] ?? '';
+$busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 
 unset($_SESSION['mensaje']);
 unset($_SESSION['tipo_mensaje']);

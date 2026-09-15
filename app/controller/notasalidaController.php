@@ -321,10 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $resultado = $modelo->eliminarNota($idNota);
             
             if ($resultado) {
-                if (!isset($_SESSION['contador_eliminaciones'])) {
-                    $_SESSION['contador_eliminaciones'] = 0;
-                }
-                $_SESSION['contador_eliminaciones']++;
+                $_SESSION['contador_anulaciones_notasalida'] = (int) ($modelo->getResumen()['total_anuladas'] ?? 0);
                 
                 $_SESSION['mensaje'] = '✅ Nota de Salida eliminada exitosamente. El stock ha sido revertido.';
                 $_SESSION['tipo_mensaje'] = 'warning';
@@ -382,7 +379,8 @@ if ($type === 'show' && $id) {
 
 // LISTAR
 try {
-    $notas_full = $modelo->listarNotasSalida();
+    $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
+    $notas_full = !empty($buscar) ? $modelo->buscarNotasSalida($buscar) : $modelo->listarNotasSalida();
     $resumen = $modelo->getResumen();
 
     // ✅ PAGINACIÓN COMPLETA

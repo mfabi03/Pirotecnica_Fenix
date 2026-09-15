@@ -1,15 +1,16 @@
 <?php
-// app/view/proveedores/proveedores_create.php
+// app/view/proveedores/registroProveedoresView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
+
+// ✅ Capturar el return de la URL
+$returnUrl = $_GET['return'] ?? $_POST['return'] ?? '';
 ?>
 
 <div class="container-fluid px-4">
     <div class="row">       
         <div class="col-md-8 col-lg-12">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -21,16 +22,20 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         </small>
                     </div>
                     <div class="col-auto">
-                        <a href="?url=proveedores&type=list" class="btn" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 50px; padding: 8px 20px; text-decoration: none; transition: all 0.3s ease;">
-                            <i class="fas fa-arrow-left me-1"></i> Volver
-                        </a>
+                        <?php if (!empty($returnUrl)): ?>
+                            <a href="?url=<?= htmlspecialchars($returnUrl) ?>&type=create" class="btn" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 50px; padding: 8px 20px; text-decoration: none; transition: all 0.3s ease;">
+                                <i class="fas fa-arrow-left me-1"></i> Volver
+                            </a>
+                        <?php else: ?>
+                            <a href="?url=proveedores&type=list" class="btn" style="background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 50px; padding: 8px 20px; text-decoration: none; transition: all 0.3s ease;">
+                                <i class="fas fa-arrow-left me-1"></i> Volver
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- MENSAJES -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
                 <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -51,9 +56,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 FORMULARIO
-                 ========================================== -->
+            <!-- FORMULARIO -->
             <div class="dark-card card shadow-sm">
                 <div class="card-header" style="background: #f8f9fa !important; border-bottom: 1px solid rgba(0,0,0,0.06) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                     <h5 class="m-0" style="color: #1a1a2e !important; font-weight: 700 !important;">
@@ -62,14 +65,17 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
                 
                 <div class="card-body">
-                    <form method="POST" action="?url=proveedores&type=store<?= isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '' ?>">
-                        <?php if (isset($_GET['return'])): ?>
-                            <input type="hidden" name="return" value="<?= htmlspecialchars($_GET['return']) ?>">
+                    <!-- ✅ action CON return -->
+                    <form method="POST" action="?url=proveedores&type=store<?= !empty($returnUrl) ? '&return=' . urlencode($returnUrl) : '' ?>">
+                        
+                        <!-- ✅ hidden CON return -->
+                        <?php if (!empty($returnUrl)): ?>
+                            <input type="hidden" name="return" value="<?= htmlspecialchars($returnUrl) ?>">
                         <?php endif; ?>
                         
                         <div class="row g-3">
                             
-                            <!-- ===== DATOS DEL PROVEEDOR ===== -->
+                            <!-- DATOS DEL PROVEEDOR -->
                             <div class="col-12">
                                 <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
                                     <i class="fas fa-building me-2" style="color: #f39c12;"></i> Datos del proveedor
@@ -112,13 +118,17 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </div>
                             </div>
 
-                            <!-- ==========================================
-                                 BOTONES DE ACCIÓN
-                                 ========================================== -->
+                            <!-- BOTONES -->
                             <div class="col-12 text-end" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px; margin-top: 10px;">
-                                <a href="?url=proveedores&type=list" class="btn btn-cancel">
-                                    <i class="fas fa-times me-1"></i> Cancelar
-                                </a>
+                                <?php if (!empty($returnUrl)): ?>
+                                    <a href="?url=<?= htmlspecialchars($returnUrl) ?>&type=create" class="btn btn-cancel">
+                                        <i class="fas fa-times me-1"></i> Cancelar
+                                    </a>
+                                <?php else: ?>
+                                    <a href="?url=proveedores&type=list" class="btn btn-cancel">
+                                        <i class="fas fa-times me-1"></i> Cancelar
+                                    </a>
+                                <?php endif; ?>
                                 <button type="submit" class="btn btn-save">
                                     <i class="fas fa-save me-2"></i> Registrar Proveedor
                                 </button>
@@ -131,12 +141,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 </div>
 
-<!-- ==========================================
-     SCRIPTS
-     ========================================== -->
+<!-- SCRIPTS -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Formateo de RIF
     const rifInput = document.getElementById('rif');
     if (rifInput) {
         rifInput.addEventListener('blur', function() {
@@ -147,13 +154,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = 'J-' + value.substring(1);
             }
         });
-
         rifInput.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
         });
     }
 
-    // Auto mayúsculas en Razón Social
     const razonSocialInput = document.getElementById('razon_social');
     if (razonSocialInput) {
         razonSocialInput.addEventListener('input', function() {
@@ -161,7 +166,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Formateo de teléfono
     const telefonoInput = document.getElementById('numero_contacto');
     if (telefonoInput) {
         telefonoInput.addEventListener('input', function() {

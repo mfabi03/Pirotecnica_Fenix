@@ -49,7 +49,7 @@ $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? null;
 unset($_SESSION['mensaje']);
 unset($_SESSION['tipo_mensaje']);
 
-$busqueda = trim((string) ($_GET['busqueda'] ?? ''));
+$busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 
 // 6. PROCESAR POST
 

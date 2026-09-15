@@ -20,6 +20,7 @@
         "id_proveedor": 18
     },
     "25": {
+<<<<<<< Updated upstream
         "especificaciones": "gGA",
         "proveedor": "BOLO",
         "id_proveedor": 17
@@ -28,5 +29,20 @@
         "especificaciones": "",
         "proveedor": "",
         "id_proveedor": 0
+=======
+        "especificaciones": "moloo belo",
+        "proveedor": "YUCA.PQ",
+        "id_proveedor": 33
+    },
+    "26": {
+        "especificaciones": "QIWUDEVB",
+        "proveedor": "SANAA",
+        "id_proveedor": 40
+    },
+    "27": {
+        "especificaciones": "QWEFG",
+        "proveedor": "FEAA.JJ",
+        "id_proveedor": 37
+>>>>>>> Stashed changes
     }
 }

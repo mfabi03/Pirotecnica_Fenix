@@ -57,12 +57,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($resultado) {
                     $return = $_REQUEST['return'] ?? null;
                     if ($return) {
-                        $id_proveedor = $db->lastInsertId();
+                        $id_proveedor = (int) $resultado;
                         $_SESSION['nuevo_proveedor_id'] = $id_proveedor;
                         $_SESSION['nuevo_proveedor_nombre'] = $datos['razon_social'];
                         $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datos['razon_social']}' registrado exitosamente";
                         $_SESSION['tipo_rapido'] = 'success';
-                        header("Location: ?url=" . urlencode($return) . "&type=create&id_proveedor=" . $id_proveedor);
+
+                        $redirect = '?url=' . urlencode($return) . '&type=create&id_proveedor=' . $id_proveedor;
+                        if ($return === 'notaentrada' || $return === 'productos') {
+                            header('Location: ' . $redirect);
+                            exit;
+                        }
+
+                        header('Location: ' . $redirect);
                         exit;
                     }
                     
@@ -99,16 +106,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception('No se pudo registrar el proveedor.');
             }
 
-            $idProveedor = $db->lastInsertId();
-            
+            $idProveedor = (int) $resultado;
+
             $_SESSION['nuevo_proveedor_id'] = $idProveedor;
             $_SESSION['nuevo_proveedor_nombre'] = $datosProveedor['razon_social'];
             $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datosProveedor['razon_social']}' registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
-            
+
             $return = $_REQUEST['return'] ?? null;
             if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create&id_proveedor=" . $idProveedor);
+                header('Location: ?url=' . urlencode($return) . '&type=create&id_proveedor=' . $idProveedor);
                 exit;
             }
 
@@ -209,7 +216,9 @@ if ($type === 'show') {
 }
 
 try {
-    $buscar = trim($_GET['buscar'] ?? '');
+    // ✅ Acepta 'busqueda' (nombre del input) y 'buscar' (compatibilidad)
+    $buscar = trim($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
+    
     if (!empty($buscar)) {
         $proveedores_full = $modelo->buscarProveedores($buscar);
     } else {

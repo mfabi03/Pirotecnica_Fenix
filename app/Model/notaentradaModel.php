@@ -98,6 +98,51 @@ class NotaentradaModel {
         }
     }
 
+    public function buscarNotasEntrada($termino) {
+        try {
+            $termino = trim((string) $termino);
+            if ($termino === '') {
+                return $this->obtenerNotasEntrada();
+            }
+
+            $sql = "SELECT 
+                        n.id_nota_entrada, 
+                        n.fecha_ingreso, 
+                        n.descripcion,
+                        n.costo_total,
+                        p.razon_social, 
+                        p.rif,
+                        CONCAT_WS(' ', pe.nombre, pe.apellido) AS encargado_nombre,
+                        GROUP_CONCAT(
+                            CONCAT(prod.descripcion, ' (x', d.cantidad, ')')
+                            ORDER BY d.id_detalle_entrada
+                            SEPARATOR ', '
+                        ) AS productos_lista
+                    FROM nota_de_entrada n
+                    LEFT JOIN proveedor p ON n.id_proveedor = p.id_proveedor
+                    LEFT JOIN usuario u ON n.id_usuario = u.id_usuario
+                    LEFT JOIN persona pe ON u.id_persona = pe.id_persona
+                    LEFT JOIN detalle_entrada d ON n.id_nota_entrada = d.id_nota_entrada
+                    LEFT JOIN producto prod ON d.id_producto = prod.id_producto
+                    WHERE n.eliminado = 0
+                      AND (
+                            CAST(n.id_nota_entrada AS CHAR) LIKE :termino
+                         OR p.razon_social LIKE :termino
+                         OR CONCAT_WS(' ', pe.nombre, pe.apellido) LIKE :termino
+                         OR prod.descripcion LIKE :termino
+                         OR n.descripcion LIKE :termino
+                      )
+                    GROUP BY n.id_nota_entrada, n.fecha_ingreso, n.descripcion, n.costo_total, p.razon_social, p.rif, pe.nombre, pe.apellido
+                    ORDER BY n.id_nota_entrada DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':termino' => "%$termino%"]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Error al buscar notas de entrada: " . $e->getMessage());
+        }
+    }
+
     // OBTENER NOTA POR ID
     public function obtenerNotaEntradaPorId($id) {
         try {
@@ -263,29 +308,27 @@ class NotaentradaModel {
     public function getResumen() {
         try {
             $sql = "SELECT 
-                        COUNT(*) AS total_notas,
-                        COALESCE(SUM(costo_total), 0) AS total_compras
-                    FROM nota_de_entrada
-                    WHERE eliminado = 0";
+                        COUNT(*) AS total_registros,
+                        SUM(CASE WHEN eliminado = 0 THEN 1 ELSE 0 END) AS total_notas,
+                        SUM(CASE WHEN eliminado = 1 THEN 1 ELSE 0 END) AS total_anuladas,
+                        COALESCE(SUM(CASE WHEN eliminado = 0 THEN costo_total ELSE 0 END), 0) AS total_compras
+                    FROM nota_de_entrada";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $sqlAnuladas = "SELECT COUNT(*) AS total FROM nota_de_entrada WHERE eliminado = 1";
-            $stmtAnuladas = $this->db->prepare($sqlAnuladas);
-            $stmtAnuladas->execute();
-            $anuladas = $stmtAnuladas->fetch(PDO::FETCH_ASSOC);
-            
+
             return [
-                'total_notas' => $result['total_notas'] ?? 0,
-                'total_compras' => $result['total_compras'] ?? 0,
-                'total_anuladas' => $anuladas['total'] ?? 0
+                'total_notas' => (int) ($result['total_notas'] ?? 0),
+                'total_compras' => (float) ($result['total_compras'] ?? 0),
+                'total_anuladas' => (int) ($result['total_anuladas'] ?? 0),
+                'total_registros' => (int) ($result['total_registros'] ?? 0)
             ];
         } catch (PDOException $e) {
             return [
                 'total_notas' => 0,
                 'total_compras' => 0,
-                'total_anuladas' => 0
+                'total_anuladas' => 0,
+                'total_registros' => 0
             ];
         }
     }

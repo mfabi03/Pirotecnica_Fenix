@@ -217,13 +217,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id_proveedor = $proveedorModel->registrarProveedor($datosProveedor);
             
             if ($id_proveedor) {
-                $_SESSION['nuevo_proveedor_id'] = $id_proveedor;
+                $_SESSION['nuevo_proveedor_id'] = (int) $id_proveedor;
                 $_SESSION['nuevo_proveedor_nombre'] = $datosProveedor['razon_social'];
                 $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datosProveedor['razon_social']}' registrado exitosamente";
                 $_SESSION['tipo_rapido'] = 'success';
                 
                 $return = $_REQUEST['return'] ?? 'notaentrada';
-                header("Location: ?url=" . urlencode($return) . "&type=create&id_proveedor=" . $id_proveedor);
+                header("Location: ?url=" . urlencode($return) . "&type=create&id_proveedor=" . (int) $id_proveedor);
                 exit;
             } else {
                 throw new Exception("Error al guardar el proveedor");
@@ -261,11 +261,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $resultado = $modelo->anularNotaEntrada($id, $motivo, $idUsuario);
             
             if ($resultado) {
-                if (!isset($_SESSION['contador_anulaciones_notaentrada'])) {
-                    $_SESSION['contador_anulaciones_notaentrada'] = 0;
-                }
-                $_SESSION['contador_anulaciones_notaentrada']++;
-                
+                $_SESSION['contador_anulaciones_notaentrada'] = (int) ($modelo->getResumen()['total_anuladas'] ?? 0);
+
                 $_SESSION['mensaje'] = '✅ Nota de Entrada anulada exitosamente. El stock ha sido revertido.';
                 $_SESSION['tipo_mensaje'] = 'warning';
                 header("Location: ?url=notaentrada&type=list");
@@ -322,7 +319,8 @@ if ($type === 'show' && $id) {
 
 // LISTAR
 try {
-    $notas_full = $modelo->obtenerNotasEntrada();
+    $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
+    $notas_full = !empty($buscar) ? $modelo->buscarNotasEntrada($buscar) : $modelo->obtenerNotasEntrada();
     $resumen = $modelo->getResumen();
 
     // ✅ PAGINACIÓN COMPLETA

@@ -111,8 +111,9 @@ class ProveedoresModel {
                 ':id_persona' => $idPersona
             ]);
 
+            $idProveedor = (int) $this->db->lastInsertId();
             $this->db->commit();
-            return true;
+            return $idProveedor > 0 ? $idProveedor : true;
         } catch (Exception $e) {
             $this->db->rollBack();
             throw new Exception("Error al registrar proveedor: " . $e->getMessage());

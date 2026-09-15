@@ -1,6 +1,14 @@
 <?php
 // app/view/productos/registrarProductoView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
+
+// ✅ Recuperar el id_proveedor desde GET, SESSION o POST
+$idProveedorSelected = isset($_GET['id_proveedor']) ? (int) $_GET['id_proveedor'] : (isset($_SESSION['nuevo_proveedor_id']) ? (int) $_SESSION['nuevo_proveedor_id'] : (isset($_POST['id_proveedor']) ? (int) $_POST['id_proveedor'] : 0));
+
+// ✅ Recuperar el id_categoria desde GET, SESSION o POST
+$idCategoriaSelected = isset($_GET['id_categoria']) ? (int) $_GET['id_categoria'] : (isset($_SESSION['nueva_categoria_id']) ? (int) $_SESSION['nueva_categoria_id'] : (isset($_POST['id_categoria']) ? (int) $_POST['id_categoria'] : 0));
+
+unset($_SESSION['nuevo_proveedor_id']);
 ?>
 
 <div class="col-md-8 col-lg-12">
@@ -79,9 +87,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                     <div class="col-md-6">
                                         <label for="id_categoria" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Categoría *</label>
                                         <div class="input-group">
-                                            <?php 
-                                                $idCategoriaSelected = $_GET['id_categoria'] ?? $_SESSION['nueva_categoria_id'] ?? $_POST['id_categoria'] ?? ''; 
-                                            ?>
                                             <select name="id_categoria" id="id_categoria" class="form-select" required
                                                     style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                                 <option value="">Seleccione una categoría...</option>
@@ -100,14 +105,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                 <i class="fas fa-plus"></i>
                                             </a>
                                         </div>
-                                        <?php unset($_SESSION['nueva_categoria_id']); ?>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="id_proveedor" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
                                         <div class="input-group">
-                                            <?php 
-                                                $idProveedorSelected = $_GET['id_proveedor'] ?? $_SESSION['nuevo_proveedor_id'] ?? $_POST['id_proveedor'] ?? ''; 
-                                            ?>
                                             <select name="id_proveedor" id="id_proveedor" class="form-select" required
                                                     style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                                 <option value="">Seleccione un proveedor...</option>
@@ -126,7 +127,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                 <i class="fas fa-plus"></i>
                                             </a>
                                         </div>
-                                        <?php unset($_SESSION['nuevo_proveedor_id']); ?>
                                     </div>
                                 </div>
                             </div>
@@ -143,7 +143,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
                                                value="<?= htmlspecialchars($_POST['cantidad'] ?? '0') ?>">
                                         <small style="color: #6c757d; font-size: 0.7rem;">
-                                            <i class="fas fa-info-circle me-1"></i> <?= isset($_GET['return']) && $_GET['return'] === 'notaentrada' ? 'Se heredará en la Nota de Entrada' : 'Cantidad inicial en inventario' ?>
+                                            <i class="fas fa-info-circle me-1"></i> <?= (isset($_GET['return']) && $_GET['return'] === 'notaentrada') ? 'Se heredará en la Nota de Entrada' : 'Cantidad inicial en inventario' ?>
                                         </small>
                                     </div>
                                     <div class="col-md-4">
@@ -189,7 +189,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             <!-- BOTONES DE ACCIÓN -->
                             <div class="col-12 text-end" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px; margin-top: 10px;">
                                 <?php if (isset($_GET['return'])): ?>
-                                    <a href="?url=<?= $_GET['return'] ?>&type=create" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
+                                    <a href="?url=<?= htmlspecialchars($_GET['return']) ?>&type=create" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
                                         <i class="fas fa-times me-1"></i> Cancelar
                                     </a>
                                 <?php else: ?>

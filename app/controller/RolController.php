@@ -49,7 +49,7 @@ unset($_SESSION['mensaje']);
 unset($_SESSION['tipo_mensaje']);
 
 // Parámetros de búsqueda
-$busqueda = trim((string) ($_GET['busqueda'] ?? ''));
+$busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 
 // 5. PROCESAR POST 
 

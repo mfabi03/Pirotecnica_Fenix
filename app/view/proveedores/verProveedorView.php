@@ -106,12 +106,15 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                         <?php endif; ?>
                                     </p>
                                 </div>
+<<<<<<< Updated upstream
                                 <div class="mb-3">
                                     <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Fecha de Registro:</label>
                                     <p style="color: #1a1a2e; margin-bottom: 0;">
                                         <?= isset($proveedor['fecha_creacion']) ? formatoFechaHoraVenezuela($proveedor['fecha_creacion']) : 'N/A' ?>
                                     </p>
                                 </div>
+=======
+>>>>>>> Stashed changes
                             </div>
                         </div>
                     </div>

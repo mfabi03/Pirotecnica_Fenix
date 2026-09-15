@@ -207,6 +207,7 @@ class ProductoModel {
     // BUSCAR PRODUCTOS
     public function buscarProductos($termino) {
         try {
+            $termino = trim((string) $termino);
             $sql = "SELECT 
                         p.id_producto,
                         p.descripcion,
@@ -218,6 +219,8 @@ class ProductoModel {
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
                     WHERE p.descripcion LIKE :termino
+                       OR c.nombre_categoria LIKE :termino
+                       OR CAST(p.id_producto AS CHAR) LIKE :termino
                     ORDER BY p.descripcion ASC";
             
             $stmt = $this->db->prepare($sql);

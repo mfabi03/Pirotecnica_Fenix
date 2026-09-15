@@ -254,6 +254,119 @@ class notasalidaModel {
         }
     }
 
+    public function buscarNotasSalida($termino) {
+        try {
+            $termino = trim((string) $termino);
+            if ($termino === '') {
+                return $this->listarNotasSalida();
+            }
+
+            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario 
+                    FROM nota_de_salida ns
+                    LEFT JOIN persona p ON ns.id_persona = p.id_persona
+                    LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
+                    LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                    LEFT JOIN persona up ON u.id_persona = up.id_persona
+                    WHERE ns.eliminado = 0
+                      AND (
+                            CAST(ns.id_nota_salida AS CHAR) LIKE :termino
+                         OR p.nombre LIKE :termino
+                         OR p.apellido LIKE :termino
+                         OR CONCAT(p.nombre, ' ', p.apellido) LIKE :termino
+                         OR up.nombre LIKE :termino
+                         OR up.apellido LIKE :termino
+                         OR CONCAT(up.nombre, ' ', up.apellido) LIKE :termino
+                         OR COALESCE(cj.razon_social, '') LIKE :termino
+                      )
+                    GROUP BY ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario
+                    ORDER BY ns.id_nota_salida DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':termino' => "%$termino%"]);
+            $notas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($notas as &$n) {
+                $sqlCliente = "SELECT 
+                                    p.nombre, 
+                                    p.apellido, 
+                                    cj.razon_social,
+                                    CASE 
+                                        WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico'
+                                        ELSE 'Natural'
+                                    END AS tipo_cliente
+                                FROM persona p
+                                LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
+                                WHERE p.id_persona = ?";
+                $stmtCliente = $this->db->prepare($sqlCliente);
+                $stmtCliente->execute([$n['id_persona']]);
+                $cliente = $stmtCliente->fetch(PDO::FETCH_ASSOC);
+
+                if ($cliente) {
+                    $n['cliente_nombre'] = $cliente['nombre'] ?? '';
+                    $n['cliente_apellido'] = $cliente['apellido'] ?? '';
+                    $n['cliente_razon_social'] = $cliente['razon_social'] ?? '';
+                    $n['tipo_cliente'] = $cliente['tipo_cliente'] ?? 'Natural';
+                } else {
+                    $n['cliente_nombre'] = 'N/A';
+                    $n['cliente_apellido'] = '';
+                    $n['cliente_razon_social'] = '';
+                    $n['tipo_cliente'] = 'Natural';
+                }
+
+                $sqlUsuario = "SELECT p.nombre, p.apellido
+                               FROM usuario u
+                               LEFT JOIN persona p ON u.id_persona = p.id_persona
+                               WHERE u.id_usuario = ?";
+                $stmtUsuario = $this->db->prepare($sqlUsuario);
+                $stmtUsuario->execute([$n['id_usuario']]);
+                $usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+
+                if ($usuario) {
+                    $n['usuario_nombre'] = $usuario['nombre'] ?? '';
+                    $n['usuario_apellido'] = $usuario['apellido'] ?? '';
+                } else {
+                    $n['usuario_nombre'] = 'N/A';
+                    $n['usuario_apellido'] = '';
+                }
+
+                $sqlProductos = "SELECT 
+                                    p.descripcion AS producto,
+                                    c.nombre_categoria AS categoria,
+                                    ds.cantidad
+                                FROM detalle_salida ds
+                                JOIN producto p ON ds.id_producto = p.id_producto
+                                LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
+                                WHERE ds.id_nota_salida = ?";
+                $stmtProductos = $this->db->prepare($sqlProductos);
+                $stmtProductos->execute([$n['id_nota_salida']]);
+                $productos = $stmtProductos->fetchAll(PDO::FETCH_ASSOC);
+
+                $listaProductos = [];
+                $listaCategorias = [];
+                foreach ($productos as $p) {
+                    $listaProductos[] = $p['producto'] . ' (x' . $p['cantidad'] . ')';
+                    if (!empty($p['categoria']) && !in_array($p['categoria'], $listaCategorias)) {
+                        $listaCategorias[] = $p['categoria'];
+                    }
+                }
+                $n['productos_lista'] = implode(', ', $listaProductos);
+                $n['categorias_lista'] = implode(', ', $listaCategorias);
+                $n['productos_detalle'] = $productos;
+
+                $sqlUnidades = "SELECT COALESCE(SUM(cantidad), 0) as total FROM detalle_salida WHERE id_nota_salida = ?";
+                $stmtUnidades = $this->db->prepare($sqlUnidades);
+                $stmtUnidades->execute([$n['id_nota_salida']]);
+                $unidades = $stmtUnidades->fetch(PDO::FETCH_ASSOC);
+                $n['total_unidades'] = $unidades['total'] ?? 0;
+            }
+
+            return $notas;
+        } catch (PDOException $e) {
+            error_log("Error en buscarNotasSalida: " . $e->getMessage());
+            return [];
+        }
+    }
+
     // OBTENER NOTA POR ID
     public function obtenerNotaPorId($id) {
         try {
@@ -458,23 +571,23 @@ class notasalidaModel {
     // OBTENER RESUMEN
     public function getResumen() {
         try {
-            $sql = "SELECT COUNT(*) AS total_notas FROM nota_de_salida WHERE eliminado = 0";
+            $sql = "SELECT 
+                        COUNT(*) AS total_registros,
+                        SUM(CASE WHEN eliminado = 0 THEN 1 ELSE 0 END) AS total_notas,
+                        SUM(CASE WHEN eliminado = 1 THEN 1 ELSE 0 END) AS total_anuladas
+                    FROM nota_de_salida";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $sqlEliminadas = "SELECT COUNT(*) AS total FROM nota_de_salida WHERE eliminado = 1";
-            $stmtEliminadas = $this->db->prepare($sqlEliminadas);
-            $stmtEliminadas->execute();
-            $eliminadas = $stmtEliminadas->fetch(PDO::FETCH_ASSOC);
-            
+
             return [
-                'total_notas' => $result['total_notas'] ?? 0,
-                'total_anuladas' => $eliminadas['total'] ?? 0
+                'total_notas' => (int) ($result['total_notas'] ?? 0),
+                'total_anuladas' => (int) ($result['total_anuladas'] ?? 0),
+                'total_registros' => (int) ($result['total_registros'] ?? 0)
             ];
         } catch (PDOException $e) {
             error_log("Error en getResumen: " . $e->getMessage());
-            return ['total_notas' => 0, 'total_anuladas' => 0];
+            return ['total_notas' => 0, 'total_anuladas' => 0, 'total_registros' => 0];
         }
     }
 }

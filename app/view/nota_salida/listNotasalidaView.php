@@ -146,7 +146,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                     <i class="fas fa-ban me-1"></i> Anuladas
                                 </h6>
                                 <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;">
-                                    <?= $_SESSION['contador_anulaciones_notasalida'] ?? 0 ?>
+                                    <?= (int) ($resumen['total_anuladas'] ?? 0) ?>
                                 </h2>
                             </div>
                             <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 1.5rem;">

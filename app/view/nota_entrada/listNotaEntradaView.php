@@ -163,7 +163,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <h6 class="card-title" style="color: rgb(10, 1, 1); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
                                     <i class="fas fa-ban me-1"></i> Anuladas
                                 </h6>
-                                <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $resumen['total_anuladas'] ?? 0 ?></h2>
+                                <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= (int) ($resumen['total_anuladas'] ?? 0) ?></h2>
                             </div>
                             <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 1.5rem;">
                                 <i class="fas fa-ban"></i>
