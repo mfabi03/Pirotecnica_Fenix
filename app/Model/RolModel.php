@@ -32,7 +32,7 @@ class RolModel {
         }
     }
 
-    // ✅ CONTAR ROLES (para paginación)
+    //  CONTAR ROLES (para paginación)
     public function contarRoles($busqueda = null) {
         try {
             $busqueda = trim((string) $busqueda);

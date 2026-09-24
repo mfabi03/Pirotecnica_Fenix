@@ -1,7 +1,5 @@
 <?php
-// ==========================================
-// CARGAR PERMISOS DEL USUARIO ACTUAL
-// ==========================================
+// Cargar permisos del usuario
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 
@@ -36,9 +34,7 @@ $currentUrl = $_GET['url'] ?? 'main';
 </head>
 <body>
 
-<!-- ==========================================
-NAVBAR (MISMO COLOR QUE EL MENÚ)
-========================================== -->
+<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background: #1a1a2e !important; min-height: 60px; padding: 5px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1050; border-bottom: 1px solid rgba(255,255,255,0.05);">
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 10px;">
@@ -71,15 +67,11 @@ NAVBAR (MISMO COLOR QUE EL MENÚ)
     </div>
 </nav>
 
-<!-- ==========================================
-CONTENEDOR PRINCIPAL
-========================================== -->
+<!-- Contenedor principal -->
 <div class="container-fluid" style="margin-top: 60px;">
     <div class="row align-items-stretch">
         
-<!-- ==========================================
-SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
-========================================== -->
+<!-- Menú lateral -->
 <div class="col-md-3 col-lg-2" style="padding: 0; height: calc(100vh - 60px); position: sticky; top: 60px; z-index: 1040; align-self: flex-start;">
     <div class="card shadow-sm border-0 rounded-0" style="background: #1a1a2e; border: 1px solid rgba(255,255,255,0.05); height: 100%; min-height: calc(100vh - 60px); border-radius: 0 !important;">
         <div class="card-body p-3" style="height: 100%; overflow-y: auto;">
@@ -89,7 +81,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
             
             <div class="list-group list-group-flush" style="display: flex; flex-direction: column; gap: 2px;">
                 
-                <!-- ===== INICIO ===== -->
+                <!-- Inicio -->
                 <a href="?url=main" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'main' ? 'active' : '' ?>"
                    style="border: none; background: <?= $currentUrl == 'main' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'main' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'main' ? '600' : '400' ?>; transition: all 0.3s ease;">
@@ -97,7 +89,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                     <span>Inicio</span>
                 </a>
                 
-                <!-- ===== PROVEEDORES ===== -->
+                <!-- Proveedores -->
                 <?php if ($tieneModulo('Proveedores')): ?>
                 <a href="?url=proveedores" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'proveedores' ? 'active' : '' ?>"
@@ -107,7 +99,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </a>
                 <?php endif; ?>
                 
-                <!-- ===== CLIENTES ===== -->
+                <!-- Clientes -->
                 <?php if ($tieneModulo('Clientes')): ?>
                 <a href="?url=clientes" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'clientes' ? 'active' : '' ?>"
@@ -117,7 +109,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </a>
                 <?php endif; ?>
                 
-                <!-- ===== PRODUCTOS ===== -->
+                <!-- Productos -->
                 <?php if ($tieneModulo('Productos')): ?>
                 <a href="?url=productos" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'productos' ? 'active' : '' ?>"
@@ -127,7 +119,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </a>
                 <?php endif; ?>
                 
-                <!-- ===== NOTAS (DROPDOWN) ===== -->
+                <!-- Notas -->
                 <?php 
                 $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']);
                 $verNotaEntrada = $tieneModulo('Notas de Entrada');
@@ -168,7 +160,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </div>
                 <?php endif; ?>
                 
-                <!-- ===== CONFIGURACIÓN (DROPDOWN) ===== -->
+                <!-- Configuración -->
                 <?php 
                 $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']);
                 $verCategorias = $tieneModulo('Categorias');
@@ -218,7 +210,7 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </div>
                 <?php endif; ?>
                 
-                <!-- ===== REPORTES ===== -->
+                <!-- Reportes -->
                 <?php if ($tieneModulo('Reportes')): ?>
                 <a href="?url=reportes" 
                    class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'reportes' ? 'active' : '' ?>"
@@ -228,10 +220,10 @@ SIDEBAR - MENÚ DE NAVEGACIÓN DINÁMICO
                 </a>
                 <?php endif; ?>
                 
-                <!-- ===== ESPACIO ===== -->
+                <!-- Espacio -->
                 <div style="flex: 1;"></div>
                 
-                <!-- ===== VERSIÓN ===== -->
+                <!-- Versión -->
                 <div class="mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
                     <small style="color: rgba(255,255,255,0.2); font-size: 0.65rem; display: block; text-align: center;">
                         <i class="fas fa-code-branch me-1"></i> v1.0.0

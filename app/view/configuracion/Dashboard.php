@@ -28,9 +28,7 @@ if (!empty($_SESSION['error'])): ?>
     <div class="row">
         <div class="col-md-8 col-lg-12">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO-->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -46,9 +44,7 @@ if (!empty($_SESSION['error'])): ?>
                     </div>
                 </div>
             </div>
-                        <!-- ==========================================
-                 ALERTA DE STOCK MÍNIMO (RF-11 / CU-11)
-                 ========================================== -->
+                        <!-- ALERTA DE STOCK MÍNIMO (RF-11 / CU-11)-->
                 <?php if (($stats['productos_criticos'] ?? 0) > 0): ?>
                     <div class="row mb-4">
                         <div class="col-12">

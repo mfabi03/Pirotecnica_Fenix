@@ -7,9 +7,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <div class="row">       
         <div class="col-md-8 col-lg-12">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -28,9 +26,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- MENSAJES -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
                 <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -41,9 +37,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 FORMULARIO
-                 ========================================== -->
+            <!-- FORMULARIO-->
             <div class="dark-card card shadow-sm">
                 <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                     <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -104,9 +98,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </div>
                             </div>
 
-                            <!-- ==========================================
-                                 BOTONES DE ACCIÓN
-                                 ========================================== -->
+                            <!-- BOTONES DE ACCIÓN-->
                             <div class="col-12 text-end" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px; margin-top: 10px;">
                                 <?php if (isset($_GET['return'])): ?>
                                     <a href="?url=<?= htmlspecialchars($_GET['return']) ?>&type=create" class="btn" style="background: rgba(0,0,0,0.04); color: #1a1a2e; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
@@ -133,9 +125,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 </div>
 
-<!-- ==========================================
-     SCRIPTS
-     ========================================== -->
+<!--SCRIPTS-->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Formateo de RIF

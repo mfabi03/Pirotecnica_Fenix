@@ -64,7 +64,7 @@ $tipo_mensaje = '';
 
 // 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO (CORREGIDA)
 function obtenerIdUsuarioValido($db) {
-    // ✅ Buscar en la sesión con el nombre CORRECTO
+    //  Buscar en la sesión con el nombre CORRECTO
     $idUsuario = $_SESSION['id_usuario'] 
               ?? $_SESSION['usuario_id'] 
               ?? null;
@@ -323,7 +323,7 @@ try {
     $notas_full = !empty($buscar) ? $modelo->buscarNotasEntrada($buscar) : $modelo->obtenerNotasEntrada();
     $resumen = $modelo->getResumen();
 
-    // ✅ PAGINACIÓN COMPLETA
+    //  PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;

@@ -28,9 +28,7 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
         <!-- Contenido Principal -->
         <div class="col-md-8 col-lg-12">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO-->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -49,9 +47,7 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- MENSAJES -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
                 <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -62,9 +58,7 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 DETALLE DEL CLIENTE
-                 ========================================== -->
+            <!-- == DETALLE DEL CLIENTE -->
             <div class="dark-card card shadow-sm">
                 <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                     <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -151,9 +145,7 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                         </div>
                     </div>
                     
-                    <!-- ==========================================
-                         BOTONES DE ACCIÓN (SOLO SE MODIFICAN ESTOS)
-                         ========================================== -->
+                    <!--BOTONES DE ACCIÓN (SOLO SE MODIFICAN ESTOS) -->
                     <div class="text-center mt-4" style="border-top: 1px solid rgba(0,0,0,0.04); padding-top: 20px;">
                         <?php 
                         $editType = ($cliente['tipo_cliente'] ?? '') === 'Jurídico' ? 'edit_juridico' : 'edit';

@@ -192,7 +192,7 @@ if ($action === 'lista' || $action === '' || $action === 'roles') {
         $roles_full = [];
     }
 
-    // ✅ PAGINACIÓN COMPLETA
+    //  PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
@@ -250,7 +250,7 @@ if (!is_array($roles_full)) {
     $roles_full = [];
 }
 
-// ✅ PAGINACIÓN COMPLETA
+//  PAGINACIÓN COMPLETA
 $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
 $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
 $offset        = ($pagina_actual - 1) * $por_pagina;

@@ -216,7 +216,7 @@ if ($type === 'show') {
 }
 
 try {
-    // ✅ Acepta 'busqueda' (nombre del input) y 'buscar' (compatibilidad)
+    //  Acepta 'busqueda' (nombre del input) y 'buscar' (compatibilidad)
     $buscar = trim($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
     
     if (!empty($buscar)) {
@@ -225,7 +225,7 @@ try {
         $proveedores_full = $modelo->obtenerProveedores();
     }
 
-    // ✅ PAGINACIÓN COMPLETA
+    //  PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;

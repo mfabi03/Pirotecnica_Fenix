@@ -445,7 +445,7 @@ try {
     
     $sql .= " ORDER BY p.id_producto DESC";
 
-    // ✅ PAGINACIÓN COMPLETA
+    // PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
@@ -464,7 +464,7 @@ try {
         $totalProductos = (int) ($stmtCount->fetchColumn() ?? 0);
         $stmtCount->closeCursor();
 
-    // ✅ Total de páginas
+    //  Total de páginas
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalProductos / $por_pagina) : 1;
 
     if ($por_pagina > 0) {

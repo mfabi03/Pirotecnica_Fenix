@@ -10,13 +10,15 @@ $totalSalidas = isset($totalSalidas) ? $totalSalidas : 0;
 
 // Obtener categorías para el filtro
 $categorias = [];
-try {
-    $sql = "SELECT id_categoria, nombre_categoria FROM categoria ORDER BY nombre_categoria ASC";
-    $stmt = $db->prepare($sql);
-    $stmt->execute();
-    $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    // Si no se pueden obtener, se deja vacío
+if (isset($db) && $db instanceof PDO) {
+    try {
+        $sql = "SELECT id_categoria, nombre_categoria FROM categoria ORDER BY nombre_categoria ASC";
+        $stmt = $db->prepare($sql);
+        $stmt->execute();
+        $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // Si no se pueden obtener, se deja vacío
+    }
 }
 
 // Pasar variables al partial
@@ -101,11 +103,18 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                        placeholder="Buscar..." 
                        value="<?= isset($_GET['busqueda']) ? htmlspecialchars($_GET['busqueda']) : '' ?>">
                 <datalist id="listaProductosReporte">
-                    <?php 
-                    $sqlProd = "SELECT descripcion FROM producto WHERE eliminado = 0 ORDER BY descripcion ASC";
-                    $stmtProd = $db->prepare($sqlProd);
-                    $stmtProd->execute();
-                    $productosDatalist = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
+                    <?php
+                    $productosDatalist = [];
+                    if (isset($db) && $db instanceof PDO) {
+                        try {
+                            $sqlProd = "SELECT descripcion FROM producto WHERE eliminado = 0 ORDER BY descripcion ASC";
+                            $stmtProd = $db->prepare($sqlProd);
+                            $stmtProd->execute();
+                            $productosDatalist = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (Exception $e) {
+                            // Mantener el datalist vacío si no se puede consultar.
+                        }
+                    }
                     foreach ($productosDatalist as $prod): 
                     ?>
                         <option value="<?= htmlspecialchars($prod['descripcion']) ?>">

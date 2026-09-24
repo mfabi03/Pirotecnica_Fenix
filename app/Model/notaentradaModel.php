@@ -86,7 +86,7 @@ class NotaentradaModel {
         }
     }
 
-    // ✅ CONTAR NOTAS DE ENTRADA (para paginación)
+    //  CONTAR NOTAS DE ENTRADA (para paginación)
     public function contarNotasEntrada() {
         try {
             $sql = "SELECT COUNT(*) FROM nota_de_entrada WHERE eliminado = 0";

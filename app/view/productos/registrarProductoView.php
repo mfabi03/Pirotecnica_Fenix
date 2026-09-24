@@ -2,10 +2,10 @@
 // app/view/productos/registrarProductoView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-// ✅ Recuperar el id_proveedor desde GET, SESSION o POST
+//  Recuperar el id_proveedor desde GET, SESSION o POST
 $idProveedorSelected = isset($_GET['id_proveedor']) ? (int) $_GET['id_proveedor'] : (isset($_SESSION['nuevo_proveedor_id']) ? (int) $_SESSION['nuevo_proveedor_id'] : (isset($_POST['id_proveedor']) ? (int) $_POST['id_proveedor'] : 0));
 
-// ✅ Recuperar el id_categoria desde GET, SESSION o POST
+// Recuperar el id_categoria desde GET, SESSION o POST
 $idCategoriaSelected = isset($_GET['id_categoria']) ? (int) $_GET['id_categoria'] : (isset($_SESSION['nueva_categoria_id']) ? (int) $_SESSION['nueva_categoria_id'] : (isset($_POST['id_categoria']) ? (int) $_POST['id_categoria'] : 0));
 
 unset($_SESSION['nuevo_proveedor_id']);
@@ -90,7 +90,7 @@ unset($_SESSION['nuevo_proveedor_id']);
                                             <select name="id_categoria" id="id_categoria" class="form-select" required
                                                     style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                                 <option value="">Seleccione una categoría...</option>
-                                                <?php foreach ($categorias as $c): ?>
+                                                <?php foreach (($categorias ?? []) as $c): ?>
                                                     <option value="<?= $c['id_categoria'] ?>"
                                                         <?= ($idCategoriaSelected == $c['id_categoria']) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($c['nombre_categoria']) ?>
@@ -112,7 +112,7 @@ unset($_SESSION['nuevo_proveedor_id']);
                                             <select name="id_proveedor" id="id_proveedor" class="form-select" required
                                                     style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                                 <option value="">Seleccione un proveedor...</option>
-                                                <?php foreach ($proveedores as $p): ?>
+                                                <?php foreach (($proveedores ?? []) as $p): ?>
                                                     <option value="<?= $p['id_proveedor'] ?>"
                                                         <?= ($idProveedorSelected == $p['id_proveedor']) ? 'selected' : '' ?>>
                                                         <?= htmlspecialchars($p['razon_social']) ?>

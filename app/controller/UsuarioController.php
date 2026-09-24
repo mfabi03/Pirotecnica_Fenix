@@ -224,7 +224,7 @@ if ($action === 'lista' || $action === '') {
         $usuarios_full = [];
     }
 
-    // ✅ PAGINACIÓN COMPLETA
+    //  PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
@@ -304,7 +304,7 @@ if (!is_array($usuarios_full)) {
     $usuarios_full = [];
 }
 
-// ✅ PAGINACIÓN COMPLETA
+//  PAGINACIÓN COMPLETA
 $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
 $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
 $offset        = ($pagina_actual - 1) * $por_pagina;

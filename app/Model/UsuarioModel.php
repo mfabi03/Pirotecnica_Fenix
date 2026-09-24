@@ -42,7 +42,7 @@ class UsuarioModel {
         }
     }
 
-    // ✅ CONTAR USUARIOS (para paginación)
+    //  CONTAR USUARIOS (para paginación)
     public function contarUsuarios($busqueda = null) {
         try {
             $busqueda = trim((string) $busqueda);

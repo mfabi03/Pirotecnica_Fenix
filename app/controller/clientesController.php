@@ -277,7 +277,7 @@ if ($type === 'list' || $type === '') {
         $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
     }
 
-    // ✅ PAGINACIÓN COMPLETA
+    //  PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;

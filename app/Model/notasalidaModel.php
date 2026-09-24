@@ -241,7 +241,7 @@ class notasalidaModel {
         }
     }
 
-    // ✅ CONTAR NOTAS DE SALIDA (para paginación)
+    //  CONTAR NOTAS DE SALIDA (para paginación)
     public function contarNotasSalida() {
         try {
             $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0";

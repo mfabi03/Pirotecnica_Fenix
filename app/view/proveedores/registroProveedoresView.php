@@ -65,10 +65,10 @@ $returnUrl = $_GET['return'] ?? $_POST['return'] ?? '';
                 </div>
                 
                 <div class="card-body">
-                    <!-- ✅ action CON return -->
+                    <!--  action CON return -->
                     <form method="POST" action="?url=proveedores&type=store<?= !empty($returnUrl) ? '&return=' . urlencode($returnUrl) : '' ?>">
                         
-                        <!-- ✅ hidden CON return -->
+                        <!--  hidden CON return -->
                         <?php if (!empty($returnUrl)): ?>
                             <input type="hidden" name="return" value="<?= htmlspecialchars($returnUrl) ?>">
                         <?php endif; ?>

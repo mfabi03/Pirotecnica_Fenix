@@ -7,9 +7,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <div class="row">
         <div class="col-md-8 col-lg-12">
             
-            <!-- ==========================================
-                 TARJETA DE TÍTULO - FONDO OSCURO
-                 ========================================== -->
+            <!-- TARJETA DE TÍTULO - FONDO OSCURO -->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -28,9 +26,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
-            <!-- ==========================================
-                 MENSAJES
-                 ========================================== -->
+            <!-- MENSAJES -->
             <?php if (isset($_SESSION['mensaje_rapido'])): ?>
                 <div class="alert <?= ($_SESSION['tipo_rapido'] ?? 'success') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
@@ -52,9 +48,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             <?php endif; ?>
 
-            <!-- ==========================================
-                 FORMULARIO PRINCIPAL
-                 ========================================== -->
+            <!-- FORMULARIO PRINCIPAL -->
             <div class="dark-card card shadow-sm">
                 <div class="card-header" style="background: #1a1a2e !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important; border-radius: 16px 16px 0 0 !important; padding: 16px 20px !important;">
                     <h5 class="m-0" style="color: #ffffff !important; font-weight: 700 !important;">
@@ -69,9 +63,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     ?>
                     <form method="POST" action="?url=notaentrada&type=store" id="notaEntradaForm">
                         
-                        <!-- ==========================================
-                        DATOS GENERALES
-                        ========================================== -->
+                        <!--  DATOS GENERALES -->
                         <div class="row g-3 mb-4">
                             <!-- Fecha -->
                             <div class="col-md-6">
@@ -128,9 +120,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             </div>
                         </div>
 
-                        <!-- ==========================================
-                        PRODUCTOS
-                        ========================================== -->
+                        <!-- PRODUCTOS-->
                         <div class="card mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px;">
                             <div class="card-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.04); border-radius: 12px 12px 0 0; padding: 12px 20px;">
                                 <span style="color: rgb(8, 8, 8); font-weight: 600; font-size: 0.85rem;">
@@ -195,9 +185,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             </div>
                         </div>
 
-                        <!-- ==========================================
-                        TABLA DE DETALLES
-                        ========================================== -->
+                        <!-- TABLA DE DETALLES -->
                         <div class="card mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px;">
                             <div class="card-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.04); border-radius: 12px 12px 0 0; padding: 12px 20px;">
                                 <span style="color: rgb(7, 7, 7); font-weight: 600; font-size: 0.85rem;">
@@ -236,14 +224,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             </div>
                         </div>
 
-                        <!-- ==========================================
-                        CAMPOS OCULTOS
-                        ========================================== -->
+                        <!-- CAMPOS OCULTOS -->
                         <div id="detallesContainer"></div>
 
-                        <!-- ==========================================
-                        BOTONES DE ACCIÓN
-                        ========================================== -->
+                        <!-- BOTONES DE ACCIÓN-->
                         <div class="mt-4 text-end" style="border-top: 1px solid rgba(255,255,255,0.04); padding-top: 20px;">
                             <a href="?url=notaentrada&type=list" class="btn" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
                                 <i class="fas fa-times me-1"></i> Cancelar
@@ -259,9 +243,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 </div>
 
-<!-- ==========================================
-SCRIPTS
-========================================== -->
+
 <script>
 
 // FUNCIONES DE LA NOTA DE ENTRADA

@@ -36,7 +36,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <input type="hidden" name="url" value="roles">
                     <input type="hidden" name="action" value="lista">
                     
-                    <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
+                    <!--  SELECT "MOSTRAR" ARRIBA -->
                     <div class="col-md-2">
                         <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
                         <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -176,7 +176,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     </table>
                 </div>
                 
-                <!-- ✅ PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                <!--  PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
                 <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-user-tag me-1"></i> 

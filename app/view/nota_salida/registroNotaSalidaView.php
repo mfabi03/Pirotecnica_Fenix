@@ -79,6 +79,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                             <div class="input-group">
                                                 <?php 
                                                     $idClienteHeredado = $_GET['id_cliente'] ?? $_SESSION['nuevo_cliente_id'] ?? '';
+                                                    $clientes = $clientes ?? [];
                                                 ?>
                                                 <select name="id_cliente" id="id_cliente" class="form-select" required style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
                                                     <option value="">Seleccione un cliente...</option>
@@ -122,6 +123,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                             <div class="input-group">
                                                 <?php 
                                                     $idProductoHeredado = $_GET['id_producto'] ?? $_SESSION['nuevo_producto_id'] ?? '';
+                                                    $productos = $productos ?? [];
                                                 ?>
                                                 <select id="producto" class="form-select" required style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
                                                     <option value="">Seleccione un producto...</option>

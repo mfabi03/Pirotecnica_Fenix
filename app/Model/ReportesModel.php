@@ -40,7 +40,7 @@ class ReportesModel {
         $whereClauseEntrada = !empty($whereEntrada) ? ' WHERE ' . implode(' AND ', $whereEntrada) : '';
         $whereClauseSalida = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
 
-        // 🔥 ENTRADAS (con costo)
+        //  ENTRADAS (con costo)
         $sqlEntrada = "SELECT 
                             prod.descripcion AS nombre_producto,
                             c.nombre_categoria AS categoria,
@@ -58,7 +58,7 @@ class ReportesModel {
                         LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
                         $whereClauseEntrada";
 
-        // 🔥 SALIDAS (SIN ds.costo_unitario, usando prod.costo_unitario)
+        //  SALIDAS (SIN ds.costo_unitario, usando prod.costo_unitario)
         $sqlSalida = "SELECT 
                             prod.descripcion AS nombre_producto,
                             c.nombre_categoria AS categoria,
