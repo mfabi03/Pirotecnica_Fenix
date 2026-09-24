@@ -138,33 +138,12 @@ unset($_SESSION['nuevo_proveedor_id']);
                                 </h6>
                                 <div class="row g-3">
                                     <div class="col-md-4">
-                                        <label for="cantidad" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cantidad Inicial *</label>
-                                        <input type="number" name="cantidad" id="cantidad" class="form-control" min="0"
-                                               style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
-                                               value="<?= htmlspecialchars($_POST['cantidad'] ?? '0') ?>">
-                                        <small style="color: #6c757d; font-size: 0.7rem;">
-                                            <i class="fas fa-info-circle me-1"></i> <?= (isset($_GET['return']) && $_GET['return'] === 'notaentrada') ? 'Se heredará en la Nota de Entrada' : 'Cantidad inicial en inventario' ?>
-                                        </small>
-                                    </div>
-                                    <div class="col-md-4">
                                         <label for="stock_minimo" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo *</label>
                                         <input type="number" name="stock_minimo" id="stock_minimo" class="form-control" min="1"
                                                style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
                                                value="<?= htmlspecialchars($_POST['stock_minimo'] ?? 10) ?>">
                                         <small style="color: #6c757d; font-size: 0.7rem;">
                                             <i class="fas fa-info-circle me-1"></i> Alerta cuando el stock baje a este nivel
-                                        </small>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="costo_unitario" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Costo Unitario *</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text" style="border-radius: 12px 0 0 12px; border: 1.5px solid rgba(0,0,0,0.08); border-right: none; background: #f8f9fa;">$</span>
-                                            <input type="number" step="0.01" min="0" name="costo_unitario" id="costo_unitario" class="form-control"
-                                                   style="border-radius: 0 12px 12px 0; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
-                                                   value="<?= htmlspecialchars($_POST['costo_unitario'] ?? '0.00') ?>">
-                                        </div>
-                                        <small style="color: #6c757d; font-size: 0.7rem;">
-                                            <i class="fas fa-info-circle me-1"></i> Costo de compra por unidad
                                         </small>
                                     </div>
                                 </div>

@@ -432,15 +432,16 @@ try {
                     p.id_categoria,
                     c.nombre_categoria
                 FROM producto p
-                LEFT JOIN categoria c ON p.id_categoria = c.id_categoria";
+                LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
+                WHERE p.eliminado = 0";
     
     $sql = $sqlBase;
     $params = [];
     
-    if (!empty($buscar)) {
-        $sql .= " WHERE p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino OR CAST(p.id_producto AS CHAR) LIKE :termino";
-        $params['termino'] = "%$buscar%";
-    }
+        if (!empty($buscar)) {
+            $sql .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino OR CAST(p.id_producto AS CHAR) LIKE :termino)";
+            $params['termino'] = "%$buscar%";
+        }
     
     $sql .= " ORDER BY p.id_producto DESC";
 
@@ -450,16 +451,21 @@ try {
     $offset        = ($pagina_actual - 1) * $por_pagina;
 
     // Contar total con la misma condición
-    $sqlCount = preg_replace('/SELECT\s+[\s\S]*?FROM\s+producto\s+p/i', 'SELECT COUNT(*) AS cnt FROM producto p', $sqlBase);
-    if (!empty($buscar)) {
-        $sqlCount .= " WHERE p.descripcion LIKE :termino";
-    }
-    $stmtCount = $db->prepare($sqlCount);
-    $stmtCount->execute($params);
-    $totalRegistros = (int) ($stmtCount->fetchColumn() ?? 0);
+        $sqlCount = "SELECT COUNT(*) AS cnt 
+            FROM producto p
+            LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
+            WHERE p.eliminado = 0";
+
+        if (!empty($buscar)) {
+            $sqlCount .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino)";
+        }
+        $stmtCount = $db->prepare($sqlCount);
+        $stmtCount->execute($params);
+        $totalProductos = (int) ($stmtCount->fetchColumn() ?? 0);
+        $stmtCount->closeCursor();
 
     // ✅ Total de páginas
-    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalProductos / $por_pagina) : 1;
 
     if ($por_pagina > 0) {
         $sql .= " LIMIT :limit OFFSET :offset";
@@ -473,6 +479,7 @@ try {
         $stmt->execute($params);
     }
     $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor();
     
     foreach ($productos as &$producto) {
         $id = $producto['id_producto'];

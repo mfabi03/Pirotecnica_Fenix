@@ -235,9 +235,12 @@ class NotaentradaModel {
                 )
             ");
             
-            $stmtStock = $this->db->prepare("
-                UPDATE producto SET cantidad = cantidad + :cantidad WHERE id_producto = :id_producto
-            ");
+                $stmtStock = $this->db->prepare("
+                    UPDATE producto SET 
+                        cantidad = cantidad + :cantidad,
+                        costo_unitario = :costo_unitario
+                    WHERE id_producto = :id_producto
+                ");
 
             foreach ($detalles as $d) {
                 $stmtDet->execute([
@@ -249,6 +252,7 @@ class NotaentradaModel {
                 
                 $stmtStock->execute([
                     ':cantidad' => $d['cantidad'],
+                    ':costo_unitario' => $d['costo_unitario'],
                     ':id_producto' => $d['id_producto']
                 ]);
             }

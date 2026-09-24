@@ -25,6 +25,7 @@ class ProductoModel {
                         c.nombre_categoria
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
+                    WHERE p.eliminado = 0
                     ORDER BY p.id_producto DESC";
             
             $stmt = $this->db->prepare($sql);
@@ -36,7 +37,7 @@ class ProductoModel {
         }
     }
 
-    // ✅ CONTAR PRODUCTOS (para paginación)
+    //  CONTAR PRODUCTOS (para paginación)
     public function contarProductos($termino = null) {
         try {
             $termino = trim((string) $termino);
@@ -46,11 +47,11 @@ class ProductoModel {
                         FROM producto p
                         LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
                         WHERE p.descripcion LIKE :termino 
-                           OR c.nombre_categoria LIKE :termino";
+                        OR c.nombre_categoria LIKE :termino";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute(['termino' => "%{$termino}%"]);
             } else {
-                $sql = "SELECT COUNT(*) FROM producto";
+                $sql = "SELECT COUNT(*) FROM producto WHERE eliminado = 0";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute();
             }
@@ -75,7 +76,8 @@ class ProductoModel {
                         c.nombre_categoria
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                    WHERE p.id_producto = ?";
+                    WHERE p.eliminado = 0
+                    AND p.id_producto = ?";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$id]);
@@ -162,14 +164,26 @@ class ProductoModel {
         }
     }
 
-    // VERIFICAR SI EL PRODUCTO ESTÁ ASOCIADO A NOTAS
+    // VERIFICAR SI EL PRODUCTO ESTÁ ASOCIADO A NOTAS ACTIVAS
     public function verificarAsociaciones($id) {
         try {
-            $stmtEntrada = $this->db->prepare("SELECT COUNT(*) FROM detalle_entrada WHERE id_producto = ?");
+            $stmtEntrada = $this->db->prepare("
+                SELECT COUNT(*) 
+                FROM detalle_entrada d
+                INNER JOIN nota_de_entrada n ON d.id_nota_entrada = n.id_nota_entrada
+                WHERE d.id_producto = ? 
+                AND n.eliminado = 0
+            ");
             $stmtEntrada->execute([$id]);
             $entradas = (int) $stmtEntrada->fetchColumn();
 
-            $stmtSalida = $this->db->prepare("SELECT COUNT(*) FROM detalle_salida WHERE id_producto = ?");
+            $stmtSalida = $this->db->prepare("
+                SELECT COUNT(*) 
+                FROM detalle_salida d
+                INNER JOIN nota_de_salida n ON d.id_nota_salida = n.id_nota_salida
+                WHERE d.id_producto = ? 
+                AND n.eliminado = 0
+            ");
             $stmtSalida->execute([$id]);
             $salidas = (int) $stmtSalida->fetchColumn();
 
@@ -192,7 +206,7 @@ class ProductoModel {
                 throw new Exception('No se pudo eliminar el producto porque está asociado o relacionado con notas de entrada/salida.');
             }
 
-            $sql = "DELETE FROM producto WHERE id_producto = ?";
+            $sql = "UPDATE producto SET eliminado = 1 WHERE id_producto = ?";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$id]);
             return $stmt->rowCount() > 0;
@@ -218,9 +232,10 @@ class ProductoModel {
                         c.nombre_categoria
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                    WHERE p.descripcion LIKE :termino
-                       OR c.nombre_categoria LIKE :termino
-                       OR CAST(p.id_producto AS CHAR) LIKE :termino
+                WHERE p.eliminado = 0
+                    AND (p.descripcion LIKE :termino
+                    OR c.nombre_categoria LIKE :termino
+                    OR CAST(p.id_producto AS CHAR) LIKE :termino)
                     ORDER BY p.descripcion ASC";
             
             $stmt = $this->db->prepare($sql);
@@ -239,7 +254,8 @@ class ProductoModel {
                         COUNT(*) AS total_productos,
                         SUM(cantidad) AS total_stock,
                         COUNT(DISTINCT id_categoria) AS total_categorias
-                    FROM producto";
+                    FROM producto
+                    WHERE eliminado = 0";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
