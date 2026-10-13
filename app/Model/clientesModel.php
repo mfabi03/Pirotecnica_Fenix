@@ -31,6 +31,7 @@ class clientesModel {
             return ['valido' => true, 'edad' => $edad];
 
         } catch (\Exception $e) {
+            error_log("Error en validarEdad: " . $e->getMessage());
             return ['valido' => false, 'mensaje' => 'Error al validar la fecha de nacimiento'];
         }
     }
@@ -50,12 +51,13 @@ class clientesModel {
             throw new \Exception($validacionEdad['mensaje']);
         }
 
+        // ✅ Duplicado detectado ANTES de abrir la transacción
+        if ($this->existeCedula($datos['cedula'])) {
+            throw new \Exception("DUPLICADO_CEDULA:" . $datos['cedula']);
+        }
+
         $this->db->beginTransaction();
         try {
-            if ($this->existeCedula($datos['cedula'])) {
-                throw new \Exception("Ya existe un cliente con la cédula: " . $datos['cedula']);
-            }
-
             $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, eliminado) 
                     VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 0)";
             $stmt = $this->db->prepare($sql);
@@ -89,9 +91,13 @@ class clientesModel {
             $this->db->commit();
             return $idPersona;
 
+        } catch (\PDOException $e) {
+            $this->db->rollBack();
+            error_log("Error PDO en registrarClienteNatural: " . $e->getMessage());
+            throw new \Exception("No se pudo completar el registro. Intente nuevamente.");
         } catch (\Exception $e) {
             $this->db->rollBack();
-            throw $e;
+            throw $e; // errores de negocio se propagan tal cual
         }
     }
 
@@ -105,12 +111,13 @@ class clientesModel {
             throw new \Exception("El RIF es obligatorio.");
         }
 
+        // ✅ Duplicado detectado ANTES de abrir la transacción
+        if ($this->existeRif($datos['rif'])) {
+            throw new \Exception("DUPLICADO_RIF:" . $datos['rif']);
+        }
+
         $this->db->beginTransaction();
         try {
-            if ($this->existeRif($datos['rif'])) {
-                throw new \Exception("Ya existe un cliente con el RIF: " . $datos['rif']);
-            }
-
             $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, eliminado) 
                     VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 0)";
             $stmt = $this->db->prepare($sql);
@@ -145,6 +152,10 @@ class clientesModel {
             $this->db->commit();
             return $idPersona;
 
+        } catch (\PDOException $e) {
+            $this->db->rollBack();
+            error_log("Error PDO en registrarClienteJuridico: " . $e->getMessage());
+            throw new \Exception("No se pudo completar el registro. Intente nuevamente.");
         } catch (\Exception $e) {
             $this->db->rollBack();
             throw $e;
@@ -156,6 +167,19 @@ class clientesModel {
         try {
             if (empty($datos['cedula'])) {
                 throw new \Exception("La cédula es obligatoria.");
+            }
+
+            // ✅ Validar edad también en edición
+            if (!empty($datos['fecha_de_nacimiento'])) {
+                $validacionEdad = $this->validarEdad($datos['fecha_de_nacimiento'], 18);
+                if (!$validacionEdad['valido']) {
+                    throw new \Exception($validacionEdad['mensaje']);
+                }
+            }
+
+            // ✅ Detectar cédula duplicada EN OTRO cliente
+            if ($this->existeCedula($datos['cedula'], $id)) {
+                throw new \Exception("DUPLICADO_CEDULA:" . $datos['cedula']);
             }
 
             $sql = "UPDATE persona SET 
@@ -190,8 +214,8 @@ class clientesModel {
             ]);
 
         } catch (\PDOException $e) {
-            error_log("Error en actualizarClienteNatural: " . $e->getMessage());
-            throw $e;
+            error_log("Error PDO en actualizarClienteNatural: " . $e->getMessage());
+            throw new \Exception("No se pudo actualizar el cliente. Intente nuevamente.");
         }
     }
 
@@ -200,6 +224,11 @@ class clientesModel {
         try {
             if (empty($datos['rif'])) {
                 throw new \Exception("El RIF es obligatorio.");
+            }
+
+            // ✅ Detectar RIF duplicado EN OTRO cliente
+            if ($this->existeRif($datos['rif'], $id)) {
+                throw new \Exception("DUPLICADO_RIF:" . $datos['rif']);
             }
 
             $sql = "UPDATE persona SET 
@@ -235,8 +264,8 @@ class clientesModel {
             ]);
 
         } catch (\PDOException $e) {
-            error_log("Error en actualizarClienteJuridico: " . $e->getMessage());
-            throw $e;
+            error_log("Error PDO en actualizarClienteJuridico: " . $e->getMessage());
+            throw new \Exception("No se pudo actualizar el cliente. Intente nuevamente.");
         }
     }
 
@@ -340,7 +369,7 @@ class clientesModel {
         }
     }
 
-    // ✅ NUEVO: CONTAR CLIENTES (para paginación)
+    // CONTAR CLIENTES (para paginación)
     public function contarClientes($termino = null, $tipo = 'todos') {
         try {
             $params = [];
@@ -518,11 +547,23 @@ class clientesModel {
     }
 
     // VALIDACIONES
-    public function existeCedula($cedula) {
+    /**
+     * Verifica si la cédula ya existe.
+     * @param string   $cedula
+     * @param int|null $excluirId  ID de persona a excluir (útil en edición)
+     */
+    public function existeCedula($cedula, $excluirId = null) {
         try {
-            $sql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula AND eliminado = 0";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':cedula' => $cedula]);
+            if ($excluirId !== null) {
+                $sql = "SELECT COUNT(*) FROM persona 
+                        WHERE cedula = :cedula AND eliminado = 0 AND id_persona <> :excluir";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':cedula' => $cedula, ':excluir' => $excluirId]);
+            } else {
+                $sql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula AND eliminado = 0";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':cedula' => $cedula]);
+            }
             return $stmt->fetchColumn() > 0;
         } catch (\PDOException $e) {
             error_log("Error en existeCedula: " . $e->getMessage());
@@ -530,11 +571,23 @@ class clientesModel {
         }
     }
 
-    public function existeRif($rif) {
+    /**
+     * Verifica si el RIF ya existe.
+     * @param string   $rif
+     * @param int|null $excluirId  ID de persona a excluir (útil en edición)
+     */
+    public function existeRif($rif, $excluirId = null) {
         try {
-            $sql = "SELECT COUNT(*) FROM cliente_juridico WHERE rif = :rif AND eliminado = 0";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':rif' => $rif]);
+            if ($excluirId !== null) {
+                $sql = "SELECT COUNT(*) FROM cliente_juridico 
+                        WHERE rif = :rif AND eliminado = 0 AND id_persona <> :excluir";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':rif' => $rif, ':excluir' => $excluirId]);
+            } else {
+                $sql = "SELECT COUNT(*) FROM cliente_juridico WHERE rif = :rif AND eliminado = 0";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':rif' => $rif]);
+            }
             return $stmt->fetchColumn() > 0;
         } catch (\PDOException $e) {
             error_log("Error en existeRif: " . $e->getMessage());

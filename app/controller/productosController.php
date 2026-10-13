@@ -50,7 +50,7 @@ $productos = [];
 $categorias = [];
 $proveedores = [];
 
-// GESTOR DE ARCHIVO JSON (MANTENIDO PARA ESPECIFICACIONES)
+// GESTOR DE ARCHIVO JSON
 function getProductosJsonPath() {
     return __DIR__ . '/../../public/uploads/products_imagenes.json';
 }
@@ -90,10 +90,7 @@ class ProveedorProcessor {
     }
     
     public function obtenerNombre($id_proveedor) {
-        if (empty($id_proveedor) || $id_proveedor <= 0) {
-            return '';
-        }
-        
+        if (empty($id_proveedor) || $id_proveedor <= 0) return '';
         $sql = "SELECT razon_social FROM proveedor WHERE id_proveedor = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$id_proveedor]);
@@ -117,31 +114,99 @@ $proveedorProcessor = new ProveedorProcessor($db);
 class ProductoValidator {
     public static function validarDatos($datos, $requireCantidad = true) {
         $errores = [];
-
-        if (empty($datos['descripcion'])) {
-            $errores[] = "La descripción del producto es obligatoria.";
-        }
-
+        if (empty($datos['descripcion'])) $errores[] = "La descripción del producto es obligatoria.";
         if ($requireCantidad) {
             if (!isset($datos['cantidad']) || $datos['cantidad'] === '' || $datos['cantidad'] < 0) {
                 $errores[] = "La cantidad debe ser mayor o igual a 0.";
             }
         }
-
         if (!isset($datos['costo_unitario']) || $datos['costo_unitario'] < 0) {
             $errores[] = "El costo unitario debe ser mayor o igual a 0.";
         }
-
         if (empty($datos['id_categoria']) || $datos['id_categoria'] <= 0) {
             $errores[] = "Debe seleccionar una categoría válida.";
         }
-
         if (isset($datos['stock_minimo']) && $datos['stock_minimo'] < 1) {
             $errores[] = "El stock mínimo debe ser mayor o igual a 1.";
         }
-
         return $errores;
     }
+}
+
+// ============================================
+// ENDPOINT AJAX: REGISTRO RÁPIDO DE PRODUCTO (para modal)
+// ============================================
+if ($type === 'store_rapido_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    try {
+        // Verificar permisos
+        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Productos', 'crear')) {
+            throw new Exception("No tienes permiso para registrar productos.");
+        }
+        
+        // Validar campos
+        if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) {
+            throw new Exception("Descripción, Categoría y Proveedor son obligatorios.");
+        }
+        
+        $costoOriginal = floatval($_POST['costo_unitario'] ?? 0);
+        $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
+        
+        // Para nota de entrada, la cantidad inicial del producto es 0
+        // (se sumará al registrar la nota)
+        $datosProducto = [
+            'descripcion' => trim($_POST['descripcion']),
+            'cantidad' => 0,
+            'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
+            'costo_unitario' => $costoOriginal,
+            'id_categoria' => intval($_POST['id_categoria'])
+        ];
+        
+        $errores = ProductoValidator::validarDatos($datosProducto, false);
+        if (!empty($errores)) {
+            throw new Exception(implode(' ', $errores));
+        }
+        
+        $resultado = $modelo->registrarProducto($datosProducto);
+        if ($resultado === false || intval($resultado) <= 0) {
+            throw new Exception('No se pudo registrar el producto.');
+        }
+        
+        $id_producto = intval($resultado);
+        $nombreProveedor = $proveedorProcessor->obtenerNombre($id_proveedor);
+        
+        // Guardar especificaciones en JSON
+        guardarProductoJson($id_producto, [
+            'especificaciones' => trim($_POST['especificaciones'] ?? ''),
+            'proveedor' => $nombreProveedor,
+            'id_proveedor' => $id_proveedor
+        ]);
+        
+        // Obtener el nombre de la categoría para devolverlo
+        $sqlCat = "SELECT nombre_categoria FROM categoria WHERE id_categoria = ?";
+        $stmtCat = $db->prepare($sqlCat);
+        $stmtCat->execute([$datosProducto['id_categoria']]);
+        $cat = $stmtCat->fetch(PDO::FETCH_ASSOC);
+        $nombreCategoria = $cat['nombre_categoria'] ?? 'Sin categoría';
+        
+        echo json_encode([
+            'success' => true,
+            'id_producto' => $id_producto,
+            'descripcion' => $datosProducto['descripcion'],
+            'costo_unitario' => $costoOriginal,
+            'stock' => 0,
+            'nombre_categoria' => $nombreCategoria,
+            'id_categoria' => $datosProducto['id_categoria']
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
 }
 
 // PROCESAR POST
@@ -167,9 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             
             $errores = ProductoValidator::validarDatos($datos);
-            if (!empty($errores)) {
-                throw new Exception(implode(' ', $errores));
-            }
+            if (!empty($errores)) throw new Exception(implode(' ', $errores));
             
             $resultado = $modelo->registrarProducto($datos);
             if ($resultado === false || intval($resultado) <= 0) {
@@ -217,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
    
-    // REGISTRO RÁPIDO PRODUCTO 
+    // REGISTRO RÁPIDO PRODUCTO (NO-AJAX, conservado por compatibilidad)
     if ($type === 'store_rapido') {
         CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
         try {
@@ -241,9 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             
             $errores = ProductoValidator::validarDatos($datosProducto);
-            if (!empty($errores)) {
-                throw new Exception(implode(' ', $errores));
-            }
+            if (!empty($errores)) throw new Exception(implode(' ', $errores));
             
             $resultado = $modelo->registrarProducto($datosProducto);
             if ($resultado === false || intval($resultado) <= 0) {
@@ -305,14 +366,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
 
             $errores = ProductoValidator::validarDatos($datos, false);
-            if (!empty($errores)) {
-                throw new Exception(implode(' ', $errores));
-            }
+            if (!empty($errores)) throw new Exception(implode(' ', $errores));
             
             $resultado = $modelo->actualizarProducto($id_producto, $datos);
-            if (!$resultado) {
-                throw new Exception("No se pudo actualizar el producto.");
-            }
+            if (!$resultado) throw new Exception("No se pudo actualizar el producto.");
             
             $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
             $nombreProveedor = $proveedorProcessor->obtenerNombre($id_proveedor);
@@ -344,9 +401,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $resultado = $modelo->eliminarProducto($id_producto);
-            if (!$resultado) {
-                throw new Exception("No se pudo eliminar el producto.");
-            }
+            if (!$resultado) throw new Exception("No se pudo eliminar el producto.");
 
             eliminarProductoJson($id_producto);
             
@@ -361,12 +416,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// FUNCIONES AUXILIARES PARA VISTAS
+// FUNCIONES AUXILIARES
 function cargarDatosProducto($id_producto, $modelo, $proveedorProcessor) {
     $producto = $modelo->obtenerProductoPorId($id_producto);
-    if (!$producto) {
-        die("ERROR: Producto no encontrado.");
-    }
+    if (!$producto) die("ERROR: Producto no encontrado.");
     
     $jsonData = cargarProductosJson();
     if (isset($jsonData[$id_producto])) {
@@ -378,7 +431,6 @@ function cargarDatosProducto($id_producto, $modelo, $proveedorProcessor) {
         $producto['proveedor'] = '';
         $producto['id_proveedor'] = 0;
     }
-    
     return $producto;
 }
 
@@ -418,19 +470,14 @@ if ($type === 'edit') {
     exit();
 }
 
-// VISTA DE LISTA DE PRODUCTOS
+// VISTA DE LISTA
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
     $dataJson = cargarProductosJson();
     
     $sqlBase = "SELECT 
-                    p.id_producto,
-                    p.descripcion,
-                    p.cantidad AS stock,
-                    p.stock_minimo,
-                    p.costo_unitario,
-                    p.id_categoria,
-                    c.nombre_categoria
+                    p.id_producto, p.descripcion, p.cantidad AS stock, p.stock_minimo,
+                    p.costo_unitario, p.id_categoria, c.nombre_categoria
                 FROM producto p
                 LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
                 WHERE p.eliminado = 0";
@@ -438,33 +485,28 @@ try {
     $sql = $sqlBase;
     $params = [];
     
-        if (!empty($buscar)) {
-            $sql .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino OR CAST(p.id_producto AS CHAR) LIKE :termino)";
-            $params['termino'] = "%$buscar%";
-        }
+    if (!empty($buscar)) {
+        $sql .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino OR CAST(p.id_producto AS CHAR) LIKE :termino)";
+        $params['termino'] = "%$buscar%";
+    }
     
     $sql .= " ORDER BY p.id_producto DESC";
 
-    // PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
 
-    // Contar total con la misma condición
-        $sqlCount = "SELECT COUNT(*) AS cnt 
-            FROM producto p
+    $sqlCount = "SELECT COUNT(*) AS cnt FROM producto p
             LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
             WHERE p.eliminado = 0";
+    if (!empty($buscar)) {
+        $sqlCount .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino)";
+    }
+    $stmtCount = $db->prepare($sqlCount);
+    $stmtCount->execute($params);
+    $totalProductos = (int) ($stmtCount->fetchColumn() ?? 0);
+    $stmtCount->closeCursor();
 
-        if (!empty($buscar)) {
-            $sqlCount .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino)";
-        }
-        $stmtCount = $db->prepare($sqlCount);
-        $stmtCount->execute($params);
-        $totalProductos = (int) ($stmtCount->fetchColumn() ?? 0);
-        $stmtCount->closeCursor();
-
-    //  Total de páginas
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalProductos / $por_pagina) : 1;
 
     if ($por_pagina > 0) {
@@ -483,19 +525,12 @@ try {
     
     foreach ($productos as &$producto) {
         $id = $producto['id_producto'];
-        if (isset($dataJson[$id])) {
-            $producto['especificaciones'] = $dataJson[$id]['especificaciones'] ?? '';
-        } else {
-            $producto['especificaciones'] = '';
-        }
+        $producto['especificaciones'] = $dataJson[$id]['especificaciones'] ?? '';
     }
     unset($producto);
 
-    $sqlResumen = "SELECT 
-                        COUNT(*) AS total_productos,
-                        SUM(cantidad) AS total_stock,
-                        COUNT(DISTINCT id_categoria) AS total_categorias
-                    FROM producto";
+    $sqlResumen = "SELECT COUNT(*) AS total_productos, SUM(cantidad) AS total_stock,
+                          COUNT(DISTINCT id_categoria) AS total_categorias FROM producto";
     $stmtResumen = $db->prepare($sqlResumen);
     $stmtResumen->execute();
     $resumen = $stmtResumen->fetch(PDO::FETCH_ASSOC);

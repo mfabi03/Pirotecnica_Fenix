@@ -28,13 +28,17 @@ SCRIPTS GLOBALES
 ========================================== -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- ⭐ VALIDADOR GLOBAL - Disponible en TODAS las vistas del sistema -->
+<script src="/pirotecnica_fenix/assets/js/validaciones.js"></script>
+
 <!-- Script: habilitar búsqueda en selects dentro de formularios -->
-<script src="/assets/js/select-search.js"></script>
+<script src="/pirotecnica_fenix/assets/js/select-search.js"></script>
 <style>
 /* Estilos mínimos para el autocompletador de selects */
-.ss-wrapper .ss-input { background: transparent; border: 1px solid rgba(255,255,255,0.06); color: #fff; padding: 8px 12px; border-radius: 8px; }
-.ss-wrapper .ss-dropdown { background: #0f0f1a; border: 1px solid rgba(255,255,255,0.04); border-radius: 8px; }
-.ss-wrapper .ss-dropdown .list-group-item { background: transparent; color: #e9ecef; }
+.ss-wrapper { position: relative; }
+.ss-wrapper .ss-input { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); color: #fff; padding: 8px 12px; border-radius: 8px; width: 100%; }
+.ss-wrapper .ss-dropdown { background: #0f0f1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; position: absolute; z-index: 1050; left: 0; right: 0; top: calc(100% + 4px); max-height: 220px; overflow-y: auto; display: none; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); }
+.ss-wrapper .ss-dropdown .list-group-item { background: transparent; color: #e9ecef; border-color: rgba(255,255,255,0.04); }
 .ss-wrapper .ss-dropdown .list-group-item.active, .ss-wrapper .ss-dropdown .list-group-item:hover { background: rgba(243,156,18,0.12); color: #fff; }
 .ss-wrapper .ss-input::placeholder { color: rgba(255,255,255,0.35); }
 </style>

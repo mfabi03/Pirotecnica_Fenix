@@ -1,0 +1,126 @@
+/* ============================================================
+   VALIDACIONES - Estilos globales
+   ============================================================ */
+
+.campo-valido {
+    border-color: #28a745 !important;
+    box-shadow: 0 0 0 0.2rem rgba(40,167,69,0.15) !important;
+}
+
+.campo-invalido {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220,53,69,0.15) !important;
+}
+
+.feedback-validacion {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-height: 18px;
+    transition: all 0.3s ease;
+}
+
+.feedback-validacion.info { color: #6c757d; }
+.feedback-validacion.error { color: #dc3545; }
+.feedback-validacion.success { color: #28a745; }
+
+.feedback-validacion .fa-check-circle { color: #28a745; }
+.feedback-validacion .fa-times-circle { color: #dc3545; }
+.feedback-validacion .fa-info-circle { color: #6c757d; }
+
+/* ============================================================
+   ESTADO "VERIFICANDO..." (validaciones asíncronas)
+   Se usa mientras el AJAX consulta al servidor
+   (ej: disponibilidad de cédula / RIF)
+   ============================================================ */
+
+.campo-verificando {
+    border-color: #f39c12 !important;
+    box-shadow: 0 0 0 0.2rem rgba(243,156,18,0.15) !important;
+}
+
+.feedback-validacion.checking {
+    color: #f39c12;
+}
+
+.feedback-validacion.checking .fa-spinner {
+    color: #f39c12;
+    display: inline-block;
+    animation: giro-verificando 0.8s linear infinite;
+}
+
+@keyframes giro-verificando {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   ALERTAS / MENSAJES DEL SISTEMA (tema oscuro + dorado)
+   Tipos: success | danger | warning | info
+   ============================================================ */
+
+.dark-alert-success,
+.dark-alert-danger,
+.dark-alert-warning,
+.dark-alert-info {
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    animation: alerta-entrada 0.35s ease;
+}
+
+/* --- Éxito (verde) --- */
+.dark-alert-success {
+    background: linear-gradient(135deg, rgba(40,167,69,0.12), rgba(40,167,69,0.05));
+    border-left: 4px solid #28a745;
+    color: #155724;
+}
+.dark-alert-success i { color: #28a745; font-size: 1.3rem; }
+
+/* --- Error / Danger (rojo) --- */
+.dark-alert-danger {
+    background: linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.05));
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+}
+.dark-alert-danger i { color: #dc3545; font-size: 1.3rem; }
+
+/* --- Advertencia (dorado) --- */
+.dark-alert-warning {
+    background: linear-gradient(135deg, rgba(243,156,18,0.14), rgba(243,156,18,0.05));
+    border-left: 4px solid #f39c12;
+    color: #7a4d00;
+}
+.dark-alert-warning i { color: #f39c12; font-size: 1.3rem; }
+
+/* --- Info (azul) --- */
+.dark-alert-info {
+    background: linear-gradient(135deg, rgba(13,110,253,0.10), rgba(13,110,253,0.04));
+    border-left: 4px solid #0d6efd;
+    color: #084298;
+}
+.dark-alert-info i { color: #0d6efd; font-size: 1.3rem; }
+
+/* --- Botón de cerrar (X) --- */
+.dark-alert-success .btn-close,
+.dark-alert-danger  .btn-close,
+.dark-alert-warning .btn-close,
+.dark-alert-info    .btn-close {
+    opacity: 0.5;
+}
+.dark-alert-success .btn-close:hover,
+.dark-alert-danger  .btn-close:hover,
+.dark-alert-warning .btn-close:hover,
+.dark-alert-info    .btn-close:hover {
+    opacity: 0.9;
+}
+
+/* --- Animación de entrada --- */
+@keyframes alerta-entrada {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

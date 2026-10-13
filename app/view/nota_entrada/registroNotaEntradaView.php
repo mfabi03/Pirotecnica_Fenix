@@ -1,5 +1,5 @@
 <?php
-// app/view/notaentrada/registrarNotaEntrada.php
+// app/view/notaentrada/registroNotaEntradaView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 ?>
 
@@ -63,7 +63,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     ?>
                     <form method="POST" action="?url=notaentrada&type=store" id="notaEntradaForm">
                         
-                        <!--  DATOS GENERALES -->
+                        <!-- DATOS GENERALES -->
                         <div class="row g-3 mb-4">
                             <!-- Fecha -->
                             <div class="col-md-6">
@@ -98,11 +98,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                 <option value="">No hay proveedores disponibles</option>
                                             <?php endif; ?>
                                         </select>
-                                        <a href="?url=proveedores&type=create&return=notaentrada" 
-                                           class="btn" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
-                                           title="Registrar nuevo proveedor">
+                                        <button type="button" 
+                                                id="btnAbrirModalProveedor"
+                                                class="btn" 
+                                                style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center;"
+                                                title="Registrar nuevo proveedor">
                                             <i class="fas fa-plus"></i>
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -120,10 +122,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             </div>
                         </div>
 
-                        <!-- PRODUCTOS-->
+                        <!-- PRODUCTOS -->
                         <div class="card mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px;">
                             <div class="card-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.04); border-radius: 12px 12px 0 0; padding: 12px 20px;">
-                                <span style="color: rgb(8, 8, 8); font-weight: 600; font-size: 0.85rem;">
+                                <span style="color: #ffffff; font-weight: 600; font-size: 0.85rem;">
                                     <i class="fas fa-box me-2"></i> Agregar Productos
                                 </span>
                             </div>
@@ -153,11 +155,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                     <option value="">No hay productos disponibles</option>
                                                 <?php endif; ?>
                                             </select>
-                                            <a href="?url=productos&type=create&return=notaentrada" 
-                                               class="btn" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
-                                               title="Registrar nuevo producto">
+                                            <button type="button" 
+                                                    id="btnAbrirModalProducto"
+                                                    class="btn" 
+                                                    style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center;"
+                                                    title="Registrar nuevo producto">
                                                 <i class="fas fa-plus"></i>
-                                            </a>
+                                            </button>
                                         </div>
                                         <?php unset($_SESSION['nuevo_producto_id']); ?>
                                     </div>
@@ -188,7 +192,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         <!-- TABLA DE DETALLES -->
                         <div class="card mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px;">
                             <div class="card-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.04); border-radius: 12px 12px 0 0; padding: 12px 20px;">
-                                <span style="color: rgb(7, 7, 7); font-weight: 600; font-size: 0.85rem;">
+                                <span style="color: #ffffff; font-weight: 600; font-size: 0.85rem;">
                                     <i class="fas fa-list me-2"></i> Productos Agregados
                                 </span>
                             </div>
@@ -227,7 +231,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         <!-- CAMPOS OCULTOS -->
                         <div id="detallesContainer"></div>
 
-                        <!-- BOTONES DE ACCIÓN-->
+                        <!-- BOTONES DE ACCIÓN -->
                         <div class="mt-4 text-end" style="border-top: 1px solid rgba(255,255,255,0.04); padding-top: 20px;">
                             <a href="?url=notaentrada&type=list" class="btn" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-right: 10px;">
                                 <i class="fas fa-times me-1"></i> Cancelar
@@ -244,10 +248,177 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 </div>
 
 
+<!-- ============================================================ -->
+<!-- MODAL 1: REGISTRO RÁPIDO DE PROVEEDOR (AJAX)                 -->
+<!-- ============================================================ -->
+<div class="modal fade" id="modalRapidoProveedor" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i class="fas fa-truck me-2" style="color: #f39c12;"></i> Registrar Proveedor Rápido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+
+            <div class="modal-body" style="padding: 20px 24px;">
+                
+                <div id="modal-rapido-proveedor-error" class="alert" style="display: none; background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px;">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span id="modal-rapido-proveedor-error-msg"></span>
+                </div>
+
+                <form id="formRapidoProveedor">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
+                            <input type="text" id="rapido-prov-rif" name="rif" class="form-control" required
+                                   placeholder="Ej: J-123456789" data-validate="rif">
+                            <small class="feedback-validacion info" id="rapido-prov-rif-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Formato: J-123456789
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono *</label>
+                            <input type="tel" id="rapido-prov-telefono" name="numero_contacto" class="form-control" required
+                                   placeholder="Ej: 0412-5556677" data-validate="telefono">
+                            <small class="feedback-validacion info" id="rapido-prov-telefono-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Formato: 0412-1234567
+                            </small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Razón Social *</label>
+                            <input type="text" id="rapido-prov-razon" name="razon_social" class="form-control" required
+                                   placeholder="Nombre de la empresa" data-validate="razon">
+                            <small class="feedback-validacion info" id="rapido-prov-razon-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo</label>
+                            <input type="email" id="rapido-prov-correo" name="correo_electronico" class="form-control"
+                                   placeholder="proveedor@correo.com" data-validate="correo">
+                            <small class="feedback-validacion info" id="rapido-prov-correo-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Formato: usuario@dominio.com
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección *</label>
+                            <input type="text" id="rapido-prov-direccion" name="direccion" class="form-control" required
+                                   placeholder="Dirección del proveedor" data-validate="direccion">
+                            <small class="feedback-validacion info" id="rapido-prov-direccion-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Mínimo 5 caracteres
+                            </small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                    Cancelar
+                </button>
+                <button type="button" class="btn" id="btnGuardarProveedorRapido"
+                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
+                    <i class="fas fa-save me-1"></i> Guardar Proveedor
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- MODAL 2: REGISTRO RÁPIDO DE PRODUCTO (AJAX) SIN COSTO        -->
+<!-- ============================================================ -->
+<div class="modal fade" id="modalRapidoProducto" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i class="fas fa-box me-2" style="color: #f39c12;"></i> Registrar Producto Rápido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+
+            <div class="modal-body" style="padding: 20px 24px;">
+                
+                <div id="modal-rapido-producto-error" class="alert" style="display: none; background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px;">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span id="modal-rapido-producto-error-msg"></span>
+                </div>
+
+                <form id="formRapidoProducto">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Descripción del Producto *</label>
+                            <input type="text" id="rapido-prod-descripcion" name="descripcion" class="form-control" required
+                                   placeholder="Ej: Volcán grande" data-validate="razon">
+                            <small class="feedback-validacion info" id="rapido-prod-descripcion-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Categoría *</label>
+                            <select id="rapido-prod-categoria" name="id_categoria" class="form-select" required
+                                    style="border-radius: 12px; padding: 10px 14px;">
+                                <option value="">Seleccione categoría...</option>
+                                <?php foreach (($categorias ?? []) as $c): ?>
+                                    <option value="<?= $c['id_categoria'] ?>"><?= htmlspecialchars($c['nombre_categoria']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
+                            <select id="rapido-prod-proveedor" name="id_proveedor" class="form-select" required
+                                    style="border-radius: 12px; padding: 10px 14px;">
+                                <option value="">Seleccione proveedor...</option>
+                                <?php foreach (($proveedores ?? []) as $p): ?>
+                                    <option value="<?= $p['id_proveedor'] ?>"><?= htmlspecialchars($p['razon_social']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo</label>
+                            <input type="number" id="rapido-prod-stockmin" name="stock_minimo" class="form-control" 
+                                   min="1" value="10"
+                                   style="border-radius: 12px; padding: 10px 14px;">
+                            <small style="color: #6c757d; font-size: 0.7rem;">Alerta cuando el stock baje a este nivel</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Especificaciones (opcional)</label>
+                            <textarea id="rapido-prod-especificaciones" name="especificaciones" class="form-control" rows="2"
+                                      placeholder="Peso, color, material..." style="border-radius: 12px; resize: vertical;"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                    Cancelar
+                </button>
+                <button type="button" class="btn" id="btnGuardarProductoRapido"
+                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
+                    <i class="fas fa-save me-1"></i> Guardar Producto
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SCRIPTS                                                       -->
+<!-- ============================================================ -->
 <script>
-
-// FUNCIONES DE LA NOTA DE ENTRADA
-
+// ============================================================
+// MÓDULO NOTA DE ENTRADA
+// ============================================================
 let detalles = [];
 
 function agregarProducto() {
@@ -359,6 +530,186 @@ document.getElementById('notaEntradaForm').addEventListener('submit', function(e
     if (detalles.length === 0) {
         e.preventDefault();
         alert('Debe agregar al menos un producto.');
+    }
+});
+
+
+// ============================================================
+// REGISTROS RÁPIDOS CON AJAX
+// ============================================================
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    // ============================================================
+    // PROVEEDOR RÁPIDO
+    // ============================================================
+    const btnAbrirProv = document.getElementById('btnAbrirModalProveedor');
+    if (btnAbrirProv) {
+        btnAbrirProv.addEventListener('click', function () {
+            document.getElementById('formRapidoProveedor').reset();
+            document.getElementById('modal-rapido-proveedor-error').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('modalRapidoProveedor')).show();
+        });
+    }
+
+    const btnGuardarProv = document.getElementById('btnGuardarProveedorRapido');
+    if (btnGuardarProv) {
+        btnGuardarProv.addEventListener('click', function () {
+            const formId = 'formRapidoProveedor';
+            
+            if (typeof Validador !== 'undefined') {
+                Validador.init(document.getElementById('modalRapidoProveedor'));
+                if (!Validador.validarFormulario(formId)) return;
+            }
+            
+            const formData = new FormData(document.getElementById(formId));
+            btnGuardarProv.disabled = true;
+            btnGuardarProv.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+            
+            fetch('?url=proveedores&type=store_rapido_ajax', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                btnGuardarProv.disabled = false;
+                btnGuardarProv.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Proveedor';
+                
+                if (!data.success) {
+                    document.getElementById('modal-rapido-proveedor-error-msg').textContent = data.error || 'Error';
+                    document.getElementById('modal-rapido-proveedor-error').style.display = 'block';
+                    return;
+                }
+                
+                // Agregar al select del formulario principal
+                const selectProv = document.getElementById('id_proveedor');
+                if (selectProv) {
+                    const opt = document.createElement('option');
+                    opt.value = data.id_proveedor;
+                    opt.textContent = data.razon_social + ' - ' + data.rif;
+                    selectProv.appendChild(opt);
+                    selectProv.value = data.id_proveedor;
+                }
+                
+                // Agregar al select del modal de producto
+                const selectProvModal = document.getElementById('rapido-prod-proveedor');
+                if (selectProvModal) {
+                    const opt2 = document.createElement('option');
+                    opt2.value = data.id_proveedor;
+                    opt2.textContent = data.razon_social;
+                    selectProvModal.appendChild(opt2);
+                }
+                
+                bootstrap.Modal.getInstance(document.getElementById('modalRapidoProveedor')).hide();
+                mostrarMensajeExito('✅ Proveedor "' + data.razon_social + '" registrado exitosamente');
+            })
+            .catch(err => {
+                btnGuardarProv.disabled = false;
+                btnGuardarProv.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Proveedor';
+                document.getElementById('modal-rapido-proveedor-error-msg').textContent = 'Error: ' + err.message;
+                document.getElementById('modal-rapido-proveedor-error').style.display = 'block';
+            });
+        });
+    }
+
+    // ============================================================
+    // PRODUCTO RÁPIDO
+    // ============================================================
+    const btnAbrirProd = document.getElementById('btnAbrirModalProducto');
+    if (btnAbrirProd) {
+        btnAbrirProd.addEventListener('click', function () {
+            document.getElementById('formRapidoProducto').reset();
+            document.getElementById('modal-rapido-producto-error').style.display = 'none';
+            
+            // Pre-seleccionar proveedor si ya hay uno seleccionado
+            const provPrincipal = document.getElementById('id_proveedor');
+            if (provPrincipal && provPrincipal.value) {
+                const selectProvModal = document.getElementById('rapido-prod-proveedor');
+                if (selectProvModal) selectProvModal.value = provPrincipal.value;
+            }
+            
+            new bootstrap.Modal(document.getElementById('modalRapidoProducto')).show();
+        });
+    }
+
+    const btnGuardarProd = document.getElementById('btnGuardarProductoRapido');
+    if (btnGuardarProd) {
+        btnGuardarProd.addEventListener('click', function () {
+            const formId = 'formRapidoProducto';
+            
+            if (typeof Validador !== 'undefined') {
+                Validador.init(document.getElementById('modalRapidoProducto'));
+                if (!Validador.validarFormulario(formId)) return;
+            }
+            
+            const formData = new FormData(document.getElementById(formId));
+            btnGuardarProd.disabled = true;
+            btnGuardarProd.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+            
+            fetch('?url=productos&type=store_rapido_ajax', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                btnGuardarProd.disabled = false;
+                btnGuardarProd.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Producto';
+                
+                if (!data.success) {
+                    document.getElementById('modal-rapido-producto-error-msg').textContent = data.error || 'Error';
+                    document.getElementById('modal-rapido-producto-error').style.display = 'block';
+                    return;
+                }
+                
+                // Agregar al select de productos
+                const selectProd = document.getElementById('productoSelect');
+                if (selectProd) {
+                    const opt = document.createElement('option');
+                    opt.value = data.id_producto;
+                    opt.dataset.descripcion = data.descripcion;
+                    opt.dataset.costo = 0; // Sin costo, el usuario lo ingresa al agregar a la nota
+                    opt.dataset.stock = data.stock;
+                    opt.textContent = data.descripcion + ' (Stock: ' + data.stock + ')';
+                    selectProd.appendChild(opt);
+                    
+                    // Seleccionar el producto nuevo
+                    selectProd.value = data.id_producto;
+                    selectProd.dispatchEvent(new Event('change'));
+                    
+                    // Cantidad por defecto 1, costo en 0.00
+                    const cantInput = document.getElementById('cantidadInput');
+                    if (cantInput) cantInput.value = 1;
+                    
+                    const costoInput = document.getElementById('costoInput');
+                    if (costoInput) costoInput.value = '0.00';
+                }
+                
+                bootstrap.Modal.getInstance(document.getElementById('modalRapidoProducto')).hide();
+                mostrarMensajeExito('✅ Producto "' + data.descripcion + '" registrado exitosamente');
+            })
+            .catch(err => {
+                btnGuardarProd.disabled = false;
+                btnGuardarProd.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Producto';
+                document.getElementById('modal-rapido-producto-error-msg').textContent = 'Error: ' + err.message;
+                document.getElementById('modal-rapido-producto-error').style.display = 'block';
+            });
+        });
+    }
+
+    // ============================================================
+    // HELPER: MOSTRAR MENSAJE DE ÉXITO
+    // ============================================================
+    function mostrarMensajeExito(mensaje) {
+        const contenedor = document.getElementById('notaEntradaForm');
+        if (!contenedor) return;
+        
+        const alerta = document.createElement('div');
+        alerta.className = 'alert dark-alert-success alert-dismissible fade show shadow-sm border-0';
+        alerta.style.marginBottom = '16px';
+        alerta.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle me-2"></i>
+                <span>${mensaje}</span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        contenedor.parentNode.insertBefore(alerta, contenedor);
+        setTimeout(() => { if (alerta.parentNode) alerta.remove(); }, 4000);
     }
 });
 </script>

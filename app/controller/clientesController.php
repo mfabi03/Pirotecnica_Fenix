@@ -1,8 +1,10 @@
 <?php
 namespace App\Pirotecnicafenix\Controller;
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// ⚠️ En producción: desactivar display_errors. Solo activar en dev.
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\clientesModel;
@@ -45,6 +47,101 @@ unset($_SESSION['tipo_mensaje']);
 $busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 $tipo = trim((string) ($_GET['tipo'] ?? 'todos'));
 
+/* ============================================================
+ *  HELPER: URL de redirección tras un POST
+ * ============================================================ */
+function _clientesRedirPost($return, $idCliente = null) {
+    if ($return) {
+        $param = $idCliente ? "&id_cliente=" . $idCliente : "";
+        return "?url=" . urlencode($return) . "&type=create" . $param;
+    }
+    return "?url=clientes&type=list";
+}
+
+/**
+ * Detecta si el mensaje de excepción es un duplicado y guarda el error
+ * INLINE (para repintarlo en el campo) + los datos del formulario.
+ *
+ * @param string $msg        Mensaje de la excepción
+ * @param bool   $esEdicion  Si es edición
+ * @param string $formModal  Identificador del formulario a reabrir:
+ *                           'registrar_natural' | 'registrar_juridico'
+ *                           'editar_natural'    | 'editar_juridico'
+ * @return bool  true si era duplicado
+ */
+function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null) {
+    $map = [
+        'DUPLICADO_CEDULA:' => ['campo' => 'cedula', 'etiqueta' => 'cédula'],
+        'DUPLICADO_RIF:'    => ['campo' => 'rif',    'etiqueta' => 'RIF'],
+    ];
+
+    foreach ($map as $prefijo => $info) {
+        if (strpos($msg, $prefijo) === 0) {
+            $campo  = $info['campo'];
+            $sufijo = $esEdicion ? ' en otro cliente' : '';
+
+            // Error inline por campo
+            $_SESSION['errores_campo'] = [
+                $campo => 'Esta ' . $info['etiqueta'] . ' ya está registrada' . $sufijo
+            ];
+
+            // Qué modal reabrir + qué datos repoblar
+            if ($formModal) {
+                $_SESSION['form_modal'] = $formModal;
+                $_SESSION['form_data']  = $_POST;
+            }
+
+            return true;
+        }
+    }
+    return false;
+}
+
+/* ============================================================
+ *  ENDPOINT AJAX: check_duplicado
+ *  Uso:  ?url=clientes&type=check_duplicado&campo=cedula&valor=V-12345678
+ *  Resp: {"existe": true|false, "campo": "...", "valor": "..."}
+ * ============================================================ */
+if ($type === 'check_duplicado') {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $campo = strtolower(trim($_GET['campo'] ?? ''));
+    $valor = trim($_GET['valor'] ?? '');
+    $excluirId = isset($_GET['excluir_id']) && is_numeric($_GET['excluir_id'])
+        ? (int) $_GET['excluir_id']
+        : null;
+
+    if (!in_array($campo, ['cedula', 'rif'], true)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Campo inválido']);
+        exit;
+    }
+
+    if ($valor === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Valor vacío']);
+        exit;
+    }
+
+    try {
+        if ($campo === 'cedula') {
+            $existe = $modelo->existeCedula($valor, $excluirId);
+        } else {
+            $existe = $modelo->existeRif($valor, $excluirId);
+        }
+        echo json_encode([
+            'existe' => $existe,
+            'campo'  => $campo,
+            'valor'  => $valor
+        ]);
+    } catch (Exception $e) {
+        error_log("Error en check_duplicado: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'No se pudo verificar']);
+    }
+    exit;
+}
+
 // ELIMINAR 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
     CheckPermiso::verificar($db, 'Clientes', 'eliminar', '?url=clientes&type=list');
@@ -67,6 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
 // REGISTRO NATURAL
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_natural') {
     CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
+    $resultado = null;
     try {
         if (empty(trim($_POST['cedula']))) {
             throw new Exception("La cédula es obligatoria.");
@@ -92,16 +190,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             $_SESSION['tipo_rapido'] = 'success';
         }
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
+        $msg = $e->getMessage();
+        if (!_clientesDetectarDuplicado($msg, false, 'registrar_natural')) {
+            $_SESSION['mensaje'] = "Error al registrar: " . $msg;
+            $_SESSION['tipo_mensaje'] = "danger";
+        }
     }
     $return = $_REQUEST['return'] ?? null;
-    if ($return) {
-        $paramCliente = !empty($resultado) ? "&id_cliente=" . $resultado : "";
-        header("Location: ?url=" . urlencode($return) . "&type=create" . $paramCliente);
-    } else {
-        header("Location: ?url=clientes&type=list");
-    }
+    header("Location: " . _clientesRedirPost($return, $resultado));
     exit();
 }
 
@@ -143,7 +239,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
             throw new Exception("No se pudo registrar el cliente.");
         }
     } catch (Exception $e) {
-        $_SESSION['mensaje_rapido'] = "❌ " . $e->getMessage();
+        $msg = $e->getMessage();
+
+        // Duplicado → guardar inline + reabrir modal
+        if (_clientesDetectarDuplicado($msg, false, 'registrar_natural')) {
+            $return = $_REQUEST['return'] ?? null;
+            if ($return) {
+                header("Location: ?url=" . urlencode($return) . "&type=create");
+            } else {
+                header("Location: ?url=clientes&type=list");
+            }
+            exit;
+        }
+
+        // Error genérico → mensaje rápido
+        $_SESSION['mensaje_rapido'] = "❌ " . $msg;
         $_SESSION['tipo_rapido'] = 'danger';
         
         $return = $_REQUEST['return'] ?? null;
@@ -160,6 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
 // REGISTRO JURIDICO
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_juridico') {
     CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
+    $resultado = null;
     try {
         if (empty(trim($_POST['rif']))) {
             throw new Exception("El RIF es obligatorio.");
@@ -184,16 +295,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             $_SESSION['tipo_rapido'] = 'success';
         }
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
+        $msg = $e->getMessage();
+        if (!_clientesDetectarDuplicado($msg, false, 'registrar_juridico')) {
+            $_SESSION['mensaje'] = "Error al registrar: " . $msg;
+            $_SESSION['tipo_mensaje'] = "danger";
+        }
     }
     $return = $_REQUEST['return'] ?? null;
-    if ($return) {
-        $paramCliente = !empty($resultado) ? "&id_cliente=" . $resultado : "";
-        header("Location: ?url=" . urlencode($return) . "&type=create" . $paramCliente);
-    } else {
-        header("Location: ?url=clientes&type=list");
-    }
+    header("Location: " . _clientesRedirPost($return, $resultado));
     exit();
 }
 
@@ -218,8 +327,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         $_SESSION['mensaje'] = "✅ Cliente Natural editado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al editar: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
+        $msg = $e->getMessage();
+        if (!_clientesDetectarDuplicado($msg, true, 'editar_natural')) {
+            $_SESSION['mensaje'] = "Error al editar: " . $msg;
+            $_SESSION['tipo_mensaje'] = "danger";
+        }
     }
     header("Location: ?url=clientes&type=list");
     exit();
@@ -245,8 +357,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         $_SESSION['mensaje'] = "✅ Cliente Jurídico editado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al editar: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
+        $msg = $e->getMessage();
+        if (!_clientesDetectarDuplicado($msg, true, 'editar_juridico')) {
+            $_SESSION['mensaje'] = "Error al editar: " . $msg;
+            $_SESSION['tipo_mensaje'] = "danger";
+        }
     }
     header("Location: ?url=clientes&type=list");
     exit();

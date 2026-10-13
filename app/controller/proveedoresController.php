@@ -36,6 +36,56 @@ $success = null;
 $proveedor = null;
 $proveedores = [];
 
+// ============================================
+// ENDPOINT AJAX: REGISTRO RÁPIDO DE PROVEEDOR (para modal)
+// ============================================
+if ($type === 'store_rapido_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    try {
+        // Verificar permisos
+        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Proveedores', 'crear')) {
+            throw new Exception("No tienes permiso para registrar proveedores.");
+        }
+        
+        // Validar campos requeridos
+        if (empty($_POST['rif']) || empty($_POST['razon_social']) || 
+            empty($_POST['numero_contacto']) || empty($_POST['direccion'])) {
+            throw new Exception("RIF, Razón Social, Contacto y Dirección son obligatorios.");
+        }
+        
+        $datos = [
+            'rif' => trim($_POST['rif']),
+            'razon_social' => trim($_POST['razon_social']),
+            'numero_contacto' => trim($_POST['numero_contacto']),
+            'direccion' => trim($_POST['direccion']),
+            'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
+            'nombre_contacto' => trim($_POST['nombre_contacto'] ?? 'Proveedor'),
+            'apellido_contacto' => trim($_POST['apellido_contacto'] ?? '')
+        ];
+        
+        $id_proveedor = $modelo->registrarProveedor($datos);
+        
+        if (!$id_proveedor) {
+            throw new Exception("No se pudo registrar el proveedor.");
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'id_proveedor' => (int) $id_proveedor,
+            'razon_social' => $datos['razon_social'],
+            'rif' => $datos['rif']
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // REGISTRAR PROVEEDOR
@@ -83,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // REGISTRO RÁPIDO PROVEEDOR
+    // REGISTRO RÁPIDO PROVEEDOR (NO-AJAX, conservada por compatibilidad)
     if ($type === 'store_rapido') {
         CheckPermiso::verificar($db, 'Proveedores', 'crear', '?url=proveedores&type=list');
         try {
@@ -183,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // VISTAS
 if ($type === 'create') {
-    require_once 'C:/xampp/htdocs/Pirotecnica_Fenix/app/view/proveedores/registroProveedoresView.php';
+    require_once $rutaRaiz . '/app/view/proveedores/registroProveedoresView.php';
     exit();
 }
 
@@ -197,7 +247,7 @@ if ($type === 'edit') {
     } catch (Exception $e) {
         die("ERROR: " . $e->getMessage());
     }
-    require_once 'C:/xampp/htdocs/Pirotecnica_Fenix/app/view/proveedores/editarProveedoresView.php';
+    require_once $rutaRaiz . '/app/view/proveedores/editarProveedoresView.php';
     exit();
 }
 
@@ -211,12 +261,11 @@ if ($type === 'show') {
     } catch (Exception $e) {
         die("ERROR: " . $e->getMessage());
     }
-    require_once 'C:/xampp/htdocs/Pirotecnica_Fenix/app/view/proveedores/verProveedorView.php';
+    require_once $rutaRaiz . '/app/view/proveedores/verProveedorView.php';
     exit();
 }
 
 try {
-    //  Acepta 'busqueda' (nombre del input) y 'buscar' (compatibilidad)
     $buscar = trim($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
     
     if (!empty($buscar)) {
@@ -225,18 +274,13 @@ try {
         $proveedores_full = $modelo->obtenerProveedores();
     }
 
-    //  PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
     
-    // Total de registros
     $totalRegistros = count($proveedores_full);
-    
-    // Total de páginas
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
     
-    // Cortar el array para la página actual
     if ($por_pagina > 0) {
         $proveedores = array_slice($proveedores_full, $offset, $por_pagina);
     } else {
@@ -251,5 +295,5 @@ try {
     die("ERROR al listar: " . $e->getMessage());
 }
 
-require_once 'C:/xampp/htdocs/Pirotecnica_Fenix/app/view/proveedores/listProveedoresView.php';
+require_once $rutaRaiz . '/app/view/proveedores/listProveedoresView.php';
 ?>

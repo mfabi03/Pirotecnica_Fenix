@@ -45,7 +45,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-exclamation-circle me-2"></i>
-                        <span><?= $error ?></span>
+                        <span><?= htmlspecialchars($error) ?></span>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
@@ -95,17 +95,20 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
-                                                <a href="?url=clientes&type=register&return=notasalida" 
-                                                   class="btn" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
-                                                   title="Registrar nuevo cliente">
+                                                <!-- BOTÓN "+" QUE ABRE EL MODAL RÁPIDO -->
+                                                <button type="button" 
+                                                        id="btnAbrirModalCliente"
+                                                        class="btn" 
+                                                        title="Registrar nuevo cliente rápido"
+                                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
                                                     <i class="fas fa-plus"></i>
-                                                </a>
+                                                </button>
                                             </div>
                                             <?php unset($_SESSION['nuevo_cliente_id']); ?>
                                         </div>
                                         <div class="mb-0">
                                             <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Encargado</label>
-                                            <input type="text" class="form-control" value="<?= $_SESSION['usuario_nombre'] ?? 'Usuario actual' ?>" disabled style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: rgba(255,255,255,0.4); padding: 10px 16px;">
+                                            <input type="text" class="form-control" value="<?= htmlspecialchars(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? '')) ?>" disabled style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: rgba(255,255,255,0.4); padding: 10px 16px;">
                                             <small style="color: rgba(255,255,255,0.2); font-size: 0.7rem;">La persona encargada se registra automáticamente</small>
                                         </div>
                                     </div>
@@ -166,7 +169,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         ========================================== -->
                         <div class="card mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px;">
                             <div class="card-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.04); border-radius: 12px 12px 0 0; padding: 12px 20px;">
-                                <span style="color: rgb(12, 2, 2); font-weight: 600; font-size: 0.85rem;">
+                                <span style="color: #ffffff; font-weight: 600; font-size: 0.85rem;">
                                     <i class="fas fa-list me-2"></i> Productos agregados
                                 </span>
                             </div>
@@ -216,11 +219,187 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 </div>
 
+
+<!-- ============================================================ -->
+<!-- MODAL: REGISTRO RÁPIDO DE CLIENTE (AJAX)                     -->
+<!-- ============================================================ -->
+<div class="modal fade" id="modalRapidoCliente" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i class="fas fa-user-plus me-2" style="color: #f39c12;"></i> Registrar Cliente Rápido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+
+            <div class="modal-body" style="padding: 20px 24px;">
+                
+                <!-- MENSAJE DE ERROR -->
+                <div id="modal-rapido-cliente-error" class="alert" style="display: none; background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px;">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span id="modal-rapido-cliente-error-msg"></span>
+                </div>
+
+                <!-- PESTAÑAS -->
+                <ul class="nav nav-tabs mb-4" style="border-bottom: 1px solid #e9ecef;">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="tab-rapido-natural" data-bs-toggle="tab" data-bs-target="#pane-rapido-natural" type="button"
+                                style="color: #f39c12; background: transparent; border: none; border-bottom: 2px solid #f39c12; font-weight: 600;">
+                            <i class="fas fa-user me-1"></i> Cliente Natural
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="tab-rapido-juridico" data-bs-toggle="tab" data-bs-target="#pane-rapido-juridico" type="button"
+                                style="color: #6c757d; background: transparent; border: none; font-weight: 600;">
+                            <i class="fas fa-building me-1"></i> Cliente Jurídico
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- PESTAÑA NATURAL -->
+                    <div class="tab-pane fade show active" id="pane-rapido-natural">
+                        <form id="formRapidoClienteNatural">
+                            <input type="hidden" name="tipo_cliente" value="natural">
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cédula *</label>
+                                    <input type="text" id="rapido-cedula" name="cedula" class="form-control" required
+                                           placeholder="Ej: V-12345678" data-validate="cedula">
+                                    <small class="feedback-validacion info" id="rapido-cedula-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Formato: V-12345678
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono</label>
+                                    <input type="tel" id="rapido-telefono" name="telefono" class="form-control"
+                                           placeholder="Ej: 0412-5556677" data-validate="telefono">
+                                    <small class="feedback-validacion info" id="rapido-telefono-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Formato: 0412-1234567
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombres *</label>
+                                    <input type="text" id="rapido-nombre" name="nombre" class="form-control" required
+                                           placeholder="Solo letras" data-validate="nombre">
+                                    <small class="feedback-validacion info" id="rapido-nombre-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Mínimo 2 caracteres
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Apellidos *</label>
+                                    <input type="text" id="rapido-apellido" name="apellido" class="form-control" required
+                                           placeholder="Solo letras" data-validate="nombre">
+                                    <small class="feedback-validacion info" id="rapido-apellido-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Mínimo 2 caracteres
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo</label>
+                                    <input type="email" id="rapido-correo" name="correo_electronico" class="form-control"
+                                           placeholder="ejemplo@correo.com" data-validate="correo">
+                                    <small class="feedback-validacion info" id="rapido-correo-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Formato: usuario@dominio.com
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Fecha Nacimiento *</label>
+                                    <input type="date" id="rapido-fecha" name="fecha_de_nacimiento" class="form-control" required data-validate="fecha">
+                                    <small class="feedback-validacion info" id="rapido-fecha-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Debe ser mayor de 18 años
+                                    </small>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección</label>
+                                    <input type="text" id="rapido-direccion" name="direccion" class="form-control"
+                                           placeholder="Dirección completa" data-validate="direccion">
+                                    <small class="feedback-validacion info" id="rapido-direccion-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Mínimo 5 caracteres
+                                    </small>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- PESTAÑA JURÍDICO -->
+                    <div class="tab-pane fade" id="pane-rapido-juridico">
+                        <form id="formRapidoClienteJuridico">
+                            <input type="hidden" name="tipo_cliente" value="juridico">
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
+                                    <input type="text" id="rapido-rif" name="rif" class="form-control" required
+                                           placeholder="Ej: J-123456789" data-validate="rif">
+                                    <small class="feedback-validacion info" id="rapido-rif-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Formato: J-123456789
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono</label>
+                                    <input type="tel" id="rapido-jur-telefono" name="telefono" class="form-control"
+                                           placeholder="Ej: 0251-1234567" data-validate="telefono">
+                                    <small class="feedback-validacion info" id="rapido-jur-telefono-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Formato: 0251-1234567
+                                    </small>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Razón Social *</label>
+                                    <input type="text" id="rapido-razon" name="razon_social" class="form-control" required
+                                           placeholder="Nombre de la empresa" data-validate="razon">
+                                    <small class="feedback-validacion info" id="rapido-razon-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo</label>
+                                    <input type="email" id="rapido-jur-correo" name="correo_electronico" class="form-control"
+                                           placeholder="empresa@correo.com" data-validate="correo">
+                                    <small class="feedback-validacion info" id="rapido-jur-correo-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Formato: usuario@dominio.com
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección Fiscal</label>
+                                    <input type="text" id="rapido-jur-direccion" name="direccion" class="form-control"
+                                           placeholder="Dirección fiscal" data-validate="direccion">
+                                    <small class="feedback-validacion info" id="rapido-jur-direccion-feedback">
+                                        <i class="fas fa-info-circle me-1"></i> Mínimo 5 caracteres
+                                    </small>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                    Cancelar
+                </button>
+                <button type="button" class="btn" id="btnGuardarClienteRapido"
+                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
+                    <i class="fas fa-save me-1"></i> Guardar Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <!-- ==========================================
 SCRIPTS
 ========================================== -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // ============================================================
+    // MÓDULO PRINCIPAL DE NOTA DE SALIDA
+    // ============================================================
     const productoSelect = document.getElementById('producto');
     const categoriaInput = document.getElementById('categoria');
     const cantidadInput = document.getElementById('cantidad');
@@ -370,6 +549,158 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             alert('Debe agregar al menos un producto.');
         }
+    });
+
+
+    // ============================================================
+    // MÓDULO DE REGISTRO RÁPIDO DE CLIENTE (MODAL + AJAX)
+    // ============================================================
+
+    // ABRIR MODAL
+    const btnAbrirModal = document.getElementById('btnAbrirModalCliente');
+    if (btnAbrirModal) {
+        btnAbrirModal.addEventListener('click', function () {
+            // Resetear formularios
+            document.getElementById('formRapidoClienteNatural').reset();
+            document.getElementById('formRapidoClienteJuridico').reset();
+            document.getElementById('modal-rapido-cliente-error').style.display = 'none';
+            
+            // Resetear feedback visual
+            document.querySelectorAll('#modalRapidoCliente input[data-validate]').forEach(function (input) {
+                input.classList.remove('campo-valido', 'campo-invalido');
+                input.style.borderColor = '';
+                input.style.boxShadow = '';
+                const feedback = document.getElementById(input.id + '-feedback');
+                if (feedback) {
+                    feedback.classList.remove('error', 'success');
+                    feedback.classList.add('info');
+                }
+            });
+            
+            // Abrir modal
+            new bootstrap.Modal(document.getElementById('modalRapidoCliente')).show();
+        });
+    }
+
+    // GUARDAR CLIENTE RÁPIDO (AJAX)
+    const btnGuardar = document.getElementById('btnGuardarClienteRapido');
+    if (btnGuardar) {
+        btnGuardar.addEventListener('click', function () {
+            // Determinar qué pestaña está activa
+            const tabActiva = document.querySelector('#modalRapidoCliente .nav-link.active');
+            const esJuridico = tabActiva && tabActiva.id === 'tab-rapido-juridico';
+            
+            const formId = esJuridico ? 'formRapidoClienteJuridico' : 'formRapidoClienteNatural';
+            const form = document.getElementById(formId);
+            
+            // Validar formulario con el validador global
+            if (typeof Validador !== 'undefined') {
+                Validador.init(document.getElementById('modalRapidoCliente'));
+                if (!Validador.validarFormulario(formId)) {
+                    return;
+                }
+            }
+            
+            // Recopilar datos
+            const formData = new FormData(form);
+            
+            // Deshabilitar botón para evitar doble click
+            btnGuardar.disabled = true;
+            btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+            
+            // Enviar por AJAX
+            fetch('?url=notasalida&type=store_rapido_cliente_ajax', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Cliente';
+                
+                if (!data.success) {
+                    // Mostrar error
+                    document.getElementById('modal-rapido-cliente-error-msg').textContent = data.error || 'Error al guardar el cliente';
+                    document.getElementById('modal-rapido-cliente-error').style.display = 'block';
+                    return;
+                }
+                
+                // ✅ ÉXITO: agregar al select de clientes
+                const selectCliente = document.getElementById('id_cliente');
+                if (selectCliente) {
+                    // Verificar si ya existe
+                    let existe = false;
+                    for (let i = 0; i < selectCliente.options.length; i++) {
+                        if (selectCliente.options[i].value == data.id_cliente) {
+                            existe = true;
+                            break;
+                        }
+                    }
+                    
+                    // Si no existe, agregar
+                    if (!existe) {
+                        const nuevaOpcion = document.createElement('option');
+                        nuevaOpcion.value = data.id_cliente;
+                        nuevaOpcion.textContent = data.nombre_cliente + ' - ' + data.documento;
+                        selectCliente.appendChild(nuevaOpcion);
+                    }
+                    
+                    // Seleccionar el cliente nuevo
+                    selectCliente.value = data.id_cliente;
+                }
+                
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalRapidoCliente'));
+                if (modal) modal.hide();
+                
+                // Mostrar mensaje de éxito
+                mostrarMensajeExito('✅ Cliente "' + data.nombre_cliente + '" registrado exitosamente');
+                
+            })
+            .catch(err => {
+                btnGuardar.disabled = false;
+                btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Cliente';
+                document.getElementById('modal-rapido-cliente-error-msg').textContent = 'Error de conexión: ' + err.message;
+                document.getElementById('modal-rapido-cliente-error').style.display = 'block';
+            });
+        });
+    }
+
+    // MOSTRAR MENSAJE DE ÉXITO TEMPORAL
+    function mostrarMensajeExito(mensaje) {
+        const contenedor = document.getElementById('formNotaSalida');
+        if (!contenedor) return;
+        
+        const alerta = document.createElement('div');
+        alerta.className = 'alert dark-alert-success alert-dismissible fade show shadow-sm border-0';
+        alerta.style.marginBottom = '16px';
+        alerta.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle me-2"></i>
+                <span>${mensaje}</span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        contenedor.parentNode.insertBefore(alerta, contenedor);
+        
+        setTimeout(() => {
+            if (alerta.parentNode) {
+                alerta.remove();
+            }
+        }, 4000);
+    }
+
+    // ESTILO DE PESTAÑAS DEL MODAL
+    document.querySelectorAll('#modalRapidoCliente .nav-link').forEach(function (tab) {
+        tab.addEventListener('shown.bs.tab', function (e) {
+            document.querySelectorAll('#modalRapidoCliente .nav-link').forEach(function (t) {
+                t.style.color = '#6c757d';
+                t.style.borderBottom = 'none';
+            });
+            e.target.style.color = '#f39c12';
+            e.target.style.borderBottom = '2px solid #f39c12';
+        });
     });
 });
 </script>

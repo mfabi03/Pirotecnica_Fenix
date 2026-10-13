@@ -51,9 +51,8 @@ try {
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-// 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO (CORREGIDA)
+// 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO
 function obtenerIdUsuarioValido($db) {
-    // Buscar en la sesión con el nombre CORRECTO
     $idUsuario = $_SESSION['id_usuario'] 
               ?? $_SESSION['usuario_id'] 
               ?? null;
@@ -82,6 +81,101 @@ $productos = [];
 $clientes = [];
 $resumen = [];
 $tipo_mensaje = '';
+
+// ============================================
+// ENDPOINT JSON: OBTENER DETALLE DE NOTA (para modal)
+// ============================================
+if ($type === 'detalle_json' && $id) {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $nota = $modelo->obtenerNotaPorId($id);
+        if (!$nota) {
+            echo json_encode(['success' => false, 'error' => 'Nota no encontrada']);
+            exit;
+        }
+        echo json_encode(['success' => true, 'nota' => $nota], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ============================================
+// ENDPOINT AJAX: REGISTRO RÁPIDO DE CLIENTE (para modal)
+// ============================================
+if ($type === 'store_rapido_cliente_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    try {
+        // Verificar permisos
+        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Clientes', 'crear')) {
+            throw new Exception("No tienes permiso para registrar clientes.");
+        }
+        
+        $tipoCliente = $_POST['tipo_cliente'] ?? 'natural';
+        
+        if ($tipoCliente === 'juridico') {
+            // ===== CLIENTE JURÍDICO =====
+            if (empty($_POST['rif']) || empty($_POST['razon_social'])) {
+                throw new Exception("RIF y Razón Social son obligatorios.");
+            }
+            
+            $datos = [
+                'rif' => trim($_POST['rif']),
+                'razon_social' => trim($_POST['razon_social']),
+                'telefono' => trim($_POST['telefono'] ?? ''),
+                'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
+                'direccion' => trim($_POST['direccion'] ?? ''),
+                'tipo' => 'juridico'
+            ];
+            
+            $id_cliente = $clienteModel->registrarClienteJuridico($datos);
+            $nombre_cliente = $datos['razon_social'];
+            $documento = $datos['rif'];
+            $tipo_label = 'Jurídico';
+        } else {
+            // ===== CLIENTE NATURAL =====
+            if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) {
+                throw new Exception("Cédula, Nombre y Apellido son obligatorios.");
+            }
+            
+            $datos = [
+                'cedula' => trim($_POST['cedula']),
+                'nombre' => trim($_POST['nombre']),
+                'apellido' => trim($_POST['apellido']),
+                'telefono' => trim($_POST['telefono'] ?? ''),
+                'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
+                'direccion' => trim($_POST['direccion'] ?? ''),
+                'fecha_de_nacimiento' => $_POST['fecha_de_nacimiento'] ?? date('Y-m-d', strtotime('-18 years')),
+                'tipo' => 'natural'
+            ];
+            
+            $id_cliente = $clienteModel->registrarClienteNatural($datos);
+            $nombre_cliente = $datos['nombre'] . ' ' . $datos['apellido'];
+            $documento = $datos['cedula'];
+            $tipo_label = 'Natural';
+        }
+        
+        if (!$id_cliente) {
+            throw new Exception("No se pudo registrar el cliente.");
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'id_cliente' => (int) $id_cliente,
+            'nombre_cliente' => $nombre_cliente,
+            'documento' => $documento,
+            'tipo' => $tipo_label
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
 
 // 3. PROCESAMIENTO POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -133,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // REGISTRO RÁPIDO DE PRODUCTO 
+    // REGISTRO RÁPIDO DE PRODUCTO (versión NO-AJAX, conservada por compatibilidad)
     if ($type === 'store_rapido_producto') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
@@ -183,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // REGISTRO RÁPIDO DE CLIENTE 
+    // REGISTRO RÁPIDO DE CLIENTE (versión NO-AJAX, conservada por compatibilidad)
     if ($type === 'store_rapido_cliente') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
@@ -388,13 +482,9 @@ try {
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
     
-    // Total de registros
     $totalRegistros = is_array($notas_full) ? count($notas_full) : 0;
-    
-    // Total de páginas
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
     
-    // Cortar el array para la página actual
     if ($por_pagina > 0) {
         $notas = array_slice($notas_full, $offset, $por_pagina);
     } else {
