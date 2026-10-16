@@ -9,7 +9,6 @@ use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\CategoriaModel;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Helpers\CheckPermiso;
-use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use Exception;
 
 //  INICIAR SESIÓN

@@ -3,6 +3,7 @@
 namespace App\Pirotecnicafenix\Model;
 
 use PDO;
+use PDOException;
 use Exception;
 
 class UsuarioModel {
@@ -12,6 +13,10 @@ class UsuarioModel {
     public function __construct($db) {
         $this->db = $db;
     }
+
+    // ==========================================
+    // LECTURA
+    // ==========================================
 
     // Obtener todos los usuarios con su persona y rol
     public function obtenerUsuariosConPersona() {
@@ -31,18 +36,19 @@ class UsuarioModel {
                     FROM usuario u
                     INNER JOIN persona p ON u.id_persona = p.id_persona
                     LEFT JOIN rol r ON u.id_rol = r.id_rol
+                    WHERE u.eliminado = 0 AND p.eliminado = 0
                     ORDER BY u.id_usuario DESC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             error_log("Error en obtenerUsuariosConPersona: " . $e->getMessage());
             return [];
         }
     }
 
-    //  CONTAR USUARIOS (para paginación)
+    // Contar usuarios
     public function contarUsuarios($busqueda = null) {
         try {
             $busqueda = trim((string) $busqueda);
@@ -51,20 +57,21 @@ class UsuarioModel {
                 $sql = "SELECT COUNT(*) 
                         FROM usuario u
                         INNER JOIN persona p ON u.id_persona = p.id_persona
-                        WHERE u.usuario LIKE :busqueda
+                        WHERE u.eliminado = 0 AND p.eliminado = 0
+                        AND (u.usuario LIKE :busqueda
                            OR p.nombre LIKE :busqueda 
                            OR p.apellido LIKE :busqueda
-                           OR p.cedula LIKE :busqueda";
+                           OR p.cedula LIKE :busqueda)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([':busqueda' => '%' . $busqueda . '%']);
             } else {
-                $sql = "SELECT COUNT(*) FROM usuario";
+                $sql = "SELECT COUNT(*) FROM usuario WHERE eliminado = 0";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute();
             }
             
             return (int) $stmt->fetchColumn();
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             error_log("Error en contarUsuarios: " . $e->getMessage());
             return 0;
         }
@@ -89,18 +96,19 @@ class UsuarioModel {
                     INNER JOIN persona p ON u.id_persona = p.id_persona
                     LEFT JOIN rol r ON u.id_rol = r.id_rol
                     WHERE u.id_usuario = :id
+                    AND u.eliminado = 0
                     LIMIT 1";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             error_log("Error en obtenerUsuarioPorId: " . $e->getMessage());
             return null;
         }
     }
 
-    // Buscar usuarios por nombre, usuario o cédula
+    // Buscar usuarios
     public function buscarUsuarios($busqueda) {
         try {
             $sql = "SELECT 
@@ -118,36 +126,104 @@ class UsuarioModel {
                     FROM usuario u
                     INNER JOIN persona p ON u.id_persona = p.id_persona
                     LEFT JOIN rol r ON u.id_rol = r.id_rol
-                    WHERE u.usuario LIKE :busqueda
+                    WHERE u.eliminado = 0 AND p.eliminado = 0
+                    AND (u.usuario LIKE :busqueda
                        OR p.nombre LIKE :busqueda 
                        OR p.apellido LIKE :busqueda
-                       OR p.cedula LIKE :busqueda
+                       OR p.cedula LIKE :busqueda)
                     ORDER BY u.id_usuario DESC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':busqueda' => '%' . $busqueda . '%']);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             error_log("Error en buscarUsuarios: " . $e->getMessage());
             return [];
         }
     }
 
+    // ==========================================
+    // VALIDACIONES ÚNICAS (para AJAX)
+    // ==========================================
+
+    /**
+     * Verifica si existe un usuario con el nombre dado
+     */
+    public function existeUsuario($usuario, $idExcluir = null) {
+        try {
+            $sql = "SELECT COUNT(*) FROM usuario 
+                    WHERE usuario = :usuario 
+                    AND eliminado = 0";
+            
+            $params = [':usuario' => $usuario];
+            
+            if ($idExcluir !== null) {
+                $sql .= " AND id_usuario != :id";
+                $params[':id'] = $idExcluir;
+            }
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            error_log("Error en existeUsuario: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si existe una persona con la cédula dada
+     */
+    public function existeCedula($cedula, $idPersonaExcluir = null) {
+        try {
+            $sql = "SELECT COUNT(*) FROM persona 
+                    WHERE cedula = :cedula 
+                    AND eliminado = 0";
+            
+            $params = [':cedula' => $cedula];
+            
+            if ($idPersonaExcluir !== null) {
+                $sql .= " AND id_persona != :id";
+                $params[':id'] = $idPersonaExcluir;
+            }
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            error_log("Error en existeCedula: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ==========================================
+    // ESCRITURA
+    // ==========================================
+
     // Registrar un nuevo usuario con su persona asociada
     public function registrarUsuarioCompleto($datosPersona, $datosUsuario) {
         $this->db->beginTransaction();
         try {
-            $checkUserSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario";
+            // Validar usuario único
+            $checkUserSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario AND eliminado = 0";
             $checkUserStmt = $this->db->prepare($checkUserSql);
             $checkUserStmt->execute([':usuario' => $datosUsuario['usuario']]);
             if ($checkUserStmt->fetchColumn() > 0) {
                 throw new Exception("El nombre de usuario '{$datosUsuario['usuario']}' ya está registrado.");
             }
 
+            // Validar cédula única
+            $checkCedulaSql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula AND eliminado = 0";
+            $checkCedulaStmt = $this->db->prepare($checkCedulaSql);
+            $checkCedulaStmt->execute([':cedula' => $datosPersona['cedula']]);
+            if ($checkCedulaStmt->fetchColumn() > 0) {
+                throw new Exception("La cédula '{$datosPersona['cedula']}' ya está registrada.");
+            }
+
             $sqlPersona = "INSERT INTO persona 
-                                (nombre, apellido, direccion, cedula, telefono, correo_electronico) 
+                                (nombre, apellido, direccion, cedula, telefono, correo_electronico, eliminado) 
                             VALUES 
-                                (:nombre, :apellido, :direccion, :cedula, :telefono, :correo_electronico)";
+                                (:nombre, :apellido, :direccion, :cedula, :telefono, :correo_electronico, 0)";
             
             $stmtPersona = $this->db->prepare($sqlPersona);
             $stmtPersona->execute([
@@ -165,9 +241,9 @@ class UsuarioModel {
             }
 
             $sqlUsuario = "INSERT INTO usuario 
-                                (id_persona, usuario, id_rol, clave) 
+                                (id_persona, usuario, id_rol, clave, eliminado) 
                             VALUES 
-                                (:id_persona, :usuario, :id_rol, :clave)";
+                                (:id_persona, :usuario, :id_rol, :clave, 0)";
             
             $stmtUsuario = $this->db->prepare($sqlUsuario);
             $stmtUsuario->execute([
@@ -188,36 +264,11 @@ class UsuarioModel {
         }
     }
 
-    // Crear usuario (método simplificado)
-    public function crearUsuario($datos) {
-        try {
-            $datosPersona = [
-                'nombre' => $datos['nombre_completo'] ?? $datos['nombre'] ?? 'Usuario',
-                'apellido' => $datos['apellido'] ?? '',
-                'direccion' => $datos['direccion'] ?? null,
-                'cedula' => $datos['cedula'] ?? '00000000',
-                'telefono' => $datos['telefono'] ?? null,
-                'correo' => $datos['email'] ?? null
-            ];
-
-            $datosUsuario = [
-                'usuario' => $datos['usuario'],
-                'id_rol' => $datos['id_rol'] ?? 2,
-                'clave' => $datos['clave']
-            ];
-
-            return $this->registrarUsuarioCompleto($datosPersona, $datosUsuario);
-        } catch (Exception $e) {
-            error_log("Error en crearUsuario: " . $e->getMessage());
-            return false;
-        }
-    }
-
     // Actualizar un usuario y su persona asociada
     public function actualizarUsuario($id, array $datos) {
         $this->db->beginTransaction();
         try {
-            $checkSql = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
+            $checkSql = "SELECT id_persona FROM usuario WHERE id_usuario = :id AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute([':id' => $id]);
             $usuario = $checkStmt->fetch(PDO::FETCH_ASSOC);
@@ -225,7 +276,7 @@ class UsuarioModel {
                 throw new Exception("El usuario con ID {$id} no existe.");
             }
 
-            $checkUserSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario AND id_usuario != :id";
+            $checkUserSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario AND id_usuario != :id AND eliminado = 0";
             $checkUserStmt = $this->db->prepare($checkUserSql);
             $checkUserStmt->execute([
                 ':usuario' => $datos['usuario'],
@@ -246,12 +297,12 @@ class UsuarioModel {
             
             $stmtPersona = $this->db->prepare($sqlPersona);
             $stmtPersona->execute([
-                ':nombre' => $datos['nombre'] ?? $datos['nombre_completo'] ?? 'Usuario',
+                ':nombre' => $datos['nombre'] ?? 'Usuario',
                 ':apellido' => $datos['apellido'] ?? '',
                 ':direccion' => $datos['direccion'] ?? null,
                 ':cedula' => $datos['cedula'] ?? '00000000',
                 ':telefono' => $datos['telefono'] ?? null,
-                ':correo_electronico' => $datos['correo_electronico'] ?? $datos['email'] ?? null,
+                ':correo_electronico' => $datos['correo_electronico'] ?? null,
                 ':id_persona' => $usuario['id_persona']
             ]);
 
@@ -289,11 +340,11 @@ class UsuarioModel {
         }
     }
 
-    // Eliminar un usuario y su persona asociada
+    // Eliminar usuario (borrado lógico)
     public function eliminarUsuario($id) {
         $this->db->beginTransaction();
         try {
-            $checkSql = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
+            $checkSql = "SELECT id_persona FROM usuario WHERE id_usuario = :id AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute([':id' => $id]);
             $usuario = $checkStmt->fetch(PDO::FETCH_ASSOC);
@@ -303,11 +354,11 @@ class UsuarioModel {
 
             $idPersona = $usuario['id_persona'];
 
-            $sqlUsuario = "DELETE FROM usuario WHERE id_usuario = :id";
+            $sqlUsuario = "UPDATE usuario SET eliminado = 1 WHERE id_usuario = :id";
             $stmtUsuario = $this->db->prepare($sqlUsuario);
             $stmtUsuario->execute([':id' => $id]);
 
-            $sqlPersona = "DELETE FROM persona WHERE id_persona = :id_persona";
+            $sqlPersona = "UPDATE persona SET eliminado = 1 WHERE id_persona = :id_persona";
             $stmtPersona = $this->db->prepare($sqlPersona);
             $stmtPersona->execute([':id_persona' => $idPersona]);
 

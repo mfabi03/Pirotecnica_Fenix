@@ -64,5 +64,21 @@ class AuthMiddleware
             exit();
         }
     }
+    public static function checkAccess(string $url): bool
+        {
+            $publicRoutes = ['main', 'login', ''];
+            $authRoutes = ['dashboard', 'productos', 'proveedores', 'clientes', 'categorias', 'notaentrada', 'notasalida', 'reportes', 'reportecaja', 'exportar_caja_csv', 'permisos'];
+            
 
-}
+            if (in_array($url, $publicRoutes, true)) {
+                return true;
+            }
+
+            if (in_array($url, $authRoutes, true)) {
+                return self::isLoggedIn();
+            }
+
+            return true;
+        }
+    }
+ 
