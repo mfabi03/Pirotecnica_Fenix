@@ -1220,3 +1220,85 @@ body {
     border-color: rgba(255,255,255,0.05);
     vertical-align: middle;
 }
+
+/* ==========================================
+   ANIMACIONES CSS - TUNEO DEL SISTEMA
+   ========================================== */
+
+/* Fade-in up para tarjetas */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Fade-in simple */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Escala de entrada para modales */
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Aplicar a tarjetas de estadísticas */
+.stat-card {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* Hover en filas de tabla */
+tbody tr {
+    transition: background 0.3s ease;
+}
+
+tbody tr:hover {
+    background: rgba(243, 156, 18, 0.08) !important;
+}
+
+/* Botones con transición */
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Alertas con animación */
+.alert {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Modales con animación */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+}
+
+/* Card con hover */
+.dark-card, .stat-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-card:hover, .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+}

@@ -5,7 +5,7 @@ use App\Pirotecnicafenix\Helpers\PermisoHelper;
 
 class AuthMiddleware
 {
-    // Averigua que el usuario esté logueado
+    
     public static function isLoggedIn(): bool
     {
         return isset($_SESSION['id_usuario']) && !empty($_SESSION['id_usuario']);
@@ -48,13 +48,7 @@ class AuthMiddleware
         }
     }
 
-    /**
-     * ⭐ NUEVO: Verifica si el usuario tiene permiso para un módulo y acción
-     * 
-     * @param \PDO $db Conexión a la BD
-     * @param string $modulo Nombre del módulo (ej: 'Productos', 'Clientes')
-     * @param string $accion 'crear', 'leer', 'actualizar', 'eliminar'
-     */
+   
     public static function requirePermiso($db, string $modulo, string $accion = 'leer'): void
     {
         if (!self::isLoggedIn()) {
@@ -70,25 +64,21 @@ class AuthMiddleware
             exit();
         }
     }
-
     public static function checkAccess(string $url): bool
-    {
-        $publicRoutes = ['main', 'login', ''];
-        $authRoutes = ['dashboard', 'productos', 'proveedores', 'clientes', 'categorias', 'notaentrada', 'notasalida', 'reportes', 'permisos'];
-        $adminRoutes = ['usuarios', 'roles'];
+        {
+            $publicRoutes = ['main', 'login', ''];
+            $authRoutes = ['dashboard', 'productos', 'proveedores', 'clientes', 'categorias', 'notaentrada', 'notasalida', 'reportes', 'reportecaja', 'exportar_caja_csv', 'permisos'];
+            
 
-        if (in_array($url, $publicRoutes, true)) {
+            if (in_array($url, $publicRoutes, true)) {
+                return true;
+            }
+
+            if (in_array($url, $authRoutes, true)) {
+                return self::isLoggedIn();
+            }
+
             return true;
         }
-
-        if (in_array($url, $authRoutes, true)) {
-            return self::isLoggedIn();
-        }
-
-        if (in_array($url, $adminRoutes, true)) {
-            return self::isLoggedIn() && self::isAdmin();
-        }
-
-        return true;
     }
-}
+ 

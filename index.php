@@ -183,7 +183,7 @@ switch ($url) {
 // ============================================
 case 'reportecaja':
     AuthMiddleware::requireAuth();
-    AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
+    AuthMiddleware::requirePermiso($pdo, 'ReposteCaja', 'leer');
     require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
     $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
     $reporteCajaController->index();
@@ -191,7 +191,7 @@ case 'reportecaja':
 
 case 'exportar_caja_csv':
     AuthMiddleware::requireAuth();
-    AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
+    AuthMiddleware::requirePermiso($pdo, 'ReposteCaja', 'leer');
     require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
     $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
     $reporteCajaController->exportarCSV();

@@ -35,6 +35,7 @@ $currentUrl = $_GET['url'] ?? 'main';
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilo.css">
     <!-- ⭐ VALIDACIONES GLOBALES -->
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/validaciones.css">
+    <script src="/pirotecnica_fenix/assets/js/validaciones.js" defer></script>
 </head>
 <body>
 
@@ -220,15 +221,18 @@ MENÚ LATERAL
                 </div>
                 <?php endif; ?>
                 
-                <!-- ===== REPORTES (DROPDOWN) ===== -->
+              <!-- ===== REPORTES (DROPDOWN) ===== -->
                 <?php
-                $isReportesActive = in_array($currentUrl, ['reportes', 'reportecaja']);
+                $verReporteMovimiento = $tieneModulo('Reportes');
+                $verReporteCaja       = $tieneModulo('ReporteCaja');
+                $verReportes          = $verReporteMovimiento || $verReporteCaja;
+                $isReportesActive     = in_array($currentUrl, ['reportes', 'reportecaja']);
                 ?>
-                <?php if ($tieneModulo('Reportes')): ?>
+                <?php if ($verReportes): ?>
                 <div class="w-100">
                     <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isReportesActive ? 'active' : '' ?>" 
-                       data-bs-toggle="collapse" href="#menuReportes" role="button" aria-expanded="<?= $isReportesActive ? 'true' : 'false' ?>" aria-controls="menuReportes"
-                       style="border: none; width: 100%; background: <?= $isReportesActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isReportesActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isReportesActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
+                    data-bs-toggle="collapse" href="#menuReportes" role="button" aria-expanded="<?= $isReportesActive ? 'true' : 'false' ?>" aria-controls="menuReportes"
+                    style="border: none; width: 100%; background: <?= $isReportesActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isReportesActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isReportesActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
                         <i class="fas fa-file-alt" style="width: 20px; color: <?= $isReportesActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
                         <span style="flex: 1;">Reportes</span>
                         <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
@@ -236,24 +240,32 @@ MENÚ LATERAL
 
                     <div class="collapse <?= $isReportesActive ? 'show' : '' ?>" id="menuReportes">
                         <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
-                            <!-- Opción 1: Reporte de Movimiento -->
+                            
+                            <!-- Opción 1: Reporte de Movimiento (solo si tiene permiso) -->
+                            <?php if ($verReporteMovimiento): ?>
                             <a class="dropdown-item py-2 px-2 rounded-2" href="?url=reportes" 
-                               style="color: <?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.8rem; transition: all 0.3s ease; background: <?= $currentUrl == 'reportes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; white-space: nowrap;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='<?= $currentUrl == 'reportes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
+                            style="color: <?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.8rem; transition: all 0.3s ease; background: <?= $currentUrl == 'reportes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; white-space: nowrap;"
+                            onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                            onmouseout="this.style.background='<?= $currentUrl == 'reportes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
                                 <i class="fas fa-boxes-stacked me-1" style="color: rgba(255,255,255,0.3);"></i> Reporte de Movimiento
                             </a>
-                            <!-- Opción 2: Reporte de Caja -->
+                            <?php endif; ?>
+                            
+                            <!-- Opción 2: Reporte de Caja (solo si tiene permiso) -->
+                            <?php if ($verReporteCaja): ?>
                             <a class="dropdown-item py-2 px-2 rounded-2" href="?url=reportecaja" 
-                               style="color: <?= $currentUrl == 'reportecaja' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.8rem; transition: all 0.3s ease; background: <?= $currentUrl == 'reportecaja' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; white-space: nowrap;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='<?= $currentUrl == 'reportecaja' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'reportecaja' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
+                            style="color: <?= $currentUrl == 'reportecaja' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.8rem; transition: all 0.3s ease; background: <?= $currentUrl == 'reportecaja' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; white-space: nowrap;"
+                            onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
+                            onmouseout="this.style.background='<?= $currentUrl == 'reportecaja' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'reportecaja' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
                                 <i class="fas fa-cash-register me-1" style="color: rgba(255,255,255,0.3);"></i> Reporte de Caja
                             </a>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
+                            <?php endif; ?>
+            
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+                 
                 
                 <!-- ===== ESPACIO ===== -->
                 <div style="flex: 1;"></div>

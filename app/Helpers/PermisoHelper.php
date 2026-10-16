@@ -7,23 +7,14 @@ use Exception;
 
 class PermisoHelper {
     
-    /**
-     * Verifica si un rol tiene permiso para una acción en un módulo
-     * 
-     * @param PDO $db Conexión a la BD
-     * @param int $id_rol ID del rol
-     * @param string $nombre_modulo Nombre del módulo (ej: 'Productos')
-     * @param string $accion 'crear', 'leer', 'actualizar', 'eliminar'
-     * @return bool
-     */
+    
     public static function tienePermiso($db, $id_rol, $nombre_modulo, $accion) {
-        // Validación de seguridad: solo acciones permitidas
+        
         $accionesValidas = ['crear', 'leer', 'actualizar', 'eliminar'];
         if (!in_array($accion, $accionesValidas)) {
             error_log("Acción no válida: $accion");
             return false;
         }
-        
         try {
             $sql = "SELECT p.$accion 
                     FROM permisos p
@@ -47,13 +38,8 @@ class PermisoHelper {
         }
     }
     
-    /**
-     * Obtiene todos los permisos de un rol
-     * 
-     * @param PDO $db
-     * @param int $id_rol
-     * @return array
-     */
+   
+    
     public static function obtenerPermisos($db, $id_rol) {
         try {
             $sql = "SELECT 
@@ -75,13 +61,7 @@ class PermisoHelper {
         }
     }
     
-    /**
-     * Obtiene los nombres de los módulos que un rol puede LEER
-     * 
-     * @param PDO $db
-     * @param int $id_rol
-     * @return array
-     */
+    
     public static function modulosVisibles($db, $id_rol) {
         try {
             $sql = "SELECT m.nombre_modulo

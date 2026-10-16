@@ -28,7 +28,6 @@ if (!empty($_SESSION['error'])): ?>
     <div class="row">
         <div class="col-md-8 col-lg-12">
             
-            <!-- TARJETA DE TÍTULO - FONDO OSCURO-->
             <div class="dark-header-card card p-4 mb-4">
                 <div class="row align-items-center">
                     <div class="col">
@@ -44,7 +43,7 @@ if (!empty($_SESSION['error'])): ?>
                     </div>
                 </div>
             </div>
-                        <!-- ALERTA DE STOCK MÍNIMO (RF-11 / CU-11)-->
+                       
                 <?php if (($stats['productos_criticos'] ?? 0) > 0): ?>
                     <div class="row mb-4">
                         <div class="col-12">
@@ -66,7 +65,7 @@ if (!empty($_SESSION['error'])): ?>
                 <?php endif; ?>
             
             <div class="row g-4 mb-4">
-                <!-- Tarjeta 1: Productos -->
+              
                 <div class="col-12 col-md-3">
                     <div class="stat-card stat-card-primary">
                         <div class="stat-card-icon">
@@ -118,8 +117,7 @@ if (!empty($_SESSION['error'])): ?>
                         </div>
                     </div>
                 </div>
-                            
-                <!-- Tarjeta 4: Clientes -->
+          
                 <div class="col-12 col-md-3">
                     <div class="stat-card stat-card-info">
                         <div class="stat-card-icon">
@@ -138,11 +136,9 @@ if (!empty($_SESSION['error'])): ?>
                 </div>
             </div>
 
-            <!-- ==========================================
-                 SEGUNDA FILA DE TARJETAS
-                 ========================================== -->
+            
             <div class="row g-4 mb-4">
-                <!-- Tarjeta 5: Notas de Salida -->
+             
                 <div class="col-12 col-md-6">
                     <div class="stat-card stat-card-purple">
                         <div class="stat-card-icon">
@@ -160,11 +156,10 @@ if (!empty($_SESSION['error'])): ?>
                     </div>
                 </div>
                 
-                <!-- Tarjeta 6: Notas de Entrada -->
                 <div class="col-12 col-md-6">
                     <div class="stat-card" style="border-color: rgba(108, 117, 125, 0.3);">
                         <div class="stat-card-icon" style="background: rgba(108, 117, 125, 0.12); color: #adb5bd;">
-                            <i class="fas fa-sign-in-alt"></i> <!-- Ícono corregido -->
+                            <i class="fas fa-sign-in-alt"></i> 
                         </div>
                         <div class="stat-card-content">
                             <span class="stat-card-label">Notas de Entrada</span>
