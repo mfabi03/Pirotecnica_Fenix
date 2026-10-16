@@ -1,0 +1,13 @@
+.fireworks-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	overflow: hidden;
+	pointer-events: none;
+	background: transparent !important;
+}
+
+.fireworks-overlay canvas {
+	background: transparent !important;
+	pointer-events: none !important;
+}
