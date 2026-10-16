@@ -182,7 +182,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     </table>
                 </div>
                 
-                <!--  PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
+                
                 <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
                         <i class="fas fa-tags me-1"></i> 

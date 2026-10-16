@@ -10,7 +10,9 @@ use App\Pirotecnicafenix\Model\RolModel;
 use Exception;
 use PDO;
 
+// ==========================================
 // 1. INICIAR SESIÓN Y VERIFICAR PERMISOS
+// ==========================================
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -21,7 +23,9 @@ if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] != 1) {
     exit();
 }
 
+// ==========================================
 // 2. CARGA DEL MODELO
+// ==========================================
 $rutaRaiz = dirname(__DIR__, 2);
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'RolModel.php';
 
@@ -31,7 +35,9 @@ if (file_exists($pathModel)) {
     die("ERROR CRÍTICO: No se encuentra el archivo: " . $pathModel);
 }
 
+// ==========================================
 // 3. INICIALIZACIÓN DE CONEXIÓN Y MODELO
+// ==========================================
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new \App\Pirotecnicafenix\Model\RolModel($db);
@@ -39,7 +45,9 @@ try {
     die("Error de conexión: " . $e->getMessage());
 }
 
+// ==========================================
 // 4. PARÁMETROS DE LA URL
+// ==========================================
 $action = $_GET['action'] ?? 'lista';
 $id = $_GET['id'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
@@ -51,89 +59,225 @@ unset($_SESSION['tipo_mensaje']);
 // Parámetros de búsqueda
 $busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 
-// 5. PROCESAR POST 
+// ==========================================
+// 5. ENDPOINTS AJAX (tuneo del sistema)
+// ==========================================
 
-// ===== GUARDAR NUEVO ROL =====
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'guardar') {
+// ===== AJAX 1: Validar nombre único =====
+if ($action === 'check_nombre') {
+    header('Content-Type: application/json');
+    $nombre = trim($_GET['valor'] ?? '');
+    $idExcluir = isset($_GET['id_excluir']) ? (int) $_GET['id_excluir'] : null;
+    
+    if (empty($nombre)) {
+        echo json_encode(['existe' => false]);
+        exit;
+    }
+    
     try {
-        if (empty(trim($_POST['nombre_rol']))) {
+        $existe = $modelo->existeRol($nombre, $idExcluir);
+        echo json_encode(['existe' => $existe]);
+    } catch (Exception $e) {
+        echo json_encode(['existe' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ===== AJAX 2: Obtener detalle de un rol =====
+if ($action === 'show_ajax') {
+    header('Content-Type: application/json');
+    $id = (int) ($_GET['id'] ?? 0);
+    
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'mensaje' => 'ID inválido']);
+        exit;
+    }
+    
+    try {
+        $rol = $modelo->getRolById($id);
+        
+        if (!$rol) {
+            throw new Exception("Rol no encontrado");
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'id_rol' => (int) $rol['id_rol'],
+                'nombre_rol' => $rol['nombre_rol'],
+                'total_usuarios' => (int) ($rol['total_usuarios'] ?? 0)
+            ]
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'mensaje' => $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+// ===== AJAX 3: Guardar rol =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store_ajax') {
+    header('Content-Type: application/json');
+    
+    try {
+        $nombre = trim($_POST['nombre_rol'] ?? '');
+        
+        if (empty($nombre)) {
             throw new Exception("El nombre del rol es obligatorio.");
         }
-
-        $nombre = trim($_POST['nombre_rol']);
+        
         $resultado = $modelo->crearRol($nombre);
         
-        $_SESSION['mensaje'] = $resultado ? "✅ Rol registrado exitosamente" : "Error al registrar rol";
-        $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
+        if ($resultado) {
+            echo json_encode([
+                'success' => true,
+                'mensaje' => "Rol '{$nombre}' registrado exitosamente",
+                'data' => [
+                    'id' => (int) $resultado,
+                    'nombre' => $nombre
+                ]
+            ]);
+        } else {
+            throw new Exception("No se pudo registrar el rol. Verifica que el nombre no esté duplicado.");
+        }
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
+        echo json_encode([
+            'success' => false,
+            'mensaje' => $e->getMessage()
+        ]);
     }
-    header("Location: ?url=roles&action=lista");
-    exit();
+    exit;
 }
 
-// ===== ACTUALIZAR ROL =====
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'actualizar') {
+// ===== AJAX 4: Actualizar rol =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'update_ajax') {
+    header('Content-Type: application/json');
+    
     try {
-        $id = $_POST['id_rol'] ?? null;
-        if (!$id) throw new Exception("ID de rol no proporcionado");
-
-        if (empty(trim($_POST['nombre_rol']))) {
-            throw new Exception("El nombre del rol es obligatorio.");
-        }
-
-        if ($id == 1) {
-            throw new Exception("No puedes modificar el rol de Administrador");
-        }
-
-        $nombre = trim($_POST['nombre_rol']);
+        $id = (int) ($_POST['id_rol'] ?? 0);
+        $nombre = trim($_POST['nombre_rol'] ?? '');
+        
+        if ($id <= 0) throw new Exception("ID de rol inválido.");
+        if (empty($nombre)) throw new Exception("El nombre del rol es obligatorio.");
+        if ($id === 1) throw new Exception("No puedes modificar el rol de Administrador.");
+        
         $resultado = $modelo->actualizarRol($id, $nombre);
         
-        $_SESSION['mensaje'] = $resultado ? "✅ Rol actualizado exitosamente" : "Error al actualizar rol";
-        $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
+        if ($resultado) {
+            echo json_encode([
+                'success' => true,
+                'mensaje' => "Rol actualizado exitosamente",
+                'data' => ['id' => $id, 'nombre' => $nombre]
+            ]);
+        } else {
+            throw new Exception("No se pudo actualizar el rol.");
+        }
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al actualizar: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
+        echo json_encode([
+            'success' => false,
+            'mensaje' => $e->getMessage()
+        ]);
     }
-    header("Location: ?url=roles&action=lista");
-    exit();
+    exit;
 }
 
-// ===== ELIMINAR ROL =====
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
+// ===== AJAX 5: Eliminar rol =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delete_ajax') {
+    header('Content-Type: application/json');
+    
     try {
-        $id = $_POST['id_rol'] ?? null;
-        if (!$id || !is_numeric($id) || $id <= 0) {
-            throw new Exception("ID de rol inválido");
-        }
+        $id = (int) ($_POST['id_rol'] ?? 0);
         
-        if ($id == 1) {
-            throw new Exception("No puedes eliminar el rol de Administrador");
-        }
+        if ($id <= 0) throw new Exception("ID de rol inválido.");
+        if ($id === 1) throw new Exception("No puedes eliminar el Administrador.");
         
-        $sql = "SELECT COUNT(*) as total FROM usuario WHERE id_rol = :id AND eliminado = 0";
+        // Verificar si tiene usuarios asignados
+        $sql = "SELECT COUNT(*) FROM usuario WHERE id_rol = :id AND eliminado = 0";
         $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $id]);
         $total = $stmt->fetchColumn();
         
         if ($total > 0) {
-            throw new Exception("No puedes eliminar este rol porque tiene $total usuarios asignados");
+            throw new Exception("No puedes eliminar este rol porque tiene {$total} usuario(s) asignado(s).");
         }
         
         $resultado = $modelo->eliminarRol($id);
-        $_SESSION['mensaje'] = $resultado ? "✅ Rol eliminado exitosamente" : "No se pudo eliminar el rol";
-        $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
+        
+        if ($resultado) {
+            echo json_encode([
+                'success' => true,
+                'mensaje' => "Rol eliminado exitosamente"
+            ]);
+        } else {
+            throw new Exception("No se pudo eliminar el rol.");
+        }
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al eliminar: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
+        echo json_encode([
+            'success' => false,
+            'mensaje' => $e->getMessage()
+        ]);
     }
-    header("Location: ?url=roles&action=lista");
-    exit();
+    exit;
 }
 
-// ===== GUARDAR PERMISOS DE UN ROL =====
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'guardar_permisos') {
+// ===== AJAX 6: Obtener datos de permisos de un rol (rol + módulos + permisos) =====
+if ($action === 'permisos_ajax') {
+    header('Content-Type: application/json');
+    $id_rol = (int) ($_GET['id_rol'] ?? 0);
+    
+    if ($id_rol <= 0) {
+        echo json_encode(['success' => false, 'mensaje' => 'ID de rol inválido']);
+        exit;
+    }
+    
+    try {
+        require_once $rutaRaiz . '/app/Model/PermisoModel.php';
+        $permisoModel = new \App\Pirotecnicafenix\Model\PermisoModel($db);
+        
+        // 1. Datos del rol
+        $rolData = $modelo->getRolById($id_rol);
+        if (!$rolData) {
+            throw new Exception("Rol no encontrado");
+        }
+        
+        // 2. Todos los módulos
+        $modulos = $permisoModel->obtenerModulos();
+        
+        // 3. Permisos actuales del rol
+        $permisosRaw = $permisoModel->obtenerPermisosPorRol($id_rol);
+        
+        // 4. Reorganizar: [id_modulo => [crear => 1, leer => 1, ...]]
+        $permisosActuales = [];
+        foreach ($permisosRaw as $idModulo => $acciones) {
+            $permisosActuales[$idModulo] = $acciones;
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'rol' => [
+                    'id_rol' => (int) $rolData['id_rol'],
+                    'nombre_rol' => $rolData['nombre_rol']
+                ],
+                'modulos' => $modulos,
+                'permisos' => $permisosActuales
+            ]
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'mensaje' => $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+// ===== AJAX 7: Guardar permisos de un rol =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'save_permisos_ajax') {
+    header('Content-Type: application/json');
+    
     try {
         $id_rol = (int) ($_POST['id_rol'] ?? 0);
         $permisosPost = $_POST['permisos'] ?? [];
@@ -151,33 +295,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         
         $resultado = $permisoModel->actualizarPermisos($id_rol, $permisosPost);
         
-        $_SESSION['mensaje'] = $resultado ? "✅ Permisos actualizados correctamente" : "Error al actualizar permisos";
-        $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
-        
+        if ($resultado) {
+            echo json_encode([
+                'success' => true,
+                'mensaje' => "Permisos actualizados correctamente"
+            ]);
+        } else {
+            throw new Exception("Error al actualizar los permisos");
+        }
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error: " . $e->getMessage();
-        $_SESSION['tipo_mensaje'] = "danger";
+        echo json_encode([
+            'success' => false,
+            'mensaje' => $e->getMessage()
+        ]);
     }
-    
-    header("Location: ?url=roles&action=permisos&id=" . ($id_rol ?? 0));
+    exit;
+}
+
+
+
+// ==========================================
+// 7. CARGAR VISTAS
+// ==========================================
+$basePath = __DIR__ . "/../view/configuracion/";
+
+// ===== BLOQUEAR ACCESO A RUTAS LEGACY =====
+// Si alguien intenta acceder por URL directa a registrar/editar/ver,
+// lo redirigimos al listado (ahora son modales)
+if (in_array($action, ['registrar', 'crear', 'editar', 'ver'])) {
+    header("Location: ?url=roles&action=lista");
     exit();
 }
 
-// 6. OBTENER DATOS PARA VISTAS
-if (in_array($action, ['editar', 'ver', 'permisos']) && $id) {
-    $rol = $modelo->getRolById($id);
-    if (!$rol) {
-        $_SESSION['mensaje'] = "Rol no encontrado";
-        $_SESSION['tipo_mensaje'] = "danger";
-        header("Location: ?url=roles&action=lista");
-        exit();
-    }
-}
-
-// 7. CARGAR VISTAS
-$basePath = __DIR__ . "/../view/configuracion/";
-
-// ===== LISTA DE ROLES =====
+// ===== LISTA DE ROLES (VISTA PRINCIPAL) =====
 if ($action === 'lista' || $action === '' || $action === 'roles') {
     $busqueda_trim = is_string($busqueda) ? trim($busqueda) : '';
     
@@ -214,31 +364,22 @@ if ($action === 'lista' || $action === '' || $action === 'roles') {
     exit();
 }
 
-// ===== REGISTRAR ROL =====
-if ($action === 'registrar' || $action === 'crear') {
-    require_once $basePath . "rolRegistro.php";
-    exit();
-}
-
-// ===== VER ROL =====
-if ($action === 'ver' && $id) {
-    require_once $basePath . "rolVer.php";
-    exit();
-}
-
-// ===== EDITAR ROL =====
-if ($action === 'editar' && $id) {
-    require_once $basePath . "rolEditar.php";
-    exit();
-}
-
-// ===== GESTIONAR PERMISOS DE UN ROL =====
+// ===== GESTIONAR PERMISOS DE UN ROL (VISTA INDEPENDIENTE - AÚN SE USA) =====
 if ($action === 'permisos' && $id) {
     require_once $rutaRaiz . '/app/Model/PermisoModel.php';
     $permisoModel = new \App\Pirotecnicafenix\Model\PermisoModel($db);
     
     $modulos = $permisoModel->obtenerModulos();
     $permisosActuales = $permisoModel->obtenerPermisosPorRol($id);
+    
+    // Buscar el rol para pasarlo a la vista
+    $rol = $modelo->getRolById($id);
+    if (!$rol) {
+        $_SESSION['mensaje'] = "Rol no encontrado";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=roles&action=lista");
+        exit();
+    }
     
     require_once $basePath . "rolPermisos.php";
     exit();

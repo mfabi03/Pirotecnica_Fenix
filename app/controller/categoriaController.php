@@ -1,5 +1,5 @@
 <?php
-// app/Controller/categoriaController.php
+// app/Controller/CategoriaController.php
 namespace App\Pirotecnicafenix\Controller;
 
 error_reporting(E_ALL);
@@ -7,33 +7,35 @@ ini_set('display_errors', 1);
 
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\CategoriaModel;
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Helpers\CheckPermiso;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use Exception;
 
-// 1. INICIAR SESIÓN
+//  INICIAR SESIÓN
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 2. VERIFICAR AUTENTICACIÓN
+//  VERIFICAR AUTENTICACIÓN (SOLO LOGIN, SIN RESTRICCIÓN DE ROL)
+
 if (!isset($_SESSION['id_usuario']) || empty($_SESSION['id_usuario'])) {
     $_SESSION['error_permiso'] = "Debes iniciar sesión para acceder a esta sección.";
     header('Location: ?url=login');
     exit();
 }
 
-// 3. CARGAR MODELO
+//  CARGAR MODELO
 $rutaRaiz = dirname(__DIR__, 2);
-$pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'categoriaModel.php';
+$pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'CategoriaModel.php';
 
 if (file_exists($pathModel)) {
     require_once $pathModel;
 } else {
-    die("ERROR: No se encuentra categoriaModel.php en: " . $pathModel);
+    die("ERROR: No se encuentra CategoriaModel.php en: " . $pathModel);
 }
 
-// 4. INICIALIZACIÓN
+//  INICIALIZACIÓN
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new CategoriaModel($db);
@@ -41,72 +43,22 @@ try {
     die("Error de conexión: " . $e->getMessage());
 }
 
-// 5. OBTENER ACCIÓN (GET o POST)
-$action = $_GET['action'] ?? $_POST['action'] ?? $_GET['type'] ?? 'lista';
+//  OBTENER ACCIÓN (GET o POST)
+$action = $_GET['action'] ?? $_POST['action'] ?? 'lista';
 $id = $_GET['id'] ?? $_POST['id_categoria'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
 $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? null;
-$busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
+$busqueda = $_GET['busqueda'] ?? '';
 
 unset($_SESSION['mensaje']);
 unset($_SESSION['tipo_mensaje']);
 
-// ============================================
-// ENDPOINT AJAX: REGISTRO RÁPIDO DE CATEGORÍA (para modal)
-// ============================================
-if ($action === 'store_rapido_ajax') {
-    header('Content-Type: application/json; charset=utf-8');
-    
-    try {
-        // Verificar permisos
-        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Categorias', 'crear')) {
-            throw new Exception("No tienes permiso para registrar categorías.");
-        }
-        
-        // Validar campos requeridos
-        if (empty(trim($_POST['nombre_categoria'] ?? ''))) {
-            throw new Exception("El nombre de la categoría es obligatorio.");
-        }
-        
-        $datos = [
-            'nombre_categoria' => trim($_POST['nombre_categoria']),
-            'descripcion' => trim($_POST['descripcion'] ?? '')
-        ];
-        
-        $resultado = $modelo->registrarCategoria($datos);
-        
-        if (!$resultado) {
-            throw new Exception("No se pudo registrar la categoría.");
-        }
-        
-        // El modelo registrarCategoria devuelve true, obtenemos el ID insertado
-        $id_categoria = (int) $db->lastInsertId();
-        
-        if ($id_categoria <= 0) {
-            throw new Exception("No se pudo obtener el ID de la categoría.");
-        }
-        
-        echo json_encode([
-            'success' => true,
-            'id_categoria' => $id_categoria,
-            'nombre_categoria' => $datos['nombre_categoria']
-        ], JSON_UNESCAPED_UNICODE);
-        
-    } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], JSON_UNESCAPED_UNICODE);
-    }
-    exit;
-}
-
-// 6. PROCESAR POST (GUARDAR, ACTUALIZAR, ELIMINAR)
+//  PROCESAR POST (GUARDAR, ACTUALIZAR, ELIMINAR)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? $action;
     
-    // === GUARDAR ===
-    if ($accion === 'guardar' || $accion === 'create' || $accion === 'store') {
+   
+    if ($accion === 'guardar' || $accion === 'create') {
         CheckPermiso::verificar($db, 'Categorias', 'crear', '?url=categorias');
         try {
             if (empty(trim($_POST['nombre_categoria']))) {
@@ -121,17 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $resultado = $modelo->registrarCategoria($datos);
             
             if ($resultado) {
-                $idCategoria = (int) $db->lastInsertId();
-                $_SESSION['nueva_categoria_id'] = $idCategoria;
-                $_SESSION['nueva_categoria_nombre'] = $datos['nombre_categoria'];
                 $_SESSION['mensaje'] = "✅ Categoría registrada exitosamente";
                 $_SESSION['tipo_mensaje'] = "success";
-
-                $return = $_REQUEST['return'] ?? null;
-                if (!empty($return)) {
-                    header("Location: ?url=" . urlencode($return) . "&type=create&id_categoria=" . $idCategoria);
-                    exit();
-                }
             } else {
                 $_SESSION['mensaje'] = "Error al registrar categoría";
                 $_SESSION['tipo_mensaje'] = "danger";
@@ -139,17 +82,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Exception $e) {
             $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
             $_SESSION['tipo_mensaje'] = "danger";
-            $return = $_REQUEST['return'] ?? null;
-            if (!empty($return)) {
-                header("Location: ?url=categorias&action=registrar&return=" . urlencode($return));
-                exit();
-            }
         }
         header("Location: ?url=categorias");
         exit();
     }
     
-    // === ACTUALIZAR ===
+ 
     if ($accion === 'actualizar' || $accion === 'edit' || $accion === 'update') {
         CheckPermiso::verificar($db, 'Categorias', 'actualizar', '?url=categorias');
         try {
@@ -219,24 +157,19 @@ if ($action === 'lista' || $action === '' || $action === 'list') {
     } else {
         $categorias_full = $modelo->obtenerCategorias();
     }
-    
-    if (!is_array($categorias_full)) {
-        $categorias_full = [];
-    }
 
-    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
-    $offset        = ($pagina_actual - 1) * $por_pagina;
-    
-    $totalRegistros = count($categorias_full);
-    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-    
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
+    $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
+    $offset = ($pagina - 1) * $por_pagina;
     if ($por_pagina > 0) {
         $categorias = array_slice($categorias_full, $offset, $por_pagina);
     } else {
         $categorias = $categorias_full;
     }
     
+    if (!is_array($categorias)) {
+        $categorias = [];
+    }
     require_once $basePath . "listCategoriaView.php";
     exit();
 }
@@ -286,23 +219,8 @@ if ($action === 'editar' || $action === 'edit') {
 }
 
 // === DEFAULT: LISTA ===
-$categorias_full = $modelo->obtenerCategorias();
-if (!is_array($categorias_full)) {
-    $categorias_full = [];
+$categorias = $modelo->obtenerCategorias();
+if (!is_array($categorias)) {
+    $categorias = [];
 }
-
-$por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
-$pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
-$offset        = ($pagina_actual - 1) * $por_pagina;
-
-$totalRegistros = count($categorias_full);
-$totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-
-if ($por_pagina > 0) {
-    $categorias = array_slice($categorias_full, $offset, $por_pagina);
-} else {
-    $categorias = $categorias_full;
-}
-
 require_once $basePath . "listCategoriaView.php";
-?>
