@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const name = (select.name || '').toLowerCase();
-        if (name === 'por_pagina' || name === 'pagina' || name === 'limit' || name === 'page' || name === 'tipo_movimiento' || name === 'id_categoria') {
+        if (name === 'por_pagina' || name === 'pagina' || name === 'limit' || name === 'page' || name === 'tipo_movimiento') {
             return;
         }
 

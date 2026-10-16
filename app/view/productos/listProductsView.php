@@ -48,14 +48,15 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     </div>
                     <div class="col-auto">
                         <?php if ($puede_crear_producto): ?>
-                        <a href="?url=productos&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                        <button type="button" class="btn btn-dark-gold" 
+                                data-bs-toggle="modal" data-bs-target="#modalRegistrarProducto"
+                                style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
                             <i class="fas fa-plus me-1"></i> Registrar Producto
-                        </a>
+                        </button>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
-
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
                 <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
@@ -113,31 +114,31 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
             <!-- MENSAJES -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
-                <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
+                <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
                     <div class="d-flex align-items-center">
                         <i class="fas <?= ($tipo_mensaje ?? '') === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?> me-3 fs-4"></i>
                         <span><?= htmlspecialchars($mensaje) ?></span>
-                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
                     </div>
                 </div>
             <?php endif; ?>
 
             <?php if (isset($success)): ?>
-                <div class="alert dark-alert-success alert-dismissible fade show shadow-sm border-0">
+                <div class="alert dark-alert-success alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-check-circle me-3 fs-4"></i>
                         <span><?= htmlspecialchars($success) ?></span>
-                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
                     </div>
                 </div>
             <?php endif; ?>
 
             <?php if (isset($error)): ?>
-                <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0">
+                <div class="alert dark-alert-danger alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-exclamation-circle me-3 fs-4"></i>
                         <span><?= htmlspecialchars($error) ?></span>
-                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
                     </div>
                 </div>
             <?php endif; ?>
@@ -200,7 +201,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </div>
                 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle m-0">
+                    <table class="table table-hover align-middle m-0" id="tablaProductos">
                         <thead>
                             <tr>
                                 <th class="ps-4 py-3">CÓDIGO</th>
@@ -262,27 +263,20 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <a href="?url=productos&type=show&id=<?= $p['id_producto'] ?>" 
-                                                   class="btn-action-circle btn-view" title="Ver Detalle">
+                                                <button type="button" class="btn-action-circle btn-view" title="Ver Detalle" onclick="verDetalleProducto(<?= (int) $p['id_producto'] ?>)">
                                                     <i class="fas fa-eye"></i>
-                                                </a>
+                                                </button>
                                                 
                                                 <?php if ($puede_editar_producto): ?>
-                                                <a href="?url=productos&type=edit&id=<?= $p['id_producto'] ?>" 
-                                                   class="btn-action-circle btn-edit" title="Editar">
+                                                <button type="button" class="btn-action-circle btn-edit" title="Editar" onclick="editarProducto(<?= (int) $p['id_producto'] ?>)">
                                                     <i class="fas fa-edit"></i>
-                                                </a>
+                                                </button>
                                                 <?php endif; ?>
                                                 
                                                 <?php if ($puede_eliminar_producto): ?>
-                                                <form method="POST" action="?url=productos&type=delete" class="d-inline">
-                                                    <input type="hidden" name="id_producto" value="<?= $p['id_producto'] ?>">
-                                                    <button type="submit" class="btn-action-circle btn-delete"
-                                                            title="Eliminar"
-                                                            onclick="return confirm('¿Estás seguro de eliminar este producto?')">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn-action-circle btn-delete" title="Eliminar" onclick="confirmarEliminarProducto(<?= (int) $p['id_producto'] ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -313,5 +307,35 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </div>
             </div>
 </div>
+
+<!-- MODALES (HTML) - Están en archivos separados               -->
+
+<?php require_once __DIR__ . '/partials/modal_registrar_producto.php'; ?>
+<?php require_once __DIR__ . '/partials/modal_ver_producto.php'; ?>
+<?php require_once __DIR__ . '/partials/modal_editar_producto.php'; ?>
+<?php require_once __DIR__ . '/partials/modal_eliminar_producto.php'; ?>
+<?php require_once __DIR__ . '/partials/modal_rapido_categoria.php'; ?>
+<?php require_once __DIR__ . '/partials/modal_rapido_proveedor.php'; ?>
+
+<!-- SCRIPTS (JavaScript) - Está en un archivo separado         -->
+<?php require_once __DIR__ . '/partials/scripts_productos.php'; ?>
+
+<!-- ============================================================ -->
+<!-- AUTO-CIERRE DE ALERTAS                                       -->
+<!-- ============================================================ -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
+        var ms = parseInt(el.dataset.autoDismiss, 10) || 5000;
+        setTimeout(function () {
+            if (!el.parentNode) return;
+            el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(-8px)';
+            setTimeout(function () { el.remove(); }, 400);
+        }, ms);
+    });
+});
+</script>
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

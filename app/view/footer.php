@@ -32,15 +32,78 @@ SCRIPTS GLOBALES
 <script src="/pirotecnica_fenix/assets/js/validaciones.js"></script>
 
 <!-- Script: habilitar búsqueda en selects dentro de formularios -->
-<script src="/pirotecnica_fenix/assets/js/select-search.js"></script>
+\\<script src="/pirotecnica_fenix/assets/js/select-search.js"></script> //
 <style>
-/* Estilos mínimos para el autocompletador de selects */
-.ss-wrapper { position: relative; }
-.ss-wrapper .ss-input { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); color: #fff; padding: 8px 12px; border-radius: 8px; width: 100%; }
-.ss-wrapper .ss-dropdown { background: #0f0f1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; position: absolute; z-index: 1050; left: 0; right: 0; top: calc(100% + 4px); max-height: 220px; overflow-y: auto; display: none; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); }
-.ss-wrapper .ss-dropdown .list-group-item { background: transparent; color: #e9ecef; border-color: rgba(255,255,255,0.04); }
-.ss-wrapper .ss-dropdown .list-group-item.active, .ss-wrapper .ss-dropdown .list-group-item:hover { background: rgba(243,156,18,0.12); color: #fff; }
-.ss-wrapper .ss-input::placeholder { color: rgba(255,255,255,0.35); }
+/* ==========================================
+   BUSCADOR DE SELECTS - UNIFICADO CON EL DISEÑO
+   ========================================== */
+.ss-wrapper { 
+    position: relative; 
+    flex: 1; 
+    min-width: 0; 
+}
+
+/* El input del buscador (reemplaza al select original) */
+.ss-wrapper .ss-input {
+    background: #fff;
+    border: 1.5px solid rgba(0,0,0,0.08);
+    color: #0e0505;
+    padding: 14px 16px;
+    border-radius: 12px 0 0 12px;
+    width: 100%;
+    font-size: 1rem;
+    min-height: 48px;
+    box-sizing: border-box;
+}
+
+/* Al enfocar */
+.ss-wrapper .ss-input:focus {
+    border-color: #f39c12;
+    box-shadow: 0 0 0 3px rgba(243,156,18,0.15);
+    outline: none;
+}
+
+/* Placeholder */
+.ss-wrapper .ss-input::placeholder {
+    color: #6c757d;
+}
+
+/* Dropdown de opciones */
+.ss-wrapper .ss-dropdown {
+    background: #fff;
+    border: 1.5px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    position: absolute;
+    z-index: 1050;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+    padding: 6px;
+    list-style: none;
+    margin: 0;
+}
+
+/* Items del dropdown */
+.ss-wrapper .ss-dropdown .list-group-item {
+    background: transparent;
+    color: #1a1a2e;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Item activo o hover */
+.ss-wrapper .ss-dropdown .list-group-item.active,
+.ss-wrapper .ss-dropdown .list-group-item:hover {
+    background: rgba(243,156,18,0.15);
+    color: #1a1a2e;
+}
 </style>
 
 <script>

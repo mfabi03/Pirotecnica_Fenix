@@ -208,7 +208,57 @@ if ($type === 'store_rapido_ajax') {
     }
     exit;
 }
-
+// ============================================
+// ENDPOINT AJAX: LISTAR PRODUCTOS (para refrescar tabla)
+// ============================================
+if ($type === 'listar_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    try {
+        // Verificar permisos
+        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Productos', 'leer')) {
+            throw new Exception("No tienes permiso.");
+        }
+        
+        $dataJson = cargarProductosJson();
+        
+        $sqlBase = "SELECT 
+                        p.id_producto,
+                        p.descripcion,
+                        p.cantidad AS stock,
+                        p.stock_minimo,
+                        p.costo_unitario,
+                        p.id_categoria,
+                        c.nombre_categoria
+                    FROM producto p
+                    LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
+                    WHERE p.eliminado = 0
+                    ORDER BY p.id_producto DESC";
+        
+        $stmt = $db->prepare($sqlBase);
+        $stmt->execute();
+        $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Agregar especificaciones del JSON
+        foreach ($productos as &$p) {
+            $id = $p['id_producto'];
+            $p['especificaciones'] = $dataJson[$id]['especificaciones'] ?? '';
+        }
+        unset($p);
+        
+        echo json_encode([
+            'success' => true,
+            'productos' => $productos
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
 // PROCESAR POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
@@ -484,6 +534,10 @@ try {
     
     $sql = $sqlBase;
     $params = [];
+    
+    $categorias = $modelo->obtenerCategorias();
+    $proveedores = $proveedorProcessor->obtenerProveedores();
+
     
     if (!empty($buscar)) {
         $sql .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino OR CAST(p.id_producto AS CHAR) LIKE :termino)";

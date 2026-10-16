@@ -37,6 +37,24 @@ $proveedor = null;
 $proveedores = [];
 
 // ============================================
+// ENDPOINT AJAX: LISTAR PROVEEDORES EN JSON
+// ============================================
+if (isset($_GET['type']) && $_GET['type'] === 'listar_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $proveedores = $modelo->obtenerProveedores();
+        echo json_encode([
+            'success' => true,
+            'proveedores' => $proveedores
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+
+// ============================================
 // ENDPOINT AJAX: REGISTRO RÁPIDO DE PROVEEDOR (para modal)
 // ============================================
 if ($type === 'store_rapido_ajax') {

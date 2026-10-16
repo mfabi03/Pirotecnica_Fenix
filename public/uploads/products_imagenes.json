@@ -9,14 +9,29 @@
         "proveedor": "ariannysv",
         "id_proveedor": 16
     },
-    "33": {
-        "especificaciones": "20t",
-        "proveedor": "ariannysv",
-        "id_proveedor": 16
-    },
-    "34": {
-        "especificaciones": "hola",
+    "39": {
+        "especificaciones": "aja",
         "proveedor": "BELLA.C.A",
         "id_proveedor": 19
+    },
+    "40": {
+        "especificaciones": "r",
+        "proveedor": "\"ZZZPRUEBA",
+        "id_proveedor": 26
+    },
+    "41": {
+        "especificaciones": "tr",
+        "proveedor": "\"ZZZPRUEBA",
+        "id_proveedor": 26
+    },
+    "42": {
+        "especificaciones": "rr",
+        "proveedor": "anais escobar",
+        "id_proveedor": 25
+    },
+    "43": {
+        "especificaciones": "gtg",
+        "proveedor": "\"ZZZPRUEBA",
+        "id_proveedor": 26
     }
 }

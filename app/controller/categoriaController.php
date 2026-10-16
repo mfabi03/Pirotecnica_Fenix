@@ -52,6 +52,23 @@ unset($_SESSION['mensaje']);
 unset($_SESSION['tipo_mensaje']);
 
 // ============================================
+// ENDPOINT AJAX: LISTAR CATEGORÍAS EN JSON
+// ============================================
+if (isset($_GET['action']) && $_GET['action'] === 'listar_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $categorias = $modelo->obtenerCategorias();
+        echo json_encode([
+            'success' => true,
+            'categorias' => $categorias
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ============================================
 // ENDPOINT AJAX: REGISTRO RÁPIDO DE CATEGORÍA (para modal)
 // ============================================
 if ($action === 'store_rapido_ajax') {
