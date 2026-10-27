@@ -251,7 +251,7 @@ MENÚ LATERAL
                             </a>
                             <?php endif; ?>
                             
-                            <!-- Opción 2: Reporte de Caja (solo si tiene permiso) -->
+                           
                             <?php if ($verReporteCaja): ?>
                             <a class="dropdown-item py-2 px-2 rounded-2" href="?url=reportecaja" 
                             style="color: <?= $currentUrl == 'reportecaja' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.8rem; transition: all 0.3s ease; background: <?= $currentUrl == 'reportecaja' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; white-space: nowrap;"

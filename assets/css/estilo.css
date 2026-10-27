@@ -1302,3 +1302,80 @@ tbody tr:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
 }
+
+/* ==========================================
+   ESTILOS DEL WIZARD (ASISTENTE PASO A PASO)
+   ========================================== */
+.wizard {
+    margin: 20px auto;
+    background: #fff;
+    padding: 0 15px;
+}
+.wizard .nav-tabs {
+    position: relative;
+    margin: 40px auto 0;
+    border-bottom-color: #e0e0e0;
+    display: flex;
+    justify-content: center;
+}
+.wizard > div.wizard-inner {
+    position: relative;
+}
+.connecting-line {
+    height: 2px;
+    background: #e0e0e0;
+    position: absolute;
+    width: 80%;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+    top: 50%;
+    z-index: 1;
+}
+.wizard .nav-tabs > li {
+    width: 33.33%;
+    text-align: center;
+    position: relative;
+}
+.wizard .nav-tabs > li > a {
+    width: 70px;
+    height: 70px;
+    margin: 20px auto;
+    border-radius: 100%;
+    padding: 0;
+    border: none;
+    background: transparent !important;
+}
+span.round-tab {
+    width: 70px;
+    height: 70px;
+    line-height: 66px;
+    display: inline-block;
+    border-radius: 100px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    z-index: 2;
+    position: relative;
+    text-align: center;
+    font-size: 25px;
+}
+span.round-tab i { color: #555555; }
+.wizard li.active span.round-tab {
+    background: #fff;
+    border: 2px solid #f39c12;
+}
+.wizard li.active span.round-tab i { color: #f39c12; }
+.wizard li.active:after {
+    content: " ";
+    position: absolute;
+    left: 45%;
+    opacity: 1;
+    margin: 0 auto;
+    bottom: 0px;
+    border: 10px solid transparent;
+    border-bottom-color: #f39c12;
+}
+.wizard .tab-pane {
+    position: relative;
+    padding-top: 30px;
+}

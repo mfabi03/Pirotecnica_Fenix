@@ -183,7 +183,7 @@ switch ($url) {
 // ============================================
 case 'reportecaja':
     AuthMiddleware::requireAuth();
-    AuthMiddleware::requirePermiso($pdo, 'ReposteCaja', 'leer');
+    AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
     require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
     $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
     $reporteCajaController->index();
