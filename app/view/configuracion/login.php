@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="../../pirotecnica_fenix/assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../pirotecnica_fenix/assets/css/estiloInicio.css">
-    
+    <link rel="stylesheet" href="../../pirotecnica_fenix/assets/css/fuegos-artificiales.css?v=transparent-fireworks-1">
 </head>
-<body>
+<body data-login-error="<?= isset($_GET['error']) ? 'true' : 'false' ?>">
     <img src="../../pirotecnica_fenix/assets/imagenes/fondo.jpg" 
          alt="Fondo" 
          class="bg-image">
     <div class="overlay"></div>
-    <div class="login-container">
+    <div class="login-container" id="loginContainer">
         <div class="login-card">
             <div class="login-header">
                 <span class="logo-icon"></span>
@@ -53,7 +53,7 @@
                            name="usuario" 
                            placeholder="Ingresa tu usuario"
                            value="<?= htmlspecialchars($_POST['usuario'] ?? '') ?>"
-                           required autofocus>
+                           required>
                     <span class="input-icon">
                         <i class="fas fa-user"></i>
                     </span>
@@ -83,5 +83,7 @@
     </div>
 
     <script src="../../pirotecnica_fenix/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tsparticles/fireworks@4.4.0/tsparticles.fireworks.bundle.min.js" defer></script>
+    <script src="../../pirotecnica_fenix/assets/js/fuegos-artificiales.js?v=transparent-fireworks-2" defer></script>
 </body>
 </html>

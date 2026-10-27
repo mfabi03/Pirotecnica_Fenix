@@ -15,6 +15,12 @@ class DashboardController {
         try {
             $model = new DashboardModel($this->db);
             $stats = $model->getEstadisticas();
+            $usuariosDetalle = $model->getUsuariosResumen();
+            $productosCriticosDetalle = $model->getProductosCriticos();
+            $clientesDetalle = $model->getClientesResumen();
+            $notasEntradaDetalle = $model->getNotasEntradaRecientes();
+            $notasSalidaDetalle = $model->getNotasSalidaRecientes();
+            $inventarioDetalle = $model->getProductosInventario();
             
             require_once __DIR__ . '/../view/configuracion/Dashboard.php';
             
@@ -28,6 +34,12 @@ class DashboardController {
                 'productos_criticos' => 0,
                 'total_clientes' => 0
             ];
+            $usuariosDetalle = [];
+            $productosCriticosDetalle = [];
+            $clientesDetalle = [];
+            $notasEntradaDetalle = [];
+            $notasSalidaDetalle = [];
+            $inventarioDetalle = [];
             require_once __DIR__ . '/../view/configuracion/Dashboard.php';
         }
     }
