@@ -11,7 +11,7 @@ class ReporteCajaModel {
         $this->db = $db;
     }
 
-    public function obtenerMovimientosCaja($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $limit = 10, $offset = 0) {
+    public function obtenerMovimientosCaja($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $limit = 10, $offset = 0, $id_usuario_filtro = null) {
         $whereEntrada = ["ne.eliminado = 0"];
         $whereSalida = ["ns.eliminado = 0"];
         $params = [];
@@ -32,6 +32,13 @@ class ReporteCajaModel {
             $whereEntrada[] = "prod.descripcion LIKE :busqueda";
             $whereSalida[] = "prod.descripcion LIKE :busqueda";
             $params[':busqueda'] = '%' . $busqueda . '%';
+        }
+
+        // Filtro por usuario si se proporciona
+        if (!empty($id_usuario_filtro)) {
+            $whereEntrada[] = "ne.id_usuario = :id_usuario_filtro";
+            $whereSalida[] = "ns.id_usuario = :id_usuario_filtro";
+            $params[':id_usuario_filtro'] = $id_usuario_filtro;
         }
 
         $whereClauseEntrada = !empty($whereEntrada) ? ' WHERE ' . implode(' AND ', $whereEntrada) : '';
@@ -91,12 +98,12 @@ class ReporteCajaModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function contarMovimientosCaja($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null) {
-        $movimientos = $this->obtenerMovimientosCaja($fecha, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
+    public function contarMovimientosCaja($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $id_usuario_filtro = null) {
+        $movimientos = $this->obtenerMovimientosCaja($fecha, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0, $id_usuario_filtro);
         return count($movimientos);
     }
 
-    public function obtenerResumenCaja($fecha = null, $id_categoria = null, $busqueda = null) {
+    public function obtenerResumenCaja($fecha = null, $id_categoria = null, $busqueda = null, $id_usuario_filtro = null) {
         $params = [':estado_activo' => 0, ':estado_anulado' => 1];
         $whereEntradaActiva = ["ne.eliminado = :estado_activo"];
         $whereSalidaActiva = ["ns.eliminado = :estado_activo"];
@@ -125,6 +132,15 @@ class ReporteCajaModel {
             $whereEntradaAnulada[] = "prod.descripcion LIKE :busqueda";
             $whereSalidaAnulada[] = "prod.descripcion LIKE :busqueda";
             $params[':busqueda'] = '%' . $busqueda . '%';
+        }
+
+        // Filtro por usuario si se proporciona
+        if (!empty($id_usuario_filtro)) {
+            $whereEntradaActiva[] = "ne.id_usuario = :id_usuario_filtro";
+            $whereSalidaActiva[] = "ns.id_usuario = :id_usuario_filtro";
+            $whereEntradaAnulada[] = "ne.id_usuario = :id_usuario_filtro";
+            $whereSalidaAnulada[] = "ns.id_usuario = :id_usuario_filtro";
+            $params[':id_usuario_filtro'] = $id_usuario_filtro;
         }
 
         $sql = "SELECT (
@@ -167,7 +183,7 @@ class ReporteCajaModel {
         ];
     }
 
-    public function obtenerTotalesGlobales($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null) {
+    public function obtenerTotalesGlobales($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $id_usuario_filtro = null) {
         $params = [];
         $whereEntrada = ["ne.eliminado = 0"];
         $whereSalida = ["ns.eliminado = 0"];
@@ -188,6 +204,13 @@ class ReporteCajaModel {
             $whereEntrada[] = "prod.descripcion LIKE :busqueda";
             $whereSalida[] = "prod.descripcion LIKE :busqueda";
             $params[':busqueda'] = '%' . $busqueda . '%';
+        }
+
+        // Filtro por usuario si se proporciona
+        if (!empty($id_usuario_filtro)) {
+            $whereEntrada[] = "ne.id_usuario = :id_usuario_filtro";
+            $whereSalida[] = "ns.id_usuario = :id_usuario_filtro";
+            $params[':id_usuario_filtro'] = $id_usuario_filtro;
         }
 
         $whereEntradaSql = !empty($whereEntrada) ? ' WHERE ' . implode(' AND ', $whereEntrada) : '';
