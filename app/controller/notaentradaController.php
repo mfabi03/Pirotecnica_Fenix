@@ -62,9 +62,8 @@ $proveedores = [];
 $resumen = [];
 $tipo_mensaje = '';
 
-// 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO (CORREGIDA)
+// 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO
 function obtenerIdUsuarioValido($db) {
-    //  Buscar en la sesión con el nombre CORRECTO
     $idUsuario = $_SESSION['id_usuario'] 
               ?? $_SESSION['usuario_id'] 
               ?? null;
@@ -242,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // ANULAR
+    // ANULAR (CON GUARDADO DE MOTIVO)
     if ($type === 'anular') {
         CheckPermiso::verificar($db, 'Notas de Entrada', 'eliminar', '?url=notaentrada&type=list');
         try {
@@ -258,9 +257,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("ID de nota inválido.");
             }
             
+            // 1. Anular la nota (esto hace el UPDATE de eliminado=1)
             $resultado = $modelo->anularNotaEntrada($id, $motivo, $idUsuario);
             
             if ($resultado) {
+                // 2. GUARDAR EL MOTIVO EN LA BASE DE DATOS
+                $stmtMotivo = $db->prepare("UPDATE nota_de_entrada SET motivo_anulacion = :motivo WHERE id_nota_entrada = :id");
+                $stmtMotivo->execute([':motivo' => $motivo, ':id' => $id]);
+
                 $_SESSION['contador_anulaciones_notaentrada'] = (int) ($modelo->getResumen()['total_anuladas'] ?? 0);
 
                 $_SESSION['mensaje'] = '✅ Nota de Entrada anulada exitosamente. El stock ha sido revertido.';
@@ -323,18 +327,13 @@ try {
     $notas_full = !empty($buscar) ? $modelo->buscarNotasEntrada($buscar) : $modelo->obtenerNotasEntrada();
     $resumen = $modelo->getResumen();
 
-    //  PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
     
-    // Total de registros
     $totalRegistros = is_array($notas_full) ? count($notas_full) : 0;
-    
-    // Total de páginas
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
     
-    // Cortar el array para la página actual
     if ($por_pagina > 0) {
         $notas = array_slice($notas_full, $offset, $por_pagina);
     } else {

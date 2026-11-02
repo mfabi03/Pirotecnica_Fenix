@@ -282,8 +282,10 @@ const Validador = (function () {
         if (!feedbackEl) return true;
         const resultado = validadores[tipo](input.value);
         mostrarFeedback(input, feedbackEl, resultado.estado, resultado.mensaje);
+
         if (tipo === 'fecha' && resultado.edad !== undefined && resultado.edad < 18 && input.value) {
             if (callbackMenorEdad) callbackMenorEdad(resultado.edad);
+            return false;
         }
 
         // Si tiene validación de unicidad y el formato es válido → consultar
@@ -296,7 +298,11 @@ const Validador = (function () {
             }
         }
 
-        return resultado.estado === 'valido' || resultado.estado === 'vacio';
+        if (input.hasAttribute('required') && (!input.value || !input.value.trim())) {
+            return false;
+        }
+
+        return resultado.estado === 'valido' || (resultado.estado === 'vacio' && !input.hasAttribute('required'));
     }
 
     function validarFormulario(formId) {
@@ -350,7 +356,12 @@ const Validador = (function () {
             input.addEventListener('change', function () { validarCampo(this); });
             aplicarAutoFormato(input);
         });
-        container.querySelectorAll('input[data-validate="fecha"], input[data-validate="fecha_simple"]').forEach(function (input) {
+        container.querySelectorAll('input[data-validate="fecha"]').forEach(function (input) {
+            const hace18 = new Date();
+            hace18.setFullYear(hace18.getFullYear() - 18);
+            input.setAttribute('max', hace18.toISOString().split('T')[0]);
+        });
+        container.querySelectorAll('input[data-validate="fecha_simple"]').forEach(function (input) {
             input.setAttribute('max', new Date().toISOString().split('T')[0]);
         });
     }

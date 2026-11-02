@@ -19,86 +19,194 @@ class ReportesController {
     }
 
     public function index() {
-        // Obtener filtros desde GET
-        $fecha = isset($_GET['fecha']) ? trim($_GET['fecha']) : null;
-        $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : null;
-        $id_categoria = isset($_GET['id_categoria']) ? (int)$_GET['id_categoria'] : null;
-        $tipo_movimiento = isset($_GET['tipo_movimiento']) ? trim($_GET['tipo_movimiento']) : null;
+        $ajax = (!empty($_GET['ajax']) || !empty($_POST['ajax']));
+        $fecha_inicio = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? trim($_GET['fecha_inicio']) : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? trim($_GET['fecha']) : null);
+        $fecha_fin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? trim($_GET['fecha_fin']) : null;
+        $busqueda = isset($_GET['busqueda']) && $_GET['busqueda'] !== '' ? trim($_GET['busqueda']) : null;
+        $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] !== '' ? (int)$_GET['id_categoria'] : null;
+        $tipo_movimiento = isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] !== '' ? trim($_GET['tipo_movimiento']) : null;
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $porPagina = isset($_GET['por_pagina']) ? (int)$_GET['por_pagina'] : 10;
 
-        // Calcular offset para paginación
         $offset = ($pagina - 1) * $porPagina;
 
-        // Obtener datos del modelo (AHORA CON FECHA ÚNICA)
-        $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha, $id_categoria, $busqueda, $tipo_movimiento, $porPagina, $offset);
-        $totalRegistros = $this->modelo->contarMovimientosDiarios($fecha, $id_categoria, $busqueda, $tipo_movimiento);
-        $totalesGlobales = $this->modelo->obtenerTotalesGlobales();
+        $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, $porPagina, $offset);
+        $totalRegistros = $this->modelo->contarMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento);
+        $totalesGlobales = $this->modelo->obtenerTotalesReporte($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento);
 
-        // Calcular paginación
-        $totalPaginas = ceil($totalRegistros / $porPagina);
+        $totalPaginas = $porPagina > 0 ? (int)ceil($totalRegistros / $porPagina) : 1;
         $paginaActual = $pagina;
         $porPaginaActual = $porPagina;
+        
         $totalEntradas = $totalesGlobales['total_entradas'] ?? 0;
         $totalSalidas = $totalesGlobales['total_salidas'] ?? 0;
+        $totalAnuladas = $totalesGlobales['total_anuladas'] ?? 0;
+        $totalUnidades = 0;
+        $totalNotas = $totalesGlobales['total_notas'] ?? 0;
 
-        // Pasar $db a la vista para obtener categorías
         $db = $this->db;
 
-        // Cargar vista
+        if ($ajax) {
+            ob_start();
+            require_once __DIR__ . '/../view/reportes/reportesView.php';
+            $html = ob_get_clean();
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['success' => true, 'html' => $html], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
         require_once __DIR__ . '/../view/reportes/reportesView.php';
     }
 
-    /**
-     * Exportar a CSV (Excel)
-     */
     public function exportarCSV() {
-        // Obtener todos los movimientos sin paginación
-        $movimientos = $this->modelo->obtenerMovimientosDiarios(null, null, null, null, 999999, 0);
-        
-        // Configurar cabeceras para descarga
+        $fecha_inicio = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? trim($_GET['fecha_inicio']) : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? trim($_GET['fecha']) : null);
+        $fecha_fin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? trim($_GET['fecha_fin']) : null;
+        $busqueda = isset($_GET['busqueda']) && $_GET['busqueda'] !== '' ? trim($_GET['busqueda']) : null;
+        $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] !== '' ? (int)$_GET['id_categoria'] : null;
+        $tipo_movimiento = isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] !== '' ? trim($_GET['tipo_movimiento']) : null;
+
+        $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
+
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="reporte_movimientos_' . date('Y-m-d') . '.csv"');
-        
-        // Crear archivo CSV
+
         $output = fopen('php://output', 'w');
-        
-        // Agregar BOM para UTF-8 (para que Excel lo lea bien)
         fwrite($output, "\xEF\xBB\xBF");
-        
-        // Encabezados del CSV
-        fputcsv($output, ['Producto', 'Tipo de Movimiento', 'Cantidad', 'Costo Unitario', 'Fecha', 'Responsable']);
-        
-        // Agregar datos
+        fputcsv($output, ['Documento', 'Producto', 'Tipo de Movimiento', 'Cantidad', 'Costo Unitario', 'Fecha', 'Responsable']);
+
         foreach ($movimientos as $m) {
-            $cantidad = $m['cantidad'];
-            if ($m['tipo_movimiento'] === 'Salida') {
-                $cantidad = '-' . abs($cantidad);
+            $cantidad = (float)($m['cantidad'] ?? 0);
+            if (($m['tipo_movimiento'] ?? '') === 'Salida') {
+                $cantidad = -abs($cantidad);
             }
-            
+
             fputcsv($output, [
-                $m['nombre_producto'],
-                $m['tipo_movimiento'],
+                $m['id_documento'] ?? 'N/A',
+                $m['nombre_producto'] ?? 'N/A',
+                $m['tipo_movimiento'] ?? 'N/A',
                 $cantidad,
                 $m['costo_proveedor'] ?? 0,
-                $m['fecha_movimiento'],
-                $m['usuario_activo']
+                $m['fecha_movimiento'] ?? '',
+                $m['usuario_activo'] ?? 'N/A'
             ]);
         }
-        
+
         fclose($output);
         exit();
     }
 
-    /**
-     * Exportar a PDF (requiere Dompdf)
-     */
     public function exportarPDF() {
-        // Esta función requiere Dompdf
-        // Por ahora redirige con mensaje
-        $_SESSION['mensaje'] = "Funcionalidad de exportación a PDF en desarrollo";
-        $_SESSION['tipo_mensaje'] = "info";
-        header('Location: ?url=reportes');
+        $fecha_inicio = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? trim($_GET['fecha_inicio']) : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? trim($_GET['fecha']) : null);
+        $fecha_fin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? trim($_GET['fecha_fin']) : null;
+        $busqueda = isset($_GET['busqueda']) && $_GET['busqueda'] !== '' ? trim($_GET['busqueda']) : null;
+        $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] !== '' ? (int)$_GET['id_categoria'] : null;
+        $tipo_movimiento = isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] !== '' ? trim($_GET['tipo_movimiento']) : null;
+
+        $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
+        $titulo = 'Reporte de Movimientos';
+        $subtitulo = $fecha_inicio ? ($fecha_fin ? 'Rango: ' . $fecha_inicio . ' - ' . $fecha_fin : 'Desde: ' . $fecha_inicio) : 'Historial completo';
+
+        $this->generarPdfFPDF($titulo, $subtitulo, $movimientos);
+    }
+
+    private function pdfAjustado($texto) {
+        $texto = (string)$texto;
+        if ($texto === '') {
+            return '';
+        }
+
+        if (function_exists('iconv')) {
+            $convertido = @iconv('UTF-8', 'ISO-8859-1//IGNORE', $texto);
+            if ($convertido !== false) {
+                return $convertido;
+            }
+        }
+
+        return $texto;
+    }
+
+    private function generarPdfFPDF($titulo, $subtitulo, $movimientos) {
+        $fpdfPath = dirname(__DIR__, 2) . '/fpdf.php';
+        if (!file_exists($fpdfPath)) {
+            http_response_code(500);
+            die('No se encontró la librería FPDF en: ' . htmlspecialchars($fpdfPath));
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        require_once $fpdfPath;
+
+        $pdf = new \FPDF('P', 'mm', 'A4');
+        $pdf->AddPage();
+
+        $pdf->SetDrawColor(200, 200, 200);
+        $pdf->SetFillColor(26, 26, 46);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('Arial', 'B', 18);
+        $pdf->Cell(0, 10, $this->pdfAjustado($titulo), 0, 1, 'C', true);
+
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->SetTextColor(26, 26, 46);
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->Cell(0, 6, $this->pdfAjustado('Sistema Pirotecnia Fénix'), 0, 1, 'L', true);
+
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 7, $this->pdfAjustado($subtitulo), 0, 1, 'L');
+        $pdf->Ln(3);
+
+        $pdf->SetFillColor(245, 245, 245);
+        $pdf->SetDrawColor(210, 210, 210);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(26, 26, 46);
+        $pdf->SetTextColor(255, 255, 255);
+
+        $w = [20, 52, 30, 18, 28, 42];
+        $headers = ['Doc.', 'Producto', 'Tipo', 'Cant.', 'Fecha', 'Responsable'];
+
+        foreach ($headers as $index => $header) {
+            $pdf->Cell($w[$index], 7, $this->pdfAjustado($header), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
+
+        if (empty($movimientos)) {
+            $pdf->Cell(0, 12, $this->pdfAjustado('No hay movimientos registrados para este rango.'), 1, 1, 'C', false);
+        } else {
+            foreach ($movimientos as $m) {
+                $producto = trim((string)($m['nombre_producto'] ?? 'N/A'));
+                $tipo = trim((string)($m['tipo_movimiento'] ?? 'N/A'));
+                $responsable = trim((string)($m['usuario_activo'] ?? 'N/A'));
+
+                if (strlen($producto) > 24) {
+                    $producto = substr($producto, 0, 24) . '...';
+                }
+                if (strlen($tipo) > 12) {
+                    $tipo = substr($tipo, 0, 12) . '...';
+                }
+                if (strlen($responsable) > 18) {
+                    $responsable = substr($responsable, 0, 18) . '...';
+                }
+
+                $pdf->Cell($w[0], 7, (string)($m['id_documento'] ?? 'N/A'), 1, 0, 'C');
+                $pdf->Cell($w[1], 7, $this->pdfAjustado($producto), 1, 0, 'L');
+                $pdf->Cell($w[2], 7, $this->pdfAjustado($tipo), 1, 0, 'L');
+                $pdf->Cell($w[3], 7, (string)($m['cantidad'] ?? 0), 1, 0, 'C');
+                $pdf->Cell($w[4], 7, date('d/m/Y', strtotime($m['fecha_movimiento'] ?? '')), 1, 0, 'C');
+                $pdf->Cell($w[5], 7, $this->pdfAjustado($responsable), 1, 1, 'L');
+            }
+        }
+
+        $pdf->Ln(6);
+        $pdf->SetFont('Arial', 'I', 8);
+        $pdf->SetTextColor(80, 80, 80);
+        $pdf->Cell(0, 6, $this->pdfAjustado('Generado el ' . date('d/m/Y H:i:s')), 0, 1, 'R');
+
+        $pdf->Output('I', 'reporte_movimientos_' . date('Y-m-d') . '.pdf');
         exit();
     }
 }

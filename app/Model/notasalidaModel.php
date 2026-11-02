@@ -58,6 +58,7 @@ class notasalidaModel {
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
                     WHERE (cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)
                     AND p.eliminado = 0
+                    AND (p.status = 'activo' OR p.status IS NULL)
                     ORDER BY nombre_cliente ASC";
             
             $stmt = $this->db->prepare($sql);
@@ -72,13 +73,13 @@ class notasalidaModel {
     // REGISTRAR SALIDA
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
-            $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0";
+            $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0 AND (status = 'activo' OR status IS NULL)";
             $stmtCheck = $this->db->prepare($sqlCheckCliente);
             $stmtCheck->execute([$datos['id_cliente']]);
             $clienteExiste = $stmtCheck->fetch();
             
             if (!$clienteExiste) {
-                throw new Exception("El cliente seleccionado no existe en la base de datos.");
+                throw new Exception("El cliente seleccionado no existe o se encuentra inactivo.");
             }
             
             $sqlCheckUsuario = "SELECT id_usuario FROM usuario WHERE id_usuario = ? AND eliminado = 0";
@@ -105,7 +106,7 @@ class notasalidaModel {
             
             try {
                 $sql = "INSERT INTO nota_de_salida (fecha, id_persona, id_usuario, eliminado) 
-                        VALUES (CURDATE(), ?, ?, 0)";
+                        VALUES (NOW(), ?, ?, 0)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([
                     $datos['id_cliente'], 
@@ -384,6 +385,8 @@ class notasalidaModel {
             $sqlCliente = "SELECT 
                                 p.nombre AS cliente_nombre,
                                 p.apellido AS cliente_apellido,
+                                p.cedula AS cliente_cedula,
+                                cj.rif AS cliente_rif,
                                 cj.razon_social AS cliente_razon_social,
                                 up.nombre AS usuario_nombre,
                                 up.apellido AS usuario_apellido
@@ -401,12 +404,18 @@ class notasalidaModel {
                 $nota['cliente'] = !empty($info['cliente_razon_social'])
                     ? $info['cliente_razon_social']
                     : trim(($info['cliente_nombre'] ?? '') . ' ' . ($info['cliente_apellido'] ?? ''));
+                $nota['cedula'] = $info['cliente_cedula'] ?? '';
+                $nota['rif'] = $info['cliente_rif'] ?? '';
+                $nota['documento'] = !empty($info['cliente_rif']) ? $info['cliente_rif'] : ($info['cliente_cedula'] ?? 'N/A');
                 $nota['usuario_responsable'] = trim(($info['usuario_nombre'] ?? '') . ' ' . ($info['usuario_apellido'] ?? ''));
                 if ($nota['usuario_responsable'] === '') {
                     $nota['usuario_responsable'] = 'N/A';
                 }
             } else {
                 $nota['cliente'] = 'N/A';
+                $nota['cedula'] = 'N/A';
+                $nota['rif'] = 'N/A';
+                $nota['documento'] = 'N/A';
                 $nota['usuario_responsable'] = 'N/A';
             }
             

@@ -104,15 +104,26 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </form>
     </div>
 
-    <?php if (isset($mensaje) && !empty($mensaje)): ?>
-    <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
-        <div class="d-flex align-items-center">
-            <i class="fas <?= ($tipo_mensaje ?? '') === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?> me-3 fs-4"></i>
-            <span><?= htmlspecialchars($mensaje) ?></span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    <!-- MENSAJES -->
+    <?php
+    $mapaTipos = [
+        'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
+        'danger'  => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+        'error'   => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+        'warning' => ['clase' => 'dark-alert-warning', 'icono' => 'fa-exclamation-triangle'],
+        'info'    => ['clase' => 'dark-alert-info',    'icono' => 'fa-info-circle'],
+    ];
+    $estiloMsg = $mapaTipos[$tipo_mensaje ?? 'info'] ?? $mapaTipos['info'];
+    ?>
+    <?php if (!empty($mensaje)): ?>
+        <div class="alert <?= $estiloMsg['clase'] ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
+            <div class="d-flex align-items-center">
+                <i class="fas <?= $estiloMsg['icono'] ?> me-3"></i>
+                <span><?= htmlspecialchars($mensaje) ?></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
         </div>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
 
     <!-- TABLA DE CATEGORÍAS -->
     <div class="dark-card card shadow-sm dark-table-header">
@@ -126,10 +137,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             <table class="table table-hover align-middle m-0">
                 <thead>
                     <tr>
-                        <th class="ps-4 py-3">ID</th>
-                        <th class="py-3">Nombre</th>
-                        <th class="py-3">Descripción</th>
-                        <th class="pe-4 py-3 text-center">Acciones</th>
+                        <th class="ps-4 py-3">NOMBRE</th>
+                        <th class="py-3">DESCRIPCIÓN</th>
+                        <th class="py-3">ESTADO</th>
+                        <th class="pe-4 py-3 text-center">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -146,9 +157,22 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <?php else: ?>
                         <?php foreach ($categorias as $cat): ?>
                             <tr>
-                                <td class="ps-4 fw-bold"><?= htmlspecialchars($cat['id_categoria'] ?? 'N/A') ?></td>
-                                <td><?= htmlspecialchars($cat['nombre_categoria'] ?? '') ?></td>
+                                <td class="ps-4 fw-bold"><?= htmlspecialchars($cat['nombre_categoria'] ?? '') ?></td>
                                 <td><?= htmlspecialchars($cat['descripcion'] ?? 'N/A') ?></td>
+                                
+                                <!-- REORDENADO: ESTATUS DESPUÉS DE DESCRIPCIÓN -->
+                                <td>
+                                    <?php if (($cat['eliminado'] ?? 0) == 1): ?>
+                                        <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-times-circle me-1"></i> Inactivo
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-check-circle me-1"></i> Activo
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <!-- VER -->
@@ -191,17 +215,13 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- MODALES                                                      -->
-<!-- ============================================================ -->
+<!-- MODALES -->
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_registrar_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_ver_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_editar_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_eliminar_categoria.php'; ?>
 
-<!-- ============================================================ -->
-<!-- DATOS EN JSON + JAVASCRIPT                                   -->
-<!-- ============================================================ -->
+<!-- DATOS EN JSON + JAVASCRIPT -->
 <script id="categoriasData" type="application/json">
 <?= json_encode(
     isset($categorias) && is_array($categorias) ? array_values($categorias) : [],
@@ -212,61 +232,41 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
-document.addEventListener('DOMContentLoaded', function() {
-    'use strict';
-
-    // ============================================================
-    // INICIALIZAR VALIDADOR EN LOS MODALES
-    // ============================================================
-    if (typeof Validador !== 'undefined') {
-        Validador.init(document.getElementById('modalRegistrarCategoria'));
-        Validador.init(document.getElementById('modalEditarCategoria'));
-    }
-
-    // ============================================================
-    // VALIDAR AL ENVIAR FORMULARIOS
-    // ============================================================
-    ['formRegistrarCategoria', 'formEditarCategoria'].forEach(function(id) {
-        const form = document.getElementById(id);
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                if (!Validador.validarFormulario(id)) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-        }
-    });
-
-    // ... (resto del código: categoriasData, verDetalleCategoria, etc.) ...
-});
-    // ============================================================
-    // DATOS DE CATEGORÍAS
-    // ============================================================
+    
     const categoriasData = JSON.parse(document.getElementById('categoriasData').textContent);
     const categoriasPorId = {};
     categoriasData.forEach(function(c) {
         categoriasPorId[parseInt(c.id_categoria)] = c;
     });
 
-    // ============================================================
-    // VER DETALLE
-    // ============================================================
+    // VER DETALLE (Inyecta el Estatus en el modal)
     window.verDetalleCategoria = function(id) {
         const c = categoriasPorId[id];
         if (!c) return;
 
         document.getElementById('ver-categoria-nombre').textContent = c.nombre_categoria || 'Sin nombre';
-        document.getElementById('ver-categoria-id').textContent = c.id_categoria;
+        
+        // Configuramos el badge del estatus
+        var badgeEstatus = document.getElementById('ver-categoria-estatus');
+        if (badgeEstatus) {
+            if (c.eliminado == 1) {
+                badgeEstatus.textContent = 'Inactivo';
+                badgeEstatus.style.background = 'rgba(220,53,69,0.15)';
+                badgeEstatus.style.color = '#dc3545';
+            } else {
+                badgeEstatus.textContent = 'Activo';
+                badgeEstatus.style.background = 'rgba(40,167,69,0.15)';
+                badgeEstatus.style.color = '#28a745';
+            }
+        }
+
         document.getElementById('ver-categoria-nombre-detalle').textContent = c.nombre_categoria || 'N/A';
         document.getElementById('ver-categoria-descripcion').textContent = c.descripcion || 'Sin descripción';
 
         new bootstrap.Modal(document.getElementById('modalVerCategoria')).show();
     };
 
-    // ============================================================
     // EDITAR
-    // ============================================================
     window.editarCategoria = function(id) {
         const c = categoriasPorId[id];
         if (!c) return;
@@ -279,9 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Modal(document.getElementById('modalEditarCategoria')).show();
     };
 
-    // ============================================================
     // ELIMINAR
-    // ============================================================
     window.confirmarEliminarCategoria = function(id, nombre) {
         document.getElementById('eliminar-categoria-id').value = id;
         document.getElementById('eliminar-categoria-nombre').textContent = nombre || 'Categoría #' + id;
@@ -289,10 +287,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 </script>
-<!-- ============================================================ -->
-<!-- AUTO-CIERRE DE ALERTAS                                       -->
-<!-- ============================================================ -->
+
 <script>
+// Auto-cierre de alertas
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
         var ms = parseInt(el.dataset.autoDismiss, 10) || 5000;
@@ -306,4 +303,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-<?php require_once __DIR__ . '/../footer.php'; ?>
+
+<?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

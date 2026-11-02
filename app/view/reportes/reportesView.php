@@ -7,6 +7,7 @@ $totalRegistros = isset($totalRegistros) ? $totalRegistros : 0;
 $porPaginaActual = isset($porPaginaActual) ? $porPaginaActual : 10;
 $totalEntradas = isset($totalEntradas) ? $totalEntradas : 0;
 $totalSalidas = isset($totalSalidas) ? $totalSalidas : 0;
+$totalAnuladas = isset($totalAnuladas) ? $totalAnuladas : 0;
 
 // Obtener categorías para el filtro
 $categorias = [];
@@ -15,25 +16,27 @@ try {
     $stmt = $db->prepare($sql);
     $stmt->execute();
     $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    // Si no se pueden obtener, se deja vacío
-}
+} catch (Exception $e) {}
 
-// Pasar variables al partial
 $por_pagina = $porPaginaActual;
 $pagina_actual = $paginaActual;
 $totalRegistros = $totalRegistros;
 $totalPaginas = $totalPaginas;
 
-// Incluir header del sistema
+// Capturamos los filtros actuales para exportarlos en los botones
+$paramsExport = http_build_query([
+    'fecha' => $_GET['fecha'] ?? '',
+    'tipo_movimiento' => $_GET['tipo_movimiento'] ?? '',
+    'id_categoria' => $_GET['id_categoria'] ?? '',
+    'busqueda' => $_GET['busqueda'] ?? ''
+]);
+
 require_once dirname(__DIR__, 2) . "/view/header.php";
 ?>
 
 <div class="col-md-8 col-lg-12">
     
-    <!-- ========================================== -->
     <!-- TARJETA DE TÍTULO -->
-    <!-- ========================================== -->
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center g-3">
             <div class="col-xl-12">
@@ -48,14 +51,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- FILTROS -->
-    <!-- ========================================== -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportes">
             
-            <!-- Select Mostrar -->
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Mostrar</label>
                 <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -77,6 +77,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     <option value="">Todos</option>
                     <option value="Entrada" <?= (isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] == 'Entrada') ? 'selected' : '' ?>>Entradas</option>
                     <option value="Salida" <?= (isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] == 'Salida') ? 'selected' : '' ?>>Salidas</option>
+                    <option value="Anulación Entrada" <?= (isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] == 'Anulación Entrada') ? 'selected' : '' ?>>Anulaciones Entrada</option>
+                    <option value="Anulación Salida" <?= (isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] == 'Anulación Salida') ? 'selected' : '' ?>>Anulaciones Salida</option>
                     <option value="Anulación" <?= (isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] == 'Anulación') ? 'selected' : '' ?>>Anulaciones</option>
                 </select>
             </div>
@@ -97,16 +99,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Producto</label>
                 <input type="text" name="busqueda" class="form-control form-control-sm" 
-                       list="listaProductosReporte"
-                       placeholder="Buscar..." 
+                       list="listaProductosReporte" placeholder="Buscar..." 
                        value="<?= isset($_GET['busqueda']) ? htmlspecialchars($_GET['busqueda']) : '' ?>">
                 <datalist id="listaProductosReporte">
                     <?php 
-                    $sqlProd = "SELECT descripcion FROM producto WHERE eliminado = 0 ORDER BY descripcion ASC";
-                    $stmtProd = $db->prepare($sqlProd);
+                    $stmtProd = $db->prepare("SELECT descripcion FROM producto WHERE eliminado = 0 ORDER BY descripcion ASC");
                     $stmtProd->execute();
-                    $productosDatalist = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
-                    foreach ($productosDatalist as $prod): 
+                    foreach ($stmtProd->fetchAll(PDO::FETCH_ASSOC) as $prod): 
                     ?>
                         <option value="<?= htmlspecialchars($prod['descripcion']) ?>">
                     <?php endforeach; ?>
@@ -126,45 +125,39 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </form>
     </div>
 
-    <!-- ========================================== -->
-    <!-- BOTONES DE EXPORTACIÓN -->
-    <!-- ========================================== -->
+    <!-- EXPORTACIÓN -->
     <div class="d-flex justify-content-end gap-2 mb-3">
-        <a href="?url=exportar_csv" class="btn btn-gold btn-sm fw-bold">
+        <a href="?url=exportar_csv&<?= $paramsExport ?>" class="btn btn-gold btn-sm fw-bold">
             <i class="fas fa-file-excel me-1"></i> CSV
         </a>
-        <a href="?url=exportar_pdf" class="btn btn-danger btn-sm fw-bold">
+        <a href="?url=exportar_pdf&<?= $paramsExport ?>" target="_blank" class="btn btn-danger btn-sm fw-bold">
             <i class="fas fa-file-pdf me-1"></i> PDF
         </a>
     </div>
 
-    <!-- ========================================== -->
     <!-- ESTADÍSTICAS -->
-    <!-- ========================================== -->
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card card-total-notas border-left-gold text-center p-3">
-                <h6 class="card-title text-muted">TOTAL ENTRADAS</h6>
+                <h6 class="card-title text-muted">TOTAL ENTRADAS (OPS)</h6>
                 <h2 class="card-number text-success">+ <?= $totalEntradas ?></h2>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card card-total-notas border-left-danger text-center p-3">
-                <h6 class="card-title text-muted">TOTAL SALIDAS</h6>
+                <h6 class="card-title text-muted">TOTAL SALIDAS (OPS)</h6>
                 <h2 class="card-number text-danger">- <?= $totalSalidas ?></h2>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card card-total-notas border-left-info text-center p-3">
-                <h6 class="card-title text-muted">STOCK REAL</h6>
-                <h2 class="card-number text-primary"><?= ($totalEntradas - $totalSalidas) ?></h2>
+                <h6 class="card-title text-muted">ANULADAS</h6>
+                <h2 class="card-number text-warning"><?= $totalAnuladas ?></h2>
             </div>
         </div>
     </div>
 
-    <!-- ========================================== -->
     <!-- TABLA -->
-    <!-- ========================================== -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
@@ -199,6 +192,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             $fechaObj = new DateTime($movimiento['fecha_movimiento']);
                             $fechaFormateada = $fechaObj->format('d/m/Y');
                             $costo = isset($movimiento['costo_proveedor']) ? $movimiento['costo_proveedor'] : 0;
+                            
+                            // Si el modelo trae el motivo, lo usamos, sino mostramos el mensaje por defecto
+                            $motivo = $movimiento['motivo_anulacion'] ?? 'No se registró un motivo en la base de datos.';
                         ?>
                             <tr>
                                 <td class="ps-4 fw-medium"><?= htmlspecialchars($movimiento['nombre_producto']) ?></td>
@@ -222,9 +218,20 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <td><?= $fechaFormateada ?></td>
                                 <td><?= htmlspecialchars($movimiento['usuario_activo']) ?></td>
                                 <td class="pe-4 text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-info" disabled title="Disponible en Fase 2">
-                                        <i class="fas fa-eye"></i> Ver Motivo
-                                    </button>
+                                    
+                                    <!-- SOLO APARECE SI ES ANULACIÓN -->
+                                    <?php if ($esAnulacion): ?>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-info btn-ver-motivo" 
+                                                data-documento="#<?= $movimiento['id_documento'] ?>"
+                                                data-producto="<?= htmlspecialchars($movimiento['nombre_producto']) ?>"
+                                                data-motivo="<?= htmlspecialchars($motivo) ?>">
+                                            <i class="fas fa-eye"></i> Ver Motivo
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="text-muted small">-</span>
+                                    <?php endif; ?>
+
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -243,9 +250,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
             </table>
         </div>
         
-        <!-- ========================================== -->
-        <!-- PAGINACIÓN: TOTAL IZQ + BOTONES DER -->
-        <!-- ========================================== -->
+        <!-- PAGINACIÓN -->
         <div class="card-footer py-3 d-flex justify-content-between align-items-center">
             <span class="text-muted small">
                 <i class="fas fa-history me-1"></i> 
@@ -256,5 +261,94 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 
 </div>
+
+<!-- ========================================================= -->
+<!-- MODAL PARA VER EL MOTIVO DE LA ANULACIÓN                  -->
+<!-- ========================================================= -->
+<div class="modal fade" id="modalMotivoAnulacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Motivo de Anulación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+
+            <div class="modal-body" style="padding: 24px;">
+                <div class="mb-3">
+                    <span class="text-muted small fw-bold text-uppercase">Documento:</span>
+                    <div class="fs-5 fw-bold text-dark" id="modal-motivo-doc"></div>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted small fw-bold text-uppercase">Producto Afectado:</span>
+                    <div class="fs-6 text-dark" id="modal-motivo-prod"></div>
+                </div>
+                <div class="mb-0">
+                    <span class="text-muted small fw-bold text-uppercase">Motivo Registrado:</span>
+                    <div class="p-3 mt-1 rounded" style="background: #f8f9fa; border-left: 4px solid #dc3545; color: #333; font-style: italic;" id="modal-motivo-texto"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 50px; padding: 8px 25px; font-weight: 600;">Cerrar</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPT PARA ABRIR EL MODAL CON LOS DATOS DE LA FILA -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('formFiltros');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            const ajaxToggle = form.querySelector('input[name="ajax"]');
+            if (ajaxToggle) return;
+            e.preventDefault();
+            const formData = new FormData(form);
+            formData.append('ajax', '1');
+
+            fetch('?url=reportes', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || !data.html) return;
+                const wrap = document.createElement('div');
+                wrap.innerHTML = data.html;
+                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12');
+                if (!nuevaVista) return;
+                const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
+                if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
+            })
+            .catch(() => {
+                form.submit();
+            });
+        });
+    }
+
+    const botones = document.querySelectorAll('.btn-ver-motivo');
+    const modalEl = document.getElementById('modalMotivoAnulacion');
+    const modal = new bootstrap.Modal(modalEl);
+
+    botones.forEach(btn => {
+        btn.addEventListener('click', function () {
+            const doc = this.getAttribute('data-documento');
+            const prod = this.getAttribute('data-producto');
+            const motivo = this.getAttribute('data-motivo');
+
+            document.getElementById('modal-motivo-doc').textContent = doc;
+            document.getElementById('modal-motivo-prod').textContent = prod;
+            document.getElementById('modal-motivo-texto').textContent = motivo;
+
+            modal.show();
+        });
+    });
+});
+</script>
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

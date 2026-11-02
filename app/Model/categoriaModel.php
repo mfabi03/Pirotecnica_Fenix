@@ -15,7 +15,7 @@ class CategoriaModel {
     // OBTENER TODAS LAS CATEGORIAS
     public function obtenerCategorias() {
         try {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion 
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion, eliminado 
                     FROM categoria 
                     WHERE eliminado = 0
                     ORDER BY id_categoria DESC";
@@ -27,7 +27,7 @@ class CategoriaModel {
         }
     }
 
-    // ✅ CONTAR CATEGORÍAS (para paginación)
+    // CONTAR CATEGORÍAS
     public function contarCategorias($termino = null) {
         try {
             $termino = trim((string) $termino);
@@ -53,7 +53,7 @@ class CategoriaModel {
     // OBTENER CATEGORIA POR ID
     public function obtenerCategoriaPorId($id) {
         try {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion 
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion, eliminado 
                     FROM categoria 
                     WHERE id_categoria = :id AND eliminado = 0";
             $stmt = $this->db->prepare($sql);
@@ -122,7 +122,7 @@ class CategoriaModel {
         }
     }
 
-    // ELIMINAR CATEGORIA
+    // ELIMINAR CATEGORIA (VERIFICA ASOCIACIONES)
     public function eliminarCategoria($id) {
         try {
             $checkSql = "SELECT COUNT(*) FROM producto WHERE id_categoria = :id AND eliminado = 0";
@@ -143,7 +143,7 @@ class CategoriaModel {
     // BUSCAR CATEGORIAS
     public function buscarCategorias($termino) {
         try {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion 
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion, eliminado 
                     FROM categoria 
                     WHERE eliminado = 0
                     AND (nombre_categoria LIKE :termino 
@@ -156,18 +156,5 @@ class CategoriaModel {
             throw new Exception("Error al buscar categorías: " . $e->getMessage());
         }
     }
-
-    // OBTENER CATEGORIAS PARA SELECT
-    public function obtenerCategoriasParaSelect() {
-        try {
-            $sql = "SELECT id_categoria, nombre_categoria 
-                    FROM categoria 
-                    WHERE eliminado = 0
-                    ORDER BY nombre_categoria ASC";
-            $stmt = $this->db->query($sql);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            throw new Exception("Error al obtener categorías: " . $e->getMessage());
-        }
-    }
 }
+?>
