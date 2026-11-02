@@ -303,29 +303,34 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;"><i class="fas fa-edit me-2" style="color: #f39c12;"></i> Editar Proveedor: <span id="editar-proveedor-razon-header" style="color: #f39c12;">—</span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
-            <form method="POST" action="?url=proveedores&type=update" class="proveedor-form">
+            <form method="POST" action="?url=proveedores&type=update" class="proveedor-form" id="formEditarProveedor">
                 <input type="hidden" name="id_proveedor" id="editar-proveedor-id">
                 <div class="modal-body" style="padding: 20px 24px;">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="editar-proveedor-rif" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
-                            <input type="text" id="editar-proveedor-rif" name="rif" class="form-control proveedor-rif" required>
+                            <input type="text" id="editar-proveedor-rif" name="rif" class="form-control proveedor-rif" required data-validate="rif">
+                            <small class="feedback-validacion info" id="editar-proveedor-rif-feedback"></small>
                         </div>
                         <div class="col-md-6">
                             <label for="editar-proveedor-telefono" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Número de Contacto *</label>
-                            <input type="tel" id="editar-proveedor-telefono" name="numero_contacto" class="form-control proveedor-telefono" required>
+                            <input type="tel" id="editar-proveedor-telefono" name="numero_contacto" class="form-control proveedor-telefono" required data-validate="telefono">
+                            <small class="feedback-validacion info" id="editar-proveedor-telefono-feedback"></small>
                         </div>
                         <div class="col-12">
                             <label for="editar-proveedor-razon" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Razón Social *</label>
-                            <input type="text" id="editar-proveedor-razon" name="razon_social" class="form-control proveedor-razon" required>
+                            <input type="text" id="editar-proveedor-razon" name="razon_social" class="form-control proveedor-razon" required data-validate="razon">
+                            <small class="feedback-validacion info" id="editar-proveedor-razon-feedback"></small>
                         </div>
                         <div class="col-md-6">
                             <label for="editar-proveedor-correo" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo Electrónico</label>
-                            <input type="email" id="editar-proveedor-correo" name="correo_electronico" class="form-control">
+                            <input type="email" id="editar-proveedor-correo" name="correo_electronico" class="form-control" data-validate="correo">
+                            <small class="feedback-validacion info" id="editar-proveedor-correo-feedback"></small>
                         </div>
                         <div class="col-md-6">
                             <label for="editar-proveedor-direccion" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección *</label>
-                            <textarea id="editar-proveedor-direccion" name="direccion" class="form-control" rows="2" required style="resize: vertical;"></textarea>
+                            <textarea id="editar-proveedor-direccion" name="direccion" class="form-control" rows="2" required data-validate="direccion" style="resize: vertical;"></textarea>
+                            <small class="feedback-validacion info" id="editar-proveedor-direccion-feedback"></small>
                         </div>
                     </div>
                 </div>
@@ -403,6 +408,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('editar-proveedor-correo').value = proveedor.correo_electronico || '';
         document.getElementById('editar-proveedor-direccion').value = proveedor.direccion || '';
         document.getElementById('editar-proveedor-razon-header').textContent = proveedor.razon_social || 'Proveedor';
+
+        if (typeof Validador !== 'undefined') {
+            const modalEditar = document.getElementById('modalEditarProveedor');
+            Validador.resetEstadoVisual(modalEditar);
+            Validador.init(modalEditar);
+        }
+
         new bootstrap.Modal(document.getElementById('modalEditarProveedor')).show();
     };
 
@@ -437,6 +449,19 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = this.value.replace(/[^0-9-]/g, '');
         });
     });
+
+    const formEditarProveedor = document.getElementById('formEditarProveedor');
+    if (formEditarProveedor) {
+        formEditarProveedor.addEventListener('submit', function (event) {
+            if (typeof Validador !== 'undefined' && !Validador.validarFormulario('formEditarProveedor')) {
+                event.preventDefault();
+                if (window.mostrarAlerta) {
+                    mostrarAlerta('Revisa los campos marcados en rojo', 'warning');
+                }
+                return;
+            }
+        });
+    }
 });
 </script>
 

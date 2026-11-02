@@ -164,6 +164,27 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </form>
     </div>
 
+    <?php if (isset($mensaje) && !empty($mensaje)): ?>
+        <?php
+        $tipoMensaje = $tipo_mensaje ?? 'info';
+        $mapaAlertas = [
+            'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
+            'danger'  => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+            'error'   => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+            'warning' => ['clase' => 'dark-alert-warning', 'icono' => 'fa-exclamation-triangle'],
+            'info'    => ['clase' => 'dark-alert-info',    'icono' => 'fa-info-circle'],
+        ];
+        $alertaActual = $mapaAlertas[$tipoMensaje] ?? $mapaAlertas['info'];
+        ?>
+        <div class="alert <?= $alertaActual['clase'] ?> alert-dismissible fade show shadow-sm border-0" role="alert" data-auto-dismiss="5000">
+            <div class="d-flex align-items-center">
+                <i class="fas <?= $alertaActual['icono'] ?> me-3 fs-5"></i>
+                <span><?= htmlspecialchars($mensaje) ?></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- ========================================== -->
     <!-- TARJETA ESTADÍSTICA (Centrada)             -->
     <!-- ========================================== -->
@@ -386,16 +407,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const result = await response.json();
                 if (!result.success) {
-                    contenedor.innerHTML = `<div class="alert alert-danger mb-0">${result.mensaje || 'No se pudo guardar el cierre del día.'}</div>`;
+                    contenedor.innerHTML = `
+                        <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0 mb-0" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle me-3 fs-5"></i>
+                                <span>${result.mensaje || 'No se pudo guardar el cierre del día.'}</span>
+                            </div>
+                        </div>
+                    `;
                     btnCerrarCaja.disabled = false;
                     btnCerrarCaja.innerHTML = '<i class="fas fa-lock me-1"></i> Cierre de caja';
                     return;
                 }
 
                 contenedor.innerHTML = `
-                    <div class="alert alert-success mb-0 shadow-sm border-0" style="border-radius: 14px; background: linear-gradient(135deg, #d4edda, #cfe8d4); color: #155724;">
+                    <div class="alert dark-alert-success alert-dismissible fade show shadow-sm border-0 mb-0" role="alert">
                         <div class="d-flex align-items-center">
-                            <i class="fas fa-check-circle fa-2x me-3"></i>
+                            <i class="fas fa-check-circle me-3 fs-5"></i>
                             <div>
                                 <div class="fw-bold">Cierre realizado correctamente</div>
                                 <small>El historial del día quedó guardado y la caja quedó lista para el siguiente turno.</small>
@@ -409,7 +437,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 btnCerrarCaja.disabled = false;
                 btnCerrarCaja.innerHTML = '<i class="fas fa-lock me-1"></i> Cierre de caja';
             } catch (error) {
-                contenedor.innerHTML = '<div class="alert alert-danger mb-0">Error al guardar el cierre del día.</div>';
+                contenedor.innerHTML = `
+                    <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0 mb-0" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-circle me-3 fs-5"></i>
+                            <span>Error al guardar el cierre del día.</span>
+                        </div>
+                    </div>
+                `;
                 btnCerrarCaja.disabled = false;
                 btnCerrarCaja.innerHTML = '<i class="fas fa-lock me-1"></i> Cierre de caja';
             }
@@ -466,7 +501,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const data = await resp.json();
 
             if (!data.success) {
-                contenedor.innerHTML = `<div class="alert alert-danger mb-0">${data.mensaje}</div>`;
+                contenedor.innerHTML = `
+                    <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0 mb-0" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-circle me-3 fs-5"></i>
+                            <span>${data.mensaje}</span>
+                        </div>
+                    </div>
+                `;
                 return;
             }
 
@@ -528,7 +570,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             `;
         } catch (e) {
-            contenedor.innerHTML = `<div class="alert alert-danger mb-0">Error de conexión. Verifica que la ruta cierre_caja_ajax esté registrada.</div>`;
+            contenedor.innerHTML = `
+                <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0 mb-0" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle me-3 fs-5"></i>
+                        <span>Error de conexión. Verifica que la ruta cierre_caja_ajax esté registrada.</span>
+                    </div>
+                </div>
+            `;
         }
     });
 });
