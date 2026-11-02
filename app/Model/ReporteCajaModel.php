@@ -11,12 +11,6 @@ class ReporteCajaModel {
         $this->db = $db;
     }
 
-<<<<<<< HEAD
-    public function obtenerMovimientosCaja($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $limit = 10, $offset = 0, $id_usuario_filtro = null) {
-        $whereEntrada = ["ne.eliminado = 0"];
-        $whereSalida = ["ns.eliminado = 0"];
-        $params = [];
-=======
     private function asegurarTablaCierreCaja() {
         $sql = "CREATE TABLE IF NOT EXISTS cierre_caja (
                     id_cierre INT AUTO_INCREMENT PRIMARY KEY,
@@ -32,7 +26,6 @@ class ReporteCajaModel {
         try {
             $this->db->exec($sql);
         } catch (Exception $e) {}
->>>>>>> e156b5461029137184039cef0bc3c69d7089591e
 
         try {
             $stmt = $this->db->query("SHOW COLUMNS FROM cierre_caja LIKE 'ultimo_id_nota_salida'");
@@ -55,75 +48,6 @@ class ReporteCajaModel {
             $params[':id_usuario'] = (int)$id_usuario;
         }
 
-<<<<<<< HEAD
-        if (!empty($id_categoria) && $id_categoria > 0) {
-            $whereEntrada[] = "prod.id_categoria = :id_categoria";
-            $whereSalida[] = "prod.id_categoria = :id_categoria";
-            $params[':id_categoria'] = $id_categoria;
-        }
-
-        if (!empty($busqueda)) {
-            $whereEntrada[] = "prod.descripcion LIKE :busqueda";
-            $whereSalida[] = "prod.descripcion LIKE :busqueda";
-            $params[':busqueda'] = '%' . $busqueda . '%';
-        }
-
-        // Filtro por usuario si se proporciona
-        if (!empty($id_usuario_filtro)) {
-            $whereEntrada[] = "ne.id_usuario = :id_usuario_filtro";
-            $whereSalida[] = "ns.id_usuario = :id_usuario_filtro";
-            $params[':id_usuario_filtro'] = $id_usuario_filtro;
-        }
-
-        $whereClauseEntrada = !empty($whereEntrada) ? ' WHERE ' . implode(' AND ', $whereEntrada) : '';
-        $whereClauseSalida = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
-
-        // ENTRADAS
-        $sqlEntrada = "SELECT 
-                            prod.descripcion AS nombre_producto,
-                            c.nombre_categoria AS categoria,
-                            'Entrada' AS tipo_movimiento,
-                            de.cantidad AS cantidad,
-                            de.costo_unitario AS costo_proveedor,
-                            ne.fecha_ingreso AS fecha_movimiento,
-                            COALESCE(CONCAT(per_u.nombre, ' ', per_u.apellido), 'N/A') AS usuario_activo
-                        FROM nota_de_entrada ne
-                        INNER JOIN detalle_entrada de ON ne.id_nota_entrada = de.id_nota_entrada
-                        INNER JOIN producto prod ON de.id_producto = prod.id_producto
-                        LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
-                        LEFT JOIN usuario u ON ne.id_usuario = u.id_usuario
-                        LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
-                        $whereClauseEntrada";
-
-        // SALIDAS
-        $sqlSalida = "SELECT 
-                            prod.descripcion AS nombre_producto,
-                            c.nombre_categoria AS categoria,
-                            'Salida' AS tipo_movimiento,
-                            ds.cantidad AS cantidad,
-                            prod.costo_unitario AS costo_proveedor,
-                            ns.fecha AS fecha_movimiento,
-                            COALESCE(CONCAT(per_u.nombre, ' ', per_u.apellido), 'N/A') AS usuario_activo
-                        FROM nota_de_salida ns
-                        INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
-                        INNER JOIN producto prod ON ds.id_producto = prod.id_producto
-                        LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
-                        LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
-                        LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
-                        $whereClauseSalida";
-
-        if ($tipo_movimiento === 'Entrada') {
-            $sql = $sqlEntrada;
-        } elseif ($tipo_movimiento === 'Salida') {
-            $sql = $sqlSalida;
-        } else {
-            $sql = "($sqlEntrada) UNION ALL ($sqlSalida)";
-        }
-
-        $sql .= " ORDER BY fecha_movimiento DESC LIMIT :limit OFFSET :offset";
-
-=======
->>>>>>> e156b5461029137184039cef0bc3c69d7089591e
         $stmt = $this->db->prepare($sql);
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
@@ -277,97 +201,8 @@ class ReporteCajaModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-<<<<<<< HEAD
-    public function contarMovimientosCaja($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $id_usuario_filtro = null) {
-        $movimientos = $this->obtenerMovimientosCaja($fecha, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0, $id_usuario_filtro);
-        return count($movimientos);
-    }
-
-    public function obtenerResumenCaja($fecha = null, $id_categoria = null, $busqueda = null, $id_usuario_filtro = null) {
-        $params = [':estado_activo' => 0, ':estado_anulado' => 1];
-        $whereEntradaActiva = ["ne.eliminado = :estado_activo"];
-        $whereSalidaActiva = ["ns.eliminado = :estado_activo"];
-        $whereEntradaAnulada = ["ne.eliminado = :estado_anulado"];
-        $whereSalidaAnulada = ["ns.eliminado = :estado_anulado"];
-
-        if (!empty($fecha)) {
-            $whereEntradaActiva[] = "DATE(ne.fecha_ingreso) = :fecha";
-            $whereSalidaActiva[] = "DATE(ns.fecha) = :fecha";
-            $whereEntradaAnulada[] = "DATE(ne.fecha_ingreso) = :fecha";
-            $whereSalidaAnulada[] = "DATE(ns.fecha) = :fecha";
-            $params[':fecha'] = $fecha;
-        }
-
-        if (!empty($id_categoria) && $id_categoria > 0) {
-            $whereEntradaActiva[] = "prod.id_categoria = :id_categoria";
-            $whereSalidaActiva[] = "prod.id_categoria = :id_categoria";
-            $whereEntradaAnulada[] = "prod.id_categoria = :id_categoria";
-            $whereSalidaAnulada[] = "prod.id_categoria = :id_categoria";
-            $params[':id_categoria'] = $id_categoria;
-        }
-
-        if (!empty($busqueda)) {
-            $whereEntradaActiva[] = "prod.descripcion LIKE :busqueda";
-            $whereSalidaActiva[] = "prod.descripcion LIKE :busqueda";
-            $whereEntradaAnulada[] = "prod.descripcion LIKE :busqueda";
-            $whereSalidaAnulada[] = "prod.descripcion LIKE :busqueda";
-            $params[':busqueda'] = '%' . $busqueda . '%';
-        }
-
-        // Filtro por usuario si se proporciona
-        if (!empty($id_usuario_filtro)) {
-            $whereEntradaActiva[] = "ne.id_usuario = :id_usuario_filtro";
-            $whereSalidaActiva[] = "ns.id_usuario = :id_usuario_filtro";
-            $whereEntradaAnulada[] = "ne.id_usuario = :id_usuario_filtro";
-            $whereSalidaAnulada[] = "ns.id_usuario = :id_usuario_filtro";
-            $params[':id_usuario_filtro'] = $id_usuario_filtro;
-        }
-
-        $sql = "SELECT (
-                    (SELECT COUNT(DISTINCT ne.id_nota_entrada)
-                     FROM nota_de_entrada ne
-                     INNER JOIN detalle_entrada de ON ne.id_nota_entrada = de.id_nota_entrada
-                     INNER JOIN producto prod ON de.id_producto = prod.id_producto
-                     WHERE " . implode(' AND ', $whereEntradaActiva) . ")
-                    +
-                    (SELECT COUNT(DISTINCT ns.id_nota_salida)
-                     FROM nota_de_salida ns
-                     INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
-                     INNER JOIN producto prod ON ds.id_producto = prod.id_producto
-                     WHERE " . implode(' AND ', $whereSalidaActiva) . ")
-                ) AS total_notas,
-                (
-                    (SELECT COUNT(DISTINCT ne.id_nota_entrada)
-                     FROM nota_de_entrada ne
-                     INNER JOIN detalle_entrada de ON ne.id_nota_entrada = de.id_nota_entrada
-                     INNER JOIN producto prod ON de.id_producto = prod.id_producto
-                     WHERE " . implode(' AND ', $whereEntradaAnulada) . ")
-                    +
-                    (SELECT COUNT(DISTINCT ns.id_nota_salida)
-                     FROM nota_de_salida ns
-                     INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
-                     INNER JOIN producto prod ON ds.id_producto = prod.id_producto
-                     WHERE " . implode(' AND ', $whereSalidaAnulada) . ")
-                ) AS total_anuladas";
-
-        $stmt = $this->db->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        return [
-            'total_notas' => (int)($row['total_notas'] ?? 0),
-            'total_anuladas' => (int)($row['total_anuladas'] ?? 0)
-        ];
-    }
-
-    public function obtenerTotalesGlobales($fecha = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $id_usuario_filtro = null) {
-=======
     public function obtenerSalidasCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null, $limit = 10, $offset = 0) {
         $where = ["ns.eliminado = 0"];
->>>>>>> e156b5461029137184039cef0bc3c69d7089591e
         $params = [];
 
         if (!empty($id_usuario)) {
@@ -390,19 +225,7 @@ class ReporteCajaModel {
             $params[':busqueda'] = '%' . $busqueda . '%';
         }
 
-<<<<<<< HEAD
-        // Filtro por usuario si se proporciona
-        if (!empty($id_usuario_filtro)) {
-            $whereEntrada[] = "ne.id_usuario = :id_usuario_filtro";
-            $whereSalida[] = "ns.id_usuario = :id_usuario_filtro";
-            $params[':id_usuario_filtro'] = $id_usuario_filtro;
-        }
-
-        $whereEntradaSql = !empty($whereEntrada) ? ' WHERE ' . implode(' AND ', $whereEntrada) : '';
-        $whereSalidaSql = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
-=======
         $whereSql = ' WHERE ' . implode(' AND ', $where);
->>>>>>> e156b5461029137184039cef0bc3c69d7089591e
 
         $sql = "SELECT 
                     ns.id_nota_salida AS id_documento,

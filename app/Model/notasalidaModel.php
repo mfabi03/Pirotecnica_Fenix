@@ -58,7 +58,6 @@ class notasalidaModel {
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
                     WHERE (cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)
                     AND p.eliminado = 0
-                    AND (p.status = 'activo' OR p.status IS NULL)
                     ORDER BY nombre_cliente ASC";
             
             $stmt = $this->db->prepare($sql);
@@ -73,13 +72,13 @@ class notasalidaModel {
     // REGISTRAR SALIDA
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
-            $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0 AND (status = 'activo' OR status IS NULL)";
+            $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0";
             $stmtCheck = $this->db->prepare($sqlCheckCliente);
             $stmtCheck->execute([$datos['id_cliente']]);
             $clienteExiste = $stmtCheck->fetch();
             
             if (!$clienteExiste) {
-                throw new Exception("El cliente seleccionado no existe o se encuentra inactivo.");
+                throw new Exception("El cliente seleccionado no existe en la base de datos.");
             }
             
             $sqlCheckUsuario = "SELECT id_usuario FROM usuario WHERE id_usuario = ? AND eliminado = 0";
@@ -106,7 +105,7 @@ class notasalidaModel {
             
             try {
                 $sql = "INSERT INTO nota_de_salida (fecha, id_persona, id_usuario, eliminado) 
-                        VALUES (NOW(), ?, ?, 0)";
+                        VALUES (CURDATE(), ?, ?, 0)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([
                     $datos['id_cliente'], 
@@ -149,12 +148,11 @@ class notasalidaModel {
         }
     }
 
-    // LISTAR NOTAS DE SALIDA
+    // LISTAR NOTAS DE SALIDA (CORREGIDO: AGREGADO ELIMINADO)
     public function listarNotasSalida() {
         try {
-            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario 
+            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado 
                     FROM nota_de_salida 
-                    WHERE eliminado = 0
                     ORDER BY id_nota_salida DESC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -242,7 +240,7 @@ class notasalidaModel {
         }
     }
 
-    //  CONTAR NOTAS DE SALIDA (para paginación)
+    // CONTAR NOTAS DE SALIDA (para paginación)
     public function contarNotasSalida() {
         try {
             $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0";
@@ -255,6 +253,7 @@ class notasalidaModel {
         }
     }
 
+    // BUSCAR NOTAS DE SALIDA (CORREGIDO: AGREGADO ELIMINADO)
     public function buscarNotasSalida($termino) {
         try {
             $termino = trim((string) $termino);
@@ -262,14 +261,13 @@ class notasalidaModel {
                 return $this->listarNotasSalida();
             }
 
-            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario 
+            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.eliminado 
                     FROM nota_de_salida ns
                     LEFT JOIN persona p ON ns.id_persona = p.id_persona
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
                     LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
                     LEFT JOIN persona up ON u.id_persona = up.id_persona
-                    WHERE ns.eliminado = 0
-                      AND (
+                    WHERE (
                             CAST(ns.id_nota_salida AS CHAR) LIKE :termino
                          OR p.nombre LIKE :termino
                          OR p.apellido LIKE :termino
@@ -279,7 +277,7 @@ class notasalidaModel {
                          OR CONCAT(up.nombre, ' ', up.apellido) LIKE :termino
                          OR COALESCE(cj.razon_social, '') LIKE :termino
                       )
-                    GROUP BY ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario
+                    GROUP BY ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.eliminado
                     ORDER BY ns.id_nota_salida DESC";
 
             $stmt = $this->db->prepare($sql);
@@ -371,9 +369,9 @@ class notasalidaModel {
     // OBTENER NOTA POR ID
     public function obtenerNotaPorId($id) {
         try {
-            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario
+            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado
                     FROM nota_de_salida 
-                    WHERE id_nota_salida = ? AND eliminado = 0";
+                    WHERE id_nota_salida = ?";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$id]);
             $nota = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -419,11 +417,12 @@ class notasalidaModel {
                 $nota['usuario_responsable'] = 'N/A';
             }
             
-            $detSql = "SELECT 
+                    $detSql = "SELECT 
                             ds.id_detalle_salida,
                             ds.id_producto,
                             ds.cantidad,
                             p.descripcion AS nombre_producto,
+                            p.costo_unitario,  
                             c.nombre_categoria
                         FROM detalle_salida ds
                         JOIN producto p ON ds.id_producto = p.id_producto
@@ -600,3 +599,4 @@ class notasalidaModel {
         }
     }
 }
+?>

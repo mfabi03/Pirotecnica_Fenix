@@ -139,7 +139,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <tr>
                         <th class="ps-4 py-3">NOMBRE</th>
                         <th class="py-3">DESCRIPCIÓN</th>
-                        <th class="py-3">ESTADO</th>
+                        <th class="py-3">STATUS</th>
                         <th class="pe-4 py-3 text-center">ACCIONES</th>
                     </tr>
                 </thead>

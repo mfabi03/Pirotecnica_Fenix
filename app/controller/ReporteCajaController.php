@@ -54,27 +54,9 @@ class ReporteCajaController {
         $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] > 0 ? (int)$_GET['id_categoria'] : null;
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $porPagina = isset($_GET['por_pagina']) ? (int)$_GET['por_pagina'] : 10;
-<<<<<<< HEAD
-
-        // Determinar filtro por usuario según el rol
-        $id_usuario = $_SESSION['id_usuario'] ?? null;
-        $id_rol = $_SESSION['id_rol'] ?? null;
-        
-        // Si el rol no es 1 (Administrador), filtrar por el usuario actual
-        // Si el rol es 1, no aplicar filtro por usuario (null)
-        $id_usuario_filtro = ($id_rol != 1 && !empty($id_usuario)) ? $id_usuario : null;
-
-        $offset = ($pagina - 1) * $porPagina;
-
-        $movimientos = $this->modelo->obtenerMovimientosCaja($fecha, $id_categoria, $busqueda, $tipo_movimiento, $porPagina, $offset, $id_usuario_filtro);
-        $totalRegistros = $this->modelo->contarMovimientosCaja($fecha, $id_categoria, $busqueda, $tipo_movimiento, $id_usuario_filtro);
-        $totalesGlobales = $this->modelo->obtenerTotalesGlobales($fecha, $id_categoria, $busqueda, $tipo_movimiento, $id_usuario_filtro);
-        $resumenCaja = $this->modelo->obtenerResumenCaja($fecha, $id_categoria, $busqueda, $id_usuario_filtro);
-=======
         $offset = ($pagina - 1) * $porPagina;
 
         $id_usuario_filtro = $this->resolverIdUsuarioFiltro($_GET['id_usuario'] ?? null);
->>>>>>> e156b5461029137184039cef0bc3c69d7089591e
 
         $cajaCerrada = $this->modelo->fechaCerradaParaCaja($fecha, $id_usuario_filtro === -1 ? null : $id_usuario_filtro);
 
@@ -237,21 +219,9 @@ class ReporteCajaController {
         $busqueda = isset($_GET['busqueda']) ? trim($_GET['busqueda']) : null;
         $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] > 0 ? (int)$_GET['id_categoria'] : null;
 
-<<<<<<< HEAD
-        // Determinar filtro por usuario según el rol
-        $id_usuario = $_SESSION['id_usuario'] ?? null;
-        $id_rol = $_SESSION['id_rol'] ?? null;
-        
-        // Si el rol no es 1 (Administrador), filtrar por el usuario actual
-        // Si el rol es 1, no aplicar filtro por usuario (null)
-        $id_usuario_filtro = ($id_rol != 1 && !empty($id_usuario)) ? $id_usuario : null;
-
-        $movimientos = $this->modelo->obtenerMovimientosCaja($fecha, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0, $id_usuario_filtro);
-=======
         $id_usuario_filtro = $this->resolverIdUsuarioFiltro($_GET['id_usuario'] ?? null);
 
         $movimientos = $this->modelo->obtenerSalidasCajero($id_usuario_filtro, $fecha, $busqueda, $id_categoria, 999999, 0);
->>>>>>> e156b5461029137184039cef0bc3c69d7089591e
 
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="reporte_caja_' . date('Y-m-d') . '.csv"');

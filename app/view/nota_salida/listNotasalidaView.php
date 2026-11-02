@@ -5,21 +5,14 @@ require_once __DIR__ . '/../header.php';
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-// Crear conexión si no existe
 if (!isset($db) || $db === null) {
-    try {
-        $db = (new ConnectDB())->getConnection();
-    } catch (Exception $e) {
-        $db = null;
-    }
+    try { $db = (new ConnectDB())->getConnection(); } catch (Exception $e) { $db = null; }
 }
 
-// Obtener permisos del usuario actual
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'crear') : false;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'eliminar') : false;
 
-// Paginación
 $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($notas) ? count($notas) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
@@ -28,7 +21,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
 <div class="col-md-8 col-lg-12">
             
-    <!-- TARJETA DE TÍTULO -->
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center">
             <div class="col">
@@ -49,7 +41,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </div>
     </div>
 
-    <!-- FILTRO DE BÚSQUEDA -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="notasalida">
@@ -67,17 +58,16 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             <div class="col-md-6">
                 <input type="text" name="busqueda" class="form-control" 
                        list="listaNotasSalida"
-                       placeholder="Buscar por cliente, encargado o ID..."
+                       placeholder="Buscar por cliente, cédula, encargado o ID..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                 <datalist id="listaNotasSalida">
                     <?php if (isset($notas) && is_array($notas)): ?>
                         <?php foreach ($notas as $n): 
-                            $nombreCliente = !empty($n['cliente_razon_social']) 
-                                ? $n['cliente_razon_social'] 
-                                : trim(($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? ''));
+                            $nombreCliente = !empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : trim(($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? ''));
                             $nombreEncargado = trim(($n['usuario_nombre'] ?? '') . ' ' . ($n['usuario_apellido'] ?? ''));
                         ?>
                             <option value="<?= htmlspecialchars($nombreCliente) ?>">
+                            <option value="<?= htmlspecialchars($n['cedula'] ?? '') ?>">
                             <option value="<?= htmlspecialchars($nombreEncargado) ?>">
                             <option value="<?= $n['id_nota_salida'] ?>">
                         <?php endforeach; ?>
@@ -99,31 +89,27 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </form>
     </div>
 
-    <!-- MENSAJES -->
-    <?php if (isset($success)): ?>
-        <div class="alert dark-alert-success alert-dismissible fade show shadow-sm border-0">
+    <?php
+    $mapaTipos = [
+        'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
+        'danger'  => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+        'error'   => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+        'warning' => ['clase' => 'dark-alert-warning', 'icono' => 'fa-exclamation-triangle'],
+        'info'    => ['clase' => 'dark-alert-info',    'icono' => 'fa-info-circle'],
+    ];
+    $estiloMsg = $mapaTipos[$tipo_mensaje ?? 'info'] ?? $mapaTipos['info'];
+    ?>
+    <?php if (!empty($mensaje)): ?>
+        <div class="alert <?= $estiloMsg['clase'] ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
             <div class="d-flex align-items-center">
-                <i class="fas fa-check-circle me-2"></i>
-                <span><?= htmlspecialchars($success) ?></span>
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-            </div>
-        </div>
-    <?php endif; ?>
-    
-    <?php if (isset($error)): ?>
-        <div class="alert dark-alert-danger alert-dismissible fade show shadow-sm border-0">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                <span><?= htmlspecialchars($error) ?></span>
-                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                <i class="fas <?= $estiloMsg['icono'] ?> me-3"></i>
+                <span><?= htmlspecialchars($mensaje) ?></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
             </div>
         </div>
     <?php endif; ?>
 
-    <!-- CUADROS DE RESUMEN (MISMO ESTILO QUE NOTAS DE ENTRADA) -->
     <div class="row mb-4 g-3">
-        
-        <!-- TARJETA 1: TOTAL DE SALIDAS -->
         <div class="col-md-6">
             <div class="dark-card card shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
@@ -132,7 +118,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             <i class="fas fa-sign-out-alt me-1"></i> Total de Salidas
                         </h6>
                         <h2 style="color: #fdc304; font-weight: 700; font-size: 2.2rem; margin: 0;">
-                            <?= (int) ($resumen['total_salidas'] ?? $totalRegistros ?? 0) ?>
+                            <?= (int) ($resumen['total_notas'] ?? $totalRegistros ?? 0) ?>
                         </h2>
                     </div>
                     <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(243,156,18,0.12); display: flex; align-items: center; justify-content: center; color: #f39c12; font-size: 1.5rem;">
@@ -141,8 +127,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </div>
             </div>
         </div>
-
-        <!-- TARJETA 2: TOTAL ANULADAS -->
         <div class="col-md-6">
             <div class="dark-card card shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
@@ -160,10 +144,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- TABLA DE NOTAS DE SALIDA -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
@@ -175,15 +157,15 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             <table class="table table-hover align-middle m-0" id="tablaNotas">
                 <thead>
                     <tr>
-                        <th class="ps-4 py-3">ID</th>
-                        <th class="py-3">Fecha</th>
-                        <th class="py-3">Cliente</th>
-                        <th class="py-3">Tipo</th>
-                        <th class="py-3">Productos</th>
-                        <th class="py-3">Categorías</th>
-                        <th class="py-3">Unidades</th>
-                        <th class="py-3">Encargado</th>
-                        <th class="pe-4 py-3 text-center">Acciones</th>
+                        <th class="ps-4 py-3">FECHA</th>
+                        <th class="py-3">CLIENTE</th>
+                        <th class="py-3">TIPO</th>
+                        <th class="py-3">PRODUCTOS</th>
+                        <th class="py-3">CATEGORÍAS</th>
+                        <th class="py-3">UNIDADES</th>
+                        <th class="py-3">ENCARGADO</th>
+                        <th class="py-3 text-center">ESTATUS</th>
+                        <th class="pe-4 py-3 text-center">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody id="tbodyNotas">
@@ -193,57 +175,47 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <div class="py-4">
                                     <i class="fas fa-inbox fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">No hay notas de salida registradas</p>
-                                    <small>Comienza registrando una nueva nota</small>
                                 </div>
                             </td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($notas as $n): ?>
-                            <tr>
-                                <td class="ps-4 fw-bold">#<?= $n['id_nota_salida'] ?></td>
-                                <td><?= formatoFechaVenezuela($n['fecha']) ?></td>
+                            <?php $anulada = ($n['eliminado'] == 1); ?>
+                            <tr <?= $anulada ? 'style="opacity: 0.6;"' : '' ?>>
+                                <td class="ps-4"><?= formatoFechaVenezuela($n['fecha']) ?></td>
                                 <td>
-                                    <?php 
-                                    if (!empty($n['cliente_razon_social'])) {
-                                        echo htmlspecialchars($n['cliente_razon_social']);
-                                    } else {
-                                        echo htmlspecialchars(($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? ''));
-                                    }
-                                    ?>
+                                    <div class="text-truncate" style="max-width: 150px;">
+                                        <?= htmlspecialchars(!empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : (($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? ''))) ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge" style="background: <?= ($n['tipo_cliente'] ?? 'Natural') === 'Jurídico' ? 'rgba(13,110,253,0.15)' : 'rgba(40,167,69,0.15)' ?>; color: <?= ($n['tipo_cliente'] ?? 'Natural') === 'Jurídico' ? '#0d6efd' : '#28a745' ?>; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
                                         <?= $n['tipo_cliente'] ?? 'Natural' ?>
                                     </span>
                                 </td>
-                                <td><?= htmlspecialchars($n['productos_lista'] ?? 'N/A') ?></td>
-                                <td><?= htmlspecialchars($n['categorias_lista'] ?? 'N/A') ?></td>
+                                <td><div class="text-truncate" style="max-width: 150px;"><?= htmlspecialchars($n['productos_lista'] ?? 'N/A') ?></div></td>
+                                <td><div class="text-truncate" style="max-width: 100px;"><?= htmlspecialchars($n['categorias_lista'] ?? 'N/A') ?></div></td>
                                 <td class="fw-bold"><?= $n['total_unidades'] ?? 0 ?></td>
-                                <td>
-                                    <?php 
-                                    echo htmlspecialchars(($n['usuario_nombre'] ?? '') . ' ' . ($n['usuario_apellido'] ?? ''));
-                                    ?>
+                                <td><?= htmlspecialchars(($n['usuario_nombre'] ?? '') . ' ' . ($n['usuario_apellido'] ?? '')) ?></td>
+                                <td class="text-center">
+                                    <?php if ($anulada): ?>
+                                        <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            Anulada
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            Activa
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <!-- VER DETALLE (ABRE MODAL) -->
-                                        <button type="button" class="btn-action-circle btn-view" 
-                                                title="Ver Detalle"
-                                                onclick="verDetalleNota(<?= (int) $n['id_nota_salida'] ?>)">
+                                        <button type="button" class="btn-action-circle btn-view" title="Ver Detalle" onclick="verDetalleNota(<?= (int) $n['id_nota_salida'] ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <!-- ANULAR (ABRE MODAL) -->
-                                        <?php if ($puede_anular_nota): ?>
-                                        <button type="button" class="btn-action-circle btn-delete" 
-                                                title="Anular Nota"
-                                                onclick="confirmarAnularNota(<?= (int) $n['id_nota_salida'] ?>, '<?php 
-                                                    if (!empty($n['cliente_razon_social'])) {
-                                                        echo htmlspecialchars(addslashes($n['cliente_razon_social']));
-                                                    } else {
-                                                        echo htmlspecialchars(addslashes(($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')));
-                                                    }
-                                                ?>')">
+                                        <?php if (!$anulada && $puede_anular_nota): ?>
+                                        <button type="button" class="btn-action-circle btn-delete" title="Anular Nota" onclick="confirmarAnularNota(<?= (int) $n['id_nota_salida'] ?>, '<?= htmlspecialchars(addslashes(!empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : (($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')))) ?>')">
                                             <i class="fas fa-ban"></i>
                                         </button>
                                         <?php endif; ?>
@@ -258,7 +230,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         
         <div class="card-footer py-3 d-flex justify-content-between align-items-center">
             <span class="text-muted small">
-                <i class="fas fa-file-invoice me-1"></i> 
                 Total: <?= $totalRegistros ?> notas
             </span>
             <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
@@ -266,15 +237,11 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     </div>
 </div>
 
-
-<!-- ============================================================ -->
-<!-- MODAL 1: VER DETALLE DE NOTA (HEADER OSCURO + BODY BLANCO)   -->
-<!-- ============================================================ -->
+<!-- MODAL 1: VER DETALLE DE NOTA (DISEÑO FACTURA CORREGIDO SIN ID) -->
 <div class="modal fade" id="modalVerNota" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
             
-            <!-- HEADER OSCURO -->
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-eye me-2" style="color: #f39c12;"></i> 
@@ -285,21 +252,16 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
             <div class="modal-body" style="padding: 20px 24px;">
                 
-                <!-- ESTADO DE CARGA -->
                 <div id="ver-nota-cargando" class="text-center py-5">
-                    <div class="spinner-border" style="color: #f39c12;" role="status">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
+                    <div class="spinner-border" style="color: #f39c12;" role="status"></div>
                     <p class="mt-3" style="color: #6c757d;">Cargando información de la nota...</p>
                 </div>
 
-                <!-- ESTADO DE ERROR -->
                 <div id="ver-nota-error" class="text-center py-5" style="display: none;">
                     <i class="fas fa-exclamation-triangle fa-3x mb-3" style="color: #dc3545;"></i>
                     <p id="ver-nota-error-msg" style="color: #6c757d;">Error al cargar la nota</p>
                 </div>
 
-                <!-- CONTENIDO DE LA NOTA -->
                 <div id="ver-nota-contenido" style="display: none;">
                     
                     <div class="row g-3 mb-4">
@@ -335,7 +297,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         </div>
                     </div>
 
-                    <!-- TABLA DE PRODUCTOS -->
+                    <!-- TABLA TIPO FACTURA SIN COLUMNA ID -->
                     <div class="card" style="border: 1px solid #e9ecef; border-radius: 12px; overflow: hidden;">
                         <div class="card-header py-3" style="background: #1a1a2e; border: none;">
                             <h6 class="m-0" style="color: #ffffff; font-weight: 700;">
@@ -343,21 +305,24 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             </h6>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle m-0">
+                            <table class="table table-hover align-middle m-0" style="table-layout: fixed; width: 100%;">
                                 <thead>
                                     <tr style="background: #f8f9fa;">
-                                        <th class="ps-4 py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">ID</th>
-                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">Producto</th>
-                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">Categoría</th>
-                                        <th class="pe-4 py-3 text-center" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">Cantidad</th>
+                                        <th class="ps-4 py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 35%;">PRODUCTO</th>
+                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 25%;">CATEGORÍA</th>
+                                        <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 10%;">CANT.</th>
+                                        <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 15%;">COSTO</th>
+                                        <th class="pe-4 text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 15%;">SUBTOTAL</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ver-nota-productos-tbody">
                                 </tbody>
                                 <tfoot>
-                                    <tr style="border-top: 2px solid rgba(243,156,18,0.2);">
-                                        <th colspan="3" class="ps-4 py-2 text-end" style="color: #495057; font-size: 0.85rem;">Total Unidades:</th>
-                                        <th class="pe-4 py-2 text-center" id="ver-nota-total-unidades" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">0</th>
+                                    <tr style="border-top: 2px solid rgba(243,156,18,0.2); background: #f8f9fa;">
+                                        <th colspan="2" class="ps-4 py-3 text-end" style="color: #495057; font-size: 0.85rem;">Total Unidades:</th>
+                                        <th class="text-center py-3" id="ver-nota-total-unidades" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">0</th>
+                                        <th class="text-end py-3" style="color: #495057; font-size: 0.85rem;">Total $:</th>
+                                        <th class="pe-4 text-center py-3" id="ver-nota-total-costo" style="color: #28a745; font-size: 1.1rem; font-weight: 700;">$0.00</th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -367,8 +332,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             </div>
 
             <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                <button type="button" class="btn btn-danger me-auto" onclick="imprimirNotaPDF()" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                    <i class="fas fa-file-pdf me-1"></i> Imprimir esta Nota
+                </button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
                     <i class="fas fa-times me-1"></i> Cerrar
                 </button>
             </div>
@@ -376,16 +343,11 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     </div>
 </div>
 
-
-<!-- ============================================================ -->
-<!-- MODAL 2: ANULAR NOTA (MISMO ESTILO QUE MODALES DE CLIENTES)  -->
-<!-- ============================================================ -->
+<!-- MODAL 2: ANULAR NOTA -->
 <?php if ($puede_anular_nota): ?>
 <div class="modal fade" id="modalAnularNota" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <!-- HEADER OSCURO CON ICONO ROJO -->
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(220,53,69,0.3); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Anular Nota de Salida
@@ -396,54 +358,27 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             <form method="POST" action="?url=notasalida&type=eliminar">
                 <input type="hidden" name="id_nota_salida" id="anular-nota-id">
                 
-                <!-- BODY BLANCO -->
                 <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
+                    <p style="margin-bottom: 16px; font-weight: 500;">¿Estás seguro de anular esta nota de salida?</p>
                     
-                    <p style="margin-bottom: 16px; font-weight: 500;">
-                        ¿Estás seguro de anular esta nota de salida?
-                    </p>
-                    
-                    <!-- PANEL DE INFO CON BORDE ROJO -->
                     <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #dc3545; border-radius: 8px;">
-                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">
-                            Cliente de la nota
-                        </strong>
+                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente de la nota</strong>
                         <span id="anular-nota-cliente" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
                     </div>
 
-                    <!-- ALERTA ROJA CLARA -->
                     <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Al anular, el stock de los productos se <strong>revertirá automáticamente</strong>.
+                        <i class="fas fa-info-circle me-2"></i> Al anular, el stock de los productos se <strong>revertirá automáticamente</strong>.
                     </div>
 
-                    <!-- CAMPO DE MOTIVO -->
                     <div class="mb-0">
-                        <label class="form-label fw-bold" style="color: #1a1a2e; font-size: 0.85rem;">
-                            Motivo de Anulación <span class="text-danger">*</span>
-                        </label>
-                        <textarea name="motivo_eliminacion" 
-                                  class="form-control" 
-                                  rows="3" 
-                                  required 
-                                  placeholder="Describe el motivo de la anulación..."
-                                  style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); resize: vertical;"></textarea>
-                        <small style="color: #6c757d; font-size: 0.7rem;">
-                            Este motivo será registrado en el sistema para auditoría.
-                        </small>
+                        <label class="form-label fw-bold" style="color: #1a1a2e; font-size: 0.85rem;">Motivo de Anulación <span class="text-danger">*</span></label>
+                        <textarea name="motivo_eliminacion" class="form-control" rows="3" required placeholder="Describe el motivo de la anulación..." style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); resize: vertical;"></textarea>
                     </div>
                 </div>
 
-                <!-- FOOTER CON BOTONES -->
                 <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                            style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                        <i class="fas fa-times me-1"></i> Cancelar
-                    </button>
-                    <button type="submit" class="btn"
-                            style="background: #dc3545; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                        <i class="fas fa-ban me-1"></i> Sí, anular
-                    </button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">Cancelar</button>
+                    <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">Sí, anular</button>
                 </div>
             </form>
         </div>
@@ -451,28 +386,18 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 </div>
 <?php endif; ?>
 
-
-<!-- ============================================================ -->
-<!-- JAVASCRIPT                                                    -->
-<!-- ============================================================ -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
-    // ============================================================
-    // VER DETALLE DE NOTA (AJAX)
-    // ============================================================
     window.verDetalleNota = function(id) {
-        // Resetear estados
         document.getElementById('ver-nota-cargando').style.display = 'block';
         document.getElementById('ver-nota-error').style.display = 'none';
         document.getElementById('ver-nota-contenido').style.display = 'none';
         document.getElementById('ver-nota-id').textContent = '#' + id;
 
-        // Mostrar modal
         new bootstrap.Modal(document.getElementById('modalVerNota')).show();
 
-        // Fetch al endpoint
         fetch('?url=notasalida&type=detalle_json&id=' + id)
             .then(response => response.json())
             .then(data => {
@@ -487,40 +412,71 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nota = data.nota;
                 document.getElementById('ver-nota-contenido').style.display = 'block';
 
-                // Datos generales
                 document.getElementById('ver-nota-fecha').textContent = Validador.formatearFecha(nota.fecha);
                 document.getElementById('ver-nota-encargado').textContent = nota.usuario_responsable || 'N/A';
                 document.getElementById('ver-nota-cliente').textContent = nota.cliente || 'N/A';
-                document.getElementById('ver-nota-documento').textContent = nota.cedula || nota.rif || 'N/A';
+                document.getElementById('ver-nota-documento').textContent = nota.documento || 'N/A';
 
-                // Productos
                 const tbody = document.getElementById('ver-nota-productos-tbody');
                 tbody.innerHTML = '';
                 let totalUnidades = 0;
+                let totalCosto = 0;
 
                 if (nota.detalles && nota.detalles.length > 0) {
                     nota.detalles.forEach(function(d) {
-                        totalUnidades += parseInt(d.cantidad) || 0;
+                        let cantidad = parseInt(d.cantidad) || 0;
+                        let costo = parseFloat(d.costo_unitario) || 0;
+                        let subtotal = cantidad * costo;
+
+                        totalUnidades += cantidad;
+                        totalCosto += subtotal;
+
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class="ps-4" style="color: #1a1a2e;">${d.id_producto}</td>
-                            <td style="color: #1a1a2e;">${escapeHtml(d.nombre_producto)}</td>
-                            <td style="color: #6c757d;">${escapeHtml(d.nombre_categoria || 'Sin categoría')}</td>
-                            <td class="pe-4 text-center fw-bold" style="color: #1a1a2e;">${d.cantidad}</td>
-                        `;
+                        
+                        // 1. Producto
+                        const tdProd = document.createElement('td');
+                        tdProd.className = 'ps-4';
+                        tdProd.style.color = '#1a1a2e';
+                        tdProd.style.fontWeight = '600';
+                        tdProd.textContent = d.nombre_producto;
+
+                        // 2. Categoría
+                        const tdCat = document.createElement('td');
+                        tdCat.style.color = '#6c757d';
+                        tdCat.textContent = d.nombre_categoria || 'Sin categoría';
+
+                        // 3. Cantidad
+                        const tdCant = document.createElement('td');
+                        tdCant.className = 'text-center fw-bold';
+                        tdCant.style.color = '#1a1a2e';
+                        tdCant.textContent = cantidad;
+
+                        // 4. Costo
+                        const tdCosto = document.createElement('td');
+                        tdCosto.className = 'text-center';
+                        tdCosto.style.color = '#1a1a2e';
+                        tdCosto.textContent = '$' + costo.toFixed(2);
+
+                        // 5. Subtotal
+                        const tdSubtotal = document.createElement('td');
+                        tdSubtotal.className = 'pe-4 text-center fw-bold';
+                        tdSubtotal.style.color = '#f39c12';
+                        tdSubtotal.textContent = '$' + subtotal.toFixed(2);
+
+                        tr.appendChild(tdProd);
+                        tr.appendChild(tdCat);
+                        tr.appendChild(tdCant);
+                        tr.appendChild(tdCosto);
+                        tr.appendChild(tdSubtotal);
+                        
                         tbody.appendChild(tr);
                     });
                 } else {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="4" class="text-center py-3" style="color: #6c757d;">
-                                <i class="fas fa-box-open me-2"></i> No hay productos en esta nota
-                            </td>
-                        </tr>
-                    `;
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3" style="color: #6c757d;"><i class="fas fa-box-open me-2"></i> No hay productos en esta nota</td></tr>`;
                 }
-
+                
                 document.getElementById('ver-nota-total-unidades').textContent = totalUnidades;
+                document.getElementById('ver-nota-total-costo').textContent = '$' + totalCosto.toFixed(2);
             })
             .catch(err => {
                 document.getElementById('ver-nota-cargando').style.display = 'none';
@@ -529,31 +485,23 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     };
 
-    // ============================================================
-    // ANULAR NOTA
-    // ============================================================
+    window.imprimirNotaPDF = function() {
+        var textoId = document.getElementById('ver-nota-id').textContent;
+        var idNota = textoId.replace('#', '').trim();
+
+        if (idNota) {
+            window.open('?url=notasalida&type=generar_pdf&id=' + idNota, '_blank');
+        } else {
+            alert("Error: No se pudo identificar la nota.");
+        }
+    };
+
     window.confirmarAnularNota = function(id, cliente) {
         document.getElementById('anular-nota-id').value = id;
         document.getElementById('anular-nota-cliente').textContent = cliente || 'Nota #' + id;
         new bootstrap.Modal(document.getElementById('modalAnularNota')).show();
     };
-
-    // ============================================================
-    // HELPER: ESCAPAR HTML
-    // ============================================================
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>"']/g, function(m) {
-            return {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            }[m];
-        });
-    }
 });
 </script>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>
+<?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>
