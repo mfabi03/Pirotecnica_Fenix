@@ -189,7 +189,26 @@ if ($type === 'show' && $id) {
 
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
+
+    // NUEVO: Filtro de estado
+    $estado_nota = strtolower(trim((string) ($_GET['estado_nota'] ?? 'todos')));
+    if (!in_array($estado_nota, ['todos', 'activos', 'inactivos'], true)) {
+        $estado_nota = 'todos';
+    }
+
     $notas_full = !empty($buscar) ? $modelo->buscarNotasSalida($buscar) : $modelo->listarNotasSalida();
+    
+    // Aplicar filtro
+    if ($estado_nota === 'activos') {
+        $notas_full = array_values(array_filter($notas_full, function ($n) {
+            return ((int) ($n['eliminado'] ?? 0)) === 0;
+        }));
+    } elseif ($estado_nota === 'inactivos') {
+        $notas_full = array_values(array_filter($notas_full, function ($n) {
+            return ((int) ($n['eliminado'] ?? 0)) === 1;
+        }));
+    }
+
     $resumen = $modelo->getResumen();
     
     $por_pagina = (int) ($_GET['por_pagina'] ?? 10);

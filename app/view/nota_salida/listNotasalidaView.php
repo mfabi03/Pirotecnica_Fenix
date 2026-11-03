@@ -48,15 +48,26 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-6">
-                <input type="text" name="busqueda" class="form-control" 
+            <!-- NUEVO: FILTRO DE ESTADO -->
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
+                <select name="estado_nota" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
+                    <option value="todos" <?= (($estado_nota ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
+                    <option value="activos" <?= (($estado_nota ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
+                    <option value="inactivos" <?= (($estado_nota ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
+                <input type="text" name="busqueda" class="form-control form-control-sm" 
                        list="listaNotasSalida"
                        placeholder="Buscar por cliente, cédula, encargado o ID..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
@@ -164,7 +175,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="py-3">CATEGORÍAS</th>
                         <th class="py-3">UNIDADES</th>
                         <th class="py-3">ENCARGADO</th>
-                        <th class="py-3 text-center">ESTATUS</th>
+                        <th class="py-3 text-center">Status</th>
                         <th class="pe-4 py-3 text-center">ACCIONES</th>
                     </tr>
                 </thead>

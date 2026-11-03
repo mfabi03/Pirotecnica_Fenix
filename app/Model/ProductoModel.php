@@ -12,7 +12,7 @@ class ProductoModel {
         $this->db = $db;
     }
 
-    // OBTENER TODOS LOS PRODUCTOS
+    // OBTENER TODOS LOS PRODUCTOS (Activos e Inactivos)
     public function obtenerProductos() {
         try {
             $sql = "SELECT 
@@ -24,6 +24,7 @@ class ProductoModel {
                         p.id_categoria,
                         p.especificaciones,
                         p.id_proveedor,
+                        p.eliminado,
                         c.nombre_categoria,
                         COALESCE(
                             (SELECT prov.razon_social 
@@ -36,8 +37,7 @@ class ProductoModel {
                         ) AS nombre_proveedor
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                    WHERE p.eliminado = 0
-                    ORDER BY p.id_producto DESC";
+                    ORDER BY p.eliminado ASC, p.id_producto DESC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -74,7 +74,7 @@ class ProductoModel {
         }
     }
 
-    // OBTENER PRODUCTO POR ID
+    // OBTENER PRODUCTO POR ID (Sin importar el estado)
     public function obtenerProductoPorId($id) {
         try {
             $sql = "SELECT 
@@ -86,6 +86,7 @@ class ProductoModel {
                         p.id_categoria,
                         p.especificaciones,
                         p.id_proveedor,
+                        p.eliminado,
                         c.nombre_categoria,
                         COALESCE(
                             (SELECT prov.razon_social 
@@ -98,8 +99,7 @@ class ProductoModel {
                         ) AS nombre_proveedor
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                    WHERE p.eliminado = 0
-                    AND p.id_producto = ?";
+                    WHERE p.id_producto = ?";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$id]);
@@ -136,7 +136,8 @@ class ProductoModel {
                         costo_unitario,
                         id_categoria,
                         especificaciones,
-                        id_proveedor
+                        id_proveedor,
+                        eliminado
                     ) VALUES (
                         :descripcion,
                         :cantidad,
@@ -144,7 +145,8 @@ class ProductoModel {
                         :costo_unitario,
                         :id_categoria,
                         :especificaciones,
-                        :id_proveedor
+                        :id_proveedor,
+                        0
                     )";
             
             $stmt = $this->db->prepare($sql);
@@ -168,7 +170,7 @@ class ProductoModel {
         }
     }
 
-    // ACTUALIZAR PRODUCTO (SOLO NOMBRE, STOCK MÍNIMO Y ESPECIFICACIONES)
+    // ACTUALIZAR PRODUCTO
     public function actualizarProducto($id, $datos) {
         try {
             $sql = "UPDATE producto SET 
@@ -244,6 +246,22 @@ class ProductoModel {
         }
     }
 
+    // REACTIVAR PRODUCTO
+    public function reactivarProducto($id) {
+        try {
+            $stmtCheck = $this->db->prepare("SELECT id_producto FROM producto WHERE id_producto = :id AND eliminado = 1 LIMIT 1");
+            $stmtCheck->execute([':id' => $id]);
+            if (!$stmtCheck->fetch()) {
+                throw new Exception("El producto no existe o ya está activo.");
+            }
+
+            $stmt = $this->db->prepare("UPDATE producto SET eliminado = 0 WHERE id_producto = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            throw new Exception("Error en la base de datos: " . $e->getMessage());
+        }
+    }
+
     // BUSCAR PRODUCTOS
     public function buscarProductos($termino) {
         try {
@@ -257,6 +275,7 @@ class ProductoModel {
                         p.id_categoria,
                         p.especificaciones,
                         p.id_proveedor,
+                        p.eliminado,
                         c.nombre_categoria,
                         COALESCE(
                             (SELECT prov.razon_social 
@@ -269,11 +288,10 @@ class ProductoModel {
                         ) AS nombre_proveedor
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                    WHERE p.eliminado = 0
-                    AND (p.descripcion LIKE :termino
+                    WHERE (p.descripcion LIKE :termino
                     OR c.nombre_categoria LIKE :termino
                     OR CAST(p.id_producto AS CHAR) LIKE :termino)
-                    ORDER BY p.descripcion ASC";
+                    ORDER BY p.eliminado ASC, p.descripcion ASC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['termino' => "%$termino%"]);

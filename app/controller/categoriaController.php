@@ -40,7 +40,13 @@ $action = $_GET['action'] ?? $_POST['action'] ?? 'lista';
 $id = $_GET['id'] ?? $_POST['id_categoria'] ?? null;
 $busqueda = $_GET['busqueda'] ?? '';
 
-// ENDPOINTS AJAX (Se mantienen igual)
+// NUEVO: Parámetro de estado
+$estado_categoria = strtolower(trim((string) ($_REQUEST['estado_categoria'] ?? 'todos')));
+if (!in_array($estado_categoria, ['todos', 'activos', 'inactivos'], true)) {
+    $estado_categoria = 'todos';
+}
+
+// ENDPOINTS AJAX
 if (isset($_GET['action']) && $_GET['action'] === 'listar_ajax') {
     header('Content-Type: application/json; charset=utf-8');
     try {
@@ -143,7 +149,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['tipo_mensaje'] = "success";
         } catch (Exception $e) {
             $_SESSION['mensaje'] = "Error al eliminar: " . $e->getMessage();
-            $_SESSION['tipo_mensaje'] = "danger"; // ROJO
+            $_SESSION['tipo_mensaje'] = "danger";
+        }
+        header("Location: ?url=categorias");
+        exit();
+    }
+
+    // REACTIVAR (NUEVO)
+    if ($accion === 'reactivar' || $accion === 'restore') {
+        CheckPermiso::verificar($db, 'Categorias', 'actualizar', '?url=categorias');
+        try {
+            $id = $_POST['id_categoria'] ?? null;
+            if (!$id || !is_numeric($id) || $id <= 0) {
+                throw new Exception("ID de categoría inválido");
+            }
+            $modelo->reactivarCategoria($id);
+            $_SESSION['mensaje'] = "Categoría reactivada exitosamente";
+            $_SESSION['tipo_mensaje'] = "success";
+        } catch (Exception $e) {
+            $_SESSION['mensaje'] = "Error al reactivar: " . $e->getMessage();
+            $_SESSION['tipo_mensaje'] = "danger";
         }
         header("Location: ?url=categorias");
         exit();
@@ -158,6 +183,17 @@ if ($action === 'lista' || $action === '' || $action === 'list') {
         $categorias_full = $modelo->buscarCategorias($busqueda);
     } else {
         $categorias_full = $modelo->obtenerCategorias();
+    }
+
+    // FILTRADO POR ESTADO (NUEVO)
+    if ($estado_categoria === 'activos') {
+        $categorias_full = array_values(array_filter($categorias_full, function ($cat) {
+            return ((int) ($cat['eliminado'] ?? 0)) === 0;
+        }));
+    } elseif ($estado_categoria === 'inactivos') {
+        $categorias_full = array_values(array_filter($categorias_full, function ($cat) {
+            return ((int) ($cat['eliminado'] ?? 0)) === 1;
+        }));
     }
 
     $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
@@ -178,7 +214,7 @@ if ($action === 'lista' || $action === '' || $action === 'list') {
     exit();
 }
 
-// VER, EDITAR, REGISTRAR (Se mantienen igual)
+// VER, EDITAR, REGISTRAR
 if ($action === 'registrar' || $action === 'crear' || $action === 'create') {
     require_once $basePath . "registrarCategoriaView.php";
     exit();

@@ -60,15 +60,26 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-6">
-                <input type="text" name="busqueda" class="form-control" 
+            <!-- NUEVO: FILTRO DE ESTADO -->
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
+                <select name="estado_producto" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
+                    <option value="todos" <?= (($estado_producto ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
+                    <option value="activos" <?= (($estado_producto ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
+                    <option value="inactivos" <?= (($estado_producto ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
+                <input type="text" name="busqueda" class="form-control form-control-sm" 
                        list="listaProductos"
                        placeholder="Buscar por nombre, código o categoría..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
@@ -196,6 +207,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="py-3">ESPECIFICACIONES</th>
                         <th class="py-3">COSTO</th>
                         <th class="py-3">STOCK</th>
+                        <th class="py-3">Status</th>
                         <th class="pe-4 py-3 text-center">ACCIONES</th>
                     </tr>
                 </thead>
@@ -241,6 +253,19 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         </span>
                                     <?php endif; ?>
                                 </td>
+
+                                <!-- COLUMNA ESTADO -->
+                                <td>
+                                    <?php if (($p['eliminado'] ?? 0) == 1): ?>
+                                        <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-times-circle me-1"></i> Inactivo
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-check-circle me-1"></i> Activo
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
@@ -249,18 +274,28 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <!-- EDITAR -->
-                                        <?php if ($puede_editar_producto): ?>
-                                        <button type="button" class="btn-action-circle btn-edit" title="Editar" onclick="editarProducto(<?= (int) $p['id_producto'] ?>)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <?php endif; ?>
-                                        
-                                        <!-- ELIMINAR -->
-                                        <?php if ($puede_eliminar_producto): ?>
-                                        <button type="button" class="btn-action-circle btn-delete" title="Eliminar" onclick="confirmarEliminarProducto(<?= (int) $p['id_producto'] ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                        <?php if (($p['eliminado'] ?? 0) == 1): ?>
+                                            <!-- INACTIVO: SOLO REACTIVAR -->
+                                            <?php if ($puede_editar_producto): ?>
+                                            <button type="button" class="btn-action-circle" title="Reactivar Producto"
+                                                    style="background: rgba(40,167,69,0.15); color: #28a745; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
+                                                    onclick="confirmarReactivarProducto(<?= (int) $p['id_producto'] ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
+                                                <i class="fas fa-undo-alt"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <!-- ACTIVO: EDITAR Y ELIMINAR -->
+                                            <?php if ($puede_editar_producto): ?>
+                                            <button type="button" class="btn-action-circle btn-edit" title="Editar" onclick="editarProducto(<?= (int) $p['id_producto'] ?>)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($puede_eliminar_producto): ?>
+                                            <button type="button" class="btn-action-circle btn-delete" title="Eliminar" onclick="confirmarEliminarProducto(<?= (int) $p['id_producto'] ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -268,7 +303,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="text-center py-5 dark-empty">
+                            <td colspan="7" class="text-center py-5 dark-empty">
                                 <div class="py-4">
                                     <i class="fas fa-cube fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">No hay productos registrados</p>
@@ -298,6 +333,52 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 <?php require_once __DIR__ . '/partials/modal_eliminar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_rapido_categoria.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_rapido_proveedor.php'; ?>
+
+<!-- NUEVO: MODAL REACTIVAR PRODUCTO -->
+<?php if ($puede_editar_producto): ?>
+<div class="modal fade" id="modalReactivarProducto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(40,167,69,0.3); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i class="fas fa-undo-alt me-2" style="color: #28a745;"></i> Reactivar Producto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+
+            <form method="POST" action="?url=productos&type=reactivar">
+                <input type="hidden" name="id_producto" id="reactivar-producto-id">
+                
+                <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
+                    <p style="margin-bottom: 12px;">¿Deseas reactivar este producto?</p>
+                    
+                    <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 8px;">
+                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Producto a reactivar</strong>
+                        <span id="reactivar-producto-nombre" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
+                    </div>
+
+                    <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
+                        <i class="fas fa-check-circle me-2"></i>
+                        El producto volverá a estar <strong>Activo</strong> y disponible para asignarse a notas de salida.
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                            style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn"
+                            style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
+                        <i class="fas fa-check me-1"></i> Sí, reactivar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- SCRIPTS -->
 <?php require_once __DIR__ . '/partials/scripts_productos.php'; ?>

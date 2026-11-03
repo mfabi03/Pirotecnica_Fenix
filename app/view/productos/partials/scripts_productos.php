@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // VER DETALLE (SIN CATEGORÍA)
+    // VER DETALLE
     window.verDetalleProducto = function(id) {
         var p = productosPorId[id];
         if (!p) {
@@ -95,6 +95,17 @@ document.addEventListener('DOMContentLoaded', function() {
         var modalEliminar = document.getElementById('modalEliminarProducto');
         if (modalEliminar) {
             new bootstrap.Modal(modalEliminar).show();
+        }
+    };
+
+    // REACTIVAR
+    window.confirmarReactivarProducto = function(id, nombre) {
+        document.getElementById('reactivar-producto-id').value = id;
+        document.getElementById('reactivar-producto-nombre').textContent = nombre || 'Producto #' + id;
+        
+        var modalReactivar = document.getElementById('modalReactivarProducto');
+        if (modalReactivar) {
+            new bootstrap.Modal(modalReactivar).show();
         }
     };
 
