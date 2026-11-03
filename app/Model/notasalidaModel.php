@@ -106,7 +106,7 @@ class notasalidaModel {
             
             try {
                 $sql = "INSERT INTO nota_de_salida (fecha, id_persona, id_usuario, eliminado) 
-                        VALUES (CURDATE(), ?, ?, 0)";
+                        VALUES (NOW(), ?, ?, 0)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([
                     $datos['id_cliente'], 

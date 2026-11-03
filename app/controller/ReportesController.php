@@ -106,84 +106,107 @@ class ReportesController {
         $titulo = 'Reporte de Movimientos';
         $subtitulo = $fecha_inicio ? ($fecha_fin ? 'Rango: ' . $fecha_inicio . ' - ' . $fecha_fin : 'Desde: ' . $fecha_inicio) : 'Historial completo';
 
-        $pdf = $this->generarPdfSimple($titulo, $subtitulo, $movimientos);
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="reporte_movimientos_' . date('Y-m-d') . '.pdf"');
-        echo $pdf;
-        exit();
+        $this->generarPdfFPDF($titulo, $subtitulo, $movimientos);
     }
 
-    private function generarPdfSimple($titulo, $subtitulo, $movimientos) {
-        $normalizar = function ($texto) {
-            $texto = trim((string)$texto);
-            $texto = str_replace(['á', 'à', 'ä', 'â'], 'a', $texto);
-            $texto = str_replace(['é', 'è', 'ë', 'ê'], 'e', $texto);
-            $texto = str_replace(['í', 'ì', 'ï', 'î'], 'i', $texto);
-            $texto = str_replace(['ó', 'ò', 'ö', 'ô'], 'o', $texto);
-            $texto = str_replace(['ú', 'ù', 'ü', 'û'], 'u', $texto);
-            $texto = str_replace(['ñ'], 'n', $texto);
-            $texto = str_replace(['Á', 'À', 'Ä', 'Â'], 'A', $texto);
-            $texto = str_replace(['É', 'È', 'Ë', 'Ê'], 'E', $texto);
-            $texto = str_replace(['Í', 'Ì', 'Ï', 'Î'], 'I', $texto);
-            $texto = str_replace(['Ó', 'Ò', 'Ö', 'Ô'], 'O', $texto);
-            $texto = str_replace(['Ú', 'Ù', 'Ü', 'Û'], 'U', $texto);
-            $texto = str_replace(['Ñ'], 'N', $texto);
-            $texto = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $texto);
-            return preg_replace('/[^A-Za-z0-9 .,:_\-\/]+/', '', $texto);
-        };
-
-        $stream = "BT\n/F1 18 Tf\n50 780 Td\n(" . $normalizar($titulo) . ") Tj\nET\n";
-        $stream .= "BT\n/F1 10 Tf\n50 760 Td\n(" . $normalizar($subtitulo) . ") Tj\nET\n";
-
-        $lineY = 730;
-        $stream .= "BT\n/F1 8 Tf\n50 " . $lineY . " Td\n(Documento)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n120 " . $lineY . " Td\n(Producto)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n240 " . $lineY . " Td\n(Tipo)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n310 " . $lineY . " Td\n(Cantidad)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n380 " . $lineY . " Td\n(Fecha)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n480 " . $lineY . " Td\n(Responsable)Tj\nET\n";
-
-        $lineY -= 18;
-        foreach ($movimientos as $i => $m) {
-            if ($lineY < 80) break; 
-            
-            $doc = $normalizar($m['id_documento'] ?? 'N/A');
-            $nombre = $normalizar($m['nombre_producto'] ?? 'N/A');
-            $tipo = $normalizar($m['tipo_movimiento'] ?? 'N/A');
-            $cantidad = $normalizar((string)($m['cantidad'] ?? 0));
-            $fecha = $normalizar($m['fecha_movimiento'] ?? '');
-            $usuario = $normalizar($m['usuario_activo'] ?? 'N/A');
-
-            $stream .= "BT\n/F1 8 Tf\n50 " . $lineY . " Td\n(" . $doc . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n120 " . $lineY . " Td\n(" . $nombre . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n240 " . $lineY . " Td\n(" . $tipo . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n310 " . $lineY . " Td\n(" . $cantidad . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n380 " . $lineY . " Td\n(" . $fecha . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n480 " . $lineY . " Td\n(" . $usuario . ") Tj\nET\n";
-            $lineY -= 16;
+    private function pdfAjustado($texto) {
+        $texto = (string)$texto;
+        if ($texto === '') {
+            return '';
         }
 
-        $objects = [];
-        $objects[] = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
-        $objects[] = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
-        $objects[] = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n";
-        $objects[] = "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
-        $objects[] = "5 0 obj\n<< /Length " . strlen($stream) . " >>\nstream\n" . $stream . "endstream\nendobj\n";
-
-        $pdf = "%PDF-1.4\n";
-        $offsets = [0];
-        foreach ($objects as $obj) {
-            $offsets[] = strlen($pdf);
-            $pdf .= $obj;
+        if (function_exists('iconv')) {
+            $convertido = @iconv('UTF-8', 'ISO-8859-1//IGNORE', $texto);
+            if ($convertido !== false) {
+                return $convertido;
+            }
         }
-        $xrefStart = strlen($pdf);
-        $pdf .= "xref\n0 6\n";
-        $pdf .= "0000000000 65535 f \n";
-        foreach (array_slice($offsets, 1) as $offset) {
-            $pdf .= str_pad((string)$offset, 10, '0', STR_PAD_LEFT) . " 00000 n \n";
-        }
-        $pdf .= "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" . $xrefStart . "\n%%EOF\n";
 
-        return $pdf;
+        return $texto;
+    }
+
+    private function generarPdfFPDF($titulo, $subtitulo, $movimientos) {
+        $fpdfPath = dirname(__DIR__, 2) . '/fpdf.php';
+        if (!file_exists($fpdfPath)) {
+            http_response_code(500);
+            die('No se encontró la librería FPDF en: ' . htmlspecialchars($fpdfPath));
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        require_once $fpdfPath;
+
+        $pdf = new \FPDF('P', 'mm', 'A4');
+        $pdf->AddPage();
+
+        $pdf->SetDrawColor(200, 200, 200);
+        $pdf->SetFillColor(26, 26, 46);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('Arial', 'B', 18);
+        $pdf->Cell(0, 10, $this->pdfAjustado($titulo), 0, 1, 'C', true);
+
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->SetTextColor(26, 26, 46);
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->Cell(0, 6, $this->pdfAjustado('Sistema Pirotecnia Fénix'), 0, 1, 'L', true);
+
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 7, $this->pdfAjustado($subtitulo), 0, 1, 'L');
+        $pdf->Ln(3);
+
+        $pdf->SetFillColor(245, 245, 245);
+        $pdf->SetDrawColor(210, 210, 210);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(26, 26, 46);
+        $pdf->SetTextColor(255, 255, 255);
+
+        $w = [20, 52, 30, 18, 28, 42];
+        $headers = ['Doc.', 'Producto', 'Tipo', 'Cant.', 'Fecha', 'Responsable'];
+
+        foreach ($headers as $index => $header) {
+            $pdf->Cell($w[$index], 7, $this->pdfAjustado($header), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
+
+        if (empty($movimientos)) {
+            $pdf->Cell(0, 12, $this->pdfAjustado('No hay movimientos registrados para este rango.'), 1, 1, 'C', false);
+        } else {
+            foreach ($movimientos as $m) {
+                $producto = trim((string)($m['nombre_producto'] ?? 'N/A'));
+                $tipo = trim((string)($m['tipo_movimiento'] ?? 'N/A'));
+                $responsable = trim((string)($m['usuario_activo'] ?? 'N/A'));
+
+                if (strlen($producto) > 24) {
+                    $producto = substr($producto, 0, 24) . '...';
+                }
+                if (strlen($tipo) > 12) {
+                    $tipo = substr($tipo, 0, 12) . '...';
+                }
+                if (strlen($responsable) > 18) {
+                    $responsable = substr($responsable, 0, 18) . '...';
+                }
+
+                $pdf->Cell($w[0], 7, (string)($m['id_documento'] ?? 'N/A'), 1, 0, 'C');
+                $pdf->Cell($w[1], 7, $this->pdfAjustado($producto), 1, 0, 'L');
+                $pdf->Cell($w[2], 7, $this->pdfAjustado($tipo), 1, 0, 'L');
+                $pdf->Cell($w[3], 7, (string)($m['cantidad'] ?? 0), 1, 0, 'C');
+                $pdf->Cell($w[4], 7, date('d/m/Y', strtotime($m['fecha_movimiento'] ?? '')), 1, 0, 'C');
+                $pdf->Cell($w[5], 7, $this->pdfAjustado($responsable), 1, 1, 'L');
+            }
+        }
+
+        $pdf->Ln(6);
+        $pdf->SetFont('Arial', 'I', 8);
+        $pdf->SetTextColor(80, 80, 80);
+        $pdf->Cell(0, 6, $this->pdfAjustado('Generado el ' . date('d/m/Y H:i:s')), 0, 1, 'R');
+
+        $pdf->Output('I', 'reporte_movimientos_' . date('Y-m-d') . '.pdf');
+        exit();
     }
 }

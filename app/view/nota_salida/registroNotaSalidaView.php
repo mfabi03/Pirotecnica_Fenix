@@ -544,13 +544,42 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function reconstruirDetallesDesdeTabla() {
+        const filas = tbody.querySelectorAll('tr[data-id]');
+        const reconstruido = [];
+
+        filas.forEach((row) => {
+            const idProducto = parseInt(row.getAttribute('data-id'));
+            const celdas = row.querySelectorAll('td');
+            const cantidad = celdas.length > 2 ? parseInt(celdas[2].textContent.trim()) : 0;
+
+            if (!Number.isNaN(idProducto) && idProducto > 0 && !Number.isNaN(cantidad) && cantidad > 0) {
+                reconstruido.push({ id_producto: idProducto, cantidad: cantidad });
+            }
+        });
+
+        detalles.length = 0;
+        reconstruido.forEach((item) => detalles.push(item));
+        actualizarCamposOcultos();
+        return detalles;
+    }
+
     // 5. VALIDAR ANTES DE GUARDAR
 
-    document.getElementById('formNotaSalida').addEventListener('submit', function(e) {
+    const formNotaSalida = document.getElementById('formNotaSalida');
+    formNotaSalida.addEventListener('submit', function(e) {
+        const filasActuales = tbody.querySelectorAll('tr[data-id]');
+        if (filasActuales.length > 0 && detalles.length === 0) {
+            reconstruirDetallesDesdeTabla();
+        }
+
         if (detalles.length === 0) {
             e.preventDefault();
             alert('Debe agregar al menos un producto.');
+            return;
         }
+
+        actualizarCamposOcultos();
     });
 
 

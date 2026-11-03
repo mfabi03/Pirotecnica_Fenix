@@ -31,7 +31,7 @@ class ReporteCajaController {
     private function esAdmin() {
         $rol = $this->rolActual();
         if (is_numeric($rol)) {
-            return (int)$rol === 1; // Ajusta el ID de admin si es necesario
+            return (int)$rol === 1; 
         }
         return in_array(strtolower((string)$rol), ['administrador', 'admin'], true);
     }
@@ -57,6 +57,8 @@ class ReporteCajaController {
         $offset = ($pagina - 1) * $porPagina;
 
         $id_usuario_filtro = $this->resolverIdUsuarioFiltro($_GET['id_usuario'] ?? null);
+
+        $cajaCerrada = $this->modelo->fechaCerradaParaCaja($fecha, $id_usuario_filtro === -1 ? null : $id_usuario_filtro);
 
         $movimientos    = $this->modelo->obtenerSalidasCajero($id_usuario_filtro, $fecha, $busqueda, $id_categoria, $porPagina, $offset);
         $totalRegistros = $this->modelo->contarSalidasCajero($id_usuario_filtro, $fecha, $busqueda, $id_categoria);
@@ -116,15 +118,10 @@ class ReporteCajaController {
 
             $id_usuario = $this->esAdmin() ? null : (int)$idSesion;
 
-            // 1. Totales
             $resumen = $this->modelo->obtenerResumenCierreDia($id_usuario, $fecha, $_GET['busqueda'] ?? null, isset($_GET['id_categoria']) && $_GET['id_categoria'] > 0 ? (int)$_GET['id_categoria'] : null);
-            
-            // 2. Detalle de notas para el modal
             $detalle = $this->modelo->obtenerSalidasCajero($id_usuario, $fecha, null, null, 999999, 0);
 
-            $nombreCajero = $this->esAdmin()
-                ? 'Administrador (Global)'
-                : $this->modelo->obtenerNombreCajero((int)$idSesion);
+            $nombreCajero = $this->esAdmin() ? 'Administrador (Global)' : $this->modelo->obtenerNombreCajero((int)$idSesion);
 
             echo json_encode([
                 'success' => true,
@@ -197,7 +194,7 @@ class ReporteCajaController {
     }
 
     // ============================================================
-    // PDF DEL REPORTE DE CAJA
+    // PDF DEL REPORTE DE CAJA (FPDF)
     // ============================================================
     public function exportarPDF() {
         $fecha = isset($_GET['fecha']) ? trim($_GET['fecha']) : date('Y-m-d');
@@ -208,12 +205,10 @@ class ReporteCajaController {
 
         $movimientos = $this->modelo->obtenerSalidasCajero($id_usuario_filtro, $fecha, $busqueda, $id_categoria, 999999, 0);
         $resumen     = $this->modelo->obtenerResumenCierreCajero($id_usuario_filtro, $fecha);
+        
+        $nombreCajero = $this->esAdmin() ? 'Administrador (Global)' : $this->modelo->obtenerNombreCajero((int)$id_usuario_filtro);
 
-        $pdf = $this->generarPdfCierreCaja($fecha, $movimientos, $resumen);
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="reporte_caja_' . $fecha . '.pdf"');
-        echo $pdf;
-        exit();
+        $this->generarPdfFPDF($fecha, $movimientos, $resumen, $nombreCajero);
     }
 
     // ============================================================
@@ -233,16 +228,17 @@ class ReporteCajaController {
 
         $output = fopen('php://output', 'w');
         fwrite($output, "\xEF\xBB\xBF");
-        fputcsv($output, ['Nota #', 'Producto', 'Categoría', 'Cantidad', 'Fecha', 'Responsable']);
+        fputcsv($output, ['Nota #', 'Cliente', 'Producto', 'Categoría', 'Cantidad', 'Fecha', 'Responsable']);
 
         foreach ($movimientos as $m) {
             fputcsv($output, [
-                $m['id_documento'],
-                $m['nombre_producto'],
+                $m['id_documento'] ?? '',
+                $m['nombre_cliente'] ?? 'Sin cliente',
+                $m['nombre_producto'] ?? '',
                 $m['categoria'] ?? 'Sin categoría',
-                $m['cantidad'],
-                $m['fecha_movimiento'],
-                $m['usuario_activo']
+                $m['cantidad'] ?? 0,
+                date('d/m/Y', strtotime($m['fecha_movimiento'] ?? '')),
+                $m['usuario_activo'] ?? 'N/A'
             ]);
         }
 
@@ -251,118 +247,117 @@ class ReporteCajaController {
     }
 
     // ============================================================
-    // HTML DEL REPORTE (para PDF)
+    // GENERADOR DE PDF CON FPDF
     // ============================================================
-    private function renderReporteHTML($fecha, $movimientos, $resumen) {
-        $filas = '';
-        foreach ($movimientos as $m) {
-            $filas .= "<tr>
-                <td>{$m['id_documento']}</td>
-                <td>" . htmlspecialchars($m['nombre_producto']) . "</td>
-                <td>" . htmlspecialchars($m['categoria'] ?? '-') . "</td>
-                <td style='text-align:right'>{$m['cantidad']}</td>
-                <td>" . date('d/m/Y H:i', strtotime($m['fecha_movimiento'])) . "</td>
-                <td>" . htmlspecialchars($m['usuario_activo']) . "</td>
-            </tr>";
-        }
-        if ($filas === '') {
-            $filas = "<tr><td colspan='6' style='text-align:center'>Sin movimientos registrados</td></tr>";
+    private function pdfAjustado($texto) {
+        $texto = (string)$texto;
+        if ($texto === '') {
+            return '';
         }
 
-        $fechaFmt = date('d/m/Y', strtotime($fecha));
+        if (function_exists('iconv')) {
+            $convertido = @iconv('UTF-8', 'ISO-8859-1//IGNORE', $texto);
+            if ($convertido !== false) {
+                return $convertido;
+            }
+        }
 
-        return "<!DOCTYPE html><html><head><meta charset='utf-8'>
-        <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h2 { text-align:center; margin-bottom:4px; }
-            .sub { text-align:center; color:#666; font-size:12px; margin-bottom:16px; }
-            .kpis { display:flex; gap:20px; justify-content:center; margin-bottom:16px; }
-            .kpi { border:1px solid #ccc; padding:10px 20px; border-radius:6px; text-align:center; }
-            .kpi b { display:block; font-size:20px; }
-            table { width:100%; border-collapse:collapse; font-size:12px; }
-            th, td { border:1px solid #ccc; padding:6px; }
-            th { background:#f0f0f0; }
-        </style></head><body>
-            <h2>Reporte de Caja</h2>
-            <div class='sub'>Fecha: {$fechaFmt}</div>
-            <div class='kpis'>
-                <div class='kpi'><b>{$resumen['total_unidades']}</b>Unidades</div>
-                <div class='kpi'><b>{$resumen['total_documentos']}</b>Notas</div>
-                <div class='kpi'><b>{$resumen['total_lineas']}</b>Líneas</div>
-            </div>
-            <table>
-                <thead><tr>
-                    <th>Nota #</th><th>Producto</th><th>Categoría</th>
-                    <th style='text-align:right'>Cantidad</th><th>Fecha</th><th>Responsable</th>
-                </tr></thead>
-                <tbody>{$filas}</tbody>
-            </table>
-        </body></html>";
+        return $texto;
     }
 
-    private function generarPdfCierreCaja($fecha, $movimientos, $resumen) {
-        $normalizar = function ($texto) {
-            $texto = trim((string)$texto);
-            $texto = str_replace(['á', 'à', 'ä', 'â'], 'a', $texto);
-            $texto = str_replace(['é', 'è', 'ë', 'ê'], 'e', $texto);
-            $texto = str_replace(['í', 'ì', 'ï', 'î'], 'i', $texto);
-            $texto = str_replace(['ó', 'ò', 'ö', 'ô'], 'o', $texto);
-            $texto = str_replace(['ú', 'ù', 'ü', 'û'], 'u', $texto);
-            $texto = str_replace(['ñ'], 'n', $texto);
-            $texto = str_replace(['Á', 'À', 'Ä', 'Â'], 'A', $texto);
-            $texto = str_replace(['É', 'È', 'Ë', 'Ê'], 'E', $texto);
-            $texto = str_replace(['Í', 'Ì', 'Ï', 'Î'], 'I', $texto);
-            $texto = str_replace(['Ó', 'Ò', 'Ö', 'Ô'], 'O', $texto);
-            $texto = str_replace(['Ú', 'Ù', 'Ü', 'Û'], 'U', $texto);
-            $texto = str_replace(['Ñ'], 'N', $texto);
-            $texto = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $texto);
-            return preg_replace('/[^A-Za-z0-9 .,:_\-\/]+/', '', $texto);
-        };
+    private function generarPdfFPDF($fecha, $movimientos, $resumen, $nombreCajero) {
+        $fpdfPath = dirname(__DIR__, 2) . '/fpdf.php';
+        if (!file_exists($fpdfPath)) {
+            http_response_code(500);
+            die('No se encontró la librería FPDF en: ' . htmlspecialchars($fpdfPath));
+        }
 
-        $stream = "BT\n/F1 18 Tf\n50 780 Td\n(" . $normalizar('Reporte Diario de Caja') . ") Tj\nET\n";
-        $stream .= "BT\n/F1 10 Tf\n50 760 Td\n(" . $normalizar('Fecha: ' . $fecha) . ") Tj\nET\n";
-        $stream .= "BT\n/F1 10 Tf\n50 745 Td\n(" . $normalizar('Total unidades: ' . ($resumen['total_unidades'] ?? 0)) . ") Tj\nET\n";
-        $stream .= "BT\n/F1 10 Tf\n220 745 Td\n(" . $normalizar('Total notas: ' . ($resumen['total_documentos'] ?? 0)) . ") Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n50 700 Td\n(Nota)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n100 700 Td\n(Producto)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n275 700 Td\n(Cantidad)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n355 700 Td\n(Fecha)Tj\nET\n";
-        $stream .= "BT\n/F1 8 Tf\n470 700 Td\n(Responsable)Tj\nET\n";
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
 
-        $lineY = 682;
-        foreach ($movimientos as $m) {
-            if ($lineY < 80) {
-                break;
+        require_once $fpdfPath;
+
+        $pdf = new \FPDF('P', 'mm', 'A4');
+        $pdf->AddPage();
+
+        $pdf->SetDrawColor(200, 200, 200);
+        $pdf->SetFillColor(26, 26, 46);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('Arial', 'B', 18);
+        $pdf->Cell(0, 10, $this->pdfAjustado('Reporte de Cierre de Caja'), 0, 1, 'C', true);
+
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->SetTextColor(26, 26, 46);
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->Cell(0, 6, $this->pdfAjustado('Sistema Pirotecnia Fénix'), 0, 1, 'L', true);
+
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 7, $this->pdfAjustado('Fecha: ' . date('d/m/Y', strtotime($fecha))), 0, 1, 'L');
+        $pdf->Cell(0, 7, $this->pdfAjustado('Cajero: ' . $nombreCajero), 0, 1, 'L');
+        $pdf->Ln(3);
+
+        $pdf->SetFillColor(245, 245, 245);
+        $pdf->SetDrawColor(210, 210, 210);
+        $pdf->SetFont('Arial', 'B', 11);
+
+        $pdf->Cell(95, 12, $this->pdfAjustado('TOTAL NOTAS'), 1, 0, 'C', true);
+        $pdf->Cell(95, 12, $this->pdfAjustado('TOTAL UNIDADES'), 1, 1, 'C', true);
+
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Cell(95, 12, (string)($resumen['total_documentos'] ?? 0), 1, 0, 'C', true);
+        $pdf->Cell(95, 12, (string)($resumen['total_unidades'] ?? 0), 1, 1, 'C', true);
+        $pdf->Ln(6);
+
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(26, 26, 46);
+        $pdf->SetTextColor(255, 255, 255);
+
+        $w = [18, 36, 46, 18, 26, 42];
+        $headers = ['Nota', 'Cliente', 'Producto', 'Cant.', 'Fecha', 'Responsable'];
+
+        foreach ($headers as $index => $header) {
+            $pdf->Cell($w[$index], 7, $this->pdfAjustado($header), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->SetTextColor(0, 0, 0);
+
+        if (empty($movimientos)) {
+            $pdf->Cell(0, 12, $this->pdfAjustado('No hay movimientos registrados para este cierre.'), 1, 1, 'C', false);
+        } else {
+            foreach ($movimientos as $m) {
+                $cliente = trim((string)($m['nombre_cliente'] ?? 'Sin cliente'));
+                $producto = trim((string)($m['nombre_producto'] ?? 'N/A'));
+                $responsable = trim((string)($m['usuario_activo'] ?? 'N/A'));
+
+                if (strlen($cliente) > 22) {
+                    $cliente = substr($cliente, 0, 22) . '...';
+                }
+                if (strlen($producto) > 24) {
+                    $producto = substr($producto, 0, 24) . '...';
+                }
+                if (strlen($responsable) > 18) {
+                    $responsable = substr($responsable, 0, 18) . '...';
+                }
+
+                $pdf->Cell($w[0], 7, (string)($m['id_documento'] ?? 'N/A'), 1, 0, 'C');
+                $pdf->Cell($w[1], 7, $this->pdfAjustado($cliente), 1, 0, 'L');
+                $pdf->Cell($w[2], 7, $this->pdfAjustado($producto), 1, 0, 'L');
+                $pdf->Cell($w[3], 7, (string)($m['cantidad'] ?? 0), 1, 0, 'C');
+                $pdf->Cell($w[4], 7, date('d/m/Y', strtotime($m['fecha_movimiento'] ?? '')), 1, 0, 'C');
+                $pdf->Cell($w[5], 7, $this->pdfAjustado($responsable), 1, 1, 'L');
             }
-            $stream .= "BT\n/F1 8 Tf\n50 " . $lineY . " Td\n(" . $normalizar($m['id_documento'] ?? 'N/A') . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n100 " . $lineY . " Td\n(" . $normalizar($m['nombre_producto'] ?? 'N/A') . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n275 " . $lineY . " Td\n(" . $normalizar((string)($m['cantidad'] ?? 0)) . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n355 " . $lineY . " Td\n(" . $normalizar($m['fecha_movimiento'] ?? '') . ") Tj\nET\n";
-            $stream .= "BT\n/F1 8 Tf\n470 " . $lineY . " Td\n(" . $normalizar($m['usuario_activo'] ?? 'N/A') . ") Tj\nET\n";
-            $lineY -= 14;
         }
 
-        $objects = [];
-        $objects[] = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
-        $objects[] = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
-        $objects[] = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n";
-        $objects[] = "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
-        $objects[] = "5 0 obj\n<< /Length " . strlen($stream) . " >>\nstream\n" . $stream . "endstream\nendobj\n";
+        $pdf->Ln(6);
+        $pdf->SetFont('Arial', 'I', 8);
+        $pdf->SetTextColor(80, 80, 80);
+        $pdf->Cell(0, 6, $this->pdfAjustado('Generado el ' . date('d/m/Y H:i:s')), 0, 1, 'R');
 
-        $pdf = "%PDF-1.4\n";
-        $offsets = [0];
-        foreach ($objects as $obj) {
-            $offsets[] = strlen($pdf);
-            $pdf .= $obj;
-        }
-        $xrefStart = strlen($pdf);
-        $pdf .= "xref\n0 6\n";
-        $pdf .= "0000000000 65535 f \n";
-        foreach (array_slice($offsets, 1) as $offset) {
-            $pdf .= str_pad((string)$offset, 10, '0', STR_PAD_LEFT) . " 00000 n \n";
-        }
-        $pdf .= "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" . $xrefStart . "\n%%EOF\n";
-
-        return $pdf;
+        $pdf->Output('I', 'cierre_caja_' . $fecha . '.pdf');
+        exit();
     }
 }

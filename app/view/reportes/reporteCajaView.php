@@ -24,6 +24,7 @@ $totalRegistros = $totalRegistros;
 $totalPaginas   = $totalPaginas;
 
 $fechaFiltro = $_GET['fecha'] ?? date('Y-m-d');
+$cajaCerrada = $cajaCerrada ?? false;
 
 require_once dirname(__DIR__, 2) . "/view/header.php";
 ?>
@@ -203,7 +204,17 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (!empty($movimientos)): ?>
+                    <?php if ($cajaCerrada && empty($movimientos)): ?>
+                        <tr>
+                            <td colspan="6" class="text-center py-5 dark-empty">
+                                <div class="py-4">
+                                    <i class="fas fa-lock fa-3x d-block mb-3"></i>
+                                    <p class="mb-0">La caja de esta fecha ya fue cerrada</p>
+                                    <small>No hay movimientos nuevos después del cierre para este turno.</small>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php elseif (!empty($movimientos)): ?>
                         <?php foreach ($movimientos as $m): ?>
                             <tr>
                                 <td class="ps-4 fw-bold">#<?= (int)$m['id_documento'] ?></td>
@@ -216,7 +227,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <td class="text-danger fw-bold">
                                     - <?= htmlspecialchars(abs($m['cantidad'])) ?> unidades
                                 </td>
-                                <td><?= date('d/m/Y H:i', strtotime($m['fecha_movimiento'])) ?></td>
+                                <!-- 🔥 CAMBIO: SOLO FECHA, SIN HORA -->
+                                <td><?= date('d/m/Y', strtotime($m['fecha_movimiento'])) ?></td>
                                 <td class="pe-4"><?= htmlspecialchars($m['usuario_activo']) ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -267,7 +279,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
 
-            <!-- PIE DEL MODAL: EXPORTACIONES A LA IZQUIERDA, CERRAR A LA DERECHA -->
+            <!-- PIE DEL MODAL -->
             <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
                 
                 <!-- Botones de exportación -->
@@ -414,6 +426,24 @@ document.addEventListener('DOMContentLoaded', function () {
             csv: `?url=exportar_caja_csv&${params.toString()}`,
             pdf: `?url=exportar_caja_pdf&${params.toString()}`
         };
+    }
+
+    if (btnCsv) {
+        btnCsv.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (btnCsv.href) {
+                window.open(btnCsv.href, '_blank', 'noopener,noreferrer');
+            }
+        });
+    }
+
+    if (btnPdf) {
+        btnPdf.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (btnPdf.href) {
+                window.open(btnPdf.href, '_blank', 'noopener,noreferrer');
+            }
+        });
     }
 
     btn.addEventListener('click', async function () {
