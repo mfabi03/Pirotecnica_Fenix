@@ -88,10 +88,12 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                             $nombreCliente = ($c['tipo_cliente'] ?? '') === 'Jurídico'
                                                                 ? trim($c['razon_social'] ?? '')
                                                                 : trim(($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? ''));
+                                                            $doc = !empty($c['cedula']) ? $c['cedula'] : (!empty($c['rif']) ? $c['rif'] : '');
+                                                            $etiqueta = ($nombreCliente !== '' ? $nombreCliente : 'Cliente #' . $c['id_cliente']) . ($doc !== '' ? " ($doc)" : '');
                                                         ?>
                                                         <option value="<?= $c['id_cliente'] ?>"
                                                             <?= ($idClienteHeredado != '' && $idClienteHeredado == $c['id_cliente']) ? 'selected' : '' ?>>
-                                                            <?= htmlspecialchars($nombreCliente !== '' ? $nombreCliente : 'Cliente #' . $c['id_cliente']) ?>
+                                                            <?= htmlspecialchars($etiqueta) ?>
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>

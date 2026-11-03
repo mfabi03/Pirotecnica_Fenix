@@ -54,7 +54,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
     <!-- FILTRO DE BÚSQUEDA -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
-        <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
+        <form id="formFiltroClientes" method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="clientes">
             <input type="hidden" name="type" value="list">
             
@@ -144,6 +144,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="py-3">Tipo</th>
                         <th class="py-3">Teléfono</th>
                         <th class="py-3">Correo</th>
+                        <th class="py-3">Status</th>
                         <th class="pe-4 py-3 text-center">Acciones</th>
                     </tr>
                 </thead>
@@ -172,6 +173,17 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 </td>
                                 <td><?= htmlspecialchars($c['telefono'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($c['correo_electronico'] ?? 'N/A') ?></td>
+                                <td>
+                                    <?php if (($c['status'] ?? 'activo') === 'inactivo' || ($c['eliminado'] ?? 0) == 1): ?>
+                                        <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-times-circle me-1"></i> Inactivo
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-check-circle me-1"></i> Activo
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
@@ -179,18 +191,28 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <?php if ($puede_editar_cliente): ?>
-                                        <button type="button" class="btn-action-circle btn-edit" title="Editar"
-                                                onclick="editarCliente(<?= (int) $c['id_cliente'] ?>)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($puede_eliminar_cliente): ?>
-                                        <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
-                                                onclick="confirmarEliminarCliente(<?= (int) $c['id_cliente'] ?>, '<?= htmlspecialchars(addslashes($c['tipo_cliente'] === 'Jurídico' ? ($c['razon_social'] ?? '') : (($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? '')))) ?>')">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                        <?php if (($c['status'] ?? 'activo') === 'inactivo' || ($c['eliminado'] ?? 0) == 1): ?>
+                                            <?php if ($puede_editar_cliente): ?>
+                                            <button type="button" class="btn-action-circle" title="Reactivar Cliente"
+                                                    style="background: rgba(40,167,69,0.15); color: #28a745; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;"
+                                                    onclick="confirmarReactivarCliente(<?= (int) $c['id_cliente'] ?>, '<?= htmlspecialchars(addslashes(($c['tipo_cliente'] ?? '') === 'Jurídico' ? ($c['razon_social'] ?? '') : (($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? '')))) ?>')">
+                                                <i class="fas fa-undo-alt"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <?php if ($puede_editar_cliente): ?>
+                                            <button type="button" class="btn-action-circle btn-edit" title="Editar"
+                                                    onclick="editarCliente(<?= (int) $c['id_cliente'] ?>)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($puede_eliminar_cliente): ?>
+                                            <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
+                                                    onclick="confirmarEliminarCliente(<?= (int) $c['id_cliente'] ?>, '<?= htmlspecialchars(addslashes(($c['tipo_cliente'] ?? '') === 'Jurídico' ? ($c['razon_social'] ?? '') : (($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? '')))) ?>')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -198,7 +220,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="text-center py-5 dark-empty">
+                            <td colspan="7" class="text-center py-5 dark-empty">
                                 <div class="py-4">
                                     <i class="fas fa-users fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">No hay clientes registrados</p>
@@ -431,6 +453,16 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Información del Cliente
                             </h6>
                             <div class="mb-3">
+                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">ID Cliente</label>
+                                <p id="ver-cliente-id" style="color: #1a1a2e; margin: 0; font-weight: 700;">—</p>
+                            </div>
+                            <div class="mb-3">
+                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Status</label>
+                                <div id="ver-cliente-status-wrap">
+                                    <span id="ver-cliente-status-badge" class="badge" style="padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.75rem;">—</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
                                 <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Cédula / RIF</label>
                                 <p id="ver-cliente-documento" style="color: #1a1a2e; margin: 0; font-weight: 600;">—</p>
                             </div>
@@ -629,7 +661,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 <input type="hidden" name="id_cliente" id="eliminar-cliente-id">
                 
                 <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
-                    <p style="margin-bottom: 12px;">¿Estás seguro de eliminar este cliente?</p>
+                    <p style="margin-bottom: 12px; font-weight: 500;">¿Estás seguro de eliminar (inactivar) este cliente?</p>
                     
                     <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #dc3545; border-radius: 8px;">
                         <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente a eliminar</strong>
@@ -638,7 +670,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
                     <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
                         <i class="fas fa-info-circle me-2"></i>
-                        Esta acción no se puede deshacer. Si el cliente tiene notas de salida asociadas, el sistema bloqueará la eliminación.
+                        Esta acción realizará la <strong>eliminación lógica</strong> del cliente. Si el cliente tiene notas de entrada o salida asociadas, el sistema bloqueará la eliminación.
                     </div>
                 </div>
 
@@ -650,6 +682,43 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <button type="submit" class="btn"
                             style="background: #dc3545; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
                         <i class="fas fa-trash-alt me-1"></i> Sí, eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL REACTIVAR CLIENTE -->
+<div class="modal fade" id="modalReactivarCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(40,167,69,0.3); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i class="fas fa-undo-alt me-2" style="color: #28a745;"></i> Reactivar Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+            <form method="POST" action="?url=clientes&type=reactivar">
+                <input type="hidden" name="accion" value="reactivar">
+                <input type="hidden" name="id_cliente" id="reactivar-cliente-id">
+                <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
+                    <p style="margin-bottom: 12px; font-weight: 500;">¿Deseas reactivar este cliente?</p>
+                    <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 8px;">
+                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente a reactivar</strong>
+                        <span id="reactivar-cliente-nombre" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
+                    </div>
+                    <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
+                        <i class="fas fa-check-circle me-2"></i>
+                        El cliente volverá a estar <strong>Activo</strong> y aparecerá disponible en los selectores de futuras notas.
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn" style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
+                        <i class="fas fa-check me-1"></i> Sí, reactivar
                     </button>
                 </div>
             </form>
@@ -843,6 +912,33 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
+    const formClientes = document.getElementById('formFiltroClientes');
+    if (formClientes) {
+        formClientes.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(formClientes);
+            formData.set('ajax', '1');
+
+            fetch('?url=clientes&type=list', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || !data.html) return;
+                const wrap = document.createElement('div');
+                wrap.innerHTML = data.html;
+                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12');
+                if (!nuevaVista) return;
+                const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
+                if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
+            })
+            .catch(() => {
+                formClientes.submit();
+            });
+        });
+    }
+
     // ============================================================
     // DATOS DE CLIENTES
     // ============================================================
@@ -883,14 +979,37 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // VALIDAR AL ENVIAR FORMULARIOS
+    // VALIDAR AL ENVIAR FORMULARIOS (CON RESTRICCIÓN DE MAYORÍA DE EDAD)
     // ============================================================
     ['formRegistrarNatural', 'formRegistrarJuridico', 'formEditarNatural', 'formEditarJuridico'].forEach(function(id) {
         const form = document.getElementById(id);
         if (form) {
             form.addEventListener('submit', function(e) {
+                // Verificar mayoría de edad estrictamente en clientes naturales
+                if (id === 'formRegistrarNatural' || id === 'formEditarNatural') {
+                    const inputFecha = id === 'formRegistrarNatural' 
+                        ? document.getElementById('reg-fecha-nac') 
+                        : document.getElementById('editar-natural-fecha');
+                    if (inputFecha && inputFecha.value) {
+                        const partes = inputFecha.value.split('-');
+                        const fechaNac = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+                        const hoy = new Date();
+                        let edad = hoy.getFullYear() - fechaNac.getFullYear();
+                        const mes = hoy.getMonth() - fechaNac.getMonth();
+                        if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) edad--;
+                        if (edad < 18) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            document.getElementById('alerta-edad-detectada').textContent = (edad >= 0 ? edad : 0) + ' años';
+                            new bootstrap.Modal(document.getElementById('modalAlertaMenorEdad')).show();
+                            return false;
+                        }
+                    }
+                }
+
                 if (!Validador.validarFormulario(id)) {
                     e.preventDefault();
+                    e.stopPropagation();
                     return false;
                 }
             });
@@ -898,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================================
-    // VER DETALLE
+    // VER DETALLE (ESPECIFICACIONES DEL CLIENTE)
     // ============================================================
     window.verDetalleCliente = function(id) {
         const c = clientesPorId[id];
@@ -921,6 +1040,24 @@ document.addEventListener('DOMContentLoaded', function() {
             badge.textContent = 'Natural';
             badge.style.background = 'rgba(40,167,69,0.15)';
             badge.style.color = '#28a745';
+        }
+
+        // Mostrar ID en las especificaciones (detalle)
+        const idElem = document.getElementById('ver-cliente-id');
+        if (idElem) idElem.textContent = '#' + c.id_cliente;
+
+        // Mostrar Status con badge
+        const statusBadge = document.getElementById('ver-cliente-status-badge');
+        if (statusBadge) {
+            if (c.status === 'inactivo' || parseInt(c.eliminado) === 1) {
+                statusBadge.textContent = 'Inactivo';
+                statusBadge.style.background = 'rgba(220,53,69,0.15)';
+                statusBadge.style.color = '#dc3545';
+            } else {
+                statusBadge.textContent = 'Activo';
+                statusBadge.style.background = 'rgba(40,167,69,0.15)';
+                statusBadge.style.color = '#28a745';
+            }
         }
 
         document.getElementById('ver-cliente-documento').textContent = documento;
@@ -997,12 +1134,18 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // ============================================================
-    // ELIMINAR
+    // ELIMINAR Y REACTIVAR
     // ============================================================
     window.confirmarEliminarCliente = function(id, nombre) {
         document.getElementById('eliminar-cliente-id').value = id;
         document.getElementById('eliminar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
         new bootstrap.Modal(document.getElementById('modalEliminarCliente')).show();
+    };
+
+    window.confirmarReactivarCliente = function(id, nombre) {
+        document.getElementById('reactivar-cliente-id').value = id;
+        document.getElementById('reactivar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
+        new bootstrap.Modal(document.getElementById('modalReactivarCliente')).show();
     };
 
     // ============================================================

@@ -142,7 +142,7 @@ if ($type === 'check_duplicado') {
     exit;
 }
 
-// ELIMINAR 
+// ELIMINAR (ELIMINACIÓN LÓGICA)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
     CheckPermiso::verificar($db, 'Clientes', 'eliminar', '?url=clientes&type=list');
     try {
@@ -151,10 +151,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
             throw new Exception("ID de cliente inválido");
         }
         $resultado = $modelo->eliminarCliente($id);
-        $_SESSION['mensaje'] = $resultado ? "✅ Cliente eliminado exitosamente" : "No se pudo eliminar el cliente";
+        $_SESSION['mensaje'] = $resultado ? "✅ Cliente inactivado exitosamente" : "No se pudo inactivar el cliente";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al eliminar: " . $e->getMessage();
+        $msg = $e->getMessage();
+        if ($msg === "No se puede eliminar porque tiene registros asociados") {
+            $_SESSION['mensaje'] = "No se puede eliminar porque tiene registros asociados";
+            $_SESSION['tipo_mensaje'] = "warning";
+        } else {
+            $_SESSION['mensaje'] = $msg;
+            $_SESSION['tipo_mensaje'] = "danger";
+        }
+    }
+    header("Location: ?url=clientes&type=list");
+    exit();
+}
+
+// REACTIVAR CLIENTE
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'reactivar' || (isset($_POST['accion']) && $_POST['accion'] === 'reactivar'))) {
+    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
+    try {
+        $id = $_POST['id_cliente'] ?? null;
+        if (!$id || !is_numeric($id) || $id <= 0) {
+            throw new Exception("ID de cliente inválido");
+        }
+        $resultado = $modelo->reactivarCliente($id);
+        $_SESSION['mensaje'] = "✅ Cliente reactivado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } catch (Exception $e) {
+        $_SESSION['mensaje'] = $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
     header("Location: ?url=clientes&type=list");
@@ -383,6 +408,7 @@ if (in_array($type, ['view', 'edit', 'edit_juridico']) && $id) {
 
 // LISTA
 if ($type === 'list' || $type === '') {
+    $ajax = (!empty($_GET['ajax']) || !empty($_POST['ajax']));
     $busqueda_trim = is_string($busqueda) ? trim($busqueda) : '';
     $tipo_param = $tipo ?? 'todos';
 
@@ -408,6 +434,15 @@ if ($type === 'list' || $type === '') {
         $clientes = array_slice($clientes_full, $offset, $por_pagina);
     } else {
         $clientes = $clientes_full;
+    }
+
+    if ($ajax) {
+        ob_start();
+        require_once $basePath . "listClienteView.php";
+        $html = ob_get_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => true, 'html' => $html], JSON_UNESCAPED_UNICODE);
+        exit();
     }
 
     require_once $basePath . "listClienteView.php";

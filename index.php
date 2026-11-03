@@ -159,55 +159,8 @@ switch ($url) {
         break;
 
     // ============================================
-    // PERMISOS (nueva ruta)
+    // PERMISOS
     // ============================================
-    case 'permisos':
-        AuthMiddleware::requireAuth();
-        AuthMiddleware::requirePermiso($pdo, 'Roles', 'actualizar');
-        require_once __DIR__ . '/app/Controller/PermisosController.php';
-        break;
-
-    // ============================================
-    // REPORTES
-    // ============================================
-    case 'reportes':
-        AuthMiddleware::requireAuth();
-        AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
-        require_once __DIR__ . '/app/Controller/ReportesController.php';
-        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
-        $reportesController->index();
-        break;
-
-// ============================================
-// REPORTE DIARIO DE CAJA
-// ============================================
-case 'reportecaja':
-    AuthMiddleware::requireAuth();
-    AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
-    require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
-    $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
-    $reporteCajaController->index();
-    break;
-
-case 'exportar_caja_csv':
-    AuthMiddleware::requireAuth();
-    AuthMiddleware::requirePermiso($pdo, 'ReposteCaja', 'leer');
-    require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
-    $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
-    $reporteCajaController->exportarCSV();
-    break;
-    
-    // ============================================
-    // EXPORTAR CSV
-    // ============================================
-    case 'exportar_csv':
-        AuthMiddleware::requireAuth();
-        AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
-        require_once __DIR__ . '/app/Controller/ReportesController.php';
-        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
-        $reportesController->exportarCSV();
-        break;   
-
     case 'permisos':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Roles', 'actualizar');
@@ -222,23 +175,113 @@ case 'exportar_caja_csv':
         }
         break;
 
+    // ============================================
+    // REPORTES GENERALES
+    // ============================================
+    case 'reportes':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
+        require_once __DIR__ . '/app/Controller/ReportesController.php';
+        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
+        $reportesController->index();
+        break;
+
+    // ============================================
+    // EXPORTAR CSV (Reportes Generales)
+    // ============================================
+    case 'exportar_csv':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
+        require_once __DIR__ . '/app/Controller/ReportesController.php';
+        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
+        $reportesController->exportarCSV();
+        break;
+
+    case 'exportar_pdf':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
+        require_once __DIR__ . '/app/Controller/ReportesController.php';
+        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
+        $reportesController->exportarPDF();
+        break;
+
+    // ============================================
+    // AJAX PARA VER EL MOTIVO DE ANULACIÓN
+    // ============================================
+    case 'obtener_motivo_ajax':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/ReportesController.php';
+        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
+        $reportesController->obtenerMotivoAjax();
+        break;
+
+    // ============================================
+    // REPORTE DIARIO DE CAJA
+    // ============================================
+    case 'reportecaja':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
+        require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
+        $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
+        $reporteCajaController->index();
+        break;
+
+    // Exportar CSV de Caja
+    case 'exportar_caja_csv':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
+        require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
+        $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
+        $reporteCajaController->exportarCSV();
+        break;
+
+    // Exportar PDF de Caja
+    case 'exportar_caja_pdf':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
+        require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
+        $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
+        $reporteCajaController->exportarPDF();
+        break;
+
+    // Endpoint AJAX para el Modal del Cierre de Caja
+    case 'cierre_caja_ajax':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
+        require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
+        $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
+        $reporteCajaController->obtenerCierreDiaAjax();
+        break;
+
+    // Confirmar cierre del día y guardar historial
+    case 'confirmar_cierre_caja':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
+        require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
+        $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
+        $reporteCajaController->confirmarCierreCajaAjax();
+        break;
+
+    // ============================================
+    // 404 - POR DEFECTO
+    // ============================================
     default:
-            http_response_code(404);
-            require_once __DIR__ . '/app/view/header.php';
-            ?>
-            <div class="container-fluid px-4">
-                <div class="row">
-                    <div class="col-12">
-                        <div class="text-center py-5">
-                            <h1 class="display-1 text-muted">404</h1>
-                            <h2 class="text-muted">Página no encontrada</h2>
-                            <p class="text-muted">La página que buscas no existe.</p>
-                            <a href="?url=main" class="btn btn-primary">Volver al inicio</a>
-                        </div>
+        http_response_code(404);
+        require_once __DIR__ . '/app/view/header.php';
+        ?>
+        <div class="container-fluid px-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <h1 class="display-1 text-muted">404</h1>
+                        <h2 class="text-muted">Página no encontrada</h2>
+                        <p class="text-muted">La página que buscas no existe.</p>
+                        <a href="?url=main" class="btn btn-primary">Volver al inicio</a>
                     </div>
                 </div>
             </div>
-            <?php
-            require_once __DIR__ . '/app/view/footer.php';
-            break;
+        </div>
+        <?php
+        require_once __DIR__ . '/app/view/footer.php';
+        break;
 }

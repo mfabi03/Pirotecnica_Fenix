@@ -72,7 +72,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     Fecha de Nacimiento <span class="text-danger">*</span>
                 </label>
                 <input type="date" name="fecha_de_nacimiento" class="form-control" 
-                       value="<?= htmlspecialchars($cliente['fecha_de_nacimiento'] ?? '') ?>" required>
+                       value="<?= htmlspecialchars($cliente['fecha_de_nacimiento'] ?? '') ?>" 
+                       max="<?= date('Y-m-d', strtotime('-18 years')) ?>" required>
+                <small class="text-muted">Debe ser mayor de 18 años</small>
             </div>
 
             <div class="col-12">
@@ -112,6 +114,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = 'V-' + value;
             } else if (/^V\d+$/.test(value)) {
                 this.value = 'V-' + value.substring(1);
+            }
+        });
+    }
+
+    const fechaInput = document.querySelector('input[name="fecha_de_nacimiento"]');
+    if (fechaInput) {
+        fechaInput.addEventListener('change', function() {
+            const fechaNac = new Date(this.value);
+            const hoy = new Date();
+            let edad = hoy.getFullYear() - fechaNac.getFullYear();
+            const mes = hoy.getMonth() - fechaNac.getMonth();
+            if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+                edad--;
+            }
+            if (edad < 18 && this.value) {
+                alert('⚠️ Debe ser mayor de 18 años. Edad detectada: ' + edad + ' años.');
+                this.value = '';
+            }
+        });
+    }
+
+    const form = document.querySelector('form');
+    if (form && fechaInput) {
+        form.addEventListener('submit', function(e) {
+            if (!fechaInput.value) {
+                e.preventDefault();
+                alert('⚠️ La fecha de nacimiento es obligatoria.');
+                fechaInput.focus();
+                return;
+            }
+            const fechaNac = new Date(fechaInput.value);
+            const hoy = new Date();
+            let edad = hoy.getFullYear() - fechaNac.getFullYear();
+            const mes = hoy.getMonth() - fechaNac.getMonth();
+            if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+                edad--;
+            }
+            if (edad < 18) {
+                e.preventDefault();
+                alert('⚠️ Bloqueado: El cliente debe ser mayor de 18 años. Edad detectada: ' + edad + ' años.');
+                fechaInput.focus();
             }
         });
     }

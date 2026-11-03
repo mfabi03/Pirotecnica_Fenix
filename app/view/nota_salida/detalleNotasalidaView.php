@@ -117,7 +117,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                 </h6>
                                 <div style="color: #212529;">
                                     <p><strong style="color: #495057;">Cliente:</strong> <?= htmlspecialchars($nota['cliente'] ?? 'N/A') ?></p>
-                                    <p><strong style="color: #495057;">Encargado:</strong> <?= htmlspecialchars($nota['usuario_responsable'] ?? 'N/A') ?></p>
+                                    <p><strong style="color: #495057;">Cédula / Documento:</strong> <?= htmlspecialchars(!empty($nota['cedula']) ? $nota['cedula'] : (!empty($nota['rif']) ? $nota['rif'] : ($nota['documento'] ?? 'N/A'))) ?></p>
                                     <?php if (($nota['estado'] ?? 'ACTIVA') === 'ANULADA'): ?>
                                         <p><strong style="color: #495057;">Motivo Anulación:</strong> <?= htmlspecialchars($nota['motivo_anulacion'] ?? 'No especificado') ?></p>
                                     <?php endif; ?>
