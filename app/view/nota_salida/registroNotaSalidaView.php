@@ -88,10 +88,12 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                             $nombreCliente = ($c['tipo_cliente'] ?? '') === 'Jurídico'
                                                                 ? trim($c['razon_social'] ?? '')
                                                                 : trim(($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? ''));
+                                                            $doc = !empty($c['cedula']) ? $c['cedula'] : (!empty($c['rif']) ? $c['rif'] : '');
+                                                            $etiqueta = ($nombreCliente !== '' ? $nombreCliente : 'Cliente #' . $c['id_cliente']) . ($doc !== '' ? " ($doc)" : '');
                                                         ?>
                                                         <option value="<?= $c['id_cliente'] ?>"
                                                             <?= ($idClienteHeredado != '' && $idClienteHeredado == $c['id_cliente']) ? 'selected' : '' ?>>
-                                                            <?= htmlspecialchars($nombreCliente !== '' ? $nombreCliente : 'Cliente #' . $c['id_cliente']) ?>
+                                                            <?= htmlspecialchars($etiqueta) ?>
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
@@ -542,13 +544,42 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function reconstruirDetallesDesdeTabla() {
+        const filas = tbody.querySelectorAll('tr[data-id]');
+        const reconstruido = [];
+
+        filas.forEach((row) => {
+            const idProducto = parseInt(row.getAttribute('data-id'));
+            const celdas = row.querySelectorAll('td');
+            const cantidad = celdas.length > 2 ? parseInt(celdas[2].textContent.trim()) : 0;
+
+            if (!Number.isNaN(idProducto) && idProducto > 0 && !Number.isNaN(cantidad) && cantidad > 0) {
+                reconstruido.push({ id_producto: idProducto, cantidad: cantidad });
+            }
+        });
+
+        detalles.length = 0;
+        reconstruido.forEach((item) => detalles.push(item));
+        actualizarCamposOcultos();
+        return detalles;
+    }
+
     // 5. VALIDAR ANTES DE GUARDAR
 
-    document.getElementById('formNotaSalida').addEventListener('submit', function(e) {
+    const formNotaSalida = document.getElementById('formNotaSalida');
+    formNotaSalida.addEventListener('submit', function(e) {
+        const filasActuales = tbody.querySelectorAll('tr[data-id]');
+        if (filasActuales.length > 0 && detalles.length === 0) {
+            reconstruirDetallesDesdeTabla();
+        }
+
         if (detalles.length === 0) {
             e.preventDefault();
             alert('Debe agregar al menos un producto.');
+            return;
         }
+
+        actualizarCamposOcultos();
     });
 
 
@@ -565,17 +596,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('formRapidoClienteJuridico').reset();
             document.getElementById('modal-rapido-cliente-error').style.display = 'none';
             
-            // Resetear feedback visual
-            document.querySelectorAll('#modalRapidoCliente input[data-validate]').forEach(function (input) {
-                input.classList.remove('campo-valido', 'campo-invalido');
-                input.style.borderColor = '';
-                input.style.boxShadow = '';
-                const feedback = document.getElementById(input.id + '-feedback');
-                if (feedback) {
-                    feedback.classList.remove('error', 'success');
-                    feedback.classList.add('info');
-                }
-            });
+            // Resetear feedback visual sin borrar la lógica del validador global
+            if (typeof Validador !== 'undefined') {
+                Validador.resetEstadoVisual(document.getElementById('modalRapidoCliente'));
+            }
             
             // Abrir modal
             new bootstrap.Modal(document.getElementById('modalRapidoCliente')).show();

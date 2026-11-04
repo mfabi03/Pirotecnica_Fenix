@@ -60,8 +60,27 @@ document.addEventListener('DOMContentLoaded', function() {
             selectProv.value = p.id_proveedor;
         }
 
+        if (typeof Validador !== 'undefined') {
+            const modalEditar = document.getElementById('modalEditarProducto');
+            Validador.resetEstadoVisual(modalEditar);
+            Validador.init(modalEditar);
+        }
+
         new bootstrap.Modal(document.getElementById('modalEditarProducto')).show();
     };
+
+    const formEditarProducto = document.getElementById('formEditarProducto');
+    if (formEditarProducto) {
+        formEditarProducto.addEventListener('submit', function (event) {
+            if (typeof Validador !== 'undefined' && !Validador.validarFormulario('formEditarProducto')) {
+                event.preventDefault();
+                if (window.mostrarAlerta) {
+                    mostrarAlerta('Revisa los campos marcados en rojo', 'warning');
+                }
+                return;
+            }
+        });
+    }
 
     // ============================================================
     // ELIMINAR

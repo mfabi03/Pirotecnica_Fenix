@@ -81,6 +81,24 @@ $puede_eliminar_cliente = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual,
                                     <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Información del Cliente
                                 </h6>
                                 <div class="mb-3">
+                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">ID Cliente:</label>
+                                    <p style="color: #1a1a2e; margin-bottom: 0; font-weight: 700;">#<?= htmlspecialchars($cliente['id_cliente'] ?? 'N/A') ?></p>
+                                </div>
+                                <div class="mb-3">
+                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Status:</label>
+                                    <p style="margin-bottom: 0;">
+                                        <?php if (($cliente['status'] ?? 'activo') === 'inactivo' || ($cliente['eliminado'] ?? 0) == 1): ?>
+                                            <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.75rem;">
+                                                <i class="fas fa-times-circle me-1"></i> Inactivo
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.75rem;">
+                                                <i class="fas fa-check-circle me-1"></i> Activo
+                                            </span>
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                                <div class="mb-3">
                                     <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cédula / RIF:</label>
                                     <p style="color: #1a1a2e; margin-bottom: 0; font-weight: 600;"><?= htmlspecialchars($cliente['cedula'] ?? $cliente['rif'] ?? 'N/A') ?></p>
                                 </div>

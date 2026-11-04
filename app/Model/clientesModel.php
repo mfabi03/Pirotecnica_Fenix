@@ -15,6 +15,9 @@ class clientesModel {
     // VALIDAR EDAD
     public function validarEdad($fechaNacimiento, $edadMinima = 18) {
         try {
+            if (empty($fechaNacimiento)) {
+                return ['valido' => false, 'mensaje' => 'La fecha de nacimiento es obligatoria'];
+            }
             $fechaActual = new \DateTime();
             $fechaNac = new \DateTime($fechaNacimiento);
 
@@ -25,7 +28,7 @@ class clientesModel {
             $edad = $fechaActual->diff($fechaNac)->y;
 
             if ($edad < $edadMinima) {
-                return ['valido' => false, 'mensaje' => "Edad mínima requerida: $edadMinima años. Edad detectada: $edad años"];
+                return ['valido' => false, 'mensaje' => "El cliente debe ser mayor de edad (mínimo $edadMinima años). Edad detectada: $edad años"];
             }
 
             return ['valido' => true, 'edad' => $edad];
@@ -307,10 +310,14 @@ class clientesModel {
     }
 
     // BUSCAR CLIENTES CON FILTRO
-    public function buscarClientesFiltrados($termino = null, $tipo = 'todos') {
+    // BUSCAR CLIENTES CON FILTRO
+    public function buscarClientesFiltrados($termino = null, $tipo = 'todos', $soloActivos = false) {
         try {
             $params = [];
-            $where = ["p.eliminado = 0"];
+            $where = [];
+            if ($soloActivos) {
+                $where[] = "p.eliminado = 0";
+            }
 
             $sql = "SELECT
                         p.id_persona AS id_cliente,
@@ -320,6 +327,8 @@ class clientesModel {
                         p.telefono,
                         p.correo_electronico,
                         p.direccion,
+                        CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END AS status,
+                        p.eliminado,
                         cj.rif,
                         cj.razon_social,
                         cn.fecha_de_nacimiento,
@@ -358,7 +367,7 @@ class clientesModel {
                 $sql .= ' AND ' . implode(' AND ', $where);
             }
 
-            $sql .= ' ORDER BY p.nombre ASC';
+            $sql .= ' ORDER BY p.eliminado ASC, p.id_persona DESC, p.nombre ASC';
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
@@ -370,10 +379,13 @@ class clientesModel {
     }
 
     // CONTAR CLIENTES (para paginación)
-    public function contarClientes($termino = null, $tipo = 'todos') {
+    public function contarClientes($termino = null, $tipo = 'todos', $soloActivos = false) {
         try {
             $params = [];
-            $where = ["p.eliminado = 0"];
+            $where = [];
+            if ($soloActivos) {
+                $where[] = "p.eliminado = 0";
+            }
             $sql = "SELECT COUNT(*) 
                     FROM persona p
                     LEFT JOIN cliente_natural cn ON p.id_persona = cn.id_persona
@@ -414,9 +426,14 @@ class clientesModel {
         }
     }
 
-    // OBTENER TODOS LOS CLIENTES
-    public function obtenerClientes() {
+    // OBTENER CLIENTES (con opción de solo activos)
+    public function obtenerClientes($soloActivos = false) {
         try {
+            $where = ["(cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)"];
+            if ($soloActivos) {
+                $where[] = "p.eliminado = 0";
+            }
+
             $sql = "SELECT 
                     p.id_persona AS id_cliente,
                     p.cedula,
@@ -425,6 +442,8 @@ class clientesModel {
                     p.telefono,
                     p.correo_electronico,
                     p.direccion,
+                    CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END AS status,
+                    p.eliminado,
                     cj.rif,
                     cj.razon_social,
                     cn.fecha_de_nacimiento,
@@ -436,9 +455,8 @@ class clientesModel {
                 FROM persona p
                 LEFT JOIN cliente_natural cn ON p.id_persona = cn.id_persona
                 LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
-                WHERE (cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)
-                AND p.eliminado = 0
-                ORDER BY p.nombre ASC";
+                WHERE " . implode(' AND ', $where) . "
+                ORDER BY p.eliminado ASC, p.id_persona DESC, p.nombre ASC";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -447,6 +465,11 @@ class clientesModel {
             error_log("Error en obtenerClientes: " . $e->getMessage());
             return [];
         }
+    }
+
+    // OBTENER SOLO CLIENTES ACTIVOS (para selectores de notas)
+    public function obtenerClientesActivos() {
+        return $this->obtenerClientes(true);
     }
 
     // OBTENER CLIENTE POR ID
@@ -460,6 +483,8 @@ class clientesModel {
                         p.telefono,
                         p.correo_electronico,
                         p.direccion,
+                        CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END AS status,
+                        p.eliminado,
                         cn.fecha_de_nacimiento,
                         cj.rif,
                         cj.razon_social,
@@ -470,7 +495,7 @@ class clientesModel {
                     FROM persona p
                     LEFT JOIN cliente_natural cn ON p.id_persona = cn.id_persona
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
-                    WHERE p.id_persona = :id AND p.eliminado = 0";
+                    WHERE p.id_persona = :id";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
@@ -482,7 +507,7 @@ class clientesModel {
         }
     }
 
-    // ELIMINAR CLIENTE
+    // ELIMINAR CLIENTE (ELIMINACIÓN LÓGICA CON VALIDACIÓN DE REGISTROS ASOCIADOS)
     public function eliminarCliente($id) {
         if (!$id || !is_numeric($id)) {
             throw new \Exception("ID de cliente inválido para eliminar");
@@ -490,26 +515,43 @@ class clientesModel {
 
         $this->db->beginTransaction();
         try {
-            $sqlCheck = "SELECT id_persona FROM persona WHERE id_persona = :id AND eliminado = 0";
+            $sqlCheck = "SELECT id_persona, eliminado FROM persona WHERE id_persona = :id";
             $stmtCheck = $this->db->prepare($sqlCheck);
             $stmtCheck->execute([':id' => $id]);
+            $clienteCheck = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
 
-            if ($stmtCheck->rowCount() === 0) {
+            if (!$clienteCheck) {
                 throw new \Exception("El cliente no existe en la base de datos");
             }
 
+            if (($clienteCheck['eliminado'] ?? 0) == 1) {
+                throw new \Exception("El cliente ya se encuentra inactivo");
+            }
+
+            // 1. Verificar si tiene notas de salida asociadas
             $sqlNotaSalida = "SELECT 1 FROM nota_de_salida WHERE id_persona = :id AND eliminado = 0 LIMIT 1";
             $stmtNotaSalida = $this->db->prepare($sqlNotaSalida);
             $stmtNotaSalida->execute([':id' => $id]);
 
             if ($stmtNotaSalida->rowCount() > 0) {
-                throw new \Exception("No se puede eliminar este cliente porque tiene notas de salida asociadas.");
+                throw new \Exception("No se puede eliminar porque tiene registros asociados");
+            }
+
+            // 2. Verificar si tiene notas de entrada asociadas
+            $sqlNotaEntrada = "SELECT 1 FROM nota_de_entrada ne 
+                               INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor 
+                               WHERE prov.id_persona = :id AND ne.eliminado = 0 LIMIT 1";
+            $stmtNotaEntrada = $this->db->prepare($sqlNotaEntrada);
+            $stmtNotaEntrada->execute([':id' => $id]);
+
+            if ($stmtNotaEntrada->rowCount() > 0) {
+                throw new \Exception("No se puede eliminar porque tiene registros asociados");
             }
 
             $sqlTipo = "SELECT 
                             CASE 
-                                WHEN EXISTS (SELECT 1 FROM cliente_natural WHERE id_persona = :id AND eliminado = 0) THEN 'Natural'
-                                WHEN EXISTS (SELECT 1 FROM cliente_juridico WHERE id_persona = :id AND eliminado = 0) THEN 'Jurídico'
+                                WHEN EXISTS (SELECT 1 FROM cliente_natural WHERE id_persona = :id) THEN 'Natural'
+                                WHEN EXISTS (SELECT 1 FROM cliente_juridico WHERE id_persona = :id) THEN 'Jurídico'
                                 ELSE 'Desconocido'
                             END AS tipo";
             $stmtTipo = $this->db->prepare($sqlTipo);
@@ -528,12 +570,13 @@ class clientesModel {
                 $stmt2->execute([':id' => $id]);
             }
 
+            // Eliminación lógica: marcado como eliminado
             $sql3 = "UPDATE persona SET eliminado = 1 WHERE id_persona = :id";
             $stmt3 = $this->db->prepare($sql3);
             $resultado = $stmt3->execute([':id' => $id]);
 
             if (!$resultado || $stmt3->rowCount() === 0) {
-                throw new \Exception("No se pudo eliminar el registro principal");
+                throw new \Exception("No se pudo inactivar el registro principal");
             }
 
             $this->db->commit();
@@ -542,6 +585,35 @@ class clientesModel {
         } catch (\Exception $e) {
             $this->db->rollBack();
             error_log("ERROR en eliminarCliente: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // REACTIVAR CLIENTE
+    public function reactivarCliente($id) {
+        if (!$id || !is_numeric($id)) {
+            throw new \Exception("ID de cliente inválido");
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $sqlCheck = "SELECT id_persona FROM persona WHERE id_persona = :id";
+            $stmtCheck = $this->db->prepare($sqlCheck);
+            $stmtCheck->execute([':id' => $id]);
+
+            if ($stmtCheck->rowCount() === 0) {
+                throw new \Exception("El cliente no existe en la base de datos");
+            }
+
+            $this->db->prepare("UPDATE persona SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
+            $this->db->prepare("UPDATE cliente_natural SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
+            $this->db->prepare("UPDATE cliente_juridico SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
+
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log("ERROR en reactivarCliente: " . $e->getMessage());
             throw $e;
         }
     }

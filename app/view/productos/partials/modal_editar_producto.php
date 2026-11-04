@@ -23,8 +23,9 @@
                     <div class="row g-3">
                         <div class="col-md-12">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombre del Producto *</label>
-                            <input type="text" name="descripcion" id="editar-producto-descripcion" class="form-control" required
+                            <input type="text" name="descripcion" id="editar-producto-descripcion" class="form-control" required data-validate="razon"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                            <small class="feedback-validacion info" id="editar-producto-descripcion-feedback"></small>
                         </div>
 
                     <!-- CATEGORÍA CON BOTÓN DE REGISTRO RÁPIDO -->
@@ -32,7 +33,7 @@
 <div class="col-md-6">
     <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Categoría *</label>
     <div class="input-group">
-        <select name="id_categoria" id="editar-producto-categoria" class="form-select" required
+        <select name="id_categoria" id="editar-producto-categoria" class="form-select" required data-validate="numero_positivo"
                 style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
             <option value="">Seleccione una Categoría...</option>
             <?php foreach (($categorias ?? []) as $cat): ?>
@@ -47,12 +48,13 @@
             <i class="fas fa-plus"></i>
         </button>
     </div>
+    <small class="feedback-validacion info" id="editar-producto-categoria-feedback"></small>
 </div>
                         <!-- PROVEEDOR CON BOTÓN DE REGISTRO RÁPIDO -->
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
                             <div class="input-group">
-                                <select name="id_proveedor" id="editar-producto-proveedor" class="form-select" required
+                                <select name="id_proveedor" id="editar-producto-proveedor" class="form-select" required data-validate="numero_positivo"
                                         style="border-radius: 12px 0 0 12px; padding: 12px 160px; border: 1.5px solid rgba(222, 18, 18, 0.08);">
                                     <option value="">Seleccione un proveedor...</option>
                                     <?php foreach (($proveedores ?? []) as $prov): ?>
@@ -67,11 +69,13 @@
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
+                            <small class="feedback-validacion info" id="editar-producto-proveedor-feedback"></small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo *</label>
-                            <input type="number" name="stock_minimo" id="editar-producto-stock-minimo" class="form-control" min="1" required
+                            <input type="number" name="stock_minimo" id="editar-producto-stock-minimo" class="form-control" min="1" required data-validate="numero_positivo"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                            <small class="feedback-validacion info" id="editar-producto-stock-minimo-feedback"></small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Especificaciones</label>

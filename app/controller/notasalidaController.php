@@ -12,12 +12,10 @@ use Exception;
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Iniciar sesión para mensajes
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 1. CARGA DE MODELOS
 $rutaRaiz = dirname(__DIR__, 2);
 
 $pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'notasalidaModel.php';
@@ -51,23 +49,12 @@ try {
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-// 2. FUNCIÓN PARA OBTENER ID USUARIO VÁLIDO
 function obtenerIdUsuarioValido($db) {
-    $idUsuario = $_SESSION['id_usuario'] 
-              ?? $_SESSION['usuario_id'] 
-              ?? null;
-    
-    if (!$idUsuario) {
-        throw new Exception("No hay usuario en sesión. Por favor, cierre sesión y vuelva a entrar.");
-    }
-    
+    $idUsuario = $_SESSION['id_usuario'] ?? $_SESSION['usuario_id'] ?? null;
+    if (!$idUsuario) throw new Exception("No hay usuario en sesión.");
     $stmt = $db->prepare("SELECT id_usuario FROM usuario WHERE id_usuario = ? AND eliminado = 0");
     $stmt->execute([$idUsuario]);
-    
-    if (!$stmt->fetch()) {
-        throw new Exception("El usuario en sesión no existe o está inactivo.");
-    }
-    
+    if (!$stmt->fetch()) throw new Exception("El usuario no existe o está inactivo.");
     return (int) $idUsuario;
 }
 
@@ -82,321 +69,142 @@ $clientes = [];
 $resumen = [];
 $tipo_mensaje = '';
 
-// ============================================
-// ENDPOINT JSON: OBTENER DETALLE DE NOTA (para modal)
-// ============================================
 if ($type === 'detalle_json' && $id) {
     header('Content-Type: application/json; charset=utf-8');
     try {
         $nota = $modelo->obtenerNotaPorId($id);
-        if (!$nota) {
-            echo json_encode(['success' => false, 'error' => 'Nota no encontrada']);
-            exit;
-        }
+        if (!$nota) { echo json_encode(['success' => false, 'error' => 'Nota no encontrada']); exit; }
         echo json_encode(['success' => true, 'nota' => $nota], JSON_UNESCAPED_UNICODE);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    }
+    } catch (Exception $e) { echo json_encode(['success' => false, 'error' => $e->getMessage()]); }
     exit;
 }
 
-// ============================================
-// ENDPOINT AJAX: REGISTRO RÁPIDO DE CLIENTE (para modal)
-// ============================================
 if ($type === 'store_rapido_cliente_ajax') {
     header('Content-Type: application/json; charset=utf-8');
-    
     try {
-        // Verificar permisos
         if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Clientes', 'crear')) {
             throw new Exception("No tienes permiso para registrar clientes.");
         }
-        
         $tipoCliente = $_POST['tipo_cliente'] ?? 'natural';
-        
         if ($tipoCliente === 'juridico') {
-            // ===== CLIENTE JURÍDICO =====
-            if (empty($_POST['rif']) || empty($_POST['razon_social'])) {
-                throw new Exception("RIF y Razón Social son obligatorios.");
-            }
-            
-            $datos = [
-                'rif' => trim($_POST['rif']),
-                'razon_social' => trim($_POST['razon_social']),
-                'telefono' => trim($_POST['telefono'] ?? ''),
-                'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
-                'direccion' => trim($_POST['direccion'] ?? ''),
-                'tipo' => 'juridico'
-            ];
-            
+            if (empty($_POST['rif']) || empty($_POST['razon_social'])) throw new Exception("RIF y Razón Social obligatorios.");
+            $datos = ['rif' => trim($_POST['rif']), 'razon_social' => trim($_POST['razon_social']), 'telefono' => trim($_POST['telefono'] ?? ''), 'correo_electronico' => trim($_POST['correo_electronico'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'tipo' => 'juridico'];
             $id_cliente = $clienteModel->registrarClienteJuridico($datos);
-            $nombre_cliente = $datos['razon_social'];
-            $documento = $datos['rif'];
-            $tipo_label = 'Jurídico';
+            $nombre_cliente = $datos['razon_social']; $documento = $datos['rif']; $tipo_label = 'Jurídico';
         } else {
-            // ===== CLIENTE NATURAL =====
-            if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) {
-                throw new Exception("Cédula, Nombre y Apellido son obligatorios.");
-            }
-            
-            $datos = [
-                'cedula' => trim($_POST['cedula']),
-                'nombre' => trim($_POST['nombre']),
-                'apellido' => trim($_POST['apellido']),
-                'telefono' => trim($_POST['telefono'] ?? ''),
-                'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
-                'direccion' => trim($_POST['direccion'] ?? ''),
-                'fecha_de_nacimiento' => $_POST['fecha_de_nacimiento'] ?? date('Y-m-d', strtotime('-18 years')),
-                'tipo' => 'natural'
-            ];
-            
+            if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) throw new Exception("Cédula, Nombre y Apellido obligatorios.");
+            $datos = ['cedula' => trim($_POST['cedula']), 'nombre' => trim($_POST['nombre']), 'apellido' => trim($_POST['apellido']), 'telefono' => trim($_POST['telefono'] ?? ''), 'correo_electronico' => trim($_POST['correo_electronico'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'fecha_de_nacimiento' => $_POST['fecha_de_nacimiento'] ?? date('Y-m-d', strtotime('-18 years')), 'tipo' => 'natural'];
             $id_cliente = $clienteModel->registrarClienteNatural($datos);
-            $nombre_cliente = $datos['nombre'] . ' ' . $datos['apellido'];
-            $documento = $datos['cedula'];
-            $tipo_label = 'Natural';
+            $nombre_cliente = $datos['nombre'] . ' ' . $datos['apellido']; $documento = $datos['cedula']; $tipo_label = 'Natural';
         }
-        
-        if (!$id_cliente) {
-            throw new Exception("No se pudo registrar el cliente.");
-        }
-        
-        echo json_encode([
-            'success' => true,
-            'id_cliente' => (int) $id_cliente,
-            'nombre_cliente' => $nombre_cliente,
-            'documento' => $documento,
-            'tipo' => $tipo_label
-        ], JSON_UNESCAPED_UNICODE);
-        
-    } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], JSON_UNESCAPED_UNICODE);
-    }
+        if (!$id_cliente) throw new Exception("No se pudo registrar el cliente.");
+        echo json_encode(['success' => true, 'id_cliente' => (int) $id_cliente, 'nombre_cliente' => $nombre_cliente, 'documento' => $documento, 'tipo' => $tipo_label], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) { echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE); }
     exit;
 }
 
-// 3. PROCESAMIENTO POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
-    // REGISTRAR NOTA DE SALIDA
     if ($type === 'store') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
             $idUsuario = obtenerIdUsuarioValido($db);
-            
             $detalles = [];
             $productos_ids = $_POST['detalle_producto'] ?? [];
             $cantidades = $_POST['detalle_cantidad'] ?? [];
-            
             for ($i = 0; $i < count($productos_ids); $i++) {
                 if (!empty($productos_ids[$i]) && !empty($cantidades[$i])) {
-                    $detalles[] = [
-                        'id_producto' => intval($productos_ids[$i]),
-                        'cantidad' => intval($cantidades[$i])
-                    ];
+                    $detalles[] = ['id_producto' => intval($productos_ids[$i]), 'cantidad' => intval($cantidades[$i])];
                 }
             }
-            
-            if (empty($detalles) || count($detalles) === 0) {
-                throw new Exception("Debe agregar al menos un producto.");
-            }
-            
-            if (empty($_POST['id_cliente'])) {
-                throw new Exception("Debe seleccionar un cliente.");
-            }
-            
-            foreach ($detalles as $d) {
-                if ($d['cantidad'] <= 0) {
-                    throw new Exception("La cantidad debe ser mayor a 0.");
-                }
-            }
-            
+            if (empty($detalles) || count($detalles) === 0) throw new Exception("Debe agregar al menos un producto.");
+            if (empty($_POST['id_cliente'])) throw new Exception("Debe seleccionar un cliente.");
+            foreach ($detalles as $d) { if ($d['cantidad'] <= 0) throw new Exception("La cantidad debe ser mayor a 0."); }
             $datos = ['id_cliente' => intval($_POST['id_cliente'])];
             $resultado = $modelo->registrarSalida($datos, $detalles, $idUsuario);
-            
             if ($resultado) {
-                $_SESSION['mensaje'] = '✅ Nota de Salida registrada exitosamente.';
-                $_SESSION['tipo_mensaje'] = 'success';
-                header("Location: ?url=notasalida&type=list");
-                exit();
+                $_SESSION['mensaje'] = '✅ Nota de Salida registrada exitosamente.'; $_SESSION['tipo_mensaje'] = 'success';
+                header("Location: ?url=notasalida&type=list"); exit();
             }
-        } catch (Exception $e) {
-            $error = '❌ ' . $e->getMessage();
-        }
+        } catch (Exception $e) { $error = '❌ ' . $e->getMessage(); }
     }
     
-    // REGISTRO RÁPIDO DE PRODUCTO (versión NO-AJAX, conservada por compatibilidad)
     if ($type === 'store_rapido_producto') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
-            if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) {
-                throw new Exception("Por favor complete todos los campos requeridos (*)");
-            }
-            
-            $datosProducto = [
-                'descripcion' => trim($_POST['descripcion']),
-                'id_categoria' => intval($_POST['id_categoria']),
-                'id_proveedor' => intval($_POST['id_proveedor']),
-                'cantidad' => intval($_POST['cantidad'] ?? 0),
-                'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
-                'especificaciones' => ''
-            ];
-            
+            if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) throw new Exception("Complete todos los campos requeridos (*)");
+            $datosProducto = ['descripcion' => trim($_POST['descripcion']), 'id_categoria' => intval($_POST['id_categoria']), 'id_proveedor' => intval($_POST['id_proveedor']), 'cantidad' => intval($_POST['cantidad'] ?? 0), 'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0), 'especificaciones' => ''];
             $id_producto = $productoModel->registrarProducto($datosProducto);
-            
             if ($id_producto) {
-                $_SESSION['nuevo_producto_id'] = $id_producto;
-                $_SESSION['nuevo_producto_nombre'] = $datosProducto['descripcion'];
-                $_SESSION['mensaje_rapido'] = "✅ Producto '{$datosProducto['descripcion']}' registrado exitosamente";
-                $_SESSION['tipo_rapido'] = 'success';
-                
+                $_SESSION['nuevo_producto_id'] = $id_producto; $_SESSION['nuevo_producto_nombre'] = $datosProducto['descripcion'];
+                $_SESSION['mensaje_rapido'] = "✅ Producto '{$datosProducto['descripcion']}' registrado exitosamente"; $_SESSION['tipo_rapido'] = 'success';
                 $return = $_REQUEST['return'] ?? null;
-                if ($return) {
-                    header("Location: ?url=" . urlencode($return) . "&type=create&id_producto=" . $id_producto);
-                    exit;
-                }
-
-                header("Location: ?url=notasalida&type=create");
-                exit;
-            } else {
-                throw new Exception("Error al guardar el producto");
-            }
-            
+                if ($return) { header("Location: ?url=" . urlencode($return) . "&type=create&id_producto=" . $id_producto); exit; }
+                header("Location: ?url=notasalida&type=create"); exit;
+            } else { throw new Exception("Error al guardar el producto"); }
         } catch (Exception $e) {
             $_SESSION['error'] = '❌ ' . $e->getMessage();
-            
             $return = $_REQUEST['return'] ?? null;
-            if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create");
-                exit;
-            }
-            header("Location: ?url=notasalida&type=create");
-            exit;
+            if ($return) { header("Location: ?url=" . urlencode($return) . "&type=create"); exit; }
+            header("Location: ?url=notasalida&type=create"); exit;
         }
     }
     
-    // REGISTRO RÁPIDO DE CLIENTE (versión NO-AJAX, conservada por compatibilidad)
     if ($type === 'store_rapido_cliente') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
             $tipo = $_POST['tipo_cliente'] ?? 'natural';
-            
             if ($tipo === 'juridico') {
-                if (empty($_POST['rif']) || empty($_POST['razon_social'])) {
-                    throw new Exception("Por favor complete todos los campos requeridos");
-                }
-                
-                $datos = [
-                    'rif' => trim($_POST['rif']),
-                    'razon_social' => trim($_POST['razon_social']),
-                    'telefono' => trim($_POST['telefono_juridico'] ?? ''),
-                    'correo_electronico' => trim($_POST['correo_juridico'] ?? ''),
-                    'direccion' => trim($_POST['direccion_juridico'] ?? ''),
-                    'tipo' => 'juridico'
-                ];
-                
+                if (empty($_POST['rif']) || empty($_POST['razon_social'])) throw new Exception("Complete los campos requeridos");
+                $datos = ['rif' => trim($_POST['rif']), 'razon_social' => trim($_POST['razon_social']), 'telefono' => trim($_POST['telefono_juridico'] ?? ''), 'correo_electronico' => trim($_POST['correo_juridico'] ?? ''), 'direccion' => trim($_POST['direccion_juridico'] ?? ''), 'tipo' => 'juridico'];
                 $id_cliente = $clienteModel->registrarClienteJuridico($datos);
                 $nombre_cliente = $datos['razon_social'];
-                
             } else {
-                if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) {
-                    throw new Exception("Por favor complete todos los campos requeridos");
-                }
-                
-                $datos = [
-                    'cedula' => trim($_POST['cedula']),
-                    'nombre' => trim($_POST['nombre']),
-                    'apellido' => trim($_POST['apellido']),
-                    'telefono' => trim($_POST['telefono'] ?? ''),
-                    'correo_electronico' => trim($_POST['correo'] ?? ''),
-                    'direccion' => trim($_POST['direccion'] ?? ''),
-                    'tipo' => 'natural'
-                ];
-                
+                if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) throw new Exception("Complete los campos requeridos");
+                $datos = ['cedula' => trim($_POST['cedula']), 'nombre' => trim($_POST['nombre']), 'apellido' => trim($_POST['apellido']), 'telefono' => trim($_POST['telefono'] ?? ''), 'correo_electronico' => trim($_POST['correo'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'tipo' => 'natural'];
                 $id_cliente = $clienteModel->registrarClienteNatural($datos);
                 $nombre_cliente = $datos['nombre'] . ' ' . $datos['apellido'];
             }
-            
             if ($id_cliente) {
-                $_SESSION['nuevo_cliente_id'] = $id_cliente;
-                $_SESSION['nuevo_cliente_nombre'] = $nombre_cliente;
-                $_SESSION['mensaje_rapido'] = "✅ Cliente '{$nombre_cliente}' registrado exitosamente";
-                $_SESSION['tipo_rapido'] = 'success';
-                
+                $_SESSION['nuevo_cliente_id'] = $id_cliente; $_SESSION['nuevo_cliente_nombre'] = $nombre_cliente;
+                $_SESSION['mensaje_rapido'] = "✅ Cliente '{$nombre_cliente}' registrado exitosamente"; $_SESSION['tipo_rapido'] = 'success';
                 $return = $_REQUEST['return'] ?? null;
-                if ($return) {
-                    header("Location: ?url=" . urlencode($return) . "&type=create&id_cliente=" . $id_cliente);
-                    exit;
-                }
-
-                header("Location: ?url=notasalida&type=create");
-                exit;
+                if ($return) { header("Location: ?url=" . urlencode($return) . "&type=create&id_cliente=" . $id_cliente); exit; }
+                header("Location: ?url=notasalida&type=create"); exit;
             }
-            
         } catch (Exception $e) {
             $_SESSION['error'] = '❌ ' . $e->getMessage();
-            
             $return = $_REQUEST['return'] ?? null;
-            if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create");
-                exit;
-            }
-            header("Location: ?url=notasalida&type=create");
-            exit;
+            if ($return) { header("Location: ?url=" . urlencode($return) . "&type=create"); exit; }
+            header("Location: ?url=notasalida&type=create"); exit;
         }
     }
     
-    // ACTUALIZAR
     if ($type === 'update') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'actualizar', '?url=notasalida&type=list');
         try {
             $id = $_POST['id_nota_salida'] ?? 0;
             $idUsuario = obtenerIdUsuarioValido($db);
-            
             $detalles = [];
             $productos_ids = $_POST['detalle_producto'] ?? [];
             $cantidades = $_POST['detalle_cantidad'] ?? [];
-            
             for ($i = 0; $i < count($productos_ids); $i++) {
                 if (!empty($productos_ids[$i]) && !empty($cantidades[$i])) {
-                    $detalles[] = [
-                        'id_producto' => intval($productos_ids[$i]),
-                        'cantidad' => intval($cantidades[$i])
-                    ];
+                    $detalles[] = ['id_producto' => intval($productos_ids[$i]), 'cantidad' => intval($cantidades[$i])];
                 }
             }
-            
-            if (empty($detalles) || count($detalles) === 0) {
-                throw new Exception("Debe agregar al menos un producto.");
-            }
-            
-            if (empty($_POST['id_cliente'])) {
-                throw new Exception("Debe seleccionar un cliente.");
-            }
-            
-            foreach ($detalles as $d) {
-                if ($d['cantidad'] <= 0) {
-                    throw new Exception("La cantidad debe ser mayor a 0.");
-                }
-            }
-            
+            if (empty($detalles) || count($detalles) === 0) throw new Exception("Debe agregar al menos un producto.");
+            if (empty($_POST['id_cliente'])) throw new Exception("Debe seleccionar un cliente.");
+            foreach ($detalles as $d) { if ($d['cantidad'] <= 0) throw new Exception("La cantidad debe ser mayor a 0."); }
             $datos = ['id_cliente' => intval($_POST['id_cliente'])];
             $resultado = $modelo->actualizarNota($id, $datos, $detalles, $idUsuario);
-            
             if ($resultado) {
-                $_SESSION['mensaje'] = '✅ Nota de Salida actualizada exitosamente.';
-                $_SESSION['tipo_mensaje'] = 'success';
-                header("Location: ?url=notasalida&type=list");
-                exit();
+                $_SESSION['mensaje'] = '✅ Nota de Salida actualizada exitosamente.'; $_SESSION['tipo_mensaje'] = 'success';
+                header("Location: ?url=notasalida&type=list"); exit();
             }
-        } catch (Exception $e) {
-            $error = '❌ ' . $e->getMessage();
-        }
+        } catch (Exception $e) { $error = '❌ ' . $e->getMessage(); }
     }
     
-    // ELIMINAR
+    // ELIMINAR (CON GUARDADO DE MOTIVO)
     if ($type === 'eliminar') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'eliminar', '?url=notasalida&type=list');
         try {
@@ -404,19 +212,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $motivo = trim($_POST['motivo_eliminacion'] ?? '');
             $idUsuario = obtenerIdUsuarioValido($db);
             
-            if (empty($motivo)) {
-                throw new Exception("Debe indicar el motivo de eliminación.");
-            }
+            if (empty($motivo)) throw new Exception("Debe indicar el motivo de eliminación.");
+            if (!$idNota || !is_numeric($idNota) || $idNota <= 0) throw new Exception("ID de nota inválido.");
             
-            if (!$idNota || !is_numeric($idNota) || $idNota <= 0) {
-                throw new Exception("ID de nota inválido.");
-            }
-            
+            // 1. Anular nota (revierte stock)
             $resultado = $modelo->eliminarNota($idNota);
             
             if ($resultado) {
+                // 2. GUARDAR EL MOTIVO EN LA COLUMNA motivo_anulacion
+                $stmtMotivo = $db->prepare("UPDATE nota_de_salida SET motivo_anulacion = :motivo WHERE id_nota_salida = :id");
+                $stmtMotivo->execute([':motivo' => $motivo, ':id' => $idNota]);
+
                 $_SESSION['contador_anulaciones_notasalida'] = (int) ($modelo->getResumen()['total_anuladas'] ?? 0);
-                
                 $_SESSION['mensaje'] = '✅ Nota de Salida eliminada exitosamente. El stock ha sido revertido.';
                 $_SESSION['tipo_mensaje'] = 'warning';
                 header("Location: ?url=notasalida&type=list");
@@ -424,88 +231,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 throw new Exception("No se pudo eliminar la nota.");
             }
-            
-        } catch (Exception $e) {
-            $error = '❌ ' . $e->getMessage();
-        }
+        } catch (Exception $e) { $error = '❌ ' . $e->getMessage(); }
     }
 }
 
-// 4. VISTAS
 $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'nota_salida';
 
-// CREAR
 if ($type === 'create') {
     try {
         $productos = $modelo->obtenerProductosConCategoria();
-        $clientes = $clienteModel->obtenerClientes();
+        $clientes = $clienteModel->obtenerClientesActivos();
         $categorias = $productoModel->obtenerCategorias();
-    } catch (Exception $e) {
-        die("ERROR al obtener datos: " . $e->getMessage());
-    }
-    
+    } catch (Exception $e) { die("ERROR al obtener datos: " . $e->getMessage()); }
     $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . "registroNotaSalidaView.php";
-    if (!file_exists($viewFile)) {
-        die("ERROR: No se encuentra registroNotaSalidaView.php");
-    }
-    require_once $viewFile;
-    exit();
+    if (!file_exists($viewFile)) die("ERROR: No se encuentra registroNotaSalidaView.php");
+    require_once $viewFile; exit();
 }
 
-// VER DETALLE
 if ($type === 'show' && $id) {
     try {
         $nota = $modelo->obtenerNotaPorId($id);
-        if (!$nota) {
-            die("ERROR: Nota de salida no encontrada.");
-        }
-    } catch (Exception $e) {
-        die("ERROR al obtener nota: " . $e->getMessage());
-    }
-    
+        if (!$nota) die("ERROR: Nota de salida no encontrada.");
+    } catch (Exception $e) { die("ERROR al obtener nota: " . $e->getMessage()); }
     $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . "detalleNotasalidaView.php";
-    if (!file_exists($viewFile)) {
-        die("ERROR: No se encuentra detalleNotasalidaView.php");
-    }
-    require_once $viewFile;
-    exit();
+    if (!file_exists($viewFile)) die("ERROR: No se encuentra detalleNotasalidaView.php");
+    require_once $viewFile; exit();
 }
 
-// LISTAR
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
     $notas_full = !empty($buscar) ? $modelo->buscarNotasSalida($buscar) : $modelo->listarNotasSalida();
     $resumen = $modelo->getResumen();
-
-    // PAGINACIÓN COMPLETA
-    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
-    $offset        = ($pagina_actual - 1) * $por_pagina;
-    
+    $offset = ($pagina_actual - 1) * $por_pagina;
     $totalRegistros = is_array($notas_full) ? count($notas_full) : 0;
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-    
-    if ($por_pagina > 0) {
-        $notas = array_slice($notas_full, $offset, $por_pagina);
-    } else {
-        $notas = $notas_full;
-    }
-    
-    if (isset($_SESSION['mensaje'])) {
-        $success = $_SESSION['mensaje'];
-        unset($_SESSION['mensaje']);
-    }
-    if (isset($_SESSION['tipo_mensaje'])) {
-        $tipo_mensaje = $_SESSION['tipo_mensaje'];
-        unset($_SESSION['tipo_mensaje']);
-    }
-} catch (Exception $e) {
-    die("ERROR al obtener notas: " . $e->getMessage());
-}
+    $notas = $por_pagina > 0 ? array_slice($notas_full, $offset, $por_pagina) : $notas_full;
+    if (isset($_SESSION['mensaje'])) { $success = $_SESSION['mensaje']; unset($_SESSION['mensaje']); }
+    if (isset($_SESSION['tipo_mensaje'])) { $tipo_mensaje = $_SESSION['tipo_mensaje']; unset($_SESSION['tipo_mensaje']); }
+} catch (Exception $e) { die("ERROR al obtener notas: " . $e->getMessage()); }
 
 $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . "listNotasalidaView.php";
-if (!file_exists($viewFile)) {
-    die("ERROR: No se encuentra listNotasalidaView.php");
-}
+if (!file_exists($viewFile)) die("ERROR: No se encuentra listNotasalidaView.php");
 require_once $viewFile;
 ?>

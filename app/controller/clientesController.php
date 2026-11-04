@@ -44,8 +44,12 @@ unset($_SESSION['mensaje']);
 unset($_SESSION['tipo_mensaje']);
 
 // Parámetros de búsqueda
-$busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
-$tipo = trim((string) ($_GET['tipo'] ?? 'todos'));
+$busqueda = trim((string) ($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? ''));
+$tipo = trim((string) ($_REQUEST['tipo'] ?? 'todos'));
+$estado_cliente = strtolower(trim((string) ($_REQUEST['estado_cliente'] ?? 'todos')));
+if (!in_array($estado_cliente, ['todos', 'activos', 'inactivos'], true)) {
+    $estado_cliente = 'todos';
+}
 
 /* ============================================================
  *  HELPER: URL de redirección tras un POST
@@ -142,7 +146,7 @@ if ($type === 'check_duplicado') {
     exit;
 }
 
-// ELIMINAR 
+// ELIMINAR (ELIMINACIÓN LÓGICA)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
     CheckPermiso::verificar($db, 'Clientes', 'eliminar', '?url=clientes&type=list');
     try {
@@ -151,10 +155,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
             throw new Exception("ID de cliente inválido");
         }
         $resultado = $modelo->eliminarCliente($id);
-        $_SESSION['mensaje'] = $resultado ? "✅ Cliente eliminado exitosamente" : "No se pudo eliminar el cliente";
+        $_SESSION['mensaje'] = $resultado ? "✅ Cliente inactivado exitosamente" : "No se pudo inactivar el cliente";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
     } catch (Exception $e) {
-        $_SESSION['mensaje'] = "Error al eliminar: " . $e->getMessage();
+        $msg = $e->getMessage();
+        if ($msg === "No se puede eliminar porque tiene registros asociados") {
+            $_SESSION['mensaje'] = "No se puede eliminar porque tiene registros asociados";
+            $_SESSION['tipo_mensaje'] = "warning";
+        } else {
+            $_SESSION['mensaje'] = $msg;
+            $_SESSION['tipo_mensaje'] = "danger";
+        }
+    }
+    header("Location: ?url=clientes&type=list");
+    exit();
+}
+
+// REACTIVAR CLIENTE
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'reactivar' || (isset($_POST['accion']) && $_POST['accion'] === 'reactivar'))) {
+    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
+    try {
+        $id = $_POST['id_cliente'] ?? null;
+        if (!$id || !is_numeric($id) || $id <= 0) {
+            throw new Exception("ID de cliente inválido");
+        }
+        $resultado = $modelo->reactivarCliente($id);
+        $_SESSION['mensaje'] = "✅ Cliente reactivado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } catch (Exception $e) {
+        $_SESSION['mensaje'] = $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
     header("Location: ?url=clientes&type=list");
@@ -383,6 +412,7 @@ if (in_array($type, ['view', 'edit', 'edit_juridico']) && $id) {
 
 // LISTA
 if ($type === 'list' || $type === '') {
+    $ajax = (!empty($_GET['ajax']) || !empty($_POST['ajax']));
     $busqueda_trim = is_string($busqueda) ? trim($busqueda) : '';
     $tipo_param = $tipo ?? 'todos';
 
@@ -392,9 +422,19 @@ if ($type === 'list' || $type === '') {
         $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
     }
 
+    if ($estado_cliente === 'activos') {
+        $clientes_full = array_values(array_filter($clientes_full, function ($cliente) {
+            return ((int) ($cliente['eliminado'] ?? 0)) === 0;
+        }));
+    } elseif ($estado_cliente === 'inactivos') {
+        $clientes_full = array_values(array_filter($clientes_full, function ($cliente) {
+            return ((int) ($cliente['eliminado'] ?? 0)) === 1;
+        }));
+    }
+
     //  PAGINACIÓN COMPLETA
-    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $por_pagina    = (int) ($_REQUEST['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int) ($_REQUEST['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
     
     // Total de registros
@@ -408,6 +448,15 @@ if ($type === 'list' || $type === '') {
         $clientes = array_slice($clientes_full, $offset, $por_pagina);
     } else {
         $clientes = $clientes_full;
+    }
+
+    if ($ajax) {
+        ob_start();
+        require_once $basePath . "listClienteView.php";
+        $html = ob_get_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => true, 'html' => $html], JSON_UNESCAPED_UNICODE);
+        exit();
     }
 
     require_once $basePath . "listClienteView.php";
