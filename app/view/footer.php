@@ -35,7 +35,7 @@ SCRIPTS GLOBALES
 <script src="/pirotecnica_fenix/assets/js/validaciones.js"></script>
 
 <!-- Script: habilitar búsqueda en selects dentro de formularios -->
-\\<script src="/pirotecnica_fenix/assets/js/select-search.js"></script> //
+<script src="/pirotecnica_fenix/assets/js/select-search.js"></script>
 <style>
 /* ==========================================
    BUSCADOR DE SELECTS - UNIFICADO CON EL DISEÑO

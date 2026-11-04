@@ -54,23 +54,33 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
     <!-- FILTRO DE BÚSQUEDA -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
-        <form id="formFiltroClientes" method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
+        <form id="formFiltroClientes" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="clientes">
             <input type="hidden" name="type" value="list">
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-6">
-                <input type="text" name="busqueda" class="form-control" 
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
+                <select name="estado_cliente" class="form-select form-select-sm" data-no-search="true">
+                    <option value="todos" <?= (($estado_cliente ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
+                    <option value="activos" <?= (($estado_cliente ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
+                    <option value="inactivos" <?= (($estado_cliente ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
+                <input type="text" name="busqueda" class="form-control form-control-sm" 
                        list="listaClientes"
-                       placeholder="Buscar por nombre, cédula, RIF o razón social..."
+                       placeholder="Nombre, cédula, RIF o razón social..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                 <datalist id="listaClientes">
                     <?php
@@ -91,13 +101,13 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <?php endforeach; ?>
                 </datalist>
             </div>
-            
+
             <div class="col-md-2">
                 <button type="submit" class="btn btn-gold w-100">
                     <i class="fas fa-search me-1"></i> Buscar
                 </button>
             </div>
-            
+
             <div class="col-md-2">
                 <a href="?url=clientes&type=list" class="btn btn-secondary w-100">
                     <i class="fas fa-times me-1"></i> Limpiar
@@ -912,10 +922,29 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
+    function inicializarMapaClientes() {
+        const scriptCliente = document.getElementById('clientesData');
+        if (!scriptCliente) {
+            window.clientesPorId = {};
+            return;
+        }
+
+        try {
+            const clientesData = JSON.parse(scriptCliente.textContent || '[]');
+            const clientesPorId = {};
+            clientesData.forEach(function(c) {
+                clientesPorId[parseInt(c.id_cliente)] = c;
+            });
+            window.clientesPorId = clientesPorId;
+        } catch (error) {
+            console.error('No se pudieron cargar los datos de clientes:', error);
+            window.clientesPorId = {};
+        }
+    }
+
     const formClientes = document.getElementById('formFiltroClientes');
     if (formClientes) {
-        formClientes.addEventListener('submit', function (e) {
-            e.preventDefault();
+        const enviarFiltroClientes = function () {
             const formData = new FormData(formClientes);
             formData.set('ajax', '1');
 
@@ -932,9 +961,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!nuevaVista) return;
                 const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
                 if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
+                inicializarMapaClientes();
             })
             .catch(() => {
                 formClientes.submit();
+            });
+        };
+
+        formClientes.addEventListener('submit', function (e) {
+            e.preventDefault();
+            enviarFiltroClientes();
+        });
+
+        formClientes.querySelectorAll('select').forEach(function (selectEl) {
+            selectEl.addEventListener('change', function () {
+                enviarFiltroClientes();
             });
         });
     }
@@ -942,11 +983,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================================
     // DATOS DE CLIENTES
     // ============================================================
-    const clientesData = JSON.parse(document.getElementById('clientesData').textContent);
-    const clientesPorId = {};
-    clientesData.forEach(function(c) {
-        clientesPorId[parseInt(c.id_cliente)] = c;
-    });
+    inicializarMapaClientes();
 
     // ============================================================
     // CALLBACK DE MENOR DE EDAD (usa el modal del sistema)

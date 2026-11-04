@@ -596,17 +596,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('formRapidoClienteJuridico').reset();
             document.getElementById('modal-rapido-cliente-error').style.display = 'none';
             
-            // Resetear feedback visual
-            document.querySelectorAll('#modalRapidoCliente input[data-validate]').forEach(function (input) {
-                input.classList.remove('campo-valido', 'campo-invalido');
-                input.style.borderColor = '';
-                input.style.boxShadow = '';
-                const feedback = document.getElementById(input.id + '-feedback');
-                if (feedback) {
-                    feedback.classList.remove('error', 'success');
-                    feedback.classList.add('info');
-                }
-            });
+            // Resetear feedback visual sin borrar la lógica del validador global
+            if (typeof Validador !== 'undefined') {
+                Validador.resetEstadoVisual(document.getElementById('modalRapidoCliente'));
+            }
             
             // Abrir modal
             new bootstrap.Modal(document.getElementById('modalRapidoCliente')).show();

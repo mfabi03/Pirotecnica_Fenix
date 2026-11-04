@@ -58,7 +58,6 @@ class notasalidaModel {
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
                     WHERE (cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)
                     AND p.eliminado = 0
-                    AND (p.status = 'activo' OR p.status IS NULL)
                     ORDER BY nombre_cliente ASC";
             
             $stmt = $this->db->prepare($sql);
@@ -73,7 +72,7 @@ class notasalidaModel {
     // REGISTRAR SALIDA
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
-            $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0 AND (status = 'activo' OR status IS NULL)";
+            $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0";
             $stmtCheck = $this->db->prepare($sqlCheckCliente);
             $stmtCheck->execute([$datos['id_cliente']]);
             $clienteExiste = $stmtCheck->fetch();

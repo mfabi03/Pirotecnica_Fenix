@@ -125,6 +125,27 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </form>
     </div>
 
+    <?php if (isset($mensaje) && !empty($mensaje)): ?>
+        <?php
+        $tipoMensaje = $tipo_mensaje ?? 'info';
+        $mapaAlertas = [
+            'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
+            'danger'  => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+            'error'   => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+            'warning' => ['clase' => 'dark-alert-warning', 'icono' => 'fa-exclamation-triangle'],
+            'info'    => ['clase' => 'dark-alert-info',    'icono' => 'fa-info-circle'],
+        ];
+        $alertaActual = $mapaAlertas[$tipoMensaje] ?? $mapaAlertas['info'];
+        ?>
+        <div class="alert <?= $alertaActual['clase'] ?> alert-dismissible fade show shadow-sm border-0" role="alert" data-auto-dismiss="5000">
+            <div class="d-flex align-items-center">
+                <i class="fas <?= $alertaActual['icono'] ?> me-3 fs-5"></i>
+                <span><?= htmlspecialchars($mensaje) ?></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- EXPORTACIÓN -->
     <div class="d-flex justify-content-end gap-2 mb-3">
         <a href="?url=exportar_csv&<?= $paramsExport ?>" class="btn btn-gold btn-sm fw-bold">

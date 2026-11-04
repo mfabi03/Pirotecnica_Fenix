@@ -124,6 +124,18 @@ const Validador = (function () {
     // ---------------------------------------------------------
     // FEEDBACK VISUAL
     // ---------------------------------------------------------
+    function limpiarFeedback(input, feedbackEl) {
+        if (!input) return;
+        input.classList.remove('campo-valido', 'campo-invalido', 'campo-verificando');
+        input.style.borderColor = '';
+        input.style.boxShadow = '';
+        if (feedbackEl) {
+            feedbackEl.classList.remove('info', 'error', 'success', 'checking');
+            feedbackEl.textContent = '';
+            feedbackEl.innerHTML = '';
+        }
+    }
+
     function mostrarFeedback(input, feedbackEl, estado, mensaje) {
         input.classList.remove('campo-valido', 'campo-invalido', 'campo-verificando');
         feedbackEl.classList.remove('info', 'error', 'success', 'checking');
@@ -275,11 +287,27 @@ const Validador = (function () {
     // ---------------------------------------------------------
     // VALIDACIÓN DE UN CAMPO
     // ---------------------------------------------------------
-    function validarCampo(input) {
+    function validarCampo(input, opciones) {
+        const settings = opciones || {};
+        const forzar = !!settings.forzar;
+        const marcarComoTocado = !!settings.marcarComoTocado;
+
+        if (marcarComoTocado) {
+            input.dataset.touched = 'true';
+        }
+
         const tipo = input.dataset.validate;
         if (!tipo || !validadores[tipo]) return true;
+
         const feedbackEl = document.getElementById(input.id + '-feedback');
         if (!feedbackEl) return true;
+
+        const estabaTocado = input.dataset.touched === 'true';
+        if (!estabaTocado && !forzar) {
+            limpiarFeedback(input, feedbackEl);
+            return true;
+        }
+
         const resultado = validadores[tipo](input.value);
         mostrarFeedback(input, feedbackEl, resultado.estado, resultado.mensaje);
 
@@ -305,13 +333,15 @@ const Validador = (function () {
         return resultado.estado === 'valido' || (resultado.estado === 'vacio' && !input.hasAttribute('required'));
     }
 
-    function validarFormulario(formId) {
+    function validarFormulario(formId, opciones) {
+        const settings = opciones || {};
         const form = document.getElementById(formId);
         if (!form) return true;
+
         let todoValido = true;
         form.querySelectorAll('input[data-validate], textarea[data-validate], select[data-validate]').forEach(function (input) {
-            if (!validarCampo(input)) todoValido = false;
-            // Si el último estado de unicidad fue "duplicado", bloquear
+            input.dataset.touched = 'true';
+            if (!validarCampo(input, { forzar: true, marcarComoTocado: true })) todoValido = false;
             if (input.dataset.unicoEstado === 'duplicado') todoValido = false;
         });
         return todoValido;
@@ -351,9 +381,20 @@ const Validador = (function () {
         container.querySelectorAll('input[data-validate], textarea[data-validate], select[data-validate]').forEach(function (input) {
             if (input.dataset.validatorInit === 'true') return;
             input.dataset.validatorInit = 'true';
-            input.addEventListener('input', function () { validarCampo(this); });
-            input.addEventListener('blur',  function () { validarCampo(this); });
-            input.addEventListener('change', function () { validarCampo(this); });
+            input.dataset.touched = 'false';
+            input.addEventListener('input', function () {
+                input.dataset.touched = 'true';
+                validarCampo(this);
+            });
+            input.addEventListener('blur', function () {
+                input.dataset.touched = 'true';
+                validarCampo(this);
+            });
+            input.addEventListener('change', function () {
+                input.dataset.touched = 'true';
+                validarCampo(this);
+            });
+            limpiarFeedback(input, document.getElementById(input.id + '-feedback'));
             aplicarAutoFormato(input);
         });
         container.querySelectorAll('input[data-validate="fecha"]').forEach(function (input) {
@@ -372,33 +413,29 @@ const Validador = (function () {
     function resetFormulario(formId) {
         const form = document.getElementById(formId);
         if (!form) return;
-        const mensajesPorDefecto = {
-            cedula: 'Formato: V-12345678',
-            rif: 'Formato: J-123456789',
-            telefono: 'Formato: 0412-1234567',
-            nombre: 'Mínimo 2 caracteres',
-            razon: 'Mínimo 3 caracteres',
-            correo: 'Formato: usuario@dominio.com',
-            fecha: 'Debe ser mayor de 18 años',
-            fecha_simple: 'Fecha requerida',
-            direccion: 'Mínimo 5 caracteres',
-            numero: 'Ingrese un número',
-            numero_positivo: 'Ingrese un número mayor a 0'
-        };
         form.querySelectorAll('input[data-validate], textarea[data-validate], select[data-validate]').forEach(function (input) {
             input.value = '';
+            input.dataset.touched = 'false';
+            input.dataset.unicoEstado = '';
+            clearTimeout(timersUnico[input.id]);
+            limpiarFeedback(input, document.getElementById(input.id + '-feedback'));
+        });
+    }
+
+    function resetEstadoVisual(scope) {
+        const container = scope || document;
+        container.querySelectorAll('input[data-validate], textarea[data-validate], select[data-validate]').forEach(function (input) {
+            input.dataset.touched = 'false';
+            input.dataset.unicoEstado = '';
+            clearTimeout(timersUnico[input.id]);
             input.classList.remove('campo-valido', 'campo-invalido', 'campo-verificando');
             input.style.borderColor = '';
             input.style.boxShadow = '';
-            input.dataset.unicoEstado = '';
-            clearTimeout(timersUnico[input.id]);
-            const feedback = document.getElementById(input.id + '-feedback');
-            if (feedback) {
-                feedback.classList.remove('error', 'success', 'checking');
-                feedback.classList.add('info');
-                const msg = mensajesPorDefecto[input.dataset.validate] || '';
-                feedback.innerHTML = '<i class="fas fa-info-circle me-1"></i> ' + msg;
-            }
+            const feedbackEl = document.getElementById(input.id + '-feedback');
+            if (!feedbackEl) return;
+            feedbackEl.classList.remove('info', 'error', 'success', 'checking');
+            feedbackEl.classList.add('info');
+            feedbackEl.innerHTML = feedbackEl.dataset.defaultHtml || '';
         });
     }
 
@@ -410,6 +447,7 @@ const Validador = (function () {
         validarCampo: validarCampo,
         validarFormulario: validarFormulario,
         resetFormulario: resetFormulario,
+        resetEstadoVisual: resetEstadoVisual,
         calcularEdad: calcularEdad,
         formatearFecha: formatearFecha,
         onMenorEdad: onMenorEdad,

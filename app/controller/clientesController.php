@@ -44,8 +44,12 @@ unset($_SESSION['mensaje']);
 unset($_SESSION['tipo_mensaje']);
 
 // Parámetros de búsqueda
-$busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
-$tipo = trim((string) ($_GET['tipo'] ?? 'todos'));
+$busqueda = trim((string) ($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? ''));
+$tipo = trim((string) ($_REQUEST['tipo'] ?? 'todos'));
+$estado_cliente = strtolower(trim((string) ($_REQUEST['estado_cliente'] ?? 'todos')));
+if (!in_array($estado_cliente, ['todos', 'activos', 'inactivos'], true)) {
+    $estado_cliente = 'todos';
+}
 
 /* ============================================================
  *  HELPER: URL de redirección tras un POST
@@ -418,9 +422,19 @@ if ($type === 'list' || $type === '') {
         $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
     }
 
+    if ($estado_cliente === 'activos') {
+        $clientes_full = array_values(array_filter($clientes_full, function ($cliente) {
+            return ((int) ($cliente['eliminado'] ?? 0)) === 0;
+        }));
+    } elseif ($estado_cliente === 'inactivos') {
+        $clientes_full = array_values(array_filter($clientes_full, function ($cliente) {
+            return ((int) ($cliente['eliminado'] ?? 0)) === 1;
+        }));
+    }
+
     //  PAGINACIÓN COMPLETA
-    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $por_pagina    = (int) ($_REQUEST['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int) ($_REQUEST['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
     
     // Total de registros

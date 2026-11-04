@@ -61,8 +61,8 @@ class clientesModel {
 
         $this->db->beginTransaction();
         try {
-            $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, status, eliminado) 
-                    VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 'activo', 0)";
+            $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, eliminado) 
+                    VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 0)";
             $stmt = $this->db->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
@@ -121,8 +121,8 @@ class clientesModel {
 
         $this->db->beginTransaction();
         try {
-            $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, status, eliminado) 
-                    VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 'activo', 0)";
+            $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, eliminado) 
+                    VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 0)";
             $stmt = $this->db->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
@@ -317,7 +317,6 @@ class clientesModel {
             $where = [];
             if ($soloActivos) {
                 $where[] = "p.eliminado = 0";
-                $where[] = "(p.status = 'activo' OR p.status IS NULL)";
             }
 
             $sql = "SELECT
@@ -328,7 +327,7 @@ class clientesModel {
                         p.telefono,
                         p.correo_electronico,
                         p.direccion,
-                        COALESCE(p.status, CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END) AS status,
+                        CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END AS status,
                         p.eliminado,
                         cj.rif,
                         cj.razon_social,
@@ -368,7 +367,7 @@ class clientesModel {
                 $sql .= ' AND ' . implode(' AND ', $where);
             }
 
-            $sql .= ' ORDER BY p.eliminado ASC, p.nombre ASC';
+            $sql .= ' ORDER BY p.eliminado ASC, p.id_persona DESC, p.nombre ASC';
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
@@ -386,7 +385,6 @@ class clientesModel {
             $where = [];
             if ($soloActivos) {
                 $where[] = "p.eliminado = 0";
-                $where[] = "(p.status = 'activo' OR p.status IS NULL)";
             }
             $sql = "SELECT COUNT(*) 
                     FROM persona p
@@ -434,7 +432,6 @@ class clientesModel {
             $where = ["(cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)"];
             if ($soloActivos) {
                 $where[] = "p.eliminado = 0";
-                $where[] = "(p.status = 'activo' OR p.status IS NULL)";
             }
 
             $sql = "SELECT 
@@ -445,7 +442,7 @@ class clientesModel {
                     p.telefono,
                     p.correo_electronico,
                     p.direccion,
-                    COALESCE(p.status, CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END) AS status,
+                    CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END AS status,
                     p.eliminado,
                     cj.rif,
                     cj.razon_social,
@@ -459,7 +456,7 @@ class clientesModel {
                 LEFT JOIN cliente_natural cn ON p.id_persona = cn.id_persona
                 LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
                 WHERE " . implode(' AND ', $where) . "
-                ORDER BY p.eliminado ASC, p.nombre ASC";
+                ORDER BY p.eliminado ASC, p.id_persona DESC, p.nombre ASC";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -486,7 +483,7 @@ class clientesModel {
                         p.telefono,
                         p.correo_electronico,
                         p.direccion,
-                        COALESCE(p.status, CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END) AS status,
+                        CASE WHEN p.eliminado = 1 THEN 'inactivo' ELSE 'activo' END AS status,
                         p.eliminado,
                         cn.fecha_de_nacimiento,
                         cj.rif,
@@ -518,8 +515,7 @@ class clientesModel {
 
         $this->db->beginTransaction();
         try {
-            $sqlCheck = "SELECT id_persona, COALESCE(status, CASE WHEN eliminado = 1 THEN 'inactivo' ELSE 'activo' END) AS status, eliminado 
-                         FROM persona WHERE id_persona = :id";
+            $sqlCheck = "SELECT id_persona, eliminado FROM persona WHERE id_persona = :id";
             $stmtCheck = $this->db->prepare($sqlCheck);
             $stmtCheck->execute([':id' => $id]);
             $clienteCheck = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
@@ -528,7 +524,7 @@ class clientesModel {
                 throw new \Exception("El cliente no existe en la base de datos");
             }
 
-            if (($clienteCheck['status'] ?? '') === 'inactivo' || ($clienteCheck['eliminado'] ?? 0) == 1) {
+            if (($clienteCheck['eliminado'] ?? 0) == 1) {
                 throw new \Exception("El cliente ya se encuentra inactivo");
             }
 
@@ -574,8 +570,8 @@ class clientesModel {
                 $stmt2->execute([':id' => $id]);
             }
 
-            // Eliminación lógica: status = inactivo, eliminado = 1
-            $sql3 = "UPDATE persona SET status = 'inactivo', eliminado = 1 WHERE id_persona = :id";
+            // Eliminación lógica: marcado como eliminado
+            $sql3 = "UPDATE persona SET eliminado = 1 WHERE id_persona = :id";
             $stmt3 = $this->db->prepare($sql3);
             $resultado = $stmt3->execute([':id' => $id]);
 
@@ -609,7 +605,7 @@ class clientesModel {
                 throw new \Exception("El cliente no existe en la base de datos");
             }
 
-            $this->db->prepare("UPDATE persona SET status = 'activo', eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
+            $this->db->prepare("UPDATE persona SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
             $this->db->prepare("UPDATE cliente_natural SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
             $this->db->prepare("UPDATE cliente_juridico SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
 

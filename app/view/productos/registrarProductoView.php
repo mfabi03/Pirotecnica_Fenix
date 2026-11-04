@@ -339,16 +339,9 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('formRapidoProveedor').reset();
             document.getElementById('modal-rapido-proveedor-error').style.display = 'none';
             
-            document.querySelectorAll('#modalRapidoProveedor input[data-validate]').forEach(function (input) {
-                input.classList.remove('campo-valido', 'campo-invalido');
-                input.style.borderColor = '';
-                input.style.boxShadow = '';
-                const feedback = document.getElementById(input.id + '-feedback');
-                if (feedback) {
-                    feedback.classList.remove('error', 'success');
-                    feedback.classList.add('info');
-                }
-            });
+            if (typeof Validador !== 'undefined') {
+                Validador.resetEstadoVisual(document.getElementById('modalRapidoProveedor'));
+            }
             
             new bootstrap.Modal(document.getElementById('modalRapidoProveedor')).show();
         });
@@ -427,16 +420,9 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('formRapidoCategoria').reset();
             document.getElementById('modal-rapido-categoria-error').style.display = 'none';
             
-            document.querySelectorAll('#modalRapidoCategoria input[data-validate]').forEach(function (input) {
-                input.classList.remove('campo-valido', 'campo-invalido');
-                input.style.borderColor = '';
-                input.style.boxShadow = '';
-                const feedback = document.getElementById(input.id + '-feedback');
-                if (feedback) {
-                    feedback.classList.remove('error', 'success');
-                    feedback.classList.add('info');
-                }
-            });
+            if (typeof Validador !== 'undefined') {
+                Validador.resetEstadoVisual(document.getElementById('modalRapidoCategoria'));
+            }
             
             new bootstrap.Modal(document.getElementById('modalRapidoCategoria')).show();
         });
