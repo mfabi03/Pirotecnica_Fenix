@@ -63,127 +63,117 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     ?>
                     <form method="POST" action="?url=notaentrada&type=store" id="notaEntradaForm">
                         
-                        <!-- DATOS GENERALES -->
-                        <div class="row g-3 mb-4">
-                            <!-- Fecha -->
-                            <div class="col-md-6">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; border-left: 4px solid #f39c12; padding: 16px 20px;">
-                                    <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 8px;">
-                                        <i class="fas fa-calendar-alt me-1" style="color: #f39c12;"></i> Fecha de Ingreso <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="datetime-local" name="fecha_ingreso" class="form-control" 
-                                           value="<?= date('Y-m-d\TH:i') ?>" required
-                                           style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
-                                </div>
-                            </div>
-
-                            <!-- Proveedor -->
-                            <div class="col-md-6">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; border-left: 4px solid #28a745; padding: 16px 20px;">
-                                    <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 8px;">
-                                        <i class="fas fa-truck me-1" style="color: #28a745;"></i> Proveedor <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group">
-                                        <select id="id_proveedor" name="id_proveedor" class="form-select" required
-                                                style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
-                                            <option value="">Seleccione un proveedor...</option>
-                                            <?php if (!empty($proveedores)): ?>
-                                                <?php foreach ($proveedores as $prov): ?>
-                                                    <option value="<?= $prov['id_proveedor'] ?>"
-                                                        <?= ($idProveedorSeleccionado > 0 && $idProveedorSeleccionado == (int) $prov['id_proveedor']) ? 'selected' : '' ?>>
-                                                        <?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            <?php else: ?>
-                                                <option value="">No hay proveedores disponibles</option>
-                                            <?php endif; ?>
-                                        </select>
-                                        <button type="button" 
-                                                id="btnAbrirModalProveedor"
-                                                class="btn" 
-                                                style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center;"
-                                                title="Registrar nuevo proveedor">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
+                        <div class="row g-4 mb-4">
+                            <div class="col-lg-6">
+                                <div class="card h-100" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; border-left: 4px solid #f39c12;">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold mb-3" style="color: #f39c12;"><i class="fas fa-file-invoice me-2"></i>Datos de la Nota</h6>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+                                                <i class="fas fa-calendar-alt me-1"></i> Fecha de Ingreso <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="datetime-local" name="fecha_ingreso" class="form-control"
+                                                   value="<?= date('Y-m-d\TH:i') ?>" required
+                                                   style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+                                                <i class="fas fa-truck me-1"></i> Proveedor <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <select id="id_proveedor" name="id_proveedor" class="form-select" required
+                                                        style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
+                                                    <option value="">Seleccione un proveedor...</option>
+                                                    <?php if (!empty($proveedores)): ?>
+                                                        <?php foreach ($proveedores as $prov): ?>
+                                                            <option value="<?= $prov['id_proveedor'] ?>"
+                                                                <?= ($idProveedorSeleccionado > 0 && $idProveedorSeleccionado == (int) $prov['id_proveedor']) ? 'selected' : '' ?>>
+                                                                <?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <option value="">No hay proveedores disponibles</option>
+                                                    <?php endif; ?>
+                                                </select>
+                                                <button type="button" id="btnAbrirModalProveedor" class="btn"
+                                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px;"
+                                                        title="Registrar nuevo proveedor">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-0">
+                                            <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+                                                <i class="fas fa-align-left me-1"></i> Descripción
+                                            </label>
+                                            <textarea name="descripcion" class="form-control" rows="3"
+                                                      placeholder="Descripción de la nota de entrada (opcional)"
+                                                      style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 12px 16px; resize: vertical;"><?= htmlspecialchars($_POST['descripcion'] ?? '') ?></textarea>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Descripción -->
-                            <div class="col-12">
-                                <div class="card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; border-left: 4px solid #6c757d; padding: 16px 20px;">
-                                    <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 8px;">
-                                        <i class="fas fa-align-left me-1" style="color: #6c757d;"></i> Descripción
-                                    </label>
-                                    <textarea name="descripcion" class="form-control" rows="2" 
-                                              placeholder="Descripción de la nota de entrada (opcional)"
-                                              style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 12px 16px; resize: vertical;"><?= htmlspecialchars($_POST['descripcion'] ?? '') ?></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- PRODUCTOS -->
-                        <div class="card mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px;">
-                            <div class="card-header" style="background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.04); border-radius: 12px 12px 0 0; padding: 12px 20px;">
-                                <span style="color: #ffffff; font-weight: 600; font-size: 0.85rem;">
-                                    <i class="fas fa-box me-2"></i> Agregar Productos
-                                </span>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-5">
-                                        <label class="form-label" style="color: rgba(255,255,255,0.4); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Producto</label>
-                                        <div class="input-group">
-                                            <?php 
-                                                $idProductoHeredado = $_GET['id_producto'] ?? $_SESSION['nuevo_producto_id'] ?? '';
-                                                $cantidadHeredada = $_GET['cantidad'] ?? '';
-                                                $costoHeredado = $_GET['costo'] ?? '';
-                                            ?>
-                                            <select id="productoSelect" class="form-select" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
-                                                <option value="">Seleccione un producto...</option>
-                                                <?php if (!empty($productos)): ?>
-                                                    <?php foreach ($productos as $p): ?>
-                                                        <option value="<?= $p['id_producto'] ?>" 
-                                                                data-descripcion="<?= htmlspecialchars($p['descripcion']) ?>"
-                                                                data-costo="<?= $p['costo_unitario'] ?>"
-                                                                data-stock="<?= $p['cantidad'] ?>"
-                                                            <?= ($idProductoHeredado != '' && $idProductoHeredado == $p['id_producto']) ? 'selected' : '' ?>>
-                                                            <?= htmlspecialchars($p['descripcion']) ?> (Stock: <?= $p['cantidad'] ?>)
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                <?php else: ?>
-                                                    <option value="">No hay productos disponibles</option>
-                                                <?php endif; ?>
-                                            </select>
-                                            <button type="button" 
-                                                    id="btnAbrirModalProducto"
-                                                    class="btn" 
-                                                    style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px; display: flex; align-items: center; justify-content: center;"
-                                                    title="Registrar nuevo producto">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
+                            <div class="col-lg-6">
+                                <div class="card h-100" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; border-left: 4px solid #28a745;">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold mb-3" style="color: #28a745;"><i class="fas fa-boxes me-2"></i>Agregar Productos</h6>
+                                        <?php
+                                            $idProductoHeredado = $_GET['id_producto'] ?? $_SESSION['nuevo_producto_id'] ?? '';
+                                            $cantidadHeredada = $_GET['cantidad'] ?? '';
+                                            $costoHeredado = $_GET['costo'] ?? '';
+                                        ?>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Producto <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <select id="productoSelect" class="form-select"
+                                                        style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
+                                                    <option value="">Seleccione un producto...</option>
+                                                    <?php if (!empty($productos)): ?>
+                                                        <?php foreach ($productos as $p): ?>
+                                                            <option value="<?= $p['id_producto'] ?>"
+                                                                    data-descripcion="<?= htmlspecialchars($p['descripcion']) ?>"
+                                                                    data-costo="<?= $p['costo_unitario'] ?>"
+                                                                    data-stock="<?= $p['cantidad'] ?>"
+                                                                <?= ($idProductoHeredado != '' && $idProductoHeredado == $p['id_producto']) ? 'selected' : '' ?>>
+                                                                <?= htmlspecialchars($p['descripcion']) ?> (Stock: <?= $p['cantidad'] ?>)
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <option value="">No hay productos disponibles</option>
+                                                    <?php endif; ?>
+                                                </select>
+                                                <button type="button" id="btnAbrirModalProducto" class="btn"
+                                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 16px;"
+                                                        title="Registrar nuevo producto">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <?php unset($_SESSION['nuevo_producto_id']); ?>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label" style="color: rgba(255,255,255,0.4); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Cantidad</label>
-                                        <input type="number" id="cantidadInput" class="form-control" 
-                                               min="1" value="<?= htmlspecialchars($cantidadHeredada !== '' ? $cantidadHeredada : '1') ?>"
-                                               style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label" style="color: rgba(255,255,255,0.4); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Costo Unitario</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-right: none; color: rgba(255,255,255,0.3); border-radius: 12px 0 0 12px;">$</span>
-                                            <input type="number" id="costoInput" class="form-control" 
-                                                   step="0.01" min="0" value="<?= htmlspecialchars($costoHeredado !== '' ? number_format((float)$costoHeredado, 2, '.', '') : '0.00') ?>"
-                                                   style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-left: none; border-radius: 0 12px 12px 0; color: #ffffff; padding: 10px 16px;">
+                                        <div class="row g-3 align-items-end">
+                                            <div class="col-sm-6">
+                                                <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Cantidad</label>
+                                                <input type="number" id="cantidadInput" class="form-control" min="1"
+                                                       value="<?= htmlspecialchars($cantidadHeredada !== '' ? $cantidadHeredada : '1') ?>"
+                                                       style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Costo Unitario</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-right: none; color: rgba(255,255,255,0.5); border-radius: 12px 0 0 12px;">$</span>
+                                                    <input type="number" id="costoInput" class="form-control" step="0.01" min="0"
+                                                           value="<?= htmlspecialchars($costoHeredado !== '' ? number_format((float) $costoHeredado, 2, '.', '') : '0.00') ?>"
+                                                           style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-left: none; border-radius: 0 12px 12px 0; color: #ffffff; padding: 10px 16px;">
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <button type="button" class="btn btn-dark-gold w-100" onclick="agregarProducto()"
+                                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px; border-radius: 12px;">
+                                                    <i class="fas fa-plus me-1"></i> Agregar
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-2 d-flex align-items-end">
-                                        <button type="button" class="btn btn-dark-gold w-100" onclick="agregarProducto()" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px; border-radius: 12px; transition: all 0.3s ease;">
-                                            <i class="fas fa-plus me-1"></i> Agregar
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -434,7 +424,7 @@ function agregarProducto() {
         alert('Ingrese una cantidad válida');
         return;
     }
-    if (!costo || costo < 0) {
+    if (Number.isNaN(costo) || costo < 0) {
         alert('Ingrese un costo unitario válido');
         return;
     }

@@ -6,6 +6,7 @@
     <title>Pirotecnia Fénix</title>
     <link rel="stylesheet" href="../../pirotecnica_fenix/assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../pirotecnica_fenix/assets/css/estiloInicio.css">
+    <link rel="stylesheet" href="../../pirotecnica_fenix/assets/css/fuegos-artificiales.css?v=fullscreen-fireworks-2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">   
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
 </head>
@@ -14,6 +15,7 @@
          alt="Fondo de Pirotecnia Fénix" 
          class="main-bg-image">
     <div class="main-overlay"></div>
+    <div id="tsparticles" class="fireworks-overlay" aria-hidden="true"></div>
     <div class="main-content">
         <div class="main-card">
             <img src="../../pirotecnica_fenix/assets/imagenes/logo.png" 
@@ -29,5 +31,7 @@
         </div>
     </div>
     <script src="../../pirotecnica_fenix/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tsparticles/preset-fireworks@4/tsparticles.preset.fireworks.bundle.min.js" defer></script>
+    <script src="../../pirotecnica_fenix/assets/js/fuegos-artificiales.js?v=fullscreen-fireworks-2" defer></script>
 </body>
 </html>

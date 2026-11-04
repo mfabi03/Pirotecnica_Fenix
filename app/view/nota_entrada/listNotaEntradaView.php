@@ -184,20 +184,19 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             <table class="table table-hover align-middle m-0">
                 <thead>
                     <tr>
-                        <th class="ps-4 py-3">ID</th>
-                        <th class="py-3">Fecha</th>
+                        <th class="ps-4 py-3">Fecha</th>
                         <th class="py-3">Proveedor</th>
                         <th class="py-3">Encargado</th>
                         <th class="py-3">Productos</th>
                         <th class="py-3">Total</th>
-                        <th class="py-3">Estado</th>
+                        <th class="py-3">Status</th>
                         <th class="pe-4 py-3 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($notas)): ?>
                         <tr>
-                            <td colspan="8" class="text-center py-5 dark-empty">
+                            <td colspan="7" class="text-center py-5 dark-empty">
                                 <div class="py-4">
                                     <i class="fas fa-inbox fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">No hay notas de entrada registradas</p>
@@ -208,17 +207,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <?php else: ?>
                         <?php foreach ($notas as $n): ?>
                             <?php 
-                            $anulada = ($n['estado'] ?? 'ACTIVA') === 'ANULADA';
+                            $anulada = (int) ($n['eliminado'] ?? 0) === 1;
                             ?>
                             <tr <?= $anulada ? 'style="opacity: 0.6;"' : '' ?>>
-                                <td class="ps-4 fw-bold">
-                                    <?php if ($anulada): ?>
-                                        <del style="color: #6c757d;">#<?= htmlspecialchars($n['id_nota_entrada']) ?></del>
-                                    <?php else: ?>
-                                        #<?= htmlspecialchars($n['id_nota_entrada']) ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?= formatoFechaVenezuela($n['fecha_ingreso']) ?></td>
+                                <td class="ps-4"><?= formatoFechaVenezuela($n['fecha_ingreso']) ?></td>
                                 <td><?= htmlspecialchars($n['razon_social'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($n['encargado_nombre'] ?? 'Sin asignar') ?></td>
                                 <td>
@@ -247,7 +239,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <td>
                                     <?php if ($anulada): ?>
                                         <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-ban me-1"></i> Inactivo
+                                            <i class="fas fa-ban me-1"></i> Inactivo / Anulado
                                         </span>
                                     <?php else: ?>
                                         <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">

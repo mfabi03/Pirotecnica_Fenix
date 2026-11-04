@@ -13,68 +13,57 @@ class DashboardModel {
     /**
      * Obtiene estadísticas basadas en las tablas
      */
-    public function getEstadisticas() {
+    public function getEstadisticas($idUsuario = null, $incluirUsuarios = true) {
         $stats = [];
 
-        try {
-            
-            $sql = "SELECT COUNT(*) FROM producto WHERE eliminado = 0";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            $stats['total_productos'] = $stmt->fetchColumn() ?? 0;
+        $sql = "SELECT COUNT(*) FROM producto WHERE eliminado = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $stats['total_productos'] = (int) $stmt->fetchColumn();
 
-            
+        $sql = "SELECT COUNT(*) FROM cliente_natural WHERE eliminado = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $totalNaturales = (int) $stmt->fetchColumn();
+
+        $sql = "SELECT COUNT(*) FROM cliente_juridico WHERE eliminado = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $totalJuridicos = (int) $stmt->fetchColumn();
+        $stats['total_clientes'] = $totalNaturales + $totalJuridicos;
+
+        if ($idUsuario !== null) {
+            $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0 AND id_usuario = :id_usuario";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id_usuario' => $idUsuario]);
+            $stats['total_nota_salida'] = (int) $stmt->fetchColumn();
+            return $stats;
+        }
+
+        if ($incluirUsuarios) {
             $sql = "SELECT COUNT(*) FROM usuario WHERE eliminado = 0";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
-            $stats['total_usuarios'] = $stmt->fetchColumn() ?? 0;
-
-            // 3. Total de notas de SALIDA (solo activas)
-            $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            $stats['total_nota_salida'] = $stmt->fetchColumn() ?? 0;
-
-            // 4. Total de notas de ENTRADA (solo activas)
-            $sql = "SELECT COUNT(*) FROM nota_de_entrada WHERE eliminado = 0";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            $stats['total_nota_entrada'] = $stmt->fetchColumn() ?? 0;
-
-            // 5. ⭐ STOCK CRÍTICO: usa el campo stock_minimo de cada producto
-            $sql = "SELECT COUNT(*) FROM producto 
-                    WHERE cantidad <= stock_minimo 
-                      AND eliminado = 0";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            $stats['productos_criticos'] = $stmt->fetchColumn() ?? 0;
-
-            // 6. Total de clientes (natural + jurídico, activos)
-            $sql = "SELECT COUNT(*) FROM cliente_natural WHERE eliminado = 0";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            $totalNaturales = $stmt->fetchColumn() ?? 0;
-
-            $sql = "SELECT COUNT(*) FROM cliente_juridico WHERE eliminado = 0";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            $totalJuridicos = $stmt->fetchColumn() ?? 0;
-
-            $stats['total_clientes'] = $totalNaturales + $totalJuridicos;
-
-            return $stats;
-
-        } catch (\Exception $e) {
-            error_log("Error en DashboardModel: " . $e->getMessage());
-            return [
-                'total_productos' => 0,
-                'total_usuarios' => 0,
-                'total_nota_salida' => 0,
-                'total_nota_entrada' => 0,
-                'productos_criticos' => 0,
-                'total_clientes' => 0
-            ];
+            $stats['total_usuarios'] = (int) $stmt->fetchColumn();
         }
+
+        $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $stats['total_nota_salida'] = (int) $stmt->fetchColumn();
+
+        $sql = "SELECT COUNT(*) FROM nota_de_entrada WHERE eliminado = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $stats['total_nota_entrada'] = (int) $stmt->fetchColumn();
+
+        $sql = "SELECT COUNT(*) FROM producto
+                WHERE cantidad <= stock_minimo AND eliminado = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $stats['productos_criticos'] = (int) $stmt->fetchColumn();
+
+        return $stats;
     }
 
     public function getProductosCriticos() {
@@ -141,44 +130,45 @@ class DashboardModel {
     }
 
     public function getNotasEntradaRecientes() {
-        try {
-            $sql = "SELECT n.id_nota_entrada, n.fecha_ingreso, n.costo_total,
-                        COALESCE(p.razon_social, 'Sin proveedor') AS proveedor,
-                        'Activa' AS estado
-                    FROM nota_de_entrada n
-                    LEFT JOIN proveedor p ON p.id_proveedor = n.id_proveedor
-                    WHERE n.eliminado = 0
-                    ORDER BY n.id_nota_entrada DESC
-                    LIMIT 10";
-            return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\Exception $e) {
-            error_log("Error en getNotasEntradaRecientes: " . $e->getMessage());
-            return [];
-        }
+        $sql = "SELECT n.id_nota_entrada, n.fecha_ingreso, n.costo_total,
+                    COALESCE(p.razon_social, 'Sin proveedor') AS proveedor,
+                    'Activa' AS estado
+                FROM nota_de_entrada n
+                LEFT JOIN proveedor p ON p.id_proveedor = n.id_proveedor
+                WHERE n.eliminado = 0
+                ORDER BY n.id_nota_entrada DESC
+                LIMIT 5";
+        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getNotasSalidaRecientes() {
-        try {
-            $sql = "SELECT ns.id_nota_salida, ns.fecha,
-                        CASE
-                            WHEN cj.id_cliente_juridico IS NOT NULL THEN cj.razon_social
-                            ELSE CONCAT_WS(' ', p.nombre, p.apellido)
-                        END AS cliente,
-                        (SELECT COALESCE(SUM(ds.cantidad), 0)
-                         FROM detalle_salida ds
-                         WHERE ds.id_nota_salida = ns.id_nota_salida) AS total,
-                        'Activa' AS estado
-                    FROM nota_de_salida ns
-                    LEFT JOIN persona p ON p.id_persona = ns.id_persona
-                    LEFT JOIN cliente_juridico cj ON cj.id_persona = p.id_persona
-                    WHERE ns.eliminado = 0
-                    ORDER BY ns.id_nota_salida DESC
-                    LIMIT 10";
-            return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\Exception $e) {
-            error_log("Error en getNotasSalidaRecientes: " . $e->getMessage());
-            return [];
+    public function getNotasSalidaRecientes($idUsuario = null) {
+        $sql = "SELECT ns.id_nota_salida, ns.fecha,
+                    CASE
+                        WHEN cj.id_cliente_juridico IS NOT NULL THEN cj.razon_social
+                        ELSE CONCAT_WS(' ', p.nombre, p.apellido)
+                    END AS cliente,
+                    (SELECT COALESCE(SUM(ds.cantidad), 0)
+                     FROM detalle_salida ds
+                     WHERE ds.id_nota_salida = ns.id_nota_salida) AS total,
+                    'Activa' AS estado
+                FROM nota_de_salida ns
+                LEFT JOIN persona p ON p.id_persona = ns.id_persona
+                LEFT JOIN cliente_juridico cj ON cj.id_persona = p.id_persona
+                WHERE ns.eliminado = 0";
+
+        if ($idUsuario !== null) {
+            $sql .= " AND ns.id_usuario = :id_usuario";
         }
+
+        $sql .= " ORDER BY ns.id_nota_salida DESC LIMIT 5";
+        $stmt = $this->db->prepare($sql);
+
+        if ($idUsuario !== null) {
+            $stmt->bindValue(':id_usuario', (int) $idUsuario, PDO::PARAM_INT);
+        }
+
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getProductosInventario(): array {

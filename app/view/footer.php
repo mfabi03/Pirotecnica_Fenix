@@ -1,9 +1,9 @@
 <?php
 // CAMBIO: Ajuste de enlace en menú - Footer centralizado
 ?>
-            </div> <!-- Cierre p-3 -->
-        </div> <!-- Cierre col-md-9 col-lg-10 -->
-    </div> <!-- Cierre row -->
+            </div> <!-- Cierre content-wrapper -->
+        </div> <!-- Cierre col-lg-10 col-12 -->
+    </div> <!-- Cierre row align-items-stretch -->
 </div> <!-- Cierre container-fluid -->
 
 <!-- ==========================================
