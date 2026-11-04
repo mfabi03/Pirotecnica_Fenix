@@ -13,16 +13,16 @@ class RolModel {
         $this->db = $db;
     }
 
-    // 1. OBTENER TODOS LOS ROLES
+    // 1. OBTENER TODOS LOS ROLES (incluye inactivos)
     public function getAllRoles() {
         try {
             $sql = "SELECT 
                         r.id_rol, 
                         r.nombre_rol,
+                        r.eliminado,
                         (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol AND u.eliminado = 0) as total_usuarios
                     FROM rol r 
-                    WHERE r.eliminado = 0
-                    ORDER BY r.id_rol ASC";
+                    ORDER BY r.eliminado ASC, r.id_rol ASC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -40,12 +40,11 @@ class RolModel {
             
             if ($busqueda !== '') {
                 $sql = "SELECT COUNT(*) FROM rol 
-                        WHERE eliminado = 0 
-                        AND nombre_rol LIKE :busqueda";
+                        WHERE nombre_rol LIKE :busqueda";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([':busqueda' => '%' . $busqueda . '%']);
             } else {
-                $sql = "SELECT COUNT(*) FROM rol WHERE eliminado = 0";
+                $sql = "SELECT COUNT(*) FROM rol";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute();
             }
@@ -63,10 +62,10 @@ class RolModel {
             $sql = "SELECT 
                         r.id_rol, 
                         r.nombre_rol,
+                        r.eliminado,
                         (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol AND u.eliminado = 0) as total_usuarios
                     FROM rol r 
                     WHERE r.id_rol = :id 
-                      AND r.eliminado = 0
                     LIMIT 1";
             
             $stmt = $this->db->prepare($sql);
@@ -78,17 +77,17 @@ class RolModel {
         }
     }
 
-    // 4. BUSCAR ROLES POR NOMBRE
+    // 4. BUSCAR ROLES POR NOMBRE (incluye inactivos)
     public function buscarRoles($busqueda) {
         try {
             $sql = "SELECT 
                         r.id_rol, 
                         r.nombre_rol,
+                        r.eliminado,
                         (SELECT COUNT(*) FROM usuario u WHERE u.id_rol = r.id_rol AND u.eliminado = 0) as total_usuarios
                     FROM rol r 
                     WHERE r.nombre_rol LIKE :busqueda
-                      AND r.eliminado = 0
-                    ORDER BY r.id_rol ASC";
+                    ORDER BY r.eliminado ASC, r.id_rol ASC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['busqueda' => '%' . $busqueda . '%']);
@@ -111,7 +110,7 @@ class RolModel {
                 throw new Exception("Ya existe un rol con el nombre '" . $nombre . "'");
             }
             
-            $sql = "INSERT INTO rol (nombre_rol) VALUES (:nombre)";
+            $sql = "INSERT INTO rol (nombre_rol, eliminado) VALUES (:nombre, 0)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['nombre' => $nombre]);
             return $this->db->lastInsertId();
@@ -120,7 +119,7 @@ class RolModel {
             error_log("Error PDO en crearRol: " . $e->getMessage());
             return false;
         } catch (Exception $e) {
-            throw $e;  // Re-lanzar para que llegue al controller
+            throw $e;
         }
     }
 
@@ -179,7 +178,7 @@ class RolModel {
             $total = $stmtUser->fetchColumn();
             
             if ($total > 0) {
-                throw new Exception("No puedes eliminar este rol porque tiene $total usuarios asignados");
+                throw new Exception("No puedes inactivar este rol porque tiene $total usuarios asignados");
             }
             
             $sql = "UPDATE rol SET eliminado = 1 WHERE id_rol = :id";
@@ -194,33 +193,31 @@ class RolModel {
         }
     }
 
-    // 8. OBTENER ROL POR NOMBRE
-    public function getRolByNombre($nombre) {
+    // 8. REACTIVAR ROL (LÓGICO)
+    public function reactivarRol($id) {
         try {
-            $sql = "SELECT id_rol, nombre_rol FROM rol WHERE nombre_rol = :nombre LIMIT 1";
+            $sqlCheck = "SELECT id_rol FROM rol WHERE id_rol = :id LIMIT 1";
+            $stmtCheck = $this->db->prepare($sqlCheck);
+            $stmtCheck->execute(['id' => $id]);
+            $rol = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$rol) {
+                throw new Exception("El rol no existe");
+            }
+            
+            $sql = "UPDATE rol SET eliminado = 0 WHERE id_rol = :id";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['nombre' => $nombre]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            return $stmt->execute(['id' => $id]);
+            
         } catch (PDOException $e) {
-            error_log("Error en getRolByNombre: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    // 9. VERIFICAR SI UN ROL EXISTE POR ID
-    public function rolExiste($id) {
-        try {
-            $sql = "SELECT COUNT(*) as total FROM rol WHERE id_rol = :id";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute(['id' => $id]);
-            return $stmt->fetchColumn() > 0;
-        } catch (PDOException $e) {
-            error_log("Error en rolExiste: " . $e->getMessage());
+            error_log("Error PDO en reactivarRol: " . $e->getMessage());
             return false;
+        } catch (Exception $e) {
+            throw $e;
         }
     }
 
-    // 10. VERIFICAR SI UN ROL EXISTE POR NOMBRE (para validación en tiempo real)
+    // 9. VERIFICAR SI UN ROL EXISTE POR NOMBRE
     public function existeRol($nombre, $idExcluir = null) {
         try {
             $sql = "SELECT COUNT(*) FROM rol 
@@ -240,25 +237,6 @@ class RolModel {
         } catch (PDOException $e) {
             error_log("Error en existeRol: " . $e->getMessage());
             return false;
-        }
-    }
-
-    // 11. OBTENER ROLES DISPONIBLES (Sin Administrador)
-    public function getRolesDisponibles() {
-        try {
-            $sql = "SELECT 
-                        id_rol, 
-                        nombre_rol
-                    FROM rol 
-                    WHERE id_rol != 1
-                    ORDER BY nombre_rol ASC";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en getRolesDisponibles: " . $e->getMessage());
-            return [];
         }
     }
 }

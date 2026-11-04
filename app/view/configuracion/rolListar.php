@@ -97,6 +97,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <th class="ps-4 py-3">ID</th>
                                 <th class="py-3">Nombre del Rol</th>
                                 <th class="py-3 text-center">Usuarios Asignados</th>
+                                <th class="py-3 text-center">Status</th>
                                 <th class="pe-4 py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -121,6 +122,24 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                                 <?= $rol['total_usuarios'] ?? 0 ?>
                                             </span>
                                         </td>
+                                        <td class="text-center">
+                                            <?php if (($rol['id_rol'] ?? 0) == 1): ?>
+                                                <!-- El rol Administrador siempre está Activo -->
+                                                <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                                    <i class="fas fa-check-circle me-1"></i> Activo
+                                                </span>
+                                            <?php else: ?>
+                                                <?php if (($rol['eliminado'] ?? 0) == 0): ?>
+                                                    <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                                        <i class="fas fa-check-circle me-1"></i> Activo
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                                        <i class="fas fa-times-circle me-1"></i> Inactivo
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
                                                 
@@ -132,39 +151,45 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                                 
-                                                <!-- Editar -->
                                                 <?php if (($rol['id_rol'] ?? 0) != 1): ?>
-                                                <button type="button" 
-                                                        class="btn-action-circle btn-edit btn-editar-rol" 
-                                                        title="Editar"
-                                                        data-id="<?= $rol['id_rol'] ?>"
-                                                        data-nombre="<?= htmlspecialchars($rol['nombre_rol'] ?? '') ?>">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <?php endif; ?>
-                                                
-                                                <!-- Permisos -->
-                                                <?php if (($rol['id_rol'] ?? 0) != 1): ?>
-                                                <button type="button" 
-                                                        class="btn-action-circle btn-permisos-rol" 
-                                                        style="background: linear-gradient(135deg, #c0392b, #e74c3c); color: #ffffff; box-shadow: 0 2px 8px rgba(231,76,60,0.5); border: none;" 
-                                                        title="Gestionar Permisos"
-                                                        data-id="<?= $rol['id_rol'] ?>"
-                                                        data-nombre="<?= htmlspecialchars($rol['nombre_rol'] ?? '') ?>">
-                                                    <i class="fas fa-shield-alt"></i>
-                                                </button>
-                                                <?php endif; ?>
-                                                
-                                                <!-- Eliminar -->
-                                                <?php if (($rol['id_rol'] ?? 0) != 1): ?>
-                                                <button type="button" 
-                                                        class="btn-action-circle btn-delete btn-eliminar-rol"
-                                                        title="Eliminar"
-                                                        data-id="<?= $rol['id_rol'] ?>"
-                                                        data-nombre="<?= htmlspecialchars($rol['nombre_rol'] ?? '') ?>"
-                                                        data-usuarios="<?= $rol['total_usuarios'] ?? 0 ?>">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
+                                                    <?php if (($rol['eliminado'] ?? 0) == 1): ?>
+                                                        <!-- Botón REACTIVAR si está inactivo -->
+                                                        <button type="button" 
+                                                                class="btn-action-circle btn-reactivar-rol" 
+                                                                title="Reactivar Rol"
+                                                                style="background: rgba(40,167,69,0.15); color: #28a745; border: none;"
+                                                                data-id="<?= $rol['id_rol'] ?>"
+                                                                data-nombre="<?= htmlspecialchars($rol['nombre_rol'] ?? '') ?>">
+                                                            <i class="fas fa-undo-alt"></i>
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <!-- Botones EDITAR, PERMISOS y ELIMINAR si está activo -->
+                                                        <button type="button" 
+                                                                class="btn-action-circle btn-edit btn-editar-rol" 
+                                                                title="Editar"
+                                                                data-id="<?= $rol['id_rol'] ?>"
+                                                                data-nombre="<?= htmlspecialchars($rol['nombre_rol'] ?? '') ?>">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        
+                                                        <button type="button" 
+                                                                class="btn-action-circle btn-permisos-rol" 
+                                                                style="background: linear-gradient(135deg, #c0392b, #e74c3c); color: #ffffff; box-shadow: 0 2px 8px rgba(231,76,60,0.5); border: none;" 
+                                                                title="Gestionar Permisos"
+                                                                data-id="<?= $rol['id_rol'] ?>"
+                                                                data-nombre="<?= htmlspecialchars($rol['nombre_rol'] ?? '') ?>">
+                                                            <i class="fas fa-shield-alt"></i>
+                                                        </button>
+                                                        
+                                                        <button type="button" 
+                                                                class="btn-action-circle btn-delete btn-eliminar-rol"
+                                                                title="Inactivar"
+                                                                data-id="<?= $rol['id_rol'] ?>"
+                                                                data-nombre="<?= htmlspecialchars($rol['nombre_rol'] ?? '') ?>"
+                                                                data-usuarios="<?= $rol['total_usuarios'] ?? 0 ?>">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -172,7 +197,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" class="text-center py-5 dark-empty">
+                                    <td colspan="5" class="text-center py-5 dark-empty">
                                         <div class="py-4">
                                             <i class="fas fa-user-tag fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                             <p class="mb-0">No hay roles registrados</p>
@@ -196,13 +221,11 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 </div>
 
 <!-- ============================================================ -->
-<!-- MODAL 1: REGISTRAR ROL (ESTILO COMPAÑERA)                    -->
+<!-- MODAL 1: REGISTRAR ROL                                       -->
 <!-- ============================================================ -->
 <div class="modal fade" id="modalRegistrarRol" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <!-- Header oscuro -->
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-plus-circle me-2" style="color: #f39c12;"></i> Registrar Nuevo Rol
@@ -232,12 +255,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     </div>
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                            style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn"
-                            style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">Cancelar</button>
+                    <button type="submit" class="btn" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
                         <i class="fas fa-save me-1"></i> Registrar Rol
                     </button>
                 </div>
@@ -247,13 +266,11 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 </div>
 
 <!-- ============================================================ -->
-<!-- MODAL 2: EDITAR ROL (ESTILO COMPAÑERA)                       -->
+<!-- MODAL 2: EDITAR ROL                                          -->
 <!-- ============================================================ -->
 <div class="modal fade" id="modalEditarRol" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <!-- Header oscuro -->
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-edit me-2" style="color: #f39c12;"></i> Editar Rol: <span id="editar-rol-nombre-header" style="color: #f39c12;">—</span>
@@ -283,12 +300,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     </div>
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                            style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn"
-                            style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">Cancelar</button>
+                    <button type="submit" class="btn" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
                         <i class="fas fa-save me-1"></i> Actualizar Rol
                     </button>
                 </div>
@@ -303,8 +316,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 <div class="modal fade" id="modalVerRol" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <!-- Header oscuro -->
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-eye me-2" style="color: #f39c12;"></i> Detalle del Rol
@@ -313,53 +324,36 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             </div>
 
             <div class="modal-body" style="padding: 20px 24px;">
-                
-                <!-- Loading -->
                 <div id="loadingVerRol" class="text-center py-4">
                     <div class="spinner-border" style="color: #f39c12; width: 2.5rem; height: 2.5rem;"></div>
                     <p class="mt-3" style="color: #6c757d;">Cargando información...</p>
                 </div>
                 
-                <!-- Contenido -->
                 <div id="contenidoVerRol" style="display: none;">
-                    
-                    <!-- Icono + Nombre -->
                     <div class="text-center mb-4">
                         <div style="width: 70px; height: 70px; margin: 0 auto 15px; border-radius: 50%; background: rgba(243,156,18,0.15); display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-user-tag fa-2x" style="color: #f39c12;"></i>
                         </div>
                         <h4 id="ver_nombre_rol" style="color: #1a1a2e; font-weight: 700; margin-bottom: 5px;"></h4>
-                        <p style="color: #6c757d; font-size: 0.85rem;">
-                            ID: <span id="ver_id_rol" style="color: #f39c12; font-weight: 600;"></span>
-                        </p>
+                        <p style="color: #6c757d; font-size: 0.85rem;">ID: <span id="ver_id_rol" style="color: #f39c12; font-weight: 600;"></span></p>
                     </div>
                     
-                    <!-- Información del rol -->
                     <div class="p-3" style="background: #f8f9fa; border-radius: 12px;">
                         <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
                             <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Información del Rol
                         </h6>
-                        
                         <div class="row g-3">
                             <div class="col-12">
                                 <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Nombre del Rol</label>
                                 <p id="ver_nombre_detalle" style="color: #1a1a2e; margin-bottom: 0; font-weight: 600;"></p>
                             </div>
-                            
                             <div class="col-12">
                                 <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Usuarios Asignados</label>
-                                <p style="margin-bottom: 0;">
-                                    <span id="ver_total_usuarios" class="badge" style="background: rgba(13,110,253,0.15); color: #0d6efd; padding: 6px 14px; border-radius: 50px; font-weight: 600;">0</span>
-                                </p>
+                                <p style="margin-bottom: 0;"><span id="ver_total_usuarios" class="badge" style="background: rgba(13,110,253,0.15); color: #0d6efd; padding: 6px 14px; border-radius: 50px; font-weight: 600;">0</span></p>
                             </div>
-                            
                             <div class="col-12">
                                 <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Estado</label>
-                                <p style="margin-bottom: 0;">
-                                    <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 6px 14px; border-radius: 50px; font-weight: 600;">
-                                        <i class="fas fa-check-circle me-1"></i> Activo
-                                    </span>
-                                </p>
+                                <div id="ver_estado_rol"></div>
                             </div>
                         </div>
                     </div>
@@ -367,12 +361,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             </div>
 
             <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
                     <i class="fas fa-times me-1"></i> Cerrar
                 </button>
-                <button type="button" id="btnIrAEditar" class="btn"
-                        style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; display: none;">
+                <button type="button" id="btnIrAEditar" class="btn" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; display: none;">
                     <i class="fas fa-edit me-1"></i> Editar
                 </button>
             </div>
@@ -381,18 +373,15 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 </div>
 
 <!-- ============================================================ -->
-<!-- MODAL 4: GESTIONAR PERMISOS DEL ROL (ESTILO COMPAÑERA)       -->
+<!-- MODAL 4: GESTIONAR PERMISOS DEL ROL                          -->
 <!-- ============================================================ -->
 <div class="modal fade" id="modalPermisosRol" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <!-- Header oscuro -->
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 20px 32px;">
                 <div>
                     <h4 class="modal-title" style="color: #ffffff; font-weight: 700; margin: 0; font-size: 1.25rem;">
-                        <i class="fas fa-shield-alt me-2" style="color: #f39c12;"></i>
-                        Permisos del Rol
+                        <i class="fas fa-shield-alt me-2" style="color: #f39c12;"></i> Permisos del Rol
                     </h4>
                     <p style="color: rgba(255,255,255,0.6); margin: 4px 0 0 0; font-size: 0.875rem;">
                         Configurando: <strong id="permisos_nombre_rol" style="color: #f39c12;"></strong>
@@ -402,14 +391,12 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             </div>
             
             <div class="modal-body" style="padding: 24px 32px;">
-                
                 <div id="loadingPermisos" class="text-center py-5">
                     <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
                     <p class="mt-3" style="color: #6c757d;">Cargando permisos...</p>
                 </div>
                 
                 <div id="contenidoPermisos" style="display: none;">
-                    
                     <div class="alert" style="background: #f8f9fa; border-left: 4px solid #f39c12; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
                         <div class="d-flex align-items-start gap-3">
                             <i class="fas fa-info-circle" style="color: #f39c12; margin-top: 2px;"></i>
@@ -422,39 +409,18 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     
                     <form id="formPermisosRol">
                         <input type="hidden" id="permisos_id_rol" name="id_rol">
-                        
                         <div class="table-responsive">
                             <table class="table align-middle m-0">
                                 <thead>
                                     <tr style="background: #f8f9fa;">
-                                        <th class="ps-4 py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; border-bottom: 2px solid #dee2e6;">
-                                            Módulo
-                                        </th>
-                                        <th class="text-center py-3" style="border-bottom: 2px solid #dee2e6;">
-                                            <div style="color: #198754; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
-                                                <i class="fas fa-plus-circle me-1"></i> Crear
-                                            </div>
-                                        </th>
-                                        <th class="text-center py-3" style="border-bottom: 2px solid #dee2e6;">
-                                            <div style="color: #0dcaf0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
-                                                <i class="fas fa-eye me-1"></i> Leer
-                                            </div>
-                                        </th>
-                                        <th class="text-center py-3" style="border-bottom: 2px solid #dee2e6;">
-                                            <div style="color: #0d6efd; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
-                                                <i class="fas fa-edit me-1"></i> Actualizar
-                                            </div>
-                                        </th>
-                                        <th class="text-center py-3" style="border-bottom: 2px solid #dee2e6;">
-                                            <div style="color: #dc3545; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
-                                                <i class="fas fa-trash me-1"></i> Eliminar
-                                            </div>
-                                        </th>
+                                        <th class="ps-4 py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; border-bottom: 2px solid #dee2e6;">Módulo</th>
+                                        <th class="text-center py-3" style="border-bottom: 2px solid #dee2e6;"><div style="color: #198754; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;"><i class="fas fa-plus-circle me-1"></i> Crear</div></th>
+                                        <th class="text-center py-3" style="border-bottom: 2px solid #dee2e6;"><div style="color: #0dcaf0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;"><i class="fas fa-eye me-1"></i> Leer</div></th>
+                                        <th class="text-center py-3" style="border-bottom: 2px solid #dee2e6;"><div style="color: #0d6efd; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;"><i class="fas fa-edit me-1"></i> Actualizar</div></th>
+                                        <th class="text-center py-3" style="border-bottom: 2px solid #dee2e6;"><div style="color: #dc3545; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;"><i class="fas fa-trash me-1"></i> Eliminar</div></th>
                                     </tr>
                                 </thead>
-                                <tbody id="tbodyPermisos">
-                                    <!-- JS lo llena -->
-                                </tbody>
+                                <tbody id="tbodyPermisos"></tbody>
                             </table>
                         </div>
                     </form>
@@ -462,12 +428,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             </div>
             
             <div class="modal-footer" style="background: #f8f9fa; border-top: 1px solid #e9ecef; padding: 16px 32px;">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal" 
-                        style="border: 1px solid #dee2e6; border-radius: 50px; padding: 10px 25px; font-weight: 600; color: #495057;">
-                    Cancelar
-                </button>
-                <button type="button" id="btnGuardarPermisos" class="btn" 
-                        style="background: linear-gradient(135deg, #c0392b, #e74c3c); border: none; color: #fff; border-radius: 50px; padding: 10px 28px; font-weight: 600;">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border: 1px solid #dee2e6; border-radius: 50px; padding: 10px 25px; font-weight: 600; color: #495057;">Cancelar</button>
+                <button type="button" id="btnGuardarPermisos" class="btn" style="background: linear-gradient(135deg, #c0392b, #e74c3c); border: none; color: #fff; border-radius: 50px; padding: 10px 28px; font-weight: 600;">
                     <i class="fas fa-save me-1"></i> Guardar Cambios
                 </button>
             </div>
@@ -481,65 +443,45 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    // ==========================================
-    // VALIDADOR - Inicializar en los modales
-    // ==========================================
-    // El Validador global ya hace Validador.init() al cargar
-    // Solo necesitamos inicializar cuando se abren los modales
+    // VALIDADOR
     document.getElementById('modalRegistrarRol').addEventListener('shown.bs.modal', function() {
         Validador.init(document.getElementById('modalRegistrarRol'));
     });
-    
     document.getElementById('modalEditarRol').addEventListener('shown.bs.modal', function() {
         Validador.init(document.getElementById('modalEditarRol'));
     });
     
-    // ==========================================
-    // 1. REGISTRAR ROL (AJAX)
-    // ==========================================
+    // 1. REGISTRAR ROL
     const formRegistrar = document.getElementById('formRegistrarRol');
     formRegistrar.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
-        // Validar con el Validador antes de enviar
         if (!Validador.validarFormulario('formRegistrarRol')) {
-            mostrarAlerta('Revisa los campos marcados en rojo', 'warning');
-            return;
+            mostrarAlerta('Revisa los campos marcados en rojo', 'warning'); return;
         }
         
         const formData = new FormData(formRegistrar);
         formData.append('accion', 'store_ajax');
-        
         const boton = formRegistrar.querySelector('button[type="submit"]');
-        const textoOriginal = boton.innerHTML;
         boton.disabled = true;
         boton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Registrando...';
         
         const data = await fetchAJAX('?url=roles', formData);
         
         boton.disabled = false;
-        boton.innerHTML = textoOriginal;
+        boton.innerHTML = '<i class="fas fa-save me-1"></i> Registrar Rol';
         
         if (data.success) {
             mostrarAlerta(data.mensaje, 'success');
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistrarRol'));
-            modal.hide();
-            
+            bootstrap.Modal.getInstance(document.getElementById('modalRegistrarRol')).hide();
             formRegistrar.reset();
             Validador.resetFormulario('formRegistrarRol');
-            
-            setTimeout(() => {
-                window.location.href = '?url=roles&action=lista';
-            }, 1000);
+            setTimeout(() => { window.location.href = '?url=roles&action=lista'; }, 1000);
         } else {
             mostrarAlerta(data.mensaje || 'Error al registrar', 'error');
         }
     });
     
-    // ==========================================
-    // 2. EDITAR ROL (AJAX)
-    // ==========================================
+    // 2. EDITAR ROL
     document.querySelectorAll('.btn-editar-rol').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const id = this.getAttribute('data-id');
@@ -552,7 +494,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = new bootstrap.Modal(document.getElementById('modalEditarRol'));
             modal.show();
             
-            // Esperar a que el modal se abra para inicializar el Validador con el exclude_id
             setTimeout(function() {
                 const input = document.getElementById('nombre_rol_editar');
                 input.dataset.excluirId = id;
@@ -564,45 +505,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const formEditar = document.getElementById('formEditarRol');
     formEditar.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
-        // Validar con el Validador antes de enviar
         if (!Validador.validarFormulario('formEditarRol')) {
-            mostrarAlerta('Revisa los campos marcados en rojo', 'warning');
-            return;
+            mostrarAlerta('Revisa los campos marcados en rojo', 'warning'); return;
         }
         
         const formData = new FormData(formEditar);
         formData.append('accion', 'update_ajax');
-        
         const boton = formEditar.querySelector('button[type="submit"]');
-        const textoOriginal = boton.innerHTML;
         boton.disabled = true;
         boton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Actualizando...';
         
         const data = await fetchAJAX('?url=roles', formData);
         
         boton.disabled = false;
-        boton.innerHTML = textoOriginal;
+        boton.innerHTML = '<i class="fas fa-save me-1"></i> Actualizar Rol';
         
         if (data.success) {
             mostrarAlerta(data.mensaje, 'success');
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarRol'));
-            modal.hide();
-            
-            const fila = document.querySelector(`tr[data-id="${data.data.id}"]`);
-            if (fila) {
-                fila.querySelector('.nombre-rol').innerHTML = `<span class="fw-semibold">${data.data.nombre}</span>`;
-                fila.setAttribute('data-nombre', data.data.nombre);
-            }
+            bootstrap.Modal.getInstance(document.getElementById('modalEditarRol')).hide();
+            setTimeout(() => { window.location.reload(); }, 1000);
         } else {
             mostrarAlerta(data.mensaje || 'Error al actualizar', 'error');
         }
     });
     
-    // ==========================================
-    // 3. ELIMINAR ROL (AJAX)
-    // ==========================================
+    // 3. INACTIVAR ROL
     document.querySelectorAll('.btn-eliminar-rol').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const id = this.getAttribute('data-id');
@@ -610,16 +537,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const totalUsuarios = parseInt(this.getAttribute('data-usuarios') || '0');
             
             if (totalUsuarios > 0) {
-                mostrarAlerta(
-                    `No puedes eliminar "${nombre}" porque tiene ${totalUsuarios} usuario(s) asignado(s).`,
-                    'warning'
-                );
+                mostrarAlerta(`No puedes inactivar "${nombre}" porque tiene ${totalUsuarios} usuario(s) asignado(s).`, 'warning');
                 return;
             }
             
-            if (!confirm(`¿Estás seguro de eliminar el rol "${nombre}"?\n\nEsta acción no se puede deshacer.`)) {
-                return;
-            }
+            if (!confirm(`¿Estás seguro de inactivar el rol "${nombre}"?`)) return;
             
             const formData = new FormData();
             formData.append('accion', 'delete_ajax');
@@ -628,23 +550,42 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchAJAX('?url=roles', formData).then(function(data) {
                 if (data.success) {
                     mostrarAlerta(data.mensaje, 'success');
-                    
-                    const fila = document.querySelector(`tr[data-id="${id}"]`);
-                    if (fila) {
-                        fila.style.transition = 'opacity 0.3s ease';
-                        fila.style.opacity = '0';
-                        setTimeout(() => fila.remove(), 300);
-                    }
+                    setTimeout(() => { window.location.reload(); }, 1000);
                 } else {
-                    mostrarAlerta(data.mensaje || 'Error al eliminar', 'error');
+                    mostrarAlerta(data.mensaje || 'Error al inactivar', 'error');
+                }
+            });
+        });
+    });
+
+    // 3.1 REACTIVAR ROL
+    document.querySelectorAll('.btn-reactivar-rol').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const nombre = this.getAttribute('data-nombre');
+            
+            if (!confirm(`¿Deseas reactivar el rol "${nombre}"?`)) return;
+            
+            const btnElement = this;
+            btnElement.disabled = true;
+            
+            const formData = new FormData();
+            formData.append('accion', 'reactivar_ajax');
+            formData.append('id_rol', id);
+            
+            fetchAJAX('?url=roles', formData).then(function(data) {
+                if (data.success) {
+                    mostrarAlerta(data.mensaje, 'success');
+                    setTimeout(() => { window.location.reload(); }, 1000);
+                } else {
+                    mostrarAlerta(data.mensaje || 'Error al reactivar', 'error');
+                    btnElement.disabled = false;
                 }
             });
         });
     });
     
-    // ==========================================
-    // 4. VER DETALLE DEL ROL (AJAX + modal)
-    // ==========================================
+    // 4. VER DETALLE ROL
     document.querySelectorAll('.btn-ver-rol').forEach(function(btn) {
         btn.addEventListener('click', async function() {
             const id = this.getAttribute('data-id');
@@ -666,7 +607,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('ver_nombre_detalle').textContent = data.data.nombre_rol;
                     document.getElementById('ver_total_usuarios').textContent = data.data.total_usuarios;
                     
-                    if (data.data.id_rol !== 1) {
+                    const estadoDiv = document.getElementById('ver_estado_rol');
+                    if (data.data.eliminado == 0) {
+                        estadoDiv.innerHTML = `<span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 6px 14px; border-radius: 50px; font-weight: 600;"><i class="fas fa-check-circle me-1"></i> Activo</span>`;
+                    } else {
+                        estadoDiv.innerHTML = `<span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 6px 14px; border-radius: 50px; font-weight: 600;"><i class="fas fa-times-circle me-1"></i> Inactivo</span>`;
+                    }
+                    
+                    if (data.data.id_rol !== 1 && data.data.eliminado == 0) {
                         const btnEditar = document.getElementById('btnIrAEditar');
                         btnEditar.style.display = 'inline-block';
                         btnEditar.onclick = function() {
@@ -690,9 +638,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // ==========================================
-    // 5. GESTIONAR PERMISOS DEL ROL (AJAX + modal)
-    // ==========================================
+    // 5. GESTIONAR PERMISOS DEL ROL
     document.querySelectorAll('.btn-permisos-rol').forEach(function(btn) {
         btn.addEventListener('click', async function() {
             const id = this.getAttribute('data-id');
@@ -726,21 +672,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             html += `
                                 <td class="text-center">
                                     <div class="form-check d-flex justify-content-center">
-                                        <input class="form-check-input" 
-                                               type="checkbox" 
-                                               name="permisos[${idMod}][${accion}]" 
-                                               value="1"
-                                               ${checked}
-                                               style="width: 1.5em; height: 1.5em; cursor: pointer;">
+                                        <input class="form-check-input" type="checkbox" name="permisos[${idMod}][${accion}]" value="1" ${checked} style="width: 1.5em; height: 1.5em; cursor: pointer;">
                                     </div>
                                 </td>`;
                         });
-                        
                         html += `</tr>`;
                     });
                     
                     tbody.innerHTML = html;
-                    
                     document.getElementById('loadingPermisos').style.display = 'none';
                     document.getElementById('contenidoPermisos').style.display = 'block';
                 } else {
@@ -773,14 +712,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (data.success) {
             mostrarAlerta(data.mensaje, 'success');
-            
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalPermisosRol'));
-            modal.hide();
+            bootstrap.Modal.getInstance(document.getElementById('modalPermisosRol')).hide();
         } else {
             mostrarAlerta(data.mensaje || 'Error al guardar', 'error');
         }
     });
-    
 });
 </script>
 
