@@ -166,19 +166,26 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
     <script src="/pirotecnica_fenix/assets/js/validaciones.js" defer></script>
     <style>
         body { padding-top: 60px; background: #0e0e18; }
-        .app-navbar { min-height: 60px; background: #1a1a2e; z-index: 1050; }
+        .app-navbar { 
+            min-height: 60px; 
+            background: #1a1a2e; 
+            z-index: 1050; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
         .app-sidebar {
             position: sticky;
             top: 60px;
             height: calc(100vh - 60px);
             overflow-y: auto;
             background: #1a1a2e;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .app-sidebar .list-group-item,
-        .app-offcanvas .list-group-item {
-            background: transparent;
+        .app-offcanvas { 
+            background: #1a1a2e; 
+            color: #fff; 
+            z-index: 1060; 
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .app-offcanvas { background: #1a1a2e; color: #fff; z-index: 1060; }
         @media (max-width: 991.98px) {
             .content-wrapper { min-height: calc(100vh - 110px); }
         }

@@ -1379,3 +1379,152 @@ span.round-tab i { color: #555555; }
     position: relative;
     padding-top: 30px;
 }
+/* ==========================================
+   ESTILOS DEL MENÚ LATERAL (SIDEBAR)
+   ========================================== */
+
+/* Contenedor principal del sidebar */
+.app-sidebar {
+    background: #1a1a2e !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Offcanvas (menú móvil) */
+.app-offcanvas {
+    background: #1a1a2e !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Items del menú lateral */
+.app-sidebar .list-group-item,
+.app-offcanvas .list-group-item {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-weight: 400 !important;
+    font-size: 0.875rem !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    margin-bottom: 2px !important;
+    transition: all 0.3s ease !important;
+    text-decoration: none !important;
+}
+
+/* Hover en items del menú */
+.app-sidebar .list-group-item:hover,
+.app-offcanvas .list-group-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #f39c12 !important;
+    transform: translateX(2px) !important;
+}
+
+/* Item activo del menú */
+.app-sidebar .list-group-item.active,
+.app-offcanvas .list-group-item.active {
+    background: rgba(243, 156, 18, 0.12) !important;
+    color: #f39c12 !important;
+    font-weight: 600 !important;
+    border-left: 4px solid #f39c12 !important;
+    border-radius: 8px 0 0 8px !important;
+}
+
+/* Iconos dentro de los items */
+.app-sidebar .list-group-item i,
+.app-offcanvas .list-group-item i {
+    width: 20px !important;
+    text-align: center !important;
+    margin-right: 12px !important;
+    font-size: 0.9rem !important;
+}
+
+/* Títulos de sección */
+.app-sidebar h6,
+.app-offcanvas h6 {
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-top: 20px !important;
+    margin-bottom: 12px !important;
+    padding: 0 16px !important;
+}
+
+/* Títulos de sección con icono */
+.app-sidebar h6 i,
+.app-offcanvas h6 i {
+    color: #f39c12 !important;
+    margin-right: 8px !important;
+}
+
+/* Submenús (acordeones) */
+.app-sidebar .collapse,
+.app-offcanvas .collapse {
+    margin-left: 12px !important;
+}
+
+/* Contenido de submenús */
+.app-sidebar .collapse > div,
+.app-offcanvas .collapse > div {
+    background: #0d0d1a !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    margin: 4px 0 !important;
+}
+
+/* Items dentro de submenús */
+.app-sidebar .dropdown-item,
+.app-offcanvas .dropdown-item {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: 0.825rem !important;
+    padding: 10px 12px !important;
+    border-radius: 6px !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Hover en items de submenús */
+.app-sidebar .dropdown-item:hover,
+.app-offcanvas .dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #f39c12 !important;
+}
+
+/* Items activos en submenús */
+.app-sidebar .dropdown-item.active,
+.app-offcanvas .dropdown-item.active {
+    background: rgba(243, 156, 18, 0.12) !important;
+    color: #f39c12 !important;
+    font-weight: 500 !important;
+}
+
+/* Botón de acordeón (toggle) */
+.app-sidebar a[data-bs-toggle="collapse"],
+.app-offcanvas a[data-bs-toggle="collapse"] {
+    text-decoration: none !important;
+}
+
+/* Icono de flecha en acordeones */
+.app-sidebar .fa-chevron-down,
+.app-offcanvas .fa-chevron-down {
+    transition: transform 0.3s ease !important;
+    font-size: 0.75rem !important;
+}
+
+.app-sidebar .collapsed .fa-chevron-down,
+.app-offcanvas .collapsed .fa-chevron-down {
+    transform: rotate(-90deg) !important;
+}
+
+/* Footer del menú */
+.app-sidebar .border-top,
+.app-offcanvas .border-top {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Texto del footer */
+.app-sidebar small,
+.app-offcanvas small {
+    color: rgba(255, 255, 255, 0.3) !important;
+    font-size: 0.7rem !important;
+}

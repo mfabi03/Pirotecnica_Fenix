@@ -65,13 +65,6 @@ function _clientesRedirPost($return, $idCliente = null) {
 /**
  * Detecta si el mensaje de excepción es un duplicado y guarda el error
  * INLINE (para repintarlo en el campo) + los datos del formulario.
- *
- * @param string $msg        Mensaje de la excepción
- * @param bool   $esEdicion  Si es edición
- * @param string $formModal  Identificador del formulario a reabrir:
- *                           'registrar_natural' | 'registrar_juridico'
- *                           'editar_natural'    | 'editar_juridico'
- * @return bool  true si era duplicado
  */
 function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null) {
     $map = [
@@ -84,12 +77,10 @@ function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null)
             $campo  = $info['campo'];
             $sufijo = $esEdicion ? ' en otro cliente' : '';
 
-            // Error inline por campo
             $_SESSION['errores_campo'] = [
                 $campo => 'Esta ' . $info['etiqueta'] . ' ya está registrada' . $sufijo
             ];
 
-            // Qué modal reabrir + qué datos repoblar
             if ($formModal) {
                 $_SESSION['form_modal'] = $formModal;
                 $_SESSION['form_data']  = $_POST;
@@ -103,8 +94,6 @@ function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null)
 
 /* ============================================================
  *  ENDPOINT AJAX: check_duplicado
- *  Uso:  ?url=clientes&type=check_duplicado&campo=cedula&valor=V-12345678
- *  Resp: {"existe": true|false, "campo": "...", "valor": "..."}
  * ============================================================ */
 if ($type === 'check_duplicado') {
     header('Content-Type: application/json; charset=utf-8');
@@ -270,7 +259,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
     } catch (Exception $e) {
         $msg = $e->getMessage();
 
-        // Duplicado → guardar inline + reabrir modal
         if (_clientesDetectarDuplicado($msg, false, 'registrar_natural')) {
             $return = $_REQUEST['return'] ?? null;
             if ($return) {
@@ -281,7 +269,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
             exit;
         }
 
-        // Error genérico → mensaje rápido
         $_SESSION['mensaje_rapido'] = "❌ " . $msg;
         $_SESSION['tipo_rapido'] = 'danger';
         
@@ -432,18 +419,13 @@ if ($type === 'list' || $type === '') {
         }));
     }
 
-    //  PAGINACIÓN COMPLETA
     $por_pagina    = (int) ($_REQUEST['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_REQUEST['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
     
-    // Total de registros
     $totalRegistros = is_array($clientes_full) ? count($clientes_full) : 0;
-    
-    // Total de páginas
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
     
-    // Cortar el array para la página actual
     if ($por_pagina > 0) {
         $clientes = array_slice($clientes_full, $offset, $por_pagina);
     } else {
