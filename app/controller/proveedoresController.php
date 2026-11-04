@@ -114,11 +114,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'razon_social' => trim($_POST['razon_social'] ?? ''),
             'numero_contacto' => trim($_POST['numero_contacto'] ?? ''),
             'direccion' => trim($_POST['direccion'] ?? ''),
-            'correo_electronico' => trim($_POST['correo_electronico'] ?? '')
+            'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
+            'status' => trim($_POST['status'] ?? '')
         ];
 
         if (empty($datos['rif']) || empty($datos['razon_social']) || empty($datos['numero_contacto']) || empty($datos['direccion'])) {
             $error = 'RIF, Razón Social, Contacto y Dirección son obligatorios.';
+        } elseif (!in_array($datos['status'], ['activo', 'inactivo'], true)) {
+            $error = 'Debe seleccionar un estado válido para el proveedor.';
         } else {
             try {
                 $resultado = $modelo->registrarProveedor($datos);

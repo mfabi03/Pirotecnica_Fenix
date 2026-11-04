@@ -142,12 +142,12 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                     <table class="table table-hover align-middle m-0">
                         <thead>
                             <tr>
-                                <th class="ps-4 py-3">ID</th>
                                 <th class="py-3">RIF</th>
                                 <th class="py-3">Razón Social</th>
                                 <th class="py-3">Contacto</th>
                                 <th class="py-3">Dirección</th>
                                 <th class="py-3">Correo</th>
+                                <th class="py-3">Status</th>
                                 <th class="pe-4 py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -155,12 +155,17 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                             <?php if (isset($proveedores) && is_array($proveedores) && count($proveedores) > 0): ?>
                                 <?php foreach ($proveedores as $p): ?>
                                     <tr>
-                                        <td class="ps-4 fw-bold"><?= htmlspecialchars($p['id_proveedor'] ?? 'N/A') ?></td>
                                         <td><?= htmlspecialchars($p['rif'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($p['razon_social'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($p['numero_contacto'] ?? 'N/A') ?></td>
                                         <td><?= htmlspecialchars($p['direccion'] ?? 'N/A') ?></td>
                                         <td><?= htmlspecialchars($p['correo_electronico'] ?? 'N/A') ?></td>
+                                        <td>
+                                            <?php $statusProveedor = $p['status'] ?? 'activo'; ?>
+                                            <span class="badge rounded-pill <?= $statusProveedor === 'activo' ? 'bg-success' : 'bg-secondary' ?>">
+                                                <?= htmlspecialchars(ucfirst($statusProveedor)) ?>
+                                            </span>
+                                        </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
                                                 <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
@@ -332,6 +337,13 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                             <textarea id="editar-proveedor-direccion" name="direccion" class="form-control" rows="2" required data-validate="direccion" style="resize: vertical;"></textarea>
                             <small class="feedback-validacion info" id="editar-proveedor-direccion-feedback"></small>
                         </div>
+                        <div class="col-md-6">
+                            <label for="editar-proveedor-status" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Status *</label>
+                            <select id="editar-proveedor-status" name="status" class="form-select" required>
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
@@ -407,6 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('editar-proveedor-telefono').value = proveedor.numero_contacto || proveedor.telefono || '';
         document.getElementById('editar-proveedor-correo').value = proveedor.correo_electronico || '';
         document.getElementById('editar-proveedor-direccion').value = proveedor.direccion || '';
+        document.getElementById('editar-proveedor-status').value = proveedor.status || 'activo';
         document.getElementById('editar-proveedor-razon-header').textContent = proveedor.razon_social || 'Proveedor';
 
         if (typeof Validador !== 'undefined') {

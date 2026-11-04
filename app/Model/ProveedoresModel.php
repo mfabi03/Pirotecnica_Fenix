@@ -17,7 +17,8 @@ class ProveedoresModel {
         try {
             $sql = "SELECT 
                         p.id_proveedor, 
-                        p.rif, 
+                        p.status,
+                        p.rif,
                         p.razon_social, 
                         p.numero_contacto,
                         p.id_persona,
@@ -56,7 +57,8 @@ class ProveedoresModel {
         try {
             $sql = "SELECT 
                         p.id_proveedor, 
-                        p.rif, 
+                        p.status,
+                        p.rif,
                         p.razon_social, 
                         p.numero_contacto,
                         p.id_persona,
@@ -101,14 +103,15 @@ class ProveedoresModel {
             ]);
             $idPersona = $this->db->lastInsertId();
 
-            $sqlProveedor = "INSERT INTO proveedor (rif, razon_social, numero_contacto, id_persona, eliminado) 
-                             VALUES (:rif, :razon_social, :numero_contacto, :id_persona, 0)";
+            $sqlProveedor = "INSERT INTO proveedor (rif, razon_social, numero_contacto, id_persona, eliminado, status)
+                             VALUES (:rif, :razon_social, :numero_contacto, :id_persona, 0, :status)";
             $stmtProveedor = $this->db->prepare($sqlProveedor);
             $stmtProveedor->execute([
                 ':rif' => $datos['rif'],
                 ':razon_social' => $datos['razon_social'],
                 ':numero_contacto' => $datos['numero_contacto'],
-                ':id_persona' => $idPersona
+                ':id_persona' => $idPersona,
+                ':status' => $datos['status'] ?? 'activo'
             ]);
 
             $idProveedor = (int) $this->db->lastInsertId();
@@ -124,12 +127,15 @@ class ProveedoresModel {
     public function actualizarProveedor($id, array $datos) {
         $this->db->beginTransaction();
         try {
-            $checkSql = "SELECT id_persona FROM proveedor WHERE id_proveedor = :id AND eliminado = 0";
+            $checkSql = "SELECT id_persona, status FROM proveedor WHERE id_proveedor = :id AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute(['id' => $id]);
             $proveedor = $checkStmt->fetch(PDO::FETCH_ASSOC);
             if (!$proveedor) {
                 throw new Exception("El proveedor con ID {$id} no existe.");
+            }
+            if (!in_array($datos['status'] ?? null, ['activo', 'inactivo'], true)) {
+                throw new Exception("El estado del proveedor no es válido.");
             }
 
             $checkRifSql = "SELECT COUNT(*) FROM proveedor WHERE rif = :rif AND id_proveedor != :id AND eliminado = 0";
@@ -161,13 +167,15 @@ class ProveedoresModel {
             $sqlProveedor = "UPDATE proveedor SET 
                                 rif = :rif, 
                                 razon_social = :razon_social, 
-                                numero_contacto = :numero_contacto
+                                numero_contacto = :numero_contacto,
+                                status = :status
                             WHERE id_proveedor = :id AND eliminado = 0";
             $stmtProveedor = $this->db->prepare($sqlProveedor);
             $stmtProveedor->execute([
                 ':rif' => $datos['rif'],
                 ':razon_social' => $datos['razon_social'],
                 ':numero_contacto' => $datos['numero_contacto'],
+                ':status' => $datos['status'],
                 ':id' => $id
             ]);
 
@@ -218,7 +226,8 @@ class ProveedoresModel {
         try {
             $sql = "SELECT 
                         p.id_proveedor, 
-                        p.rif, 
+                        p.status,
+                        p.rif,
                         p.razon_social, 
                         p.numero_contacto,
                         p.id_persona,
@@ -250,7 +259,8 @@ class ProveedoresModel {
         try {
             $sql = "SELECT 
                         p.id_proveedor, 
-                        p.razon_social,
+                        p.status,
+                p.razon_social,
                         p.rif
                     FROM proveedor p
                     WHERE p.eliminado = 0
