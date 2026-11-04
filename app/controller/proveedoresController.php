@@ -225,6 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 if ($modelo->actualizarProveedor($id, $datos)) {
                     $_SESSION['mensaje'] = 'Proveedor actualizado.';
+                    $_SESSION['tipo_mensaje'] = 'success';
                     header("Location: ?url=proveedores&type=list");
                     exit();
                 }
@@ -241,11 +242,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($modelo->eliminarProveedor($id)) {
                 $_SESSION['mensaje'] = 'Proveedor eliminado.';
+                $_SESSION['tipo_mensaje'] = 'success';
             } else {
                 $_SESSION['mensaje'] = 'No se pudo eliminar.';
+                $_SESSION['tipo_mensaje'] = 'danger';
             }
         } catch (Exception $e) {
-            $_SESSION['mensaje'] = 'Error: ' . $e->getMessage();
+            $_SESSION['mensaje'] = $e->getMessage();
+            $_SESSION['tipo_mensaje'] = 'danger';
         }
         header("Location: ?url=proveedores&type=list");
         exit();
@@ -310,7 +314,8 @@ try {
 
     if (isset($_SESSION['mensaje'])) {
         $success = $_SESSION['mensaje'];
-        unset($_SESSION['mensaje']);
+        $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? 'success';
+        unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
     }
 } catch (Exception $e) {
     die("ERROR al listar: " . $e->getMessage());

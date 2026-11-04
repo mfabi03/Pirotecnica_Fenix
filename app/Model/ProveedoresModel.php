@@ -191,11 +191,11 @@ class ProveedoresModel {
     public function eliminarProveedor($id) {
         $this->db->beginTransaction();
         try {
-            $checkSql = "SELECT COUNT(*) FROM nota_de_entrada WHERE id_proveedor = :id AND eliminado = 0";
+            $checkSql = "SELECT COUNT(*) FROM nota_de_entrada WHERE id_proveedor = :id";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute(['id' => $id]);
             if ($checkStmt->fetchColumn() > 0) {
-                throw new Exception("No se puede eliminar el proveedor porque tiene notas de entrada asociadas.");
+                throw new Exception("No se puede eliminar el proveedor porque tiene notas de entrada asociadas. Primero anule o reasigne esas notas.");
             }
 
             $sqlPersona = "SELECT id_persona FROM proveedor WHERE id_proveedor = :id";
@@ -217,6 +217,9 @@ class ProveedoresModel {
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
+            if ($e->getMessage() === "No se puede eliminar el proveedor porque tiene notas de entrada asociadas. Primero anule o reasigne esas notas.") {
+                throw $e;
+            }
             throw new Exception("Error al eliminar proveedor: " . $e->getMessage());
         }
     }

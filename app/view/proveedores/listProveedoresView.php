@@ -111,9 +111,9 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
             <?php endif; ?>
 
             <?php if (isset($success) && !empty($success)): ?>
-                <div class="alert dark-alert-success alert-dismissible fade show shadow-sm border-0">
+                <div class="alert <?= ($tipo_mensaje ?? 'success') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-check-circle me-3 fs-4"></i>
+                        <i class="fas <?= ($tipo_mensaje ?? 'success') === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?> me-3 fs-4"></i>
                         <span><?= htmlspecialchars($success) ?></span>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
                     </div>
