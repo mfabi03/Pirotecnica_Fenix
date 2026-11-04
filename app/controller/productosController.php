@@ -9,18 +9,15 @@ use App\Pirotecnicafenix\Model\proveedoresModel;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Helpers\CheckPermiso;
 
-// CONFIGURACIÓN INICIAL
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Iniciar sesión para mensajes
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 $rutaRaiz = dirname(__DIR__, 2);
 
-// CARGA DE MODELOS
 function cargarModelo($nombre, $rutaRaiz) {
     $path = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . $nombre . '.php';
     if (!file_exists($path)) {
@@ -32,7 +29,6 @@ function cargarModelo($nombre, $rutaRaiz) {
 cargarModelo('ProductoModel', $rutaRaiz);
 cargarModelo('proveedoresModel', $rutaRaiz);
 
-// CONEXIÓN A BASE DE DATOS
 try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new ProductoModel($db);
@@ -41,7 +37,6 @@ try {
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-// VARIABLES GLOBALES
 $type = $_GET['type'] ?? 'list';
 $error = null;
 $success = null;
@@ -50,140 +45,87 @@ $productos = [];
 $categorias = [];
 $proveedores = [];
 
-// GESTOR DE ARCHIVO JSON
-function getProductosJsonPath() {
-    return __DIR__ . '/../../public/uploads/products_imagenes.json';
+// NUEVO: Filtro de estado
+$estado_producto = strtolower(trim((string) ($_REQUEST['estado_producto'] ?? 'todos')));
+if (!in_array($estado_producto, ['todos', 'activos', 'inactivos'], true)) {
+    $estado_producto = 'todos';
 }
 
-function cargarProductosJson() {
-    $jsonPath = getProductosJsonPath();
-    if (!file_exists($jsonPath)) {
-        file_put_contents($jsonPath, json_encode([], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-        return [];
-    }
-    $data = json_decode(file_get_contents($jsonPath), true);
-    return is_array($data) ? $data : [];
-}
-
-function guardarProductoJson($id, array $datos) {
-    $jsonPath = getProductosJsonPath();
-    $data = cargarProductosJson();
-    $data[$id] = $datos;
-    file_put_contents($jsonPath, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-}
-
-function eliminarProductoJson($id) {
-    $jsonPath = getProductosJsonPath();
-    $data = cargarProductosJson();
-    if (isset($data[$id])) {
-        unset($data[$id]);
-        file_put_contents($jsonPath, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-    }
-}
-
-// PROCESADOR DE PROVEEDORES
 class ProveedorProcessor {
     private $db;
-    
-    public function __construct($db) {
-        $this->db = $db;
-    }
-    
-    public function obtenerNombre($id_proveedor) {
-        if (empty($id_proveedor) || $id_proveedor <= 0) return '';
-        $sql = "SELECT razon_social FROM proveedor WHERE id_proveedor = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([$id_proveedor]);
-        $prov = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $prov['razon_social'] ?? '';
-    }
-    
+    public function __construct($db) { $this->db = $db; }
     public function obtenerProveedores() {
-        $sql = "SELECT id_proveedor, razon_social, rif, numero_contacto 
-                FROM proveedor 
-                ORDER BY razon_social ASC";
+        $sql = "SELECT id_proveedor, razon_social, rif, numero_contacto FROM proveedor WHERE eliminado = 0 ORDER BY razon_social ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
-
 $proveedorProcessor = new ProveedorProcessor($db);
 
-// VALIDADOR DE PRODUCTOS
 class ProductoValidator {
     public static function validarDatos($datos, $requireCantidad = true) {
         $errores = [];
         if (empty($datos['descripcion'])) $errores[] = "La descripción del producto es obligatoria.";
-        if ($requireCantidad) {
-            if (!isset($datos['cantidad']) || $datos['cantidad'] === '' || $datos['cantidad'] < 0) {
-                $errores[] = "La cantidad debe ser mayor o igual a 0.";
-            }
-        }
         if (!isset($datos['costo_unitario']) || $datos['costo_unitario'] < 0) {
             $errores[] = "El costo unitario debe ser mayor o igual a 0.";
         }
         if (empty($datos['id_categoria']) || $datos['id_categoria'] <= 0) {
             $errores[] = "Debe seleccionar una categoría válida.";
         }
-        if (isset($datos['stock_minimo']) && $datos['stock_minimo'] < 1) {
-            $errores[] = "El stock mínimo debe ser mayor o igual a 1.";
-        }
         return $errores;
     }
 }
 
-// ============================================
-// ENDPOINT AJAX: REGISTRO RÁPIDO DE PRODUCTO (para modal)
-// ============================================
+// ENDPOINTS AJAX
+if ($type === 'historial' && isset($_GET['id'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $proveedores = $modelo->obtenerHistorialProveedores((int)$_GET['id']);
+    echo json_encode(['success' => true, 'proveedores' => $proveedores]);
+    exit;
+}
+
+if ($type === 'detalle_ajax' && isset($_GET['id'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $p = $modelo->obtenerProductoPorId((int)$_GET['id']);
+        if (!$p) throw new Exception("Producto no encontrado");
+        
+        $p['estatus_texto'] = ($p['eliminado'] == 1) ? 'Inactivo' : 'Activo';
+        $p['estatus_color'] = ($p['eliminado'] == 1) ? '#dc3545' : '#28a745';
+        $p['estatus_bg']    = ($p['eliminado'] == 1) ? 'rgba(220,53,69,0.15)' : 'rgba(40,167,69,0.15)';
+
+        echo json_encode(['success' => true, 'producto' => $p]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 if ($type === 'store_rapido_ajax') {
     header('Content-Type: application/json; charset=utf-8');
-    
     try {
-        // Verificar permisos
         if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Productos', 'crear')) {
             throw new Exception("No tienes permiso para registrar productos.");
         }
-        
-        // Validar campos
         if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) {
             throw new Exception("Descripción, Categoría y Proveedor son obligatorios.");
         }
-        
-        $costoOriginal = floatval($_POST['costo_unitario'] ?? 0);
-        $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
-        
-        // Para nota de entrada, la cantidad inicial del producto es 0
-        // (se sumará al registrar la nota)
         $datosProducto = [
             'descripcion' => trim($_POST['descripcion']),
             'cantidad' => 0,
             'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
-            'costo_unitario' => $costoOriginal,
-            'id_categoria' => intval($_POST['id_categoria'])
+            'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
+            'id_categoria' => intval($_POST['id_categoria']),
+            'especificaciones' => trim($_POST['especificaciones'] ?? ''),
+            'id_proveedor' => intval($_POST['id_proveedor'] ?? 0)
         ];
-        
-        $errores = ProductoValidator::validarDatos($datosProducto, false);
-        if (!empty($errores)) {
-            throw new Exception(implode(' ', $errores));
-        }
-        
         $resultado = $modelo->registrarProducto($datosProducto);
         if ($resultado === false || intval($resultado) <= 0) {
             throw new Exception('No se pudo registrar el producto.');
         }
-        
         $id_producto = intval($resultado);
-        $nombreProveedor = $proveedorProcessor->obtenerNombre($id_proveedor);
         
-        // Guardar especificaciones en JSON
-        guardarProductoJson($id_producto, [
-            'especificaciones' => trim($_POST['especificaciones'] ?? ''),
-            'proveedor' => $nombreProveedor,
-            'id_proveedor' => $id_proveedor
-        ]);
-        
-        // Obtener el nombre de la categoría para devolverlo
         $sqlCat = "SELECT nombre_categoria FROM categoria WHERE id_categoria = ?";
         $stmtCat = $db->prepare($sqlCat);
         $stmtCat->execute([$datosProducto['id_categoria']]);
@@ -194,93 +136,32 @@ if ($type === 'store_rapido_ajax') {
             'success' => true,
             'id_producto' => $id_producto,
             'descripcion' => $datosProducto['descripcion'],
-            'costo_unitario' => $costoOriginal,
+            'costo_unitario' => $datosProducto['costo_unitario'],
             'stock' => 0,
             'nombre_categoria' => $nombreCategoria,
             'id_categoria' => $datosProducto['id_categoria']
         ], JSON_UNESCAPED_UNICODE);
-        
     } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
     }
     exit;
 }
-// ============================================
-// ENDPOINT AJAX: LISTAR PRODUCTOS (para refrescar tabla)
-// ============================================
-if ($type === 'listar_ajax') {
-    header('Content-Type: application/json; charset=utf-8');
-    
-    try {
-        // Verificar permisos
-        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Productos', 'leer')) {
-            throw new Exception("No tienes permiso.");
-        }
-        
-        $dataJson = cargarProductosJson();
-        
-        $sqlBase = "SELECT 
-                        p.id_producto,
-                        p.descripcion,
-                        p.cantidad AS stock,
-                        p.stock_minimo,
-                        p.costo_unitario,
-                        p.id_categoria,
-                        c.nombre_categoria
-                    FROM producto p
-                    LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                    WHERE p.eliminado = 0
-                    ORDER BY p.id_producto DESC";
-        
-        $stmt = $db->prepare($sqlBase);
-        $stmt->execute();
-        $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Agregar especificaciones del JSON
-        foreach ($productos as &$p) {
-            $id = $p['id_producto'];
-            $p['especificaciones'] = $dataJson[$id]['especificaciones'] ?? '';
-        }
-        unset($p);
-        
-        echo json_encode([
-            'success' => true,
-            'productos' => $productos
-        ], JSON_UNESCAPED_UNICODE);
-        
-    } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], JSON_UNESCAPED_UNICODE);
-    }
-    exit;
-}
+
 // PROCESAR POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // REGISTRAR PRODUCTO
     if ($type === 'store') {
         CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
         try {
-            $return = $_REQUEST['return'] ?? null;
-            $cantidadOriginal = intval($_POST['cantidad'] ?? 0);
-            $costoOriginal = floatval($_POST['costo_unitario'] ?? 0);
-            $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
-
-            $cantidadParaBd = ($return === 'notaentrada') ? 0 : $cantidadOriginal;
-
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
-                'cantidad' => $cantidadParaBd,
+                'cantidad' => intval($_POST['cantidad'] ?? 0),
                 'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
-                'costo_unitario' => $costoOriginal,
-                'id_categoria' => intval($_POST['id_categoria'] ?? 0)
+                'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
+                'id_categoria' => intval($_POST['id_categoria'] ?? 0),
+                'especificaciones' => trim($_POST['especificaciones'] ?? ''),
+                'id_proveedor' => intval($_POST['id_proveedor'] ?? 0)
             ];
-            
             $errores = ProductoValidator::validarDatos($datos);
             if (!empty($errores)) throw new Exception(implode(' ', $errores));
             
@@ -288,310 +169,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($resultado === false || intval($resultado) <= 0) {
                 throw new Exception("No se pudo registrar el producto.");
             }
-            
-            $id_producto = intval($resultado);
-            $nombreProveedor = $proveedorProcessor->obtenerNombre($id_proveedor);
-            
-            guardarProductoJson($id_producto, [
-                'especificaciones' => trim($_POST['especificaciones'] ?? ''),
-                'proveedor' => $nombreProveedor,
-                'id_proveedor' => $id_proveedor
-            ]);
-            
-            if ($return) {
-                $_SESSION['nuevo_producto_id'] = $id_producto;
-                $_SESSION['nuevo_producto_nombre'] = $datos['descripcion'];
-                $_SESSION['mensaje_rapido'] = "✅ Producto '{$datos['descripcion']}' registrado exitosamente";
-                $_SESSION['tipo_rapido'] = 'success';
-
-                if ($return === 'notaentrada') {
-                    $params = [
-                        'url' => 'notaentrada',
-                        'type' => 'create',
-                        'id_producto' => $id_producto,
-                        'id_proveedor' => $id_proveedor,
-                        'cantidad' => $cantidadOriginal,
-                        'costo' => $costoOriginal
-                    ];
-                    header("Location: ?" . http_build_query($params));
-                } else {
-                    header("Location: ?url=" . urlencode($return) . "&type=create&id_producto=" . $id_producto);
-                }
-                exit;
-            }
-            
-            $_SESSION['mensaje'] = '✅ Producto registrado exitosamente.';
+            $_SESSION['mensaje'] = 'Producto registrado exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
             header("Location: ?url=productos&type=list");
             exit();
-            
         } catch (Exception $e) {
-            $error = '❌ ' . $e->getMessage();
-        }
-    }
-   
-    // REGISTRO RÁPIDO PRODUCTO (NO-AJAX, conservado por compatibilidad)
-    if ($type === 'store_rapido') {
-        CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
-        try {
-            if (empty($_POST['descripcion']) || empty($_POST['id_categoria'])) {
-                throw new Exception('Por favor complete todos los campos requeridos');
-            }
-
-            $return = $_REQUEST['return'] ?? null;
-            $cantidadOriginal = intval($_POST['cantidad'] ?? 0);
-            $costoOriginal = floatval($_POST['costo_unitario'] ?? 0.0);
-            $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
-
-            $cantidadParaBd = ($return === 'notaentrada') ? 0 : $cantidadOriginal;
-            
-            $datosProducto = [
-                'descripcion' => trim($_POST['descripcion']),
-                'cantidad' => $cantidadParaBd,
-                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
-                'costo_unitario' => $costoOriginal,
-                'id_categoria' => intval($_POST['id_categoria'] ?? 0)
-            ];
-            
-            $errores = ProductoValidator::validarDatos($datosProducto);
-            if (!empty($errores)) throw new Exception(implode(' ', $errores));
-            
-            $resultado = $modelo->registrarProducto($datosProducto);
-            if ($resultado === false || intval($resultado) <= 0) {
-                throw new Exception('No se pudo registrar el producto.');
-            }
-            
-            $id_producto = intval($resultado);
-            
-            $_SESSION['nuevo_producto_id'] = $id_producto;
-            $_SESSION['nuevo_producto_nombre'] = $datosProducto['descripcion'];
-            $_SESSION['mensaje_rapido'] = "✅ Producto '{$datosProducto['descripcion']}' registrado exitosamente";
-            $_SESSION['tipo_rapido'] = 'success';
-            
-            if ($return) {
-                if ($return === 'notaentrada') {
-                    $params = [
-                        'url' => 'notaentrada',
-                        'type' => 'create',
-                        'id_producto' => $id_producto,
-                        'id_proveedor' => $id_proveedor,
-                        'cantidad' => $cantidadOriginal,
-                        'costo' => $costoOriginal
-                    ];
-                    header("Location: ?" . http_build_query($params));
-                } else {
-                    header("Location: ?url=" . urlencode($return) . "&type=create&id_producto=" . $id_producto);
-                }
-                exit;
-            }
-
-            header("Location: ?url=productos&type=list");
-            exit;
-            
-        } catch (Exception $e) {
-            $_SESSION['mensaje_rapido'] = "❌ " . $e->getMessage();
-            $_SESSION['tipo_rapido'] = 'danger';
-
-            $return = $_REQUEST['return'] ?? null;
-            if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create");
-                exit;
-            }
-            header("Location: ?url=productos&type=create");
-            exit;
+            $error = $e->getMessage();
         }
     }
     
-    // ACTUALIZAR PRODUCTO
     if ($type === 'update') {
         CheckPermiso::verificar($db, 'Productos', 'actualizar', '?url=productos');
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
-            
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
                 'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
-                'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
-                'id_categoria' => intval($_POST['id_categoria'] ?? 0)
+                'especificaciones' => trim($_POST['especificaciones'] ?? '')
             ];
-
-            $errores = ProductoValidator::validarDatos($datos, false);
-            if (!empty($errores)) throw new Exception(implode(' ', $errores));
-            
             $resultado = $modelo->actualizarProducto($id_producto, $datos);
             if (!$resultado) throw new Exception("No se pudo actualizar el producto.");
             
-            $id_proveedor = intval($_POST['id_proveedor'] ?? 0);
-            $nombreProveedor = $proveedorProcessor->obtenerNombre($id_proveedor);
-            
-            guardarProductoJson($id_producto, [
-                'especificaciones' => trim($_POST['especificaciones'] ?? ''),
-                'proveedor' => $nombreProveedor,
-                'id_proveedor' => $id_proveedor
-            ]);
-            
-            $_SESSION['mensaje'] = '✅ Producto actualizado exitosamente.';
+            $_SESSION['mensaje'] = 'Producto actualizado exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
             header("Location: ?url=productos&type=list");
             exit();
-            
         } catch (Exception $e) {
-            $error = '❌ ' . $e->getMessage();
+            $error = $e->getMessage();
         }
     }
     
-    // ELIMINAR PRODUCTO
     if ($type === 'delete') {
         CheckPermiso::verificar($db, 'Productos', 'eliminar', '?url=productos');
         try {
             $id_producto = intval($_POST['id_producto'] ?? 0);
-            
-            if (!$id_producto || $id_producto <= 0) {
-                throw new Exception("ID de producto inválido.");
-            }
+            if (!$id_producto || $id_producto <= 0) throw new Exception("ID de producto inválido.");
             
             $resultado = $modelo->eliminarProducto($id_producto);
             if (!$resultado) throw new Exception("No se pudo eliminar el producto.");
-
-            eliminarProductoJson($id_producto);
             
-            $_SESSION['mensaje'] = '✅ Producto eliminado exitosamente.';
+            $_SESSION['mensaje'] = 'Producto eliminado exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
-            header("Location: ?url=productos&type=list");
-            exit();
-            
         } catch (Exception $e) {
-            $error = '❌ ' . $e->getMessage();
+            $_SESSION['mensaje'] = $e->getMessage();
+            $_SESSION['tipo_mensaje'] = 'danger';
         }
+        header("Location: ?url=productos&type=list");
+        exit();
     }
-}
 
-// FUNCIONES AUXILIARES
-function cargarDatosProducto($id_producto, $modelo, $proveedorProcessor) {
-    $producto = $modelo->obtenerProductoPorId($id_producto);
-    if (!$producto) die("ERROR: Producto no encontrado.");
-    
-    $jsonData = cargarProductosJson();
-    if (isset($jsonData[$id_producto])) {
-        $producto['especificaciones'] = $jsonData[$id_producto]['especificaciones'] ?? '';
-        $producto['proveedor'] = $jsonData[$id_producto]['proveedor'] ?? '';
-        $producto['id_proveedor'] = $jsonData[$id_producto]['id_proveedor'] ?? 0;
-    } else {
-        $producto['especificaciones'] = '';
-        $producto['proveedor'] = '';
-        $producto['id_proveedor'] = 0;
+    if ($type === 'reactivar') {
+        CheckPermiso::verificar($db, 'Productos', 'actualizar', '?url=productos');
+        try {
+            $id_producto = intval($_POST['id_producto'] ?? 0);
+            if (!$id_producto || $id_producto <= 0) throw new Exception("ID de producto inválido.");
+            
+            $modelo->reactivarProducto($id_producto);
+            
+            $_SESSION['mensaje'] = 'Producto reactivado exitosamente.';
+            $_SESSION['tipo_mensaje'] = 'success';
+        } catch (Exception $e) {
+            $_SESSION['mensaje'] = "Error al reactivar: " . $e->getMessage();
+            $_SESSION['tipo_mensaje'] = 'danger';
+        }
+        header("Location: ?url=productos&type=list");
+        exit();
     }
-    return $producto;
-}
-
-// RUTEO DE VISTAS
-if ($type === 'create') {
-    try {
-        $categorias = $modelo->obtenerCategorias();
-        $proveedores = $proveedorProcessor->obtenerProveedores();
-    } catch (Exception $e) {
-        die("ERROR al obtener datos: " . $e->getMessage());
-    }
-    require_once $rutaRaiz . '/app/view/productos/registrarProductoView.php';
-    exit();
-}
-
-if ($type === 'show') {
-    $id_producto = intval($_GET['id'] ?? 0);
-    try {
-        $producto = cargarDatosProducto($id_producto, $modelo, $proveedorProcessor);
-    } catch (Exception $e) {
-        die("ERROR al obtener producto: " . $e->getMessage());
-    }
-    require_once $rutaRaiz . '/app/view/productos/detalleProductoView.php';
-    exit();
-}
-
-if ($type === 'edit') {
-    $id_producto = intval($_GET['id'] ?? 0);
-    try {
-        $producto = cargarDatosProducto($id_producto, $modelo, $proveedorProcessor);
-        $categorias = $modelo->obtenerCategorias();
-        $proveedores = $proveedorProcessor->obtenerProveedores();
-    } catch (Exception $e) {
-        die("ERROR al obtener producto: " . $e->getMessage());
-    }
-    require_once $rutaRaiz . '/app/view/productos/editarProductoView.php';
-    exit();
 }
 
 // VISTA DE LISTA
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
-    $dataJson = cargarProductosJson();
     
-    $sqlBase = "SELECT 
-                    p.id_producto, p.descripcion, p.cantidad AS stock, p.stock_minimo,
-                    p.costo_unitario, p.id_categoria, c.nombre_categoria
-                FROM producto p
-                LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                WHERE p.eliminado = 0";
+    if (!empty($buscar)) {
+        $productos_full = $modelo->buscarProductos($buscar);
+    } else {
+        $productos_full = $modelo->obtenerProductos();
+    }
+
+    // FILTRADO POR ESTADO
+    if ($estado_producto === 'activos') {
+        $productos_full = array_values(array_filter($productos_full, function ($p) {
+            return ((int) ($p['eliminado'] ?? 0)) === 0;
+        }));
+    } elseif ($estado_producto === 'inactivos') {
+        $productos_full = array_values(array_filter($productos_full, function ($p) {
+            return ((int) ($p['eliminado'] ?? 0)) === 1;
+        }));
+    }
     
-    $sql = $sqlBase;
-    $params = [];
-    
+    $resumen = $modelo->getResumen();
     $categorias = $modelo->obtenerCategorias();
     $proveedores = $proveedorProcessor->obtenerProveedores();
 
-    
-    if (!empty($buscar)) {
-        $sql .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino OR CAST(p.id_producto AS CHAR) LIKE :termino)";
-        $params['termino'] = "%$buscar%";
-    }
-    
-    $sql .= " ORDER BY p.id_producto DESC";
-
-    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
-    $offset        = ($pagina_actual - 1) * $por_pagina;
-
-    $sqlCount = "SELECT COUNT(*) AS cnt FROM producto p
-            LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-            WHERE p.eliminado = 0";
-    if (!empty($buscar)) {
-        $sqlCount .= " AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino)";
-    }
-    $stmtCount = $db->prepare($sqlCount);
-    $stmtCount->execute($params);
-    $totalProductos = (int) ($stmtCount->fetchColumn() ?? 0);
-    $stmtCount->closeCursor();
-
-    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalProductos / $por_pagina) : 1;
-
-    if ($por_pagina > 0) {
-        $sql .= " LIMIT :limit OFFSET :offset";
-        $stmt = $db->prepare($sql);
-        foreach ($params as $k => $v) $stmt->bindValue($k, $v);
-        $stmt->bindValue(':limit', $por_pagina, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-    } else {
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-    }
-    $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $stmt->closeCursor();
+    $offset = ($pagina_actual - 1) * $por_pagina;
     
-    foreach ($productos as &$producto) {
-        $id = $producto['id_producto'];
-        $producto['especificaciones'] = $dataJson[$id]['especificaciones'] ?? '';
+    $totalRegistros = count($productos_full);
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    
+    if ($por_pagina > 0) {
+        $productos = array_slice($productos_full, $offset, $por_pagina);
+    } else {
+        $productos = $productos_full;
     }
-    unset($producto);
-
-    $sqlResumen = "SELECT COUNT(*) AS total_productos, SUM(cantidad) AS total_stock,
-                          COUNT(DISTINCT id_categoria) AS total_categorias FROM producto";
-    $stmtResumen = $db->prepare($sqlResumen);
-    $stmtResumen->execute();
-    $resumen = $stmtResumen->fetch(PDO::FETCH_ASSOC);
     
     if (isset($_SESSION['mensaje'])) {
-        $success = $_SESSION['mensaje'];
-        unset($_SESSION['mensaje']);
+        $mensaje = $_SESSION['mensaje'];
+        $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? 'info';
+        unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
     }
     
 } catch (Exception $e) {

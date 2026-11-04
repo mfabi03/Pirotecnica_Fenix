@@ -12,13 +12,12 @@ class CategoriaModel {
         $this->db = $db;
     }
 
-    // OBTENER TODAS LAS CATEGORIAS
+    // OBTENER TODAS LAS CATEGORIAS (Activas e Inactivas)
     public function obtenerCategorias() {
         try {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion 
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion, eliminado 
                     FROM categoria 
-                    WHERE eliminado = 0
-                    ORDER BY id_categoria DESC";
+                    ORDER BY eliminado ASC, id_categoria DESC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -27,19 +26,18 @@ class CategoriaModel {
         }
     }
 
-    // ✅ CONTAR CATEGORÍAS (para paginación)
+    // CONTAR CATEGORÍAS (Generalmente cuenta activas para stats, pero lo dejamos contar todas)
     public function contarCategorias($termino = null) {
         try {
             $termino = trim((string) $termino);
             
             if ($termino !== '') {
                 $sql = "SELECT COUNT(*) FROM categoria 
-                        WHERE eliminado = 0
-                        AND (nombre_categoria LIKE :termino OR descripcion LIKE :termino)";
+                        WHERE (nombre_categoria LIKE :termino OR descripcion LIKE :termino)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([':termino' => "%{$termino}%"]);
             } else {
-                $sql = "SELECT COUNT(*) FROM categoria WHERE eliminado = 0";
+                $sql = "SELECT COUNT(*) FROM categoria";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute();
             }
@@ -50,12 +48,12 @@ class CategoriaModel {
         }
     }
 
-    // OBTENER CATEGORIA POR ID
+    // OBTENER CATEGORIA POR ID (Sin importar si está eliminada o no)
     public function obtenerCategoriaPorId($id) {
         try {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion 
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion, eliminado 
                     FROM categoria 
-                    WHERE id_categoria = :id AND eliminado = 0";
+                    WHERE id_categoria = :id";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -71,7 +69,7 @@ class CategoriaModel {
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute([':nombre' => $datos['nombre_categoria']]);
             if ($checkStmt->fetchColumn() > 0) {
-                throw new Exception("Ya existe una categoría con el nombre '{$datos['nombre_categoria']}'.");
+                throw new Exception("Ya existe una categoría activa con el nombre '{$datos['nombre_categoria']}'.");
             }
 
             $sql = "INSERT INTO categoria (nombre_categoria, descripcion, eliminado) 
@@ -93,7 +91,7 @@ class CategoriaModel {
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute([':id' => $id]);
             if ($checkStmt->fetchColumn() == 0) {
-                throw new Exception("La categoría con ID {$id} no existe.");
+                throw new Exception("La categoría con ID {$id} no existe o está inactiva.");
             }
 
             $checkNombreSql = "SELECT COUNT(*) FROM categoria 
@@ -104,7 +102,7 @@ class CategoriaModel {
                 ':id' => $id
             ]);
             if ($checkNombreStmt->fetchColumn() > 0) {
-                throw new Exception("Ya existe otra categoría con el nombre '{$datos['nombre_categoria']}'.");
+                throw new Exception("Ya existe otra categoría activa con el nombre '{$datos['nombre_categoria']}'.");
             }
 
             $sql = "UPDATE categoria 
@@ -122,7 +120,7 @@ class CategoriaModel {
         }
     }
 
-    // ELIMINAR CATEGORIA
+    // ELIMINAR CATEGORIA (VERIFICA ASOCIACIONES Y HACE BORRADO LÓGICO)
     public function eliminarCategoria($id) {
         try {
             $checkSql = "SELECT COUNT(*) FROM producto WHERE id_categoria = :id AND eliminado = 0";
@@ -140,15 +138,34 @@ class CategoriaModel {
         }
     }
 
-    // BUSCAR CATEGORIAS
+    // REACTIVAR CATEGORIA
+    public function reactivarCategoria($id) {
+        try {
+            $stmtCheck = $this->db->prepare(
+                "SELECT id_categoria FROM categoria WHERE id_categoria = :id AND eliminado = 1 LIMIT 1"
+            );
+            $stmtCheck->execute([':id' => $id]);
+            if (!$stmtCheck->fetch()) {
+                throw new Exception("La categoría no existe o ya está activa.");
+            }
+
+            $stmt = $this->db->prepare(
+                "UPDATE categoria SET eliminado = 0 WHERE id_categoria = :id"
+            );
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            throw new Exception("Error en la base de datos: " . $e->getMessage());
+        }
+    }
+
+    // BUSCAR CATEGORIAS (Activas e Inactivas)
     public function buscarCategorias($termino) {
         try {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion 
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion, eliminado 
                     FROM categoria 
-                    WHERE eliminado = 0
-                    AND (nombre_categoria LIKE :termino 
+                    WHERE (nombre_categoria LIKE :termino 
                        OR descripcion LIKE :termino)
-                    ORDER BY nombre_categoria ASC";
+                    ORDER BY eliminado ASC, nombre_categoria ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':termino' => "%{$termino}%"]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -156,18 +173,5 @@ class CategoriaModel {
             throw new Exception("Error al buscar categorías: " . $e->getMessage());
         }
     }
-
-    // OBTENER CATEGORIAS PARA SELECT
-    public function obtenerCategoriasParaSelect() {
-        try {
-            $sql = "SELECT id_categoria, nombre_categoria 
-                    FROM categoria 
-                    WHERE eliminado = 0
-                    ORDER BY nombre_categoria ASC";
-            $stmt = $this->db->query($sql);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            throw new Exception("Error al obtener categorías: " . $e->getMessage());
-        }
-    }
 }
+?>

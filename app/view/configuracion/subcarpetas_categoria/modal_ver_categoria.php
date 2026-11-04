@@ -12,8 +12,10 @@
             <div class="modal-body" style="padding: 20px 24px;">
                 <div class="text-center mb-4">
                     <h4 id="ver-categoria-nombre" style="color: #f39c12; font-weight: 700; margin-bottom: 6px;">—</h4>
-                    <span class="badge" style="background: #e9ecef; color: #1a1a2e; padding: 6px 16px; border-radius: 50px; font-size: 0.75rem;">
-                        ID #<span id="ver-categoria-id">—</span>
+                    
+                    <!-- AQUÍ REEMPLAZAMOS EL ID POR EL ESTATUS -->
+                    <span id="ver-categoria-estatus" class="badge" style="padding: 6px 16px; border-radius: 50px; font-size: 0.75rem;">
+                        —
                     </span>
                 </div>
 
