@@ -332,7 +332,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 <?php require_once __DIR__ . '/partials/modal_editar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_eliminar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_rapido_categoria.php'; ?>
-<?php require_once __DIR__ . '/partials/modal_rapido_proveedor.php'; ?>
 
 <!-- NUEVO: MODAL REACTIVAR PRODUCTO -->
 <?php if ($puede_editar_producto): ?>

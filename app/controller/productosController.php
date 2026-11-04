@@ -55,7 +55,7 @@ class ProveedorProcessor {
     private $db;
     public function __construct($db) { $this->db = $db; }
     public function obtenerProveedores() {
-        $sql = "SELECT id_proveedor, razon_social, rif, numero_contacto FROM proveedor WHERE eliminado = 0 ORDER BY razon_social ASC";
+        $sql = "SELECT id_proveedor, razon_social, rif, numero_contacto FROM proveedor WHERE eliminado = 0 AND status = 'activo' ORDER BY razon_social ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -108,8 +108,12 @@ if ($type === 'store_rapido_ajax') {
         if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Productos', 'crear')) {
             throw new Exception("No tienes permiso para registrar productos.");
         }
-        if (empty($_POST['descripcion']) || empty($_POST['id_categoria']) || empty($_POST['id_proveedor'])) {
-            throw new Exception("Descripción, Categoría y Proveedor son obligatorios.");
+        if (empty($_POST['descripcion']) || empty($_POST['id_categoria'])) {
+            throw new Exception("Descripción y Categoría son obligatorios.");
+        }
+        $idProveedor = intval($_POST['id_proveedor'] ?? 0);
+        if (!$proveedorModel->proveedorActivoExiste($idProveedor)) {
+            throw new Exception("El proveedor seleccionado no existe o está inactivo.");
         }
         $datosProducto = [
             'descripcion' => trim($_POST['descripcion']),
@@ -118,7 +122,7 @@ if ($type === 'store_rapido_ajax') {
             'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
             'id_categoria' => intval($_POST['id_categoria']),
             'especificaciones' => trim($_POST['especificaciones'] ?? ''),
-            'id_proveedor' => intval($_POST['id_proveedor'] ?? 0)
+            'id_proveedor' => $idProveedor
         ];
         $resultado = $modelo->registrarProducto($datosProducto);
         if ($resultado === false || intval($resultado) <= 0) {
@@ -164,6 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             $errores = ProductoValidator::validarDatos($datos);
             if (!empty($errores)) throw new Exception(implode(' ', $errores));
+            if (!$proveedorModel->proveedorActivoExiste($datos['id_proveedor'])) {
+                throw new Exception("El proveedor seleccionado no existe o está inactivo.");
+            }
             
             $resultado = $modelo->registrarProducto($datos);
             if ($resultado === false || intval($resultado) <= 0) {
@@ -175,6 +182,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         } catch (Exception $e) {
             $error = $e->getMessage();
+            $_SESSION['mensaje'] = $error;
+            $_SESSION['tipo_mensaje'] = 'danger';
         }
     }
     
@@ -185,8 +194,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datos = [
                 'descripcion' => trim($_POST['descripcion'] ?? ''),
                 'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
-                'especificaciones' => trim($_POST['especificaciones'] ?? '')
+                'especificaciones' => trim($_POST['especificaciones'] ?? ''),
+                'id_proveedor' => intval($_POST['id_proveedor'] ?? 0)
             ];
+            if (!$proveedorModel->proveedorActivoExiste($datos['id_proveedor'])) {
+                throw new Exception("El proveedor seleccionado no existe o está inactivo.");
+            }
             $resultado = $modelo->actualizarProducto($id_producto, $datos);
             if (!$resultado) throw new Exception("No se pudo actualizar el producto.");
             
@@ -196,6 +209,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         } catch (Exception $e) {
             $error = $e->getMessage();
+            $_SESSION['mensaje'] = $error;
+            $_SESSION['tipo_mensaje'] = 'danger';
         }
     }
     

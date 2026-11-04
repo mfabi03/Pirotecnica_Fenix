@@ -57,20 +57,13 @@
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
                             <div class="input-group">
-                                <select name="id_proveedor" id="id_proveedor" class="form-select" required
-                                        style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                                <select name="id_proveedor" id="id_proveedor" class="form-select" required data-searchable="true"
+                                        style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                     <option value="">Seleccione un proveedor...</option>
                                     <?php foreach (($proveedores ?? []) as $prov): ?>
-                                        <option value="<?= $prov['id_proveedor'] ?>"><?= htmlspecialchars($prov['razon_social']) ?></option>
+                                        <option value="<?= htmlspecialchars($prov['id_proveedor']) ?>"><?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                                <button type="button" 
-                                        id="btnAbrirModalProveedor"
-                                        class="btn" 
-                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 15px; display: flex; align-items: center; justify-content: center;"
-                                        title="Registrar nuevo proveedor">
-                                    <i class="fas fa-plus"></i>
-                                </button>
                             </div>
                         </div>
 

@@ -30,10 +30,16 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor (No editable)</label>
-                            <input type="text" id="editar-producto-proveedor-texto" class="form-control" readonly
-                                   style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); background-color: #e9ecef; cursor: not-allowed;">
-                            <input type="hidden" name="id_proveedor" id="editar-producto-proveedor-id">
+                            <label for="editar-producto-proveedor-id" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
+                            <select name="id_proveedor" id="editar-producto-proveedor-id" class="form-select" required data-searchable="true"
+                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                                <option value="">Seleccione un proveedor...</option>
+                                <?php foreach (($proveedores ?? []) as $prov): ?>
+                                    <option value="<?= htmlspecialchars($prov['id_proveedor']) ?>">
+                                        <?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
 
                         <div class="col-md-6">

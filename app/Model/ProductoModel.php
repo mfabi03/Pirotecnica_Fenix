@@ -176,7 +176,8 @@ class ProductoModel {
             $sql = "UPDATE producto SET 
                         descripcion = :descripcion,
                         stock_minimo = :stock_minimo,
-                        especificaciones = :especificaciones
+                        especificaciones = :especificaciones,
+                        id_proveedor = :id_proveedor
                     WHERE id_producto = :id";
             
             $stmt = $this->db->prepare($sql);
@@ -184,6 +185,7 @@ class ProductoModel {
                 ':descripcion' => $datos['descripcion'],
                 ':stock_minimo' => $datos['stock_minimo'] ?? 10,
                 ':especificaciones' => $datos['especificaciones'] ?? null,
+                ':id_proveedor' => $datos['id_proveedor'],
                 ':id' => $id
             ]);
         } catch (PDOException $e) {

@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (select.options.length <= 2) {
+        const forceSearch = select.dataset.searchable === 'true';
+        if (select.options.length <= 2 && !forceSearch) {
             return;
         }
 
@@ -37,6 +38,8 @@ document.addEventListener('DOMContentLoaded', function () {
         input.type = 'text';
         input.className = 'form-control ss-input';
         input.setAttribute('autocomplete', 'off');
+        input.required = select.required;
+        select.required = false;
 
         const placeholderOption = select.querySelector('option[disabled]');
         input.placeholder = placeholderOption ? placeholderOption.textContent.trim() : 'Buscar...';
@@ -94,6 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             select.value = value;
             input.value = targetOption.textContent.trim();
+            input.setCustomValidity('');
             closeDropdown();
             select.dispatchEvent(new Event('change', { bubbles: true }));
         }
@@ -111,9 +115,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         input.addEventListener('input', function () {
+            input.setCustomValidity('');
             highlightedIndex = -1;
             renderItems(this.value);
             dropdown.style.display = 'block';
+        });
+
+        select.addEventListener('change', function () {
+            const selectedOption = select.options[select.selectedIndex];
+            input.value = selectedOption && selectedOption.value ? selectedOption.textContent.trim() : '';
         });
 
         input.addEventListener('keydown', function (event) {
@@ -179,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const form = select.closest('form');
         if (form) {
-            form.addEventListener('submit', function () {
+            form.addEventListener('submit', function (event) {
                 const typedValue = input.value.trim();
                 if (!select.value && typedValue !== '') {
                     const match = options.find(function (option) {
@@ -188,6 +198,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (match) {
                         selectValue(match.value);
                     }
+                }
+                if (input.required && !select.value) {
+                    event.preventDefault();
+                    input.setCustomValidity('Seleccione una opción válida de la lista.');
+                    input.reportValidity();
                 }
             });
         }

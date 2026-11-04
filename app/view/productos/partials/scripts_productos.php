@@ -37,8 +37,11 @@ document.addEventListener('DOMContentLoaded', function() {
         setVal('editar-producto-categoria-texto', p.nombre_categoria || 'Sin categoría');
         setVal('editar-producto-categoria-id', p.id_categoria || '');
         
-        setVal('editar-producto-proveedor-texto', p.nombre_proveedor || 'Sin proveedor asignado');
-        setVal('editar-producto-proveedor-id', p.id_proveedor || '');
+        var proveedorSelect = document.getElementById('editar-producto-proveedor-id');
+        if (proveedorSelect) {
+            proveedorSelect.value = p.id_proveedor || '';
+            proveedorSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
 
         var header = document.getElementById('editar-producto-nombre-header');
         if (header) header.textContent = p.descripcion || 'Producto';
@@ -120,17 +123,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // REGISTRO RÁPIDO: ABRIR MODAL PROVEEDOR
-    var btnAbrirProv = document.getElementById('btnAbrirModalProveedor');
-    if (btnAbrirProv) {
-        btnAbrirProv.addEventListener('click', function () {
-            document.getElementById('formRapidoProveedor').reset();
-            document.getElementById('modal-rapido-proveedor-error').style.display = 'none';
-            window.selectProveedorObjetivo = 'id_proveedor';
-            new bootstrap.Modal(document.getElementById('modalRapidoProveedor')).show();
-        });
-    }
-
     // GUARDAR CATEGORÍA RÁPIDA
     var btnGuardarCat = document.getElementById('btnGuardarCategoriaRapido');
     if (btnGuardarCat) {
@@ -169,42 +161,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // GUARDAR PROVEEDOR RÁPIDO
-    var btnGuardarProv = document.getElementById('btnGuardarProveedorRapido');
-    if (btnGuardarProv) {
-        btnGuardarProv.addEventListener('click', function () {
-            var formData = new FormData(document.getElementById('formRapidoProveedor'));
-            btnGuardarProv.disabled = true;
-            btnGuardarProv.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
-            
-            fetch('?url=proveedores&type=store_rapido_ajax', { method: 'POST', body: formData })
-            .then(function(r) { return r.json(); }).then(function(data) {
-                btnGuardarProv.disabled = false;
-                btnGuardarProv.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Proveedor';
-                
-                if (!data.success) {
-                    document.getElementById('modal-rapido-proveedor-error-msg').textContent = data.error || 'Error';
-                    document.getElementById('modal-rapido-proveedor-error').style.display = 'block';
-                    return;
-                }
-                
-                var selectProv = document.getElementById(window.selectProveedorObjetivo || 'id_proveedor');
-                if (selectProv) {
-                    var existe = false;
-                    for (var i = 0; i < selectProv.options.length; i++) {
-                        if (selectProv.options[i].value == data.id_proveedor) { existe = true; break; }
-                    }
-                    if (!existe) {
-                        var opt = document.createElement('option');
-                        opt.value = data.id_proveedor;
-                        opt.textContent = data.razon_social + ' - ' + data.rif;
-                        selectProv.appendChild(opt);
-                    }
-                    selectProv.value = data.id_proveedor;
-                }
-                bootstrap.Modal.getInstance(document.getElementById('modalRapidoProveedor')).hide();
-            });
-        });
-    }
 });
 </script>

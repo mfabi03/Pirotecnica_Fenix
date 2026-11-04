@@ -198,6 +198,12 @@ class ProveedoresModel {
                 throw new Exception("No se puede eliminar el proveedor porque tiene notas de entrada asociadas. Primero anule o reasigne esas notas.");
             }
 
+            $checkProductos = $this->db->prepare("SELECT COUNT(*) FROM producto WHERE id_proveedor = :id");
+            $checkProductos->execute(['id' => $id]);
+            if ($checkProductos->fetchColumn() > 0) {
+                throw new Exception("No se puede eliminar el proveedor porque tiene productos asociados.");
+            }
+
             $sqlPersona = "SELECT id_persona FROM proveedor WHERE id_proveedor = :id";
             $stmtPersona = $this->db->prepare($sqlPersona);
             $stmtPersona->execute(['id' => $id]);
@@ -217,7 +223,10 @@ class ProveedoresModel {
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
-            if ($e->getMessage() === "No se puede eliminar el proveedor porque tiene notas de entrada asociadas. Primero anule o reasigne esas notas.") {
+            if (in_array($e->getMessage(), [
+                "No se puede eliminar el proveedor porque tiene notas de entrada asociadas. Primero anule o reasigne esas notas.",
+                "No se puede eliminar el proveedor porque tiene productos asociados."
+            ], true)) {
                 throw $e;
             }
             throw new Exception("Error al eliminar proveedor: " . $e->getMessage());
@@ -263,16 +272,27 @@ class ProveedoresModel {
             $sql = "SELECT 
                         p.id_proveedor, 
                         p.status,
-                p.razon_social,
+                        p.razon_social,
                         p.rif
                     FROM proveedor p
-                    WHERE p.eliminado = 0
+                    WHERE p.eliminado = 0 AND p.status = 'activo'
                     ORDER BY p.razon_social ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new Exception("Error al obtener proveedores: " . $e->getMessage());
+        }
+    }
+
+    public function proveedorActivoExiste($id) {
+        try {
+            $sql = "SELECT 1 FROM proveedor WHERE id_proveedor = :id AND eliminado = 0 AND status = 'activo' LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $id]);
+            return (bool) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            throw new Exception("Error al validar proveedor: " . $e->getMessage());
         }
     }
 }
