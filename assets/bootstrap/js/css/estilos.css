@@ -1,0 +1,497 @@
+/* ============================================
+   ESTILOS GLOBALES - PIROTECNIA FÉNIX
+   ============================================ */
+
+/* ============================================
+   FUENTE Y FONDO
+   ============================================ */
+body {
+    background-color: #faf8fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ============================================
+   NAVBAR (Fondo Negro)
+   ============================================ */
+.navbar-fenix {
+    background: #000000 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    padding: 8px 20px !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-logo-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.logo-navbar {
+    width: 40px !important;
+    height: 40px !important;
+    object-fit: contain;
+    border-radius: 50%;
+    background: #ffffff;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+.brand-orange {
+    color: #DAA520 !important;
+}
+
+.brand-title {
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 1.2rem;
+    margin: 0;
+    white-space: nowrap;
+}
+
+/* ============================================
+   CONTENEDOR PRINCIPAL
+   ============================================ */
+.main-container {
+    margin-top: 70px;
+    padding-left: 0;
+    padding-right: 0;
+    min-height: calc(100vh - 70px);
+}
+
+/* ============================================
+   SIDEBAR - MENÚ LATERAL
+   ============================================ */
+.sidebar-wrapper {
+    position: sticky;
+    top: 85px;
+    height: calc(100vh - 95px);
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.sidebar-wrapper .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(69, 58, 68, 0.1);
+    background: white;
+    padding: 5px;
+}
+
+.sidebar-wrapper .card-body {
+    padding: 0.5rem !important;
+}
+
+/* Título "NAVEGACIÓN" */
+.sidebar-wrapper h6 {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    color: #6c757d !important;
+    padding: 10px 12px 5px 12px;
+    margin-bottom: 5px !important;
+    font-weight: 700 !important;
+}
+
+/* Enlaces del menú (versión list-group) */
+.list-group-item-action {
+    transition: all 0.2s ease;
+    font-weight: 500;
+    color: #000000 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    margin-bottom: 2px !important;
+}
+
+.list-group-item-action:hover {
+    background-color: #000000 !important;
+    color: #DAA520 !important;
+}
+
+.list-group-item-action.active {
+    background-color: #000000 !important;
+    color: #DAA520 !important;
+}
+
+.list-group-item-action i {
+    width: 22px;
+    text-align: center;
+}
+
+/* Dropdowns del menú lateral */
+.sidebar-wrapper .dropdown-toggle {
+    color: #000000;
+    font-weight: 500;
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-wrapper .dropdown-toggle:hover {
+    background-color: #000000;
+    color: #DAA520 !important;
+}
+
+.sidebar-wrapper .dropdown-toggle::after {
+    margin-left: auto;
+}
+
+.sidebar-wrapper .dropdown-menu {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    padding: 8px !important;
+    background: white !important;
+    position: relative !important;
+    width: 100% !important;
+    transform: none !important;
+}
+
+.sidebar-wrapper .dropdown-item {
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    transition: all 0.2s ease !important;
+    color: #000000 !important;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.sidebar-wrapper .dropdown-item:hover {
+    background-color: #000000 !important;
+    color: #DAA520 !important;
+}
+
+.sidebar-wrapper .dropdown-item i {
+    width: 20px;
+    margin-right: 8px;
+}
+
+/* Scrollbar personalizada */
+.sidebar-wrapper::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.sidebar-wrapper::-webkit-scrollbar-thumb {
+    background: #DAA520;
+    border-radius: 10px;
+}
+
+.sidebar-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #c4901a;
+}
+
+/* ============================================
+   CONTENIDO PRINCIPAL
+   ============================================ */
+.content-wrapper {
+    padding: 15px 20px;
+    min-height: calc(100vh - 95px);
+}
+
+/* ============================================
+   TARJETAS
+   ============================================ */
+.card-custom {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(69, 58, 68, 0.1);
+    background: white;
+    transition: transform 0.2s ease;
+}
+
+.card-custom:hover {
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   TARJETAS DE ESTADÍSTICAS (GRADIENTES)
+   ============================================ */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%) !important;
+    color: white !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%) !important;
+    color: white !important;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f6c23e 0%, #dda20a 100%) !important;
+    color: #1a1a2e !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #36b9cc 0%, #258391 100%) !important;
+    color: white !important;
+}
+
+.bg-gradient-danger {
+    background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%) !important;
+    color: white !important;
+}
+
+/* ============================================
+   BOTONES
+   ============================================ */
+.btn-gold {
+    background: #DAA520 !important;
+    border: none !important;
+    color: #000000 !important;
+    font-weight: 600 !important;
+}
+
+.btn-gold:hover {
+    background: #c4901a !important;
+    color: #000000 !important;
+}
+
+.btn-gold:disabled {
+    background: #b8860b !important;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   TABLAS
+   ============================================ */
+.table-fenix thead {
+    background: #000000 !important;
+    color: white !important;
+}
+
+.table-fenix thead th {
+    padding: 14px 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.5px !important;
+}
+
+.table-fenix tbody td {
+    padding: 12px !important;
+    vertical-align: middle !important;
+}
+
+.table-fenix tbody tr:hover {
+    background-color: #f8f9fa !important;
+    transition: all 0.2s ease !important;
+}
+
+/* ============================================
+   BADGES DE STOCK
+   ============================================ */
+.badge-stock-low {
+    background: #dc3545 !important;
+    color: white !important;
+    padding: 6px 14px !important;
+    border-radius: 50rem !important;
+}
+
+.badge-stock-medium {
+    background: #ffc107 !important;
+    color: #000000 !important;
+    padding: 6px 14px !important;
+    border-radius: 50rem !important;
+}
+
+.badge-stock-high {
+    background: #28a745 !important;
+    color: white !important;
+    padding: 6px 14px !important;
+    border-radius: 50rem !important;
+}
+
+/* ============================================
+   ALERTAS
+   ============================================ */
+.alert-custom {
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ============================================
+   FORMULARIOS
+   ============================================ */
+.form-label-custom {
+    font-weight: 600 !important;
+    color: #4a4a4a !important;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .logo-navbar {
+        width: 30px !important;
+        height: 30px !important;
+        padding: 3px;
+    }
+
+    .brand-title {
+        font-size: 0.9rem !important;
+    }
+
+    .navbar-fenix {
+        min-height: 50px;
+        padding: 4px 12px !important;
+    }
+
+    .main-container {
+        margin-top: 60px;
+    }
+
+    .sidebar-wrapper {
+        position: relative;
+        top: 0;
+        height: auto;
+        padding-right: 0;
+    }
+
+    .content-wrapper {
+        padding: 10px 15px;
+    }
+
+    .card-custom {
+        padding: 1rem !important;
+    }
+
+    .table-fenix thead th {
+        font-size: 0.65rem !important;
+        padding: 8px !important;
+    }
+
+    .list-group-item-action {
+        font-size: 0.85rem !important;
+        padding: 8px 12px !important;
+    }
+}
+
+/* ============================================
+   IMPRESIÓN
+   ============================================ */
+@media print {
+    .navbar-fenix,
+    .sidebar-wrapper,
+    .btn,
+    .btn-group,
+    .d-flex.gap-2,
+    form,
+    .modal,
+    footer {
+        display: none !important;
+    }
+
+    .main-container {
+        margin-top: 0 !important;
+    }
+
+    .content-wrapper {
+        padding: 10px !important;
+    }
+
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+}
+
+/* ============================================
+   CUADROS DE RESUMEN - NOTAS DE SALIDA
+   ============================================ */
+
+/* Cuadro Azul - Total Notas */
+.card-total-notas {
+    border-radius: 12px;
+    border-left: 6px solid #4e73df !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(78, 115, 223, 0.1) !important;
+    transition: transform 0.2s ease;
+}
+
+.card-total-notas:hover {
+    transform: translateY(-3px);
+}
+
+.card-total-notas .card-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #4e73df !important;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.card-total-notas .card-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #000000 !important;
+    margin-bottom: 0;
+}
+
+.card-total-notas .card-icon {
+    font-size: 1.8rem;
+    color: #4e73df;
+    opacity: 0.6;
+}
+
+/* Cuadro Rojo - Anuladas */
+.card-total-anuladas {
+    border-radius: 12px;
+    border-left: 6px solid #e74a3b !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(231, 74, 59, 0.1) !important;
+    transition: transform 0.2s ease;
+}
+
+.card-total-anuladas:hover {
+    transform: translateY(-3px);
+}
+
+.card-total-anuladas .card-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #e74a3b !important;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.card-total-anuladas .card-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #000000 !important;
+    margin-bottom: 0;
+}
+
+.card-total-anuladas .card-icon {
+    font-size: 1.8rem;
+    color: #e74a3b;
+    opacity: 0.6;
+}
+
+/* Responsive para los cuadros */
+@media (max-width: 768px) {
+    .card-total-notas .card-number,
+    .card-total-anuladas .card-number {
+        font-size: 1.5rem;
+    }
+    .card-total-notas .card-icon,
+    .card-total-anuladas .card-icon {
+        font-size: 1.4rem;
+    }
+}

@@ -27,9 +27,87 @@ $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] 
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 ?>
 
+<?php // CSS DEL SWITCH CON TEXTO "ACTIVO" / "INACTIVO" DENTRO ?>
+<style>
+.switch-estado {
+    position: relative;
+    display: inline-block;
+    width: 110px;
+    height: 34px;
+    margin: 0;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.switch-estado input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-estado .slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #dc3545; 
+    transition: .3s;
+    border-radius: 34px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+<?php // Círculo deslizante ?>
+.switch-estado .slider::before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 2;
+}
+
+<?php // Texto cuando está INACTIVO ?>
+.switch-estado .slider::after {
+    content: 'INACTIVO';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: white;
+    transition: .3s;
+    pointer-events: none;
+    z-index: 1;
+}
+
+<?php // Cuando está ACTIVO ?>
+.switch-estado input:checked + .slider {
+    background-color: #28a745; 
+}
+
+.switch-estado input:checked + .slider::before {
+    transform: translateX(76px);
+}
+
+.switch-estado input:checked + .slider::after {
+    content: 'ACTIVO';
+    left: 14px;
+    right: auto;
+    color: white;
+}
+</style>
+
 <div class="col-md-8 col-lg-12">
     
-    <!-- TARJETA DE TÍTULO -->
+    <?php // TARJETA DE TÍTULO ?>
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center">
             <div class="col">
@@ -52,7 +130,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </div>
     </div>
 
-    <!-- FILTRO DE BÚSQUEDA -->
+    <?php // FILTRO DE BÚSQUEDA ?>
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form id="formFiltroClientes" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="clientes">
@@ -116,7 +194,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </form>
     </div>
 
-    <!-- MENSAJES -->
+    <?php // MENSAJES ?>
     <?php
     $mapaTipos = [
         'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
@@ -137,7 +215,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </div>
     <?php endif; ?>
 
-    <!-- TABLA DE CLIENTES -->
+    <?php // TABLA DE CLIENTES ?>
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
@@ -154,13 +232,19 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="py-3">Tipo</th>
                         <th class="py-3">Teléfono</th>
                         <th class="py-3">Correo</th>
-                        <th class="py-3">Status</th>
+                        <th class="py-3 text-center">Status</th>
                         <th class="pe-4 py-3 text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (isset($clientes) && is_array($clientes) && count($clientes) > 0): ?>
                         <?php foreach ($clientes as $c): ?>
+                            <?php 
+                                $nombreCliente = ($c['tipo_cliente'] ?? '') === 'Jurídico' 
+                                    ? ($c['razon_social'] ?? '') 
+                                    : (($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? ''));
+                                $estaActivo = (($c['status'] ?? 'activo') === 'activo' && ($c['eliminado'] ?? 0) == 0);
+                            ?>
                             <tr>
                                 <td class="ps-4 fw-bold"><?= htmlspecialchars($c['cedula'] ?? $c['rif'] ?? 'N/A') ?></td>
                                 <td>
@@ -183,47 +267,44 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 </td>
                                 <td><?= htmlspecialchars($c['telefono'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($c['correo_electronico'] ?? 'N/A') ?></td>
-                                <td>
-                                    <?php if (($c['status'] ?? 'activo') === 'inactivo' || ($c['eliminado'] ?? 0) == 1): ?>
-                                        <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-times-circle me-1"></i> Inactivo
-                                        </span>
+                                
+                                <?php // COLUMNA STATUS: SWITCH CON TEXTO DENTRO ?>
+                                <td class="text-center">
+                                    <?php if ($puede_eliminar_cliente || $puede_editar_cliente): ?>
+                                        <label class="switch-estado" title="<?= $estaActivo ? 'Desactivar Cliente' : 'Activar Cliente' ?>">
+                                            <input type="checkbox" 
+                                                   <?= $estaActivo ? 'checked' : '' ?>
+                                                   onchange="<?= $estaActivo 
+                                                       ? 'confirmarEliminarCliente(' . (int)$c['id_cliente'] . ', \'' . htmlspecialchars(addslashes($nombreCliente)) . '\')' 
+                                                       : 'confirmarReactivarCliente(' . (int)$c['id_cliente'] . ', \'' . htmlspecialchars(addslashes($nombreCliente)) . '\')' ?>">
+                                            <span class="slider"></span>
+                                        </label>
                                     <?php else: ?>
-                                        <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-check-circle me-1"></i> Activo
+                                        <?php // Sin permisos: solo mostramos el estado como badge ?>
+                                        <span class="badge <?= $estaActivo ? 'bg-success' : 'bg-danger' ?>">
+                                            <?= $estaActivo ? 'Activo' : 'Inactivo' ?>
                                         </span>
                                     <?php endif; ?>
                                 </td>
+                                
+                                <?php // COLUMNA ACCIONES: SOLO VER Y EDITAR ?>
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
+                                        
+                                        <?php // Botón Ver Detalle (siempre visible) ?>
                                         <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
                                                 onclick="verDetalleCliente(<?= (int) $c['id_cliente'] ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <?php if (($c['status'] ?? 'activo') === 'inactivo' || ($c['eliminado'] ?? 0) == 1): ?>
-                                            <?php if ($puede_editar_cliente): ?>
-                                            <button type="button" class="btn-action-circle" title="Reactivar Cliente"
-                                                    style="background: rgba(40,167,69,0.15); color: #28a745; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;"
-                                                    onclick="confirmarReactivarCliente(<?= (int) $c['id_cliente'] ?>, '<?= htmlspecialchars(addslashes(($c['tipo_cliente'] ?? '') === 'Jurídico' ? ($c['razon_social'] ?? '') : (($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? '')))) ?>')">
-                                                <i class="fas fa-undo-alt"></i>
-                                            </button>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <?php if ($puede_editar_cliente): ?>
+                                        <?php // Botón Editar (solo si está activo y tiene permiso) ?>
+                                        <?php if ($estaActivo && $puede_editar_cliente): ?>
                                             <button type="button" class="btn-action-circle btn-edit" title="Editar"
                                                     onclick="editarCliente(<?= (int) $c['id_cliente'] ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <?php endif; ?>
-                                            
-                                            <?php if ($puede_eliminar_cliente): ?>
-                                            <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
-                                                    onclick="confirmarEliminarCliente(<?= (int) $c['id_cliente'] ?>, '<?= htmlspecialchars(addslashes(($c['tipo_cliente'] ?? '') === 'Jurídico' ? ($c['razon_social'] ?? '') : (($c['nombre'] ?? '') . ' ' . ($c['apellido'] ?? '')))) ?>')">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                            <?php endif; ?>
                                         <?php endif; ?>
+                                        
                                     </div>
                                 </td>
                             </tr>
@@ -254,537 +335,14 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 </div>
 
 
-<!-- ============================================================ -->
-<!-- MODAL 1: REGISTRAR CLIENTE (HEADER OSCURO)                   -->
-<!-- ============================================================ -->
-<?php if ($puede_crear_cliente): ?>
-<div class="modal fade" id="modalRegistrarCliente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-user-plus me-2" style="color: #f39c12;"></i> Registrar Nuevo Cliente
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
-            </div>
-
-            <div class="modal-body" style="padding: 20px 24px;">
-                <ul class="nav nav-tabs mb-4" style="border-bottom: 1px solid #e9ecef;">
-                    <li class="nav-item">
-                        <button class="nav-link active" id="tab-natural-reg" data-bs-toggle="tab" data-bs-target="#pane-natural-reg" type="button"
-                                style="color: #f39c12; background: transparent; border: none; border-bottom: 2px solid #f39c12; font-weight: 600;">
-                            <i class="fas fa-user me-1"></i> Cliente Natural
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" id="tab-juridico-reg" data-bs-toggle="tab" data-bs-target="#pane-juridico-reg" type="button"
-                                style="color: #6c757d; background: transparent; border: none; font-weight: 600;">
-                            <i class="fas fa-building me-1"></i> Cliente Jurídico
-                        </button>
-                    </li>
-                </ul>
-
-                <div class="tab-content">
-                    <!-- PESTAÑA NATURAL -->
-                    <div class="tab-pane fade show active" id="pane-natural-reg">
-                        <form method="POST" action="?url=clientes&type=register" id="formRegistrarNatural">
-                            <input type="hidden" name="accion" value="register_natural">
-                            
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cédula *</label>
-                                    <input type="text" id="reg-cedula" name="cedula" class="form-control" required
-                                           placeholder="Ej: V-12345678"
-                                           data-validate="cedula"
-                                           data-unico-endpoint="?url=clientes&type=check_duplicado"
-                                           data-unico-campo="cedula">
-                                    <small class="feedback-validacion info" id="reg-cedula-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Formato: V-12345678
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono *</label>
-                                    <input type="tel" id="reg-telefono" name="telefono" class="form-control" required
-                                           placeholder="Ej: 0412-5556677" data-validate="telefono">
-                                    <small class="feedback-validacion info" id="reg-telefono-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Formato: 0412-1234567
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombres *</label>
-                                    <input type="text" id="reg-nombre" name="nombre" class="form-control" required
-                                           placeholder="Solo letras" data-validate="nombre">
-                                    <small class="feedback-validacion info" id="reg-nombre-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Mínimo 2 caracteres
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Apellidos *</label>
-                                    <input type="text" id="reg-apellido" name="apellido" class="form-control" required
-                                           placeholder="Solo letras" data-validate="nombre">
-                                    <small class="feedback-validacion info" id="reg-apellido-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Mínimo 2 caracteres
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo Electrónico *</label>
-                                    <input type="email" id="reg-correo" name="correo_electronico" class="form-control" required
-                                           placeholder="ejemplo@correo.com" data-validate="correo">
-                                    <small class="feedback-validacion info" id="reg-correo-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Formato: usuario@dominio.com
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Fecha de Nacimiento *</label>
-                                    <input type="date" id="reg-fecha-nac" name="fecha_de_nacimiento" class="form-control" required data-validate="fecha">
-                                    <small class="feedback-validacion info" id="reg-fecha-nac-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Debe ser mayor de 18 años
-                                    </small>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección *</label>
-                                    <textarea id="reg-direccion" name="direccion" class="form-control" rows="2" required
-                                              style="resize: vertical;" placeholder="Dirección completa" data-validate="direccion"></textarea>
-                                    <small class="feedback-validacion info" id="reg-direccion-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Mínimo 5 caracteres
-                                    </small>
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid #e9ecef;">
-                                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                                    Cancelar
-                                </button>
-                                <button type="submit" class="btn"
-                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                                    <i class="fas fa-save me-1"></i> Registrar Cliente Natural
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- PESTAÑA JURÍDICO -->
-                    <div class="tab-pane fade" id="pane-juridico-reg">
-                        <form method="POST" action="?url=clientes&type=register_juridico" id="formRegistrarJuridico">
-                            <input type="hidden" name="accion" value="register_juridico">
-                            
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
-                                    <input type="text" id="reg-rif" name="rif" class="form-control" required
-                                           placeholder="Ej: J-123456789"
-                                           data-validate="rif"
-                                           data-unico-endpoint="?url=clientes&type=check_duplicado"
-                                           data-unico-campo="rif">
-                                    <small class="feedback-validacion info" id="reg-rif-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Formato: J-123456789
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono *</label>
-                                    <input type="tel" id="reg-jur-telefono" name="telefono" class="form-control" required
-                                           placeholder="Ej: 0251-1234567" data-validate="telefono">
-                                    <small class="feedback-validacion info" id="reg-jur-telefono-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Formato: 0251-1234567
-                                    </small>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Razón Social *</label>
-                                    <input type="text" id="reg-jur-razon" name="razon_social" class="form-control" required
-                                           placeholder="Nombre de la empresa" data-validate="razon">
-                                    <small class="feedback-validacion info" id="reg-jur-razon-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo Electrónico *</label>
-                                    <input type="email" id="reg-jur-correo" name="correo_electronico" class="form-control" required
-                                           placeholder="empresa@correo.com" data-validate="correo">
-                                    <small class="feedback-validacion info" id="reg-jur-correo-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Formato: usuario@dominio.com
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección Fiscal *</label>
-                                    <input type="text" id="reg-jur-direccion" name="direccion" class="form-control" required
-                                           placeholder="Dirección fiscal" data-validate="direccion">
-                                    <small class="feedback-validacion info" id="reg-jur-direccion-feedback">
-                                        <i class="fas fa-info-circle me-1"></i> Mínimo 5 caracteres
-                                    </small>
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid #e9ecef;">
-                                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                                    Cancelar
-                                </button>
-                                <button type="submit" class="btn"
-                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                                    <i class="fas fa-save me-1"></i> Registrar Cliente Jurídico
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
+<?php // INCLUIR MODALES ?>
+<?php require_once __DIR__ . '/registroClientView.php'; ?>
+<?php require_once __DIR__ . '/detalleClientView.php'; ?>
+<?php require_once __DIR__ . '/editarClientView.php'; ?>
+<?php require_once __DIR__ . '/eliminarClientView.php'; ?>
 
 
-<!-- ============================================================ -->
-<!-- MODAL 2: VER DETALLE DEL CLIENTE                             -->
-<!-- ============================================================ -->
-<div class="modal fade" id="modalVerCliente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-eye me-2" style="color: #f39c12;"></i> Detalle del Cliente
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
-            </div>
-
-            <div class="modal-body" style="padding: 20px 24px;">
-                <div id="ver-cliente-titulo" class="text-center mb-4">
-                    <h4 style="color: #f39c12; font-weight: 700; margin-bottom: 6px;">—</h4>
-                    <span id="ver-cliente-tipo-badge" class="badge" style="padding: 6px 16px; border-radius: 50px; font-size: 0.75rem;">—</span>
-                </div>
-
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
-                            <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
-                                <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Información del Cliente
-                            </h6>
-                            <div class="mb-3">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">ID Cliente</label>
-                                <p id="ver-cliente-id" style="color: #1a1a2e; margin: 0; font-weight: 700;">—</p>
-                            </div>
-                            <div class="mb-3">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Status</label>
-                                <div id="ver-cliente-status-wrap">
-                                    <span id="ver-cliente-status-badge" class="badge" style="padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.75rem;">—</span>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Cédula / RIF</label>
-                                <p id="ver-cliente-documento" style="color: #1a1a2e; margin: 0; font-weight: 600;">—</p>
-                            </div>
-                            <div class="mb-3">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Nombre / Razón Social</label>
-                                <p id="ver-cliente-nombre" style="color: #1a1a2e; margin: 0; font-weight: 600;">—</p>
-                            </div>
-                            <div class="mb-0" id="ver-cliente-fecha-wrap">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Fecha de Nacimiento</label>
-                                <p id="ver-cliente-fecha" style="color: #1a1a2e; margin: 0;">—</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
-                            <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
-                                <i class="fas fa-address-book me-2" style="color: #f39c12;"></i> Datos de Contacto
-                            </h6>
-                            <div class="mb-3">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Teléfono</label>
-                                <p id="ver-cliente-telefono" style="color: #1a1a2e; margin: 0;">—</p>
-                            </div>
-                            <div class="mb-3">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Correo Electrónico</label>
-                                <p id="ver-cliente-correo" style="color: #1a1a2e; margin: 0;">—</p>
-                            </div>
-                            <div class="mb-0">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Dirección</label>
-                                <p id="ver-cliente-direccion" style="color: #1a1a2e; margin: 0;">—</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                    <i class="fas fa-times me-1"></i> Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- ============================================================ -->
-<!-- MODAL 3: EDITAR CLIENTE                                      -->
-<!-- ============================================================ -->
-<?php if ($puede_editar_cliente): ?>
-<div class="modal fade" id="modalEditarCliente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-edit me-2" style="color: #f39c12;"></i> Editar Cliente: <span id="editar-cliente-nombre-header" style="color: #f39c12;">—</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
-            </div>
-
-            <div class="modal-body" style="padding: 20px 24px;">
-                <!-- FORMULARIO NATURAL -->
-                <div id="editar-bloque-natural" style="display: none;">
-                    <form method="POST" action="?url=clientes&type=edit" id="formEditarNatural">
-                        <input type="hidden" name="accion" value="edit_natural">
-                        <input type="hidden" name="id_cliente" id="editar-natural-id">
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Cédula *</label>
-                                <input type="text" id="editar-natural-cedula" name="cedula" class="form-control" required
-                                       data-validate="cedula"
-                                       data-unico-endpoint="?url=clientes&type=check_duplicado"
-                                       data-unico-campo="cedula">
-                                <small class="feedback-validacion info" id="editar-natural-cedula-feedback"></small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono *</label>
-                                <input type="tel" id="editar-natural-telefono" name="telefono" class="form-control" required data-validate="telefono">
-                                <small class="feedback-validacion info" id="editar-natural-telefono-feedback"></small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombres *</label>
-                                <input type="text" id="editar-natural-nombre" name="nombre" class="form-control" required data-validate="nombre">
-                                <small class="feedback-validacion info" id="editar-natural-nombre-feedback"></small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Apellidos *</label>
-                                <input type="text" id="editar-natural-apellido" name="apellido" class="form-control" required data-validate="nombre">
-                                <small class="feedback-validacion info" id="editar-natural-apellido-feedback"></small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo Electrónico *</label>
-                                <input type="email" id="editar-natural-correo" name="correo_electronico" class="form-control" required data-validate="correo">
-                                <small class="feedback-validacion info" id="editar-natural-correo-feedback"></small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Fecha de Nacimiento *</label>
-                                <input type="date" id="editar-natural-fecha" name="fecha_de_nacimiento" class="form-control" required data-validate="fecha">
-                                <small class="feedback-validacion info" id="editar-natural-fecha-feedback"></small>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección *</label>
-                                <textarea id="editar-natural-direccion" name="direccion" class="form-control" rows="2" required style="resize: vertical;" data-validate="direccion"></textarea>
-                                <small class="feedback-validacion info" id="editar-natural-direccion-feedback"></small>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid #e9ecef;">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                                    style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                                Cancelar
-                            </button>
-                            <button type="submit" class="btn"
-                                    style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                                <i class="fas fa-save me-1"></i> Actualizar Cliente
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- FORMULARIO JURÍDICO -->
-                <div id="editar-bloque-juridico" style="display: none;">
-                    <form method="POST" action="?url=clientes&type=edit_juridico" id="formEditarJuridico">
-                        <input type="hidden" name="accion" value="edit_juridico">
-                        <input type="hidden" name="id_cliente" id="editar-juridico-id">
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
-                                <input type="text" id="editar-juridico-rif" name="rif" class="form-control" required
-                                       data-validate="rif"
-                                       data-unico-endpoint="?url=clientes&type=check_duplicado"
-                                       data-unico-campo="rif">
-                                <small class="feedback-validacion info" id="editar-juridico-rif-feedback"></small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono *</label>
-                                <input type="tel" id="editar-juridico-telefono" name="telefono" class="form-control" required data-validate="telefono">
-                                <small class="feedback-validacion info" id="editar-juridico-telefono-feedback"></small>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Razón Social *</label>
-                                <input type="text" id="editar-juridico-razon" name="razon_social" class="form-control" required data-validate="razon">
-                                <small class="feedback-validacion info" id="editar-juridico-razon-feedback"></small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo Electrónico *</label>
-                                <input type="email" id="editar-juridico-correo" name="correo_electronico" class="form-control" required data-validate="correo">
-                                <small class="feedback-validacion info" id="editar-juridico-correo-feedback"></small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección Fiscal *</label>
-                                <input type="text" id="editar-juridico-direccion" name="direccion" class="form-control" required data-validate="direccion">
-                                <small class="feedback-validacion info" id="editar-juridico-direccion-feedback"></small>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid #e9ecef;">
-                            <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                                    style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                                Cancelar
-                            </button>
-                            <button type="submit" class="btn"
-                                    style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                                <i class="fas fa-save me-1"></i> Actualizar Cliente
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-
-<!-- ============================================================ -->
-<!-- MODAL 4: ELIMINAR CLIENTE                                    -->
-<!-- ============================================================ -->
-<?php if ($puede_eliminar_cliente): ?>
-<div class="modal fade" id="modalEliminarCliente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(220,53,69,0.3); padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Eliminar Cliente
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
-            </div>
-
-            <form method="POST" action="?url=clientes&type=delete">
-                <input type="hidden" name="accion" value="eliminar">
-                <input type="hidden" name="id_cliente" id="eliminar-cliente-id">
-                
-                <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
-                    <p style="margin-bottom: 12px; font-weight: 500;">¿Estás seguro de eliminar (inactivar) este cliente?</p>
-                    
-                    <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #dc3545; border-radius: 8px;">
-                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente a eliminar</strong>
-                        <span id="eliminar-cliente-nombre" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
-                    </div>
-
-                    <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Esta acción realizará la <strong>eliminación lógica</strong> del cliente. Si el cliente tiene notas de entrada o salida asociadas, el sistema bloqueará la eliminación.
-                    </div>
-                </div>
-
-                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                            style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn"
-                            style="background: #dc3545; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                        <i class="fas fa-trash-alt me-1"></i> Sí, eliminar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL REACTIVAR CLIENTE -->
-<div class="modal fade" id="modalReactivarCliente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(40,167,69,0.3); padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-undo-alt me-2" style="color: #28a745;"></i> Reactivar Cliente
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
-            </div>
-            <form method="POST" action="?url=clientes&type=reactivar">
-                <input type="hidden" name="accion" value="reactivar">
-                <input type="hidden" name="id_cliente" id="reactivar-cliente-id">
-                <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
-                    <p style="margin-bottom: 12px; font-weight: 500;">¿Deseas reactivar este cliente?</p>
-                    <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 8px;">
-                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente a reactivar</strong>
-                        <span id="reactivar-cliente-nombre" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
-                    </div>
-                    <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
-                        <i class="fas fa-check-circle me-2"></i>
-                        El cliente volverá a estar <strong>Activo</strong> y aparecerá disponible en los selectores de futuras notas.
-                    </div>
-                </div>
-                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn" style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                        <i class="fas fa-check me-1"></i> Sí, reactivar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-
-<!-- ============================================================ -->
-<!-- MODAL 5: ALERTA DE MENOR DE EDAD                             -->
-<!-- ============================================================ -->
-<div class="modal fade" id="modalAlertaMenorEdad" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(220,53,69,0.3); padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-user-slash me-2" style="color: #dc3545;"></i> Cliente Menor de Edad
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
-            </div>
-
-            <div class="modal-body" style="padding: 24px; text-align: center;">
-                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #dc3545; margin-bottom: 16px;"></i>
-                
-                <h4 style="color: #1a1a2e; font-weight: 700; margin-bottom: 12px;">
-                    ¡No se puede registrar!
-                </h4>
-                
-                <p style="color: #6c757d; margin-bottom: 20px;">
-                    El cliente es <strong>menor de 18 años</strong>. Por normativa de seguridad, no se permite registrar menores de edad en el sistema.
-                </p>
-
-                <div class="p-3 mb-0" style="background: #f8f9fa; border-left: 4px solid #dc3545; border-radius: 8px; text-align: left;">
-                    <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Edad detectada</strong>
-                    <span id="alerta-edad-detectada" style="color: #dc3545; font-weight: 700; font-size: 1.2rem;">—</span>
-                </div>
-            </div>
-
-            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                <button type="button" class="btn" data-bs-dismiss="modal"
-                        style="background: #dc3545; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px; width: 100%;">
-                    <i class="fas fa-check me-1"></i> Entendido
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- ============================================================ -->
-<!-- REAPERTURA DE MODAL TRAS POST FALLIDO POR DUPLICADO         -->
-<!-- Reabre el modal correspondiente, repuebla los campos y pinta -->
-<!-- el error inline en el campo que falló.                      -->
-<!-- ============================================================ -->
+<?php // REAPERTURA DE MODAL TRAS POST FALLIDO POR DUPLICADO ?>
 <?php if (!empty($_SESSION['errores_campo']) && !empty($_SESSION['form_modal'])): 
     $erroresCampo = $_SESSION['errores_campo'];
     $formModal    = $_SESSION['form_modal'];
@@ -817,9 +375,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ============================================================
-    // REGISTRAR (NATURAL o JURÍDICO)
-    // ============================================================
     if (formModal === 'registrar_natural' || formModal === 'registrar_juridico') {
         var modalEl = document.getElementById('modalRegistrarCliente');
         if (!modalEl) return;
@@ -852,65 +407,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         new bootstrap.Modal(modalEl).show();
     }
-
-    // ============================================================
-    // EDITAR (NATURAL o JURÍDICO)
-    // ============================================================
-    else if (formModal === 'editar_natural' || formModal === 'editar_juridico') {
-        var modalEl = document.getElementById('modalEditarCliente');
-        if (!modalEl) return;
-
-        var bloqueNat = document.getElementById('editar-bloque-natural');
-        var bloqueJur = document.getElementById('editar-bloque-juridico');
-
-        modalEl.addEventListener('shown.bs.modal', function onShown() {
-            modalEl.removeEventListener('shown.bs.modal', onShown);
-
-            if (formModal === 'editar_natural') {
-                bloqueNat.style.display = 'block';
-                bloqueJur.style.display = 'none';
-
-                setField('editar-natural-id',        formData.id_cliente);
-                setField('editar-natural-cedula',    formData.cedula);
-                setField('editar-natural-nombre',    formData.nombre);
-                setField('editar-natural-apellido',  formData.apellido);
-                setField('editar-natural-telefono',  formData.telefono);
-                setField('editar-natural-correo',    formData.correo_electronico);
-                setField('editar-natural-fecha',     formData.fecha_de_nacimiento);
-                setField('editar-natural-direccion', formData.direccion);
-
-                var hdr = document.getElementById('editar-cliente-nombre-header');
-                if (hdr) hdr.textContent = ((formData.nombre || '') + ' ' + (formData.apellido || '')).trim();
-
-                if (errores.cedula) pintarError('editar-natural-cedula', errores.cedula);
-            } else {
-                bloqueNat.style.display = 'none';
-                bloqueJur.style.display = 'block';
-
-                setField('editar-juridico-id',        formData.id_cliente);
-                setField('editar-juridico-rif',       formData.rif);
-                setField('editar-juridico-razon',     formData.razon_social);
-                setField('editar-juridico-telefono',  formData.telefono);
-                setField('editar-juridico-correo',    formData.correo_electronico);
-                setField('editar-juridico-direccion', formData.direccion);
-
-                var hdr2 = document.getElementById('editar-cliente-nombre-header');
-                if (hdr2) hdr2.textContent = formData.razon_social || '';
-
-                if (errores.rif) pintarError('editar-juridico-rif', errores.rif);
-            }
-        }, { once: true });
-
-        new bootstrap.Modal(modalEl).show();
-    }
 });
 </script>
 <?php endif; ?>
 
 
-<!-- ============================================================ -->
-<!-- DATOS DE CLIENTES EN JSON + JAVASCRIPT ESPECÍFICO            -->
-<!-- ============================================================ -->
+<?php // DATOS DE CLIENTES EN JSON + JAVASCRIPT ESPECÍFICO ?>
 <script id="clientesData" type="application/json">
 <?= json_encode(
     isset($clientes) && is_array($clientes) ? array_values($clientes) : [],
@@ -980,49 +482,51 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ============================================================
-    // DATOS DE CLIENTES
-    // ============================================================
     inicializarMapaClientes();
 
-    // ============================================================
-    // CALLBACK DE MENOR DE EDAD (usa el modal del sistema)
-    // ============================================================
+    <?php // CALLBACK DE MENOR DE EDAD ?>
     let modalMenorEdadMostrado = false;
+
     Validador.onMenorEdad(function(edad) {
         if (modalMenorEdadMostrado) return;
+
+        const modalEl = document.getElementById('modalAlertaMenorEdad');
+        if (!modalEl) {
+            console.warn('No se encontró el modal de menor de edad');
+            return;
+        }
+
         modalMenorEdadMostrado = true;
-        document.getElementById('alerta-edad-detectada').textContent = edad + ' años';
-        new bootstrap.Modal(document.getElementById('modalAlertaMenorEdad')).show();
-        
-        document.getElementById('modalAlertaMenorEdad').addEventListener('hidden.bs.modal', function onHidden() {
+
+        const edadEl = document.getElementById('alerta-edad-detectada');
+        if (edadEl) edadEl.textContent = edad + ' años';
+
+        new bootstrap.Modal(modalEl).show();
+
+        modalEl.addEventListener('hidden.bs.modal', function onHidden() {
             modalMenorEdadMostrado = false;
-            this.removeEventListener('hidden.bs.modal', onHidden);
+            modalEl.removeEventListener('hidden.bs.modal', onHidden);
         });
     });
 
-    // ============================================================
-    // INICIALIZAR VALIDADOR EN LOS MODALES
-    // ============================================================
-    Validador.init(document.getElementById('modalRegistrarCliente'));
-    Validador.init(document.getElementById('modalEditarCliente'));
+    <?php // INICIALIZAR VALIDADOR EN LOS MODALES ?>
+    const modalReg = document.getElementById('modalRegistrarCliente');
+    const modalEdt = document.getElementById('modalEditarCliente');
+    if (modalReg) Validador.init(modalReg);
+    if (modalEdt) Validador.init(modalEdt);
 
-    // ============================================================
-    // RESET AL ABRIR MODAL REGISTRAR
-    // ============================================================
-    document.getElementById('modalRegistrarCliente').addEventListener('show.bs.modal', function() {
-        Validador.resetFormulario('formRegistrarNatural');
-        Validador.resetFormulario('formRegistrarJuridico');
-    });
+    if (modalReg) {
+        modalReg.addEventListener('show.bs.modal', function() {
+            Validador.resetFormulario('formRegistrarNatural');
+            Validador.resetFormulario('formRegistrarJuridico');
+        });
+    }
 
-    // ============================================================
-    // VALIDAR AL ENVIAR FORMULARIOS (CON RESTRICCIÓN DE MAYORÍA DE EDAD)
-    // ============================================================
+    <?php // VALIDAR AL ENVIAR FORMULARIOS ?>
     ['formRegistrarNatural', 'formRegistrarJuridico', 'formEditarNatural', 'formEditarJuridico'].forEach(function(id) {
         const form = document.getElementById(id);
         if (form) {
             form.addEventListener('submit', function(e) {
-                // Verificar mayoría de edad estrictamente en clientes naturales
                 if (id === 'formRegistrarNatural' || id === 'formEditarNatural') {
                     const inputFecha = id === 'formRegistrarNatural' 
                         ? document.getElementById('reg-fecha-nac') 
@@ -1034,12 +538,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         let edad = hoy.getFullYear() - fechaNac.getFullYear();
                         const mes = hoy.getMonth() - fechaNac.getMonth();
                         if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) edad--;
+                        
                         if (edad < 18) {
                             e.preventDefault();
                             e.stopPropagation();
-                            document.getElementById('alerta-edad-detectada').textContent = (edad >= 0 ? edad : 0) + ' años';
-                            new bootstrap.Modal(document.getElementById('modalAlertaMenorEdad')).show();
+
+                            const modalEl = document.getElementById('modalAlertaMenorEdad');
+                            if (modalEl) {
+                                const edadEl = document.getElementById('alerta-edad-detectada');
+                                if (edadEl) edadEl.textContent = (edad >= 0 ? edad : 0) + ' años';
+                                new bootstrap.Modal(modalEl).show();
+                            }
+
+                            inputFecha.classList.add('campo-invalido');
+                            inputFecha.focus();
+
                             return false;
+                        } else {
+                            inputFecha.classList.remove('campo-invalido');
                         }
                     }
                 }
@@ -1053,9 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ============================================================
-    // VER DETALLE (ESPECIFICACIONES DEL CLIENTE)
-    // ============================================================
+    <?php // VER DETALLE DEL CLIENTE ?>
     window.verDetalleCliente = function(id) {
         const c = clientesPorId[id];
         if (!c) return;
@@ -1079,11 +593,9 @@ document.addEventListener('DOMContentLoaded', function() {
             badge.style.color = '#28a745';
         }
 
-        // Mostrar ID en las especificaciones (detalle)
         const idElem = document.getElementById('ver-cliente-id');
         if (idElem) idElem.textContent = '#' + c.id_cliente;
 
-        // Mostrar Status con badge
         const statusBadge = document.getElementById('ver-cliente-status-badge');
         if (statusBadge) {
             if (c.status === 'inactivo' || parseInt(c.eliminado) === 1) {
@@ -1114,9 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Modal(document.getElementById('modalVerCliente')).show();
     };
 
-    // ============================================================
-    // EDITAR
-    // ============================================================
+    <?php // EDITAR CLIENTE ?>
     window.editarCliente = function(id) {
         const c = clientesPorId[id];
         if (!c) return;
@@ -1161,7 +671,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('editar-natural-direccion').value = c.direccion || '';
             
             setTimeout(function() {
-                document.querySelectorAll('#editar-bloque-natural input[data-validate], #editar-bloque-natural textarea[data-validate]').forEach(function(input) {
+                document.querySelectorAll('#editar-bloque-natural input[data-validate]').forEach(function(input) {
                     Validador.validarCampo(input);
                 });
             }, 100);
@@ -1170,24 +680,21 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Modal(document.getElementById('modalEditarCliente')).show();
     };
 
-    // ============================================================
-    // ELIMINAR Y REACTIVAR
-    // ============================================================
+    <?php // CONFIRMAR DESACTIVAR (desde el switch) ?>
     window.confirmarEliminarCliente = function(id, nombre) {
         document.getElementById('eliminar-cliente-id').value = id;
         document.getElementById('eliminar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
         new bootstrap.Modal(document.getElementById('modalEliminarCliente')).show();
     };
 
+    <?php // CONFIRMAR ACTIVAR (desde el switch) ?>
     window.confirmarReactivarCliente = function(id, nombre) {
         document.getElementById('reactivar-cliente-id').value = id;
         document.getElementById('reactivar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
         new bootstrap.Modal(document.getElementById('modalReactivarCliente')).show();
     };
 
-    // ============================================================
-    // ESTILO DE PESTAÑAS
-    // ============================================================
+    <?php // ESTILO DE PESTAÑAS ?>
     document.querySelectorAll('#modalRegistrarCliente .nav-link').forEach(function(tab) {
         tab.addEventListener('shown.bs.tab', function(e) {
             document.querySelectorAll('#modalRegistrarCliente .nav-link').forEach(function(t) {
@@ -1201,9 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- ============================================================ -->
-<!-- AUTO-CIERRE DE ALERTAS                                       -->
-<!-- ============================================================ -->
+<?php // AUTO-CIERRE DE ALERTAS ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {

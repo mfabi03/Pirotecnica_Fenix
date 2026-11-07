@@ -209,7 +209,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'eliminar', '?url=notasalida&type=list');
         try {
             $idNota = $_POST['id_nota_salida'] ?? 0;
-            $motivo = trim($_POST['motivo_eliminacion'] ?? '');
+            
+            // ⚠️ LEER AMBOS NOMBRES POR SI ACASO
+            $motivo = trim($_POST['motivo_eliminacion'] ?? $_POST['motivo_anulacion'] ?? '');
+            
             $idUsuario = obtenerIdUsuarioValido($db);
             
             if (empty($motivo)) throw new Exception("Debe indicar el motivo de eliminación.");

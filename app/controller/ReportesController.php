@@ -20,13 +20,23 @@ class ReportesController {
 
     public function index() {
         $ajax = (!empty($_GET['ajax']) || !empty($_POST['ajax']));
-        $fecha_inicio = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? trim($_GET['fecha_inicio']) : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? trim($_GET['fecha']) : null);
-        $fecha_fin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? trim($_GET['fecha_fin']) : null;
-        $busqueda = isset($_GET['busqueda']) && $_GET['busqueda'] !== '' ? trim($_GET['busqueda']) : null;
-        $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] !== '' ? (int)$_GET['id_categoria'] : null;
-        $tipo_movimiento = isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] !== '' ? trim($_GET['tipo_movimiento']) : null;
+        
+        // 🔥 LEER TANTO DE $_GET COMO DE $_POST
+        $req = function($key) {
+            if (isset($_POST[$key]) && $_POST[$key] !== '') return trim($_POST[$key]);
+            if (isset($_GET[$key]) && $_GET[$key] !== '') return trim($_GET[$key]);
+            return null;
+        };
+
+        $fecha_inicio = $req('fecha_inicio') ?? $req('fecha');
+        $fecha_fin = $req('fecha_fin') ?? $req('fecha_hasta');
+        $busqueda = $req('busqueda');
+        $id_categoria = $req('id_categoria') !== null ? (int)$req('id_categoria') : null;
+        $tipo_movimiento = $req('tipo_movimiento');
+        
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $porPagina = isset($_GET['por_pagina']) ? (int)$_GET['por_pagina'] : 10;
+        if (isset($_POST['por_pagina'])) $porPagina = (int)$_POST['por_pagina'];
 
         $offset = ($pagina - 1) * $porPagina;
 
@@ -46,16 +56,18 @@ class ReportesController {
 
         $db = $this->db;
 
+        // 🔥 AQUÍ ESTABA EL ERROR. AHORA USA dirname(__DIR__) PARA IR A app/view/reportes/
         if ($ajax) {
             ob_start();
-            require_once __DIR__ . '/../view/reportes/reportesView.php';
+            require_once dirname(__DIR__) . '/view/reportes/reportesView.php';
             $html = ob_get_clean();
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => true, 'html' => $html], JSON_UNESCAPED_UNICODE);
             exit();
         }
 
-        require_once __DIR__ . '/../view/reportes/reportesView.php';
+        // 🔥 MISMA CORRECCIÓN AQUÍ
+        require_once dirname(__DIR__) . '/view/reportes/reportesView.php';
     }
 
     public function exportarCSV() {

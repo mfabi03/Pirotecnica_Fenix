@@ -311,9 +311,11 @@ const Validador = (function () {
         const resultado = validadores[tipo](input.value);
         mostrarFeedback(input, feedbackEl, resultado.estado, resultado.mensaje);
 
+        // ✅ CAMBIO CLAVE: si es menor de edad, llamamos al callback
+        //    pero NO bloqueamos el campo. El usuario debe poder corregir.
         if (tipo === 'fecha' && resultado.edad !== undefined && resultado.edad < 18 && input.value) {
             if (callbackMenorEdad) callbackMenorEdad(resultado.edad);
-            return false;
+            // ⚠️ NO return false: el campo sigue editable para borrar/corregir
         }
 
         // Si tiene validación de unicidad y el formato es válido → consultar

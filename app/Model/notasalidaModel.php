@@ -15,12 +15,7 @@ class notasalidaModel {
     // OBTENER PRODUCTOS CON CATEGORIA
     public function obtenerProductosConCategoria() {
         try {
-            $sql = "SELECT 
-                        p.id_producto, 
-                        p.descripcion, 
-                        p.cantidad AS stock,
-                        c.nombre_categoria,
-                        c.id_categoria
+            $sql = "SELECT p.id_producto, p.descripcion, p.cantidad AS stock, c.nombre_categoria, c.id_categoria
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
                     WHERE p.cantidad > 0 AND p.eliminado = 0
@@ -37,11 +32,7 @@ class notasalidaModel {
     // OBTENER CLIENTES
     public function obtenerClientes() {
         try {
-            $sql = "SELECT 
-                        p.id_persona AS id_cliente,
-                        p.nombre,
-                        p.apellido,
-                        cj.razon_social,
+            $sql = "SELECT p.id_persona AS id_cliente, p.nombre, p.apellido, cj.razon_social,
                         CASE 
                             WHEN cj.id_cliente_juridico IS NOT NULL THEN cj.razon_social
                             WHEN cn.id_cliente_natural IS NOT NULL THEN CONCAT(p.nombre, ' ', p.apellido)
@@ -59,7 +50,6 @@ class notasalidaModel {
                     WHERE (cj.id_cliente_juridico IS NOT NULL OR cn.id_cliente_natural IS NOT NULL)
                     AND p.eliminado = 0
                     ORDER BY nombre_cliente ASC";
-            
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -72,76 +62,43 @@ class notasalidaModel {
     // REGISTRAR SALIDA
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
-            $sqlCheckCliente = "SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0";
-            $stmtCheck = $this->db->prepare($sqlCheckCliente);
+            $stmtCheck = $this->db->prepare("SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0");
             $stmtCheck->execute([$datos['id_cliente']]);
-            $clienteExiste = $stmtCheck->fetch();
+            if (!$stmtCheck->fetch()) throw new Exception("El cliente seleccionado no existe o se encuentra inactivo.");
             
-            if (!$clienteExiste) {
-                throw new Exception("El cliente seleccionado no existe o se encuentra inactivo.");
-            }
-            
-            $sqlCheckUsuario = "SELECT id_usuario FROM usuario WHERE id_usuario = ? AND eliminado = 0";
-            $stmtCheckUser = $this->db->prepare($sqlCheckUsuario);
+            $stmtCheckUser = $this->db->prepare("SELECT id_usuario FROM usuario WHERE id_usuario = ? AND eliminado = 0");
             $stmtCheckUser->execute([$idUsuario]);
-            $usuarioExiste = $stmtCheckUser->fetch();
-            
-            if (!$usuarioExiste) {
-                throw new Exception("El usuario con ID $idUsuario no existe en la base de datos.");
-            }
+            if (!$stmtCheckUser->fetch()) throw new Exception("El usuario con ID $idUsuario no existe en la base de datos.");
             
             foreach ($detalles as $d) {
-                $sqlStock = "SELECT cantidad FROM producto WHERE id_producto = ? AND eliminado = 0";
-                $stmtStock = $this->db->prepare($sqlStock);
+                $stmtStock = $this->db->prepare("SELECT cantidad FROM producto WHERE id_producto = ? AND eliminado = 0");
                 $stmtStock->execute([$d['id_producto']]);
                 $stockActual = $stmtStock->fetchColumn();
-                
                 if ($stockActual < $d['cantidad']) {
                     throw new Exception("Stock insuficiente para el producto ID {$d['id_producto']}. Disponible: $stockActual");
                 }
             }
             
             $this->db->beginTransaction();
-            
             try {
-                $sql = "INSERT INTO nota_de_salida (fecha, id_persona, id_usuario, eliminado) 
-                        VALUES (NOW(), ?, ?, 0)";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([
-                    $datos['id_cliente'], 
-                    $idUsuario
-                ]);
-                
+                $stmt = $this->db->prepare("INSERT INTO nota_de_salida (fecha, id_persona, id_usuario, eliminado) VALUES (NOW(), ?, ?, 0)");
+                $stmt->execute([$datos['id_cliente'], $idUsuario]);
                 $idNota = $this->db->lastInsertId();
                 
-                $sqlDetalle = "INSERT INTO detalle_salida (id_nota_salida, id_producto, cantidad) 
-                               VALUES (?, ?, ?)";
-                $stmtDetalle = $this->db->prepare($sqlDetalle);
-                
-                $sqlUpdateStock = "UPDATE producto SET cantidad = cantidad - ? WHERE id_producto = ?";
-                $stmtUpdate = $this->db->prepare($sqlUpdateStock);
+                $stmtDetalle = $this->db->prepare("INSERT INTO detalle_salida (id_nota_salida, id_producto, cantidad) VALUES (?, ?, ?)");
+                $stmtUpdate = $this->db->prepare("UPDATE producto SET cantidad = cantidad - ? WHERE id_producto = ?");
                 
                 foreach ($detalles as $d) {
-                    $stmtDetalle->execute([
-                        $idNota,
-                        $d['id_producto'],
-                        $d['cantidad']
-                    ]);
-                    
-                    $stmtUpdate->execute([
-                        $d['cantidad'],
-                        $d['id_producto']
-                    ]);
+                    $stmtDetalle->execute([$idNota, $d['id_producto'], $d['cantidad']]);
+                    $stmtUpdate->execute([$d['cantidad'], $d['id_producto']]);
                 }
                 
                 $this->db->commit();
                 return $idNota;
-                
             } catch (Exception $e) {
                 $this->db->rollBack();
                 throw $e;
             }
-            
         } catch (Exception $e) {
             error_log("Error en registrarSalida: " . $e->getMessage());
             throw $e;
@@ -151,7 +108,7 @@ class notasalidaModel {
     // LISTAR NOTAS DE SALIDA
     public function listarNotasSalida() {
         try {
-            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario 
+            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, motivo_anulacion 
                     FROM nota_de_salida 
                     WHERE eliminado = 0
                     ORDER BY id_nota_salida DESC";
@@ -160,18 +117,11 @@ class notasalidaModel {
             $notas = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             foreach ($notas as &$n) {
-                $sqlCliente = "SELECT 
-                                    p.nombre, 
-                                    p.apellido, 
-                                    cj.razon_social,
-                                    CASE 
-                                        WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico'
-                                        ELSE 'Natural'
-                                    END AS tipo_cliente
+                $stmtCliente = $this->db->prepare("SELECT p.nombre, p.apellido, cj.razon_social,
+                                    CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente
                                 FROM persona p
                                 LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
-                                WHERE p.id_persona = ?";
-                $stmtCliente = $this->db->prepare($sqlCliente);
+                                WHERE p.id_persona = ?");
                 $stmtCliente->execute([$n['id_persona']]);
                 $cliente = $stmtCliente->fetch(PDO::FETCH_ASSOC);
                 
@@ -187,11 +137,7 @@ class notasalidaModel {
                     $n['tipo_cliente'] = 'Natural';
                 }
                 
-                $sqlUsuario = "SELECT p.nombre, p.apellido
-                               FROM usuario u
-                               LEFT JOIN persona p ON u.id_persona = p.id_persona
-                               WHERE u.id_usuario = ?";
-                $stmtUsuario = $this->db->prepare($sqlUsuario);
+                $stmtUsuario = $this->db->prepare("SELECT p.nombre, p.apellido FROM usuario u LEFT JOIN persona p ON u.id_persona = p.id_persona WHERE u.id_usuario = ?");
                 $stmtUsuario->execute([$n['id_usuario']]);
                 $usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
                 
@@ -203,15 +149,11 @@ class notasalidaModel {
                     $n['usuario_apellido'] = '';
                 }
                 
-                $sqlProductos = "SELECT 
-                                    p.descripcion AS producto,
-                                    c.nombre_categoria AS categoria,
-                                    ds.cantidad
+                $stmtProductos = $this->db->prepare("SELECT p.descripcion AS producto, c.nombre_categoria AS categoria, ds.cantidad
                                 FROM detalle_salida ds
                                 JOIN producto p ON ds.id_producto = p.id_producto
                                 LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                                WHERE ds.id_nota_salida = ?";
-                $stmtProductos = $this->db->prepare($sqlProductos);
+                                WHERE ds.id_nota_salida = ?");
                 $stmtProductos->execute([$n['id_nota_salida']]);
                 $productos = $stmtProductos->fetchAll(PDO::FETCH_ASSOC);
                 
@@ -227,13 +169,11 @@ class notasalidaModel {
                 $n['categorias_lista'] = implode(', ', $listaCategorias);
                 $n['productos_detalle'] = $productos;
                 
-                $sqlUnidades = "SELECT COALESCE(SUM(cantidad), 0) as total FROM detalle_salida WHERE id_nota_salida = ?";
-                $stmtUnidades = $this->db->prepare($sqlUnidades);
+                $stmtUnidades = $this->db->prepare("SELECT COALESCE(SUM(cantidad), 0) as total FROM detalle_salida WHERE id_nota_salida = ?");
                 $stmtUnidades->execute([$n['id_nota_salida']]);
                 $unidades = $stmtUnidades->fetch(PDO::FETCH_ASSOC);
                 $n['total_unidades'] = $unidades['total'] ?? 0;
             }
-            
             return $notas;
         } catch (PDOException $e) {
             error_log("Error en listarNotasSalida: " . $e->getMessage());
@@ -241,11 +181,10 @@ class notasalidaModel {
         }
     }
 
-    //  CONTAR NOTAS DE SALIDA (para paginación)
+    // CONTAR NOTAS DE SALIDA
     public function contarNotasSalida() {
         try {
-            $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0");
             $stmt->execute();
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -257,28 +196,19 @@ class notasalidaModel {
     public function buscarNotasSalida($termino) {
         try {
             $termino = trim((string) $termino);
-            if ($termino === '') {
-                return $this->listarNotasSalida();
-            }
+            if ($termino === '') return $this->listarNotasSalida();
 
-            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario 
+            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.motivo_anulacion 
                     FROM nota_de_salida ns
                     LEFT JOIN persona p ON ns.id_persona = p.id_persona
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
                     LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
                     LEFT JOIN persona up ON u.id_persona = up.id_persona
                     WHERE ns.eliminado = 0
-                      AND (
-                            CAST(ns.id_nota_salida AS CHAR) LIKE :termino
-                         OR p.nombre LIKE :termino
-                         OR p.apellido LIKE :termino
-                         OR CONCAT(p.nombre, ' ', p.apellido) LIKE :termino
-                         OR up.nombre LIKE :termino
-                         OR up.apellido LIKE :termino
-                         OR CONCAT(up.nombre, ' ', up.apellido) LIKE :termino
-                         OR COALESCE(cj.razon_social, '') LIKE :termino
-                      )
-                    GROUP BY ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario
+                      AND (CAST(ns.id_nota_salida AS CHAR) LIKE :termino OR p.nombre LIKE :termino OR p.apellido LIKE :termino
+                           OR CONCAT(p.nombre, ' ', p.apellido) LIKE :termino OR up.nombre LIKE :termino OR up.apellido LIKE :termino
+                           OR CONCAT(up.nombre, ' ', up.apellido) LIKE :termino OR COALESCE(cj.razon_social, '') LIKE :termino)
+                    GROUP BY ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.motivo_anulacion
                     ORDER BY ns.id_nota_salida DESC";
 
             $stmt = $this->db->prepare($sql);
@@ -286,18 +216,11 @@ class notasalidaModel {
             $notas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($notas as &$n) {
-                $sqlCliente = "SELECT 
-                                    p.nombre, 
-                                    p.apellido, 
-                                    cj.razon_social,
-                                    CASE 
-                                        WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico'
-                                        ELSE 'Natural'
-                                    END AS tipo_cliente
+                $stmtCliente = $this->db->prepare("SELECT p.nombre, p.apellido, cj.razon_social,
+                                    CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente
                                 FROM persona p
                                 LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
-                                WHERE p.id_persona = ?";
-                $stmtCliente = $this->db->prepare($sqlCliente);
+                                WHERE p.id_persona = ?");
                 $stmtCliente->execute([$n['id_persona']]);
                 $cliente = $stmtCliente->fetch(PDO::FETCH_ASSOC);
 
@@ -313,11 +236,7 @@ class notasalidaModel {
                     $n['tipo_cliente'] = 'Natural';
                 }
 
-                $sqlUsuario = "SELECT p.nombre, p.apellido
-                               FROM usuario u
-                               LEFT JOIN persona p ON u.id_persona = p.id_persona
-                               WHERE u.id_usuario = ?";
-                $stmtUsuario = $this->db->prepare($sqlUsuario);
+                $stmtUsuario = $this->db->prepare("SELECT p.nombre, p.apellido FROM usuario u LEFT JOIN persona p ON u.id_persona = p.id_persona WHERE u.id_usuario = ?");
                 $stmtUsuario->execute([$n['id_usuario']]);
                 $usuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
 
@@ -329,15 +248,11 @@ class notasalidaModel {
                     $n['usuario_apellido'] = '';
                 }
 
-                $sqlProductos = "SELECT 
-                                    p.descripcion AS producto,
-                                    c.nombre_categoria AS categoria,
-                                    ds.cantidad
+                $stmtProductos = $this->db->prepare("SELECT p.descripcion AS producto, c.nombre_categoria AS categoria, ds.cantidad
                                 FROM detalle_salida ds
                                 JOIN producto p ON ds.id_producto = p.id_producto
                                 LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                                WHERE ds.id_nota_salida = ?";
-                $stmtProductos = $this->db->prepare($sqlProductos);
+                                WHERE ds.id_nota_salida = ?");
                 $stmtProductos->execute([$n['id_nota_salida']]);
                 $productos = $stmtProductos->fetchAll(PDO::FETCH_ASSOC);
 
@@ -353,8 +268,7 @@ class notasalidaModel {
                 $n['categorias_lista'] = implode(', ', $listaCategorias);
                 $n['productos_detalle'] = $productos;
 
-                $sqlUnidades = "SELECT COALESCE(SUM(cantidad), 0) as total FROM detalle_salida WHERE id_nota_salida = ?";
-                $stmtUnidades = $this->db->prepare($sqlUnidades);
+                $stmtUnidades = $this->db->prepare("SELECT COALESCE(SUM(cantidad), 0) as total FROM detalle_salida WHERE id_nota_salida = ?");
                 $stmtUnidades->execute([$n['id_nota_salida']]);
                 $unidades = $stmtUnidades->fetch(PDO::FETCH_ASSOC);
                 $n['total_unidades'] = $unidades['total'] ?? 0;
@@ -367,28 +281,21 @@ class notasalidaModel {
         }
     }
 
-    // OBTENER NOTA POR ID
+    // OBTENER NOTA POR ID (CORREGIDO)
     public function obtenerNotaPorId($id) {
         try {
-            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario
+            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, motivo_anulacion
                     FROM nota_de_salida 
-                    WHERE id_nota_salida = ? AND eliminado = 0";
+                    WHERE id_nota_salida = ?"; // <-- SE QUITÓ "AND eliminado = 0"
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$id]);
             $nota = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if (!$nota) {
-                return null;
-            }
+            if (!$nota) return null;
             
-            $sqlCliente = "SELECT 
-                                p.nombre AS cliente_nombre,
-                                p.apellido AS cliente_apellido,
-                                p.cedula AS cliente_cedula,
-                                cj.rif AS cliente_rif,
-                                cj.razon_social AS cliente_razon_social,
-                                up.nombre AS usuario_nombre,
-                                up.apellido AS usuario_apellido
+            $sqlCliente = "SELECT p.nombre AS cliente_nombre, p.apellido AS cliente_apellido, p.cedula AS cliente_cedula,
+                                cj.rif AS cliente_rif, cj.razon_social AS cliente_razon_social,
+                                up.nombre AS usuario_nombre, up.apellido AS usuario_apellido
                             FROM nota_de_salida ns
                             LEFT JOIN persona p ON ns.id_persona = p.id_persona
                             LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
@@ -400,16 +307,12 @@ class notasalidaModel {
             $info = $stmtCliente->fetch(PDO::FETCH_ASSOC);
             
             if ($info) {
-                $nota['cliente'] = !empty($info['cliente_razon_social'])
-                    ? $info['cliente_razon_social']
-                    : trim(($info['cliente_nombre'] ?? '') . ' ' . ($info['cliente_apellido'] ?? ''));
+                $nota['cliente'] = !empty($info['cliente_razon_social']) ? $info['cliente_razon_social'] : trim(($info['cliente_nombre'] ?? '') . ' ' . ($info['cliente_apellido'] ?? ''));
                 $nota['cedula'] = $info['cliente_cedula'] ?? '';
                 $nota['rif'] = $info['cliente_rif'] ?? '';
                 $nota['documento'] = !empty($info['cliente_rif']) ? $info['cliente_rif'] : ($info['cliente_cedula'] ?? 'N/A');
                 $nota['usuario_responsable'] = trim(($info['usuario_nombre'] ?? '') . ' ' . ($info['usuario_apellido'] ?? ''));
-                if ($nota['usuario_responsable'] === '') {
-                    $nota['usuario_responsable'] = 'N/A';
-                }
+                if ($nota['usuario_responsable'] === '') $nota['usuario_responsable'] = 'N/A';
             } else {
                 $nota['cliente'] = 'N/A';
                 $nota['cedula'] = 'N/A';
@@ -418,17 +321,11 @@ class notasalidaModel {
                 $nota['usuario_responsable'] = 'N/A';
             }
             
-            $detSql = "SELECT 
-                            ds.id_detalle_salida,
-                            ds.id_producto,
-                            ds.cantidad,
-                            p.descripcion AS nombre_producto,
-                            c.nombre_categoria
+            $detStmt = $this->db->prepare("SELECT ds.id_detalle_salida, ds.id_producto, ds.cantidad, p.descripcion AS nombre_producto, c.nombre_categoria
                         FROM detalle_salida ds
                         JOIN producto p ON ds.id_producto = p.id_producto
                         LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
-                        WHERE ds.id_nota_salida = ?";
-            $detStmt = $this->db->prepare($detSql);
+                        WHERE ds.id_nota_salida = ?");
             $detStmt->execute([$id]);
             $nota['detalles'] = $detStmt->fetchAll(PDO::FETCH_ASSOC);
             
@@ -442,90 +339,54 @@ class notasalidaModel {
     // ACTUALIZAR NOTA
     public function actualizarNota($id, $datos, $detalles, $idUsuario) {
         try {
-            $sqlCheck = "SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0";
-            $stmtCheck = $this->db->prepare($sqlCheck);
+            $stmtCheck = $this->db->prepare("SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0");
             $stmtCheck->execute([$id]);
-            $nota = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            if (!$stmtCheck->fetch()) throw new Exception("La nota no existe");
             
-            if (!$nota) {
-                throw new Exception("La nota no existe");
-            }
-            
-            $sqlCheckUsuario = "SELECT id_usuario FROM usuario WHERE id_usuario = ? AND eliminado = 0";
-            $stmtCheckUser = $this->db->prepare($sqlCheckUsuario);
+            $stmtCheckUser = $this->db->prepare("SELECT id_usuario FROM usuario WHERE id_usuario = ? AND eliminado = 0");
             $stmtCheckUser->execute([$idUsuario]);
-            $usuarioExiste = $stmtCheckUser->fetch();
-            
-            if (!$usuarioExiste) {
-                throw new Exception("El usuario con ID $idUsuario no existe en la base de datos.");
-            }
+            if (!$stmtCheckUser->fetch()) throw new Exception("El usuario con ID $idUsuario no existe en la base de datos.");
             
             $this->db->beginTransaction();
-            
             try {
-                $sqlOld = "SELECT id_producto, cantidad FROM detalle_salida WHERE id_nota_salida = ?";
-                $stmtOld = $this->db->prepare($sqlOld);
+                $stmtOld = $this->db->prepare("SELECT id_producto, cantidad FROM detalle_salida WHERE id_nota_salida = ?");
                 $stmtOld->execute([$id]);
                 $oldDetalles = $stmtOld->fetchAll(PDO::FETCH_ASSOC);
                 
+                $stmtRestaurar = $this->db->prepare("UPDATE producto SET cantidad = cantidad + ? WHERE id_producto = ?");
                 foreach ($oldDetalles as $old) {
-                    $sqlRestaurar = "UPDATE producto SET cantidad = cantidad + ? WHERE id_producto = ?";
-                    $stmtRestaurar = $this->db->prepare($sqlRestaurar);
                     $stmtRestaurar->execute([$old['cantidad'], $old['id_producto']]);
                 }
                 
-                $sqlDelete = "DELETE FROM detalle_salida WHERE id_nota_salida = ?";
-                $stmtDelete = $this->db->prepare($sqlDelete);
+                $stmtDelete = $this->db->prepare("DELETE FROM detalle_salida WHERE id_nota_salida = ?");
                 $stmtDelete->execute([$id]);
                 
                 foreach ($detalles as $d) {
-                    $sqlStock = "SELECT cantidad FROM producto WHERE id_producto = ? AND eliminado = 0";
-                    $stmtStock = $this->db->prepare($sqlStock);
+                    $stmtStock = $this->db->prepare("SELECT cantidad FROM producto WHERE id_producto = ? AND eliminado = 0");
                     $stmtStock->execute([$d['id_producto']]);
                     $stockActual = $stmtStock->fetchColumn();
-                    
                     if ($stockActual < $d['cantidad']) {
                         throw new Exception("Stock insuficiente para el producto ID {$d['id_producto']}. Disponible: $stockActual");
                     }
                 }
                 
-                $sql = "UPDATE nota_de_salida SET id_persona = ?, id_usuario = ?
-                        WHERE id_nota_salida = ? AND eliminado = 0";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([
-                    $datos['id_cliente'],
-                    $idUsuario,
-                    $id
-                ]);
+                $stmt = $this->db->prepare("UPDATE nota_de_salida SET id_persona = ?, id_usuario = ? WHERE id_nota_salida = ? AND eliminado = 0");
+                $stmt->execute([$datos['id_cliente'], $idUsuario, $id]);
                 
-                $sqlDetalle = "INSERT INTO detalle_salida (id_nota_salida, id_producto, cantidad) 
-                               VALUES (?, ?, ?)";
-                $stmtDetalle = $this->db->prepare($sqlDetalle);
-                
-                $sqlUpdateStock = "UPDATE producto SET cantidad = cantidad - ? WHERE id_producto = ?";
-                $stmtUpdate = $this->db->prepare($sqlUpdateStock);
+                $stmtDetalle = $this->db->prepare("INSERT INTO detalle_salida (id_nota_salida, id_producto, cantidad) VALUES (?, ?, ?)");
+                $stmtUpdate = $this->db->prepare("UPDATE producto SET cantidad = cantidad - ? WHERE id_producto = ?");
                 
                 foreach ($detalles as $d) {
-                    $stmtDetalle->execute([
-                        $id,
-                        $d['id_producto'],
-                        $d['cantidad']
-                    ]);
-                    
-                    $stmtUpdate->execute([
-                        $d['cantidad'],
-                        $d['id_producto']
-                    ]);
+                    $stmtDetalle->execute([$id, $d['id_producto'], $d['cantidad']]);
+                    $stmtUpdate->execute([$d['cantidad'], $d['id_producto']]);
                 }
                 
                 $this->db->commit();
                 return true;
-                
             } catch (Exception $e) {
                 $this->db->rollBack();
                 throw $e;
             }
-            
         } catch (Exception $e) {
             error_log("Error en actualizarNota: " . $e->getMessage());
             throw $e;
@@ -535,41 +396,30 @@ class notasalidaModel {
     // ELIMINAR NOTA
     public function eliminarNota($id) {
         try {
-            $sqlCheck = "SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0";
-            $stmtCheck = $this->db->prepare($sqlCheck);
+            $stmtCheck = $this->db->prepare("SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0");
             $stmtCheck->execute([$id]);
-            $nota = $stmtCheck->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$nota) {
-                throw new Exception("La nota no existe");
-            }
+            if (!$stmtCheck->fetch()) throw new Exception("La nota no existe");
             
             $this->db->beginTransaction();
-            
             try {
-                $sqlDet = "SELECT id_producto, cantidad FROM detalle_salida WHERE id_nota_salida = ?";
-                $stmtDet = $this->db->prepare($sqlDet);
+                $stmtDet = $this->db->prepare("SELECT id_producto, cantidad FROM detalle_salida WHERE id_nota_salida = ?");
                 $stmtDet->execute([$id]);
                 $detalles = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
 
-                $sqlRestaurar = "UPDATE producto SET cantidad = cantidad + ? WHERE id_producto = ?";
-                $stmtRestaurar = $this->db->prepare($sqlRestaurar);
+                $stmtRestaurar = $this->db->prepare("UPDATE producto SET cantidad = cantidad + ? WHERE id_producto = ?");
                 foreach ($detalles as $d) {
                     $stmtRestaurar->execute([$d['cantidad'], $d['id_producto']]);
                 }
 
-                $sqlUpd = "UPDATE nota_de_salida SET eliminado = 1 WHERE id_nota_salida = :id";
-                $stmtUpd = $this->db->prepare($sqlUpd);
+                $stmtUpd = $this->db->prepare("UPDATE nota_de_salida SET eliminado = 1 WHERE id_nota_salida = :id");
                 $stmtUpd->execute([':id' => $id]);
                 
                 $this->db->commit();
                 return true;
-                
             } catch (Exception $e) {
                 $this->db->rollBack();
                 throw $e;
             }
-            
         } catch (Exception $e) {
             error_log("Error en eliminarNota: " . $e->getMessage());
             throw $e;
@@ -579,8 +429,7 @@ class notasalidaModel {
     // OBTENER RESUMEN
     public function getResumen() {
         try {
-            $sql = "SELECT 
-                        COUNT(*) AS total_registros,
+            $sql = "SELECT COUNT(*) AS total_registros,
                         SUM(CASE WHEN eliminado = 0 THEN 1 ELSE 0 END) AS total_notas,
                         SUM(CASE WHEN eliminado = 1 THEN 1 ELSE 0 END) AS total_anuladas
                     FROM nota_de_salida";

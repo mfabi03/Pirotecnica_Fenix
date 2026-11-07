@@ -246,7 +246,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         CheckPermiso::verificar($db, 'Notas de Entrada', 'eliminar', '?url=notaentrada&type=list');
         try {
             $id = $_POST['id_nota_entrada'] ?? 0;
-            $motivo = trim($_POST['motivo_anulacion'] ?? '');
+            
+            // ⚠️ LEER AMBOS NOMBRES POR SI ACASO
+            $motivo = trim($_POST['motivo_eliminacion'] ?? $_POST['motivo_anulacion'] ?? '');
+            
             $idUsuario = obtenerIdUsuarioValido($db);
             
             if (empty($motivo)) {
@@ -279,6 +282,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = '❌ ' . $e->getMessage();
         }
     }
+}
+
+// ============================================================
+// ENDPOINT AJAX: DEVOLVER DETALLE DE LA NOTA DE ENTRADA EN JSON
+// ============================================================
+if ($type === 'show_json' && $id) {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $notaJson = $modelo->obtenerNotaEntradaPorId($id);
+        if (!$notaJson) {
+            echo json_encode(['success' => false, 'error' => 'Nota no encontrada'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        echo json_encode(['success' => true, 'nota' => $notaJson], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
 }
 
 // 4. VISTAS

@@ -154,20 +154,18 @@ class ReporteCajaModel {
         return true;
     }
 
-    // 🔥 LA CLAVE: Si existe cierre, solo trae IDs mayores al guardado en el cierre
     private function aplicarFiltroPostCierre(&$where, &$params, $fecha, $id_usuario = null) {
         if (empty($fecha)) return false;
 
         $cierre = $this->obtenerUltimoCierreCaja($fecha, $id_usuario);
         if (!$cierre) {
-            return false; // Sin cierre, se muestra todo
+            return false; 
         }
 
         if (!isset($cierre['ultimo_id_nota_salida']) || $cierre['ultimo_id_nota_salida'] === null) {
-            return false; // Si no hay ID guardado, no filtramos
+            return false;
         }
 
-        // Solo muestra notas con ID estrictamente mayor al del cierre
         $where[] = "ns.id_nota_salida > :ultimo_id_nota_salida";
         $params[':ultimo_id_nota_salida'] = (int)$cierre['ultimo_id_nota_salida'];
         return true;
@@ -214,8 +212,6 @@ class ReporteCajaModel {
             $params[':fecha'] = $fecha;
         }
 
-        $this->aplicarFiltroPostCierre($where, $params, $fecha, $id_usuario);
-
         if (!empty($id_categoria) && $id_categoria > 0) {
             $where[] = "prod.id_categoria = :id_categoria";
             $params[':id_categoria'] = $id_categoria;
@@ -227,13 +223,18 @@ class ReporteCajaModel {
 
         $whereSql = ' WHERE ' . implode(' AND ', $where);
 
+        // 🔥 AGREGAMOS EL CAMPO tipo_cliente Y ASEGURAMOS LOS JOINS
         $sql = "SELECT 
                     ns.id_nota_salida AS id_documento,
                     ns.fecha AS fecha_movimiento,
-                    prod.descripcion AS nombre_producto,
-                    c.nombre_categoria AS categoria,
-                    ds.cantidad AS cantidad,
+                    GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') ORDER BY prod.descripcion SEPARATOR ', ') AS nombre_producto,
+                    GROUP_CONCAT(DISTINCT c.nombre_categoria ORDER BY c.nombre_categoria SEPARATOR ', ') AS categoria,
+                    SUM(ds.cantidad) AS cantidad,
                     COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                    CASE 
+                        WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico'
+                        ELSE 'Natural'
+                    END AS tipo_cliente,
                     COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
                 FROM nota_de_salida ns
                 INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
@@ -245,6 +246,7 @@ class ReporteCajaModel {
                 LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
                 LEFT JOIN cliente_natural cn ON per_cliente.id_persona = cn.id_persona
                 $whereSql
+                GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
                 ORDER BY ns.fecha DESC, ns.id_nota_salida DESC
                 LIMIT :limit OFFSET :offset";
 
@@ -256,10 +258,15 @@ class ReporteCajaModel {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
+            // Fallback seguro si algo falla en la consulta principal
             $sql = "SELECT 
-                        ns.id_nota_salida AS id_documento, ns.fecha AS fecha_movimiento,
-                        prod.descripcion AS nombre_producto, c.nombre_categoria AS categoria,
-                        ds.cantidad AS cantidad, 'Sin cliente' AS nombre_cliente,
+                        ns.id_nota_salida AS id_documento,
+                        ns.fecha AS fecha_movimiento,
+                        GROUP_CONCAT(CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
+                        GROUP_CONCAT(c.nombre_categoria SEPARATOR ', ') AS categoria,
+                        SUM(ds.cantidad) AS cantidad,
+                        'Sin cliente' AS nombre_cliente,
+                        'Natural' AS tipo_cliente,
                         COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
                     FROM nota_de_salida ns
                     INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
@@ -268,6 +275,7 @@ class ReporteCajaModel {
                     LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
                     LEFT JOIN persona per ON u.id_persona = per.id_persona
                     $whereSql
+                    GROUP BY ns.id_nota_salida, ns.fecha, per.nombre, per.apellido
                     ORDER BY ns.fecha DESC, ns.id_nota_salida DESC
                     LIMIT :limit OFFSET :offset";
             $stmt = $this->db->prepare($sql);
@@ -292,8 +300,6 @@ class ReporteCajaModel {
             $params[':fecha'] = $fecha;
         }
 
-        $this->aplicarFiltroPostCierre($where, $params, $fecha, $id_usuario);
-
         if (!empty($id_categoria) && $id_categoria > 0) {
             $where[] = "prod.id_categoria = :id_categoria";
             $params[':id_categoria'] = $id_categoria;
@@ -303,7 +309,7 @@ class ReporteCajaModel {
             $params[':busqueda'] = '%' . $busqueda . '%';
         }
 
-        $sql = "SELECT COUNT(*) AS total
+        $sql = "SELECT COUNT(DISTINCT ns.id_nota_salida) AS total
                 FROM nota_de_salida ns
                 INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
                 INNER JOIN producto prod ON ds.id_producto = prod.id_producto
@@ -323,8 +329,6 @@ class ReporteCajaModel {
             $where[] = "ns.id_usuario = :id_usuario";
             $params[':id_usuario'] = $id_usuario;
         }
-
-        $this->aplicarFiltroPostCierre($where, $params, $fecha, $id_usuario);
 
         if (!empty($id_categoria) && $id_categoria > 0) {
             $where[] = "prod.id_categoria = :id_categoria";

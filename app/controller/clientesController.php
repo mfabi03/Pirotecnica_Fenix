@@ -270,7 +270,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
     } catch (Exception $e) {
         $msg = $e->getMessage();
 
-        // Duplicado → guardar inline + reabrir modal
         if (_clientesDetectarDuplicado($msg, false, 'registrar_natural')) {
             $return = $_REQUEST['return'] ?? null;
             if ($return) {
@@ -281,7 +280,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
             exit;
         }
 
-        // Error genérico → mensaje rápido
         $_SESSION['mensaje_rapido'] = "❌ " . $msg;
         $_SESSION['tipo_rapido'] = 'danger';
         
@@ -461,21 +459,20 @@ if ($type === 'list' || $type === '') {
 
     require_once $basePath . "listClienteView.php";
 } else {
+    // ============================================================
+    // IMPORTANTE: Las vistas de registrar, editar y detalle ahora
+    // se manejan con MODALES dentro de listClienteView.php.
+    // Si alguien entra por URL directa a esas rutas, lo redirigimos
+    // al listado (donde están los modales disponibles).
+    // ============================================================
     switch ($type) {
         case 'register':
-            require_once $basePath . "registroClientView.php";
-            break;
         case 'register_juridico':
-            require_once $basePath . "registroClienteJuridicoView.php";
-            break;
         case 'view':
-            require_once $basePath . "detalleClientView.php";
-            break;
         case 'edit':
-            require_once $basePath . "editarClientView.php";
-            break;
         case 'edit_juridico':
-            require_once $basePath . "editarClienteJuridicoView.php";
+            header("Location: ?url=clientes&type=list");
+            exit();
             break;
         default:
             require_once $basePath . "listClienteView.php";
