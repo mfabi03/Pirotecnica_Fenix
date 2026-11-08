@@ -9,8 +9,12 @@ use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Helpers\CheckPermiso;
 use Exception;
 
+$type = $_POST['type'] ?? $_GET['type'] ?? 'list';
+$id = $_POST['id'] ?? $_GET['id'] ?? null;
+$esSolicitudJson = in_array($type, ['show_json', 'detalle_json', 'estado_ajax'], true);
+
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', $esSolicitudJson ? '0' : '1');
 
 // Iniciar sesión para mensajes
 if (session_status() === PHP_SESSION_NONE) {
@@ -18,6 +22,12 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if ((int) ($_SESSION['id_rol'] ?? 0) === 3) {
+    if ($esSolicitudJson) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'No tienes permiso para acceder a las Notas de Entrada.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     $_SESSION['error'] = 'No tienes permiso para acceder a las Notas de Entrada.';
     header('Location: ?url=dashboard');
     exit();
@@ -33,18 +43,36 @@ $pathProveedorModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARA
 if (file_exists($pathNotaModel)) {
     require_once $pathNotaModel;
 } else {
+    if ($esSolicitudJson) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'No se pudo cargar el modelo de notas de entrada.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     die("ERROR CRÍTICO: No se encuentra NotaentradaModel.php");
 }
 
 if (file_exists($pathProductoModel)) {
     require_once $pathProductoModel;
 } else {
+    if ($esSolicitudJson) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'No se pudo cargar el modelo de productos.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     die("ERROR CRÍTICO: No se encuentra ProductoModel.php");
 }
 
 if (file_exists($pathProveedorModel)) {
     require_once $pathProveedorModel;
 } else {
+    if ($esSolicitudJson) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'No se pudo cargar el modelo de proveedores.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     die("ERROR CRÍTICO: No se encuentra ProveedoresModel.php");
 }
 
@@ -53,12 +81,17 @@ try {
     $modelo = new NotaentradaModel($db);
     $productoModel = new ProductoModel($db);
     $proveedorModel = new ProveedoresModel($db);
-} catch (Exception $e) {
+} catch (\Throwable $e) {
+    if ($esSolicitudJson) {
+        error_log('Error de conexión en solicitud JSON de nota de entrada: ' . $e->getMessage());
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'Error de conexión al cargar la nota.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-$type = $_GET['type'] ?? 'list';
-$id = $_GET['id'] ?? null;
 $error = null;
 $success = null;
 $nota = null;
@@ -88,8 +121,117 @@ function obtenerIdUsuarioValido($db) {
     return (int) $idUsuario;
 }
 
+if ($type === 'estado_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    $accion = $_POST['accion'] ?? '';
+
+    try {
+        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Notas de Entrada', 'eliminar')) {
+            http_response_code(403);
+            throw new Exception('No tienes permiso para cambiar el estado de las notas.');
+        }
+        if (!$id || !ctype_digit((string) $id)) {
+            http_response_code(400);
+            throw new Exception('ID de nota no válido.');
+        }
+
+        if ($accion === 'inactivar') {
+            $motivo = trim($_POST['motivo'] ?? '');
+            if ($motivo === '') {
+                http_response_code(400);
+                throw new Exception('Debes indicar el motivo de anulación.');
+            }
+            $modelo->anularNotaEntrada($id, $motivo, obtenerIdUsuarioValido($db));
+            echo json_encode(['success' => true, 'message' => 'Nota anulada y stock revertido.'], JSON_UNESCAPED_UNICODE);
+        } elseif ($accion === 'reactivar') {
+            $modelo->reactivarNotaEntrada($id);
+            echo json_encode(['success' => true, 'message' => 'Nota reactivada y stock restaurado.'], JSON_UNESCAPED_UNICODE);
+        } else {
+            http_response_code(400);
+            throw new Exception('Acción de estado no válida.');
+        }
+    } catch (Exception $e) {
+        if (http_response_code() < 400) {
+            http_response_code(500);
+        }
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+    exit;
+}
+
 // 3. PROCESAMIENTO POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    if ($type === 'update') {
+        CheckPermiso::verificar($db, 'Notas de Entrada', 'actualizar', '?url=notaentrada&type=list');
+        $idNota = $_POST['id_nota_entrada'] ?? '';
+
+        try {
+            if (!is_scalar($idNota) || !ctype_digit((string) $idNota) || (int) $idNota < 1) {
+                throw new Exception('ID de nota no válido.');
+            }
+
+            $fechaEntradaPost = $_POST['fecha_ingreso'] ?? '';
+            if (!is_string($fechaEntradaPost)) {
+                throw new Exception('La fecha de ingreso no es válida.');
+            }
+            $fechaEntrada = trim($fechaEntradaPost);
+            $fechaValidada = \DateTime::createFromFormat('Y-m-d\TH:i', $fechaEntrada);
+            $erroresFecha = \DateTime::getLastErrors();
+            if (!$fechaValidada || ($erroresFecha && ($erroresFecha['warning_count'] > 0 || $erroresFecha['error_count'] > 0))) {
+                throw new Exception('La fecha de ingreso no es válida.');
+            }
+
+            $idProveedor = $_POST['id_proveedor'] ?? '';
+            if (!is_scalar($idProveedor) || !ctype_digit((string) $idProveedor) || (int) $idProveedor < 1) {
+                throw new Exception('Debe seleccionar un proveedor válido.');
+            }
+
+            $productosIds = $_POST['detalle_producto'] ?? [];
+            $cantidades = $_POST['detalle_cantidad'] ?? [];
+            $costos = $_POST['detalle_costo'] ?? [];
+            if (!is_array($productosIds) || !is_array($cantidades) || !is_array($costos)
+                || count($productosIds) !== count($cantidades) || count($productosIds) !== count($costos)) {
+                throw new Exception('Los detalles de productos enviados no son válidos.');
+            }
+
+            $detalles = [];
+            foreach ($productosIds as $indice => $productoId) {
+                $cantidad = $cantidades[$indice] ?? '';
+                $costo = $costos[$indice] ?? '';
+                if (!is_scalar($productoId) || !ctype_digit((string) $productoId) || (int) $productoId < 1
+                    || !is_scalar($cantidad) || !ctype_digit((string) $cantidad) || (int) $cantidad < 1
+                    || !is_numeric($costo) || !is_finite((float) $costo) || (float) $costo < 0) {
+                    throw new Exception('Uno de los productos, cantidades o costos no es válido.');
+                }
+                $detalles[] = [
+                    'id_producto' => (int) $productoId,
+                    'cantidad' => (int) $cantidad,
+                    'costo_unitario' => (float) $costo
+                ];
+            }
+
+            $descripcion = $_POST['descripcion'] ?? '';
+            if (!is_string($descripcion)) {
+                throw new Exception('La descripción no es válida.');
+            }
+
+            $modelo->actualizarNotaEntradaCompleta((int) $idNota, [
+                'fecha_ingreso' => $fechaValidada->format('Y-m-d H:i:s'),
+                'id_proveedor' => (int) $idProveedor,
+                'descripcion' => trim($descripcion)
+            ], $detalles);
+
+            $_SESSION['mensaje'] = 'Nota de Entrada actualizada exitosamente.';
+            $_SESSION['tipo_mensaje'] = 'success';
+            header('Location: ?url=notaentrada&type=list');
+            exit();
+        } catch (Exception $e) {
+            $error = 'No se pudo actualizar la nota: ' . $e->getMessage();
+            $type = 'edit';
+            $id = is_scalar($idNota) ? (string) $idNota : '';
+        }
+    }
     
     // REGISTRAR NOTA DE ENTRADA 
     if ($type === 'store') {
@@ -293,17 +435,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ============================================================
 // ENDPOINT AJAX: DEVOLVER DETALLE DE LA NOTA DE ENTRADA EN JSON
 // ============================================================
-if ($type === 'show_json' && $id) {
+if ($esSolicitudJson) {
     header('Content-Type: application/json; charset=utf-8');
+    ini_set('display_errors', '0');
+
+    if (!$id || !ctype_digit((string) $id)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'ID de nota no válido'], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        exit;
+    }
+
     try {
         $notaJson = $modelo->obtenerNotaEntradaPorId($id);
         if (!$notaJson) {
-            echo json_encode(['success' => false, 'error' => 'Nota no encontrada'], JSON_UNESCAPED_UNICODE);
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Nota no encontrada'], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
             exit;
         }
-        echo json_encode(['success' => true, 'nota' => $notaJson], JSON_UNESCAPED_UNICODE);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => true, 'nota' => $notaJson], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    } catch (\Throwable $e) {
+        error_log('Error al obtener detalle JSON de nota de entrada: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'No se pudo cargar el detalle de la nota'], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     }
     exit;
 }
@@ -324,6 +477,33 @@ if ($type === 'create') {
     $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . "registroNotaEntradaView.php";
     if (!file_exists($viewFile)) {
         die("ERROR: No se encuentra registroNotaEntradaView.php");
+    }
+    require_once $viewFile;
+    exit();
+}
+
+if ($type === 'edit' && $id) {
+    CheckPermiso::verificar($db, 'Notas de Entrada', 'actualizar', '?url=notaentrada&type=list');
+    try {
+        $nota = $modelo->obtenerNotaEntradaPorId($id);
+        if (!$nota || (int) $nota['eliminado'] === 1) {
+            throw new Exception('La nota no existe o ya fue anulada.');
+        }
+        $productos = $modelo->obtenerProductos();
+        $proveedores = $modelo->obtenerProveedores();
+    } catch (Exception $e) {
+        if ($type === 'edit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $error = 'No se pudo cargar la nota para editar: ' . $e->getMessage();
+        } else {
+            $_SESSION['error'] = 'No se pudo abrir la nota para editar: ' . $e->getMessage();
+            header('Location: ?url=notaentrada&type=list');
+            exit();
+        }
+    }
+
+    $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . 'editarNotaEntradaView.php';
+    if (!file_exists($viewFile)) {
+        die('ERROR: No se encuentra editarNotaEntradaView.php');
     }
     require_once $viewFile;
     exit();
@@ -351,7 +531,10 @@ if ($type === 'show' && $id) {
 // LISTAR
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
-    $notas_full = !empty($buscar) ? $modelo->buscarNotasEntrada($buscar) : $modelo->obtenerNotasEntrada();
+    $estado_nota = $_GET['estado_nota'] ?? 'todos';
+    $notas_full = !empty($buscar)
+        ? $modelo->buscarNotasEntrada($buscar, $estado_nota)
+        : $modelo->obtenerNotasEntrada($estado_nota);
     $resumen = $modelo->getResumen();
 
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);

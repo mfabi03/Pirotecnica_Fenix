@@ -7,8 +7,11 @@ use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Helpers\CheckPermiso;
 use Exception;
 
+$type = $_POST['type'] ?? $_GET['type'] ?? 'list';
+$esSolicitudAjax = in_array($type, ['listar_ajax', 'detalle_ajax', 'estado_ajax'], true);
+
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', $esSolicitudAjax ? '0' : '1');
 
 // Iniciar sesión para mensajes
 if (session_status() === PHP_SESSION_NONE) {
@@ -19,6 +22,12 @@ $rutaRaiz = dirname(__DIR__, 2);
 
 $pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'proveedoresModel.php';
 if (!file_exists($pathModel)) {
+    if ($esSolicitudAjax) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'No se pudo cargar el modelo de proveedores.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     die("ERROR: No se encuentra proveedoresModel.php en: " . $pathModel);
 }
 require_once $pathModel;
@@ -27,10 +36,15 @@ try {
     $db = (new ConnectDB())->getConnection();
     $modelo = new proveedoresModel($db);
 } catch (Exception $e) {
+    if ($esSolicitudAjax) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'Error de conexión al procesar la solicitud.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-$type = $_GET['type'] ?? 'list';
 $error = null;
 $success = null;
 $proveedor = null;
@@ -53,6 +67,62 @@ if (isset($_GET['type']) && $_GET['type'] === 'listar_ajax') {
     exit;
 }
 
+if ($type === 'detalle_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $id = $_POST['id_proveedor'] ?? 0;
+        if (!ctype_digit((string) $id) || (int) $id < 1) {
+            http_response_code(400);
+            throw new Exception('ID de proveedor no válido.');
+        }
+        $detalle = $modelo->obtenerProveedorPorId((int) $id, true);
+        if (!$detalle) {
+            http_response_code(404);
+            throw new Exception('Proveedor no encontrado.');
+        }
+        echo json_encode(['success' => true, 'proveedor' => $detalle], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    } catch (Exception $e) {
+        if (http_response_code() < 400) {
+            http_response_code(500);
+        }
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+    exit;
+}
+
+if ($type === 'estado_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Proveedores', 'eliminar')) {
+            http_response_code(403);
+            throw new Exception('No tienes permiso para cambiar el estado de proveedores.');
+        }
+        $id = $_POST['id_proveedor'] ?? 0;
+        if (!ctype_digit((string) $id) || (int) $id < 1) {
+            http_response_code(400);
+            throw new Exception('ID de proveedor no válido.');
+        }
+
+        if (($_POST['accion'] ?? '') === 'inactivar') {
+            $modelo->eliminarProveedor((int) $id);
+            $mensaje = 'Proveedor inactivado.';
+        } elseif (($_POST['accion'] ?? '') === 'reactivar') {
+            $modelo->reactivarProveedor((int) $id);
+            $mensaje = 'Proveedor reactivado.';
+        } else {
+            http_response_code(400);
+            throw new Exception('Acción de estado no válida.');
+        }
+
+        echo json_encode(['success' => true, 'message' => $mensaje], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    } catch (Exception $e) {
+        if (http_response_code() < 400) {
+            http_response_code(400);
+        }
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+    exit;
+}
 
 // ============================================
 // ENDPOINT AJAX: REGISTRO RÁPIDO DE PROVEEDOR (para modal)
@@ -114,14 +184,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'razon_social' => trim($_POST['razon_social'] ?? ''),
             'numero_contacto' => trim($_POST['numero_contacto'] ?? ''),
             'direccion' => trim($_POST['direccion'] ?? ''),
-            'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
-            'status' => trim($_POST['status'] ?? '')
+            'correo_electronico' => trim($_POST['correo_electronico'] ?? '')
         ];
 
         if (empty($datos['rif']) || empty($datos['razon_social']) || empty($datos['numero_contacto']) || empty($datos['direccion'])) {
             $error = 'RIF, Razón Social, Contacto y Dirección son obligatorios.';
-        } elseif (!in_array($datos['status'], ['activo', 'inactivo'], true)) {
-            $error = 'Debe seleccionar un estado válido para el proveedor.';
         } else {
             try {
                 $resultado = $modelo->registrarProveedor($datos);
@@ -216,7 +283,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'razon_social' => trim($_POST['razon_social'] ?? ''),
             'numero_contacto' => trim($_POST['numero_contacto'] ?? ''),
             'direccion' => trim($_POST['direccion'] ?? ''),
-            'correo_electronico' => trim($_POST['correo_electronico'] ?? '')
+            'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
+            'eliminado' => trim($_POST['eliminado'] ?? '')
         ];
 
         if (empty($datos['rif']) || empty($datos['razon_social']) || empty($datos['numero_contacto']) || empty($datos['direccion'])) {
@@ -294,9 +362,9 @@ try {
     $buscar = trim($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
     
     if (!empty($buscar)) {
-        $proveedores_full = $modelo->buscarProveedores($buscar);
+        $proveedores_full = $modelo->buscarProveedores($buscar, true);
     } else {
-        $proveedores_full = $modelo->obtenerProveedores();
+        $proveedores_full = $modelo->obtenerProveedores(true);
     }
 
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);

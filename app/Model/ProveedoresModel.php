@@ -13,11 +13,11 @@ class ProveedoresModel {
     }
 
     // OBTENER TODOS LOS PROVEEDORES
-    public function obtenerProveedores() {
+    public function obtenerProveedores($incluirInactivos = false) {
         try {
             $sql = "SELECT 
                         p.id_proveedor, 
-                        p.status,
+                        p.eliminado,
                         p.rif,
                         p.razon_social, 
                         p.numero_contacto,
@@ -30,10 +30,10 @@ class ProveedoresModel {
                         pe.correo_electronico
                     FROM proveedor p
                     LEFT JOIN persona pe ON p.id_persona = pe.id_persona
-                    WHERE p.eliminado = 0
+                    WHERE (:incluir_inactivos = 1 OR p.eliminado = 0)
                     ORDER BY p.id_proveedor DESC";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute([':incluir_inactivos' => $incluirInactivos ? 1 : 0]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new Exception("Error en la consulta SQL: " . $e->getMessage());
@@ -53,11 +53,11 @@ class ProveedoresModel {
     }
 
     // OBTENER PROVEEDOR POR ID
-    public function obtenerProveedorPorId($id) {
+    public function obtenerProveedorPorId($id, $incluirInactivos = false) {
         try {
             $sql = "SELECT 
                         p.id_proveedor, 
-                        p.status,
+                        p.eliminado,
                         p.rif,
                         p.razon_social, 
                         p.numero_contacto,
@@ -70,9 +70,12 @@ class ProveedoresModel {
                         pe.correo_electronico
                     FROM proveedor p
                     LEFT JOIN persona pe ON p.id_persona = pe.id_persona
-                    WHERE p.id_proveedor = :id AND p.eliminado = 0";
+                    WHERE p.id_proveedor = :id AND (:incluir_inactivos = 1 OR p.eliminado = 0)";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['id' => $id]);
+            $stmt->execute([
+                'id' => $id,
+                ':incluir_inactivos' => $incluirInactivos ? 1 : 0
+            ]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new Exception("Error en la consulta SQL: " . $e->getMessage());
@@ -103,15 +106,14 @@ class ProveedoresModel {
             ]);
             $idPersona = $this->db->lastInsertId();
 
-            $sqlProveedor = "INSERT INTO proveedor (rif, razon_social, numero_contacto, id_persona, eliminado, status)
-                             VALUES (:rif, :razon_social, :numero_contacto, :id_persona, 0, :status)";
+            $sqlProveedor = "INSERT INTO proveedor (rif, razon_social, numero_contacto, id_persona, eliminado)
+                             VALUES (:rif, :razon_social, :numero_contacto, :id_persona, 0)";
             $stmtProveedor = $this->db->prepare($sqlProveedor);
             $stmtProveedor->execute([
                 ':rif' => $datos['rif'],
                 ':razon_social' => $datos['razon_social'],
                 ':numero_contacto' => $datos['numero_contacto'],
-                ':id_persona' => $idPersona,
-                ':status' => $datos['status'] ?? 'activo'
+                ':id_persona' => $idPersona
             ]);
 
             $idProveedor = (int) $this->db->lastInsertId();
@@ -127,14 +129,14 @@ class ProveedoresModel {
     public function actualizarProveedor($id, array $datos) {
         $this->db->beginTransaction();
         try {
-            $checkSql = "SELECT id_persona, status FROM proveedor WHERE id_proveedor = :id AND eliminado = 0";
+            $checkSql = "SELECT id_persona FROM proveedor WHERE id_proveedor = :id AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute(['id' => $id]);
             $proveedor = $checkStmt->fetch(PDO::FETCH_ASSOC);
             if (!$proveedor) {
                 throw new Exception("El proveedor con ID {$id} no existe.");
             }
-            if (!in_array($datos['status'] ?? null, ['activo', 'inactivo'], true)) {
+            if (!in_array((string) ($datos['eliminado'] ?? ''), ['0', '1'], true)) {
                 throw new Exception("El estado del proveedor no es válido.");
             }
 
@@ -168,14 +170,14 @@ class ProveedoresModel {
                                 rif = :rif, 
                                 razon_social = :razon_social, 
                                 numero_contacto = :numero_contacto,
-                                status = :status
+                                eliminado = :eliminado
                             WHERE id_proveedor = :id AND eliminado = 0";
             $stmtProveedor = $this->db->prepare($sqlProveedor);
             $stmtProveedor->execute([
                 ':rif' => $datos['rif'],
                 ':razon_social' => $datos['razon_social'],
                 ':numero_contacto' => $datos['numero_contacto'],
-                ':status' => $datos['status'],
+                ':eliminado' => (int) $datos['eliminado'],
                 ':id' => $id
             ]);
 
@@ -233,12 +235,45 @@ class ProveedoresModel {
         }
     }
 
+    public function reactivarProveedor($id) {
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare("
+                SELECT id_persona
+                FROM proveedor
+                WHERE id_proveedor = :id AND eliminado = 1
+                FOR UPDATE
+            ");
+            $stmt->execute([':id' => $id]);
+            $proveedor = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$proveedor) {
+                throw new Exception("El proveedor no existe o ya está activo.");
+            }
+
+            $stmt = $this->db->prepare("UPDATE proveedor SET eliminado = 0 WHERE id_proveedor = :id");
+            $stmt->execute([':id' => $id]);
+
+            if (!empty($proveedor['id_persona'])) {
+                $stmt = $this->db->prepare("UPDATE persona SET eliminado = 0 WHERE id_persona = :id_persona");
+                $stmt->execute([':id_persona' => $proveedor['id_persona']]);
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw new Exception("Error al reactivar proveedor: " . $e->getMessage());
+        }
+    }
+
     // BUSCAR PROVEEDORES
-    public function buscarProveedores($termino) {
+    public function buscarProveedores($termino, $incluirInactivos = false) {
         try {
             $sql = "SELECT 
                         p.id_proveedor, 
-                        p.status,
+                        p.eliminado,
                         p.rif,
                         p.razon_social, 
                         p.numero_contacto,
@@ -251,7 +286,7 @@ class ProveedoresModel {
                         pe.correo_electronico
                     FROM proveedor p
                     LEFT JOIN persona pe ON p.id_persona = pe.id_persona
-                    WHERE p.eliminado = 0
+                    WHERE (:incluir_inactivos = 1 OR p.eliminado = 0)
                     AND (p.rif LIKE :termino 
                        OR p.razon_social LIKE :termino 
                        OR p.numero_contacto LIKE :termino
@@ -259,7 +294,10 @@ class ProveedoresModel {
                        OR pe.correo_electronico LIKE :termino)
                     ORDER BY p.id_proveedor DESC";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['termino' => "%{$termino}%"]);
+            $stmt->execute([
+                'termino' => "%{$termino}%",
+                ':incluir_inactivos' => $incluirInactivos ? 1 : 0
+            ]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new Exception("Error en la consulta SQL: " . $e->getMessage());
@@ -271,11 +309,11 @@ class ProveedoresModel {
         try {
             $sql = "SELECT 
                         p.id_proveedor, 
-                        p.status,
+                        p.eliminado,
                         p.razon_social,
                         p.rif
                     FROM proveedor p
-                    WHERE p.eliminado = 0 AND p.status = 'activo'
+                    WHERE p.eliminado = 0
                     ORDER BY p.razon_social ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -287,7 +325,7 @@ class ProveedoresModel {
 
     public function proveedorActivoExiste($id) {
         try {
-            $sql = "SELECT 1 FROM proveedor WHERE id_proveedor = :id AND eliminado = 0 AND status = 'activo' LIMIT 1";
+            $sql = "SELECT 1 FROM proveedor WHERE id_proveedor = :id AND eliminado = 0 LIMIT 1";
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['id' => $id]);
             return (bool) $stmt->fetchColumn();

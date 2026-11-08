@@ -77,11 +77,11 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                     </p>
                                 </div>
                                 <div class="mb-3">
-                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Status:</label>
-                                    <?php $statusProveedor = $proveedor['status'] ?? 'activo'; ?>
+                                    <label style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Estado:</label>
+                                    <?php $estadoProveedor = (int) ($proveedor['eliminado'] ?? 0) === 0 ? 'Activo' : 'Inactivo'; ?>
                                     <p style="margin-bottom: 0;">
-                                        <span class="badge rounded-pill <?= $statusProveedor === 'activo' ? 'bg-success' : 'bg-secondary' ?>">
-                                            <?= htmlspecialchars(ucfirst($statusProveedor)) ?>
+                                        <span class="badge rounded-pill <?= $estadoProveedor === 'Activo' ? 'bg-success' : 'bg-secondary' ?>">
+                                            <?= htmlspecialchars($estadoProveedor) ?>
                                         </span>
                                     </p>
                                 </div>

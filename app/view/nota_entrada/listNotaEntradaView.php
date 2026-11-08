@@ -17,6 +17,7 @@ if (!isset($db) || $db === null) {
 // Obtener permisos del usuario actual
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'crear') : false;
+$puede_editar_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'actualizar') : false;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'eliminar') : false;
 
 // Paginación
@@ -57,15 +58,24 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-6">
-                <input type="text" name="busqueda" class="form-control" 
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
+                <select name="estado_nota" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
+                    <option value="todos" <?= (($estado_nota ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
+                    <option value="activos" <?= (($estado_nota ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
+                    <option value="inactivos" <?= (($estado_nota ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <input type="text" name="busqueda" class="form-control form-control-sm"
                        list="listaNotasEntrada"
                        placeholder="Buscar por proveedor, encargado o ID..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
@@ -249,23 +259,29 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 </td>
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <!-- ⭐ BOTÓN DE VER (ahora abre modal) -->
-                                        <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
-                                                onclick="verDetalleNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>)">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        
-                                        <?php if (!$anulada && $puede_anular_nota): ?>
-                                            <button type="button" class="btn-action-circle btn-delete" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#anularModal"
-                                                    data-id="<?= $n['id_nota_entrada'] ?>"
-                                                    data-proveedor="<?= htmlspecialchars($n['razon_social'] ?? 'N/A') ?>"
-                                                    title="Anular Nota">
-                                                <i class="fas fa-ban"></i>
+                                        <?php if (!$anulada): ?>
+                                            <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
+                                                    onclick="verDetalleNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, this)">
+                                                <i class="fas fa-eye"></i>
                                             </button>
-                                        <?php elseif ($anulada): ?>
-                                            <span style="color: #adb5bd; font-size: 0.7rem;">Anulada</span>
+                                            <?php if ($puede_editar_nota): ?>
+                                                <button type="button" class="btn-action-circle btn-edit" title="Editar"
+                                                        onclick="editarNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, this)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                            <?php if ($puede_anular_nota): ?>
+                                                <button type="button" class="btn-action-circle btn-delete"
+                                                        onclick="prepararAnulacionNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, <?= htmlspecialchars(json_encode($n['razon_social'] ?? 'N/A', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') ?>, this)"
+                                                        title="Inactivar">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                        <?php elseif ($puede_anular_nota): ?>
+                                            <button type="button" class="btn-action-circle btn-reactivate" title="Reactivar"
+                                                    onclick="reactivarNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, this)">
+                                                <i class="fas fa-undo-alt"></i>
+                                            </button>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -288,210 +304,25 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
 
 <!-- ============================================================ -->
-<!-- MODAL VER DETALLE DE NOTA DE ENTRADA                         -->
-<!-- ============================================================ -->
-<div class="modal fade" id="modalVerNotaEntrada" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
-            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-eye me-2" style="color: #f39c12;"></i> Detalle de la Nota de Entrada
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
-            </div>
+<?php
+require_once __DIR__ . '/partials/modal_ver_nota.php';
+require_once __DIR__ . '/partials/modal_anular_nota.php';
+?>
 
-            <div class="modal-body" style="padding: 20px 24px;">
-                
-                <div class="text-center mb-4">
-                    <h4 id="ver-nota-id" style="color: #f39c12; font-weight: 700; margin-bottom: 6px;">—</h4>
-                    <span id="ver-nota-estado" class="badge" style="padding: 6px 16px; border-radius: 50px; font-size: 0.75rem;">—</span>
-                </div>
-
-                <div class="row g-4">
-                    <!-- Datos de la nota -->
-                    <div class="col-md-6">
-                        <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
-                            <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
-                                <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Datos de la Nota
-                            </h6>
-                            <div class="mb-3">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Fecha</label>
-                                <p id="ver-nota-fecha" style="color: #1a1a2e; margin: 0; font-weight: 600;">—</p>
-                            </div>
-                            <div class="mb-0">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Costo Total</label>
-                                <p id="ver-nota-total" style="color: #f39c12; margin: 0; font-weight: 700; font-size: 1.2rem;">—</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Proveedor y encargado -->
-                    <div class="col-md-6">
-                        <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
-                            <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
-                                <i class="fas fa-truck me-2" style="color: #f39c12;"></i> Proveedor / Encargado
-                            </h6>
-                            <div class="mb-3">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Proveedor</label>
-                                <p id="ver-nota-proveedor" style="color: #1a1a2e; margin: 0; font-weight: 600;">—</p>
-                            </div>
-                            <div class="mb-0">
-                                <label style="color: #6c757d; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Encargado</label>
-                                <p id="ver-nota-encargado" style="color: #1a1a2e; margin: 0;">—</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Lista de productos -->
-                <div class="mt-4">
-                    <div class="p-3" style="background: #f8f9fa; border-radius: 12px;">
-                        <h6 style="color: #1a1a2e; font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px; margin-bottom: 16px;">
-                            <i class="fas fa-box me-2" style="color: #f39c12;"></i> Productos
-                        </h6>
-                        <div id="ver-nota-productos" style="color: #1a1a2e; white-space: pre-wrap;">
-                            —
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                    <i class="fas fa-times me-1"></i> Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- ============================================================ -->
-<!-- MODAL ANULAR                                                 -->
-<!-- ============================================================ -->
-<div class="modal fade" id="anularModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content" style="background: #0d0d14; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-            <div class="modal-header" style="background: rgba(220,53,69,0.1); border-bottom: 1px solid rgba(255,255,255,0.05); border-radius: 16px 16px 0 0;">
-                <h5 class="modal-title" style="color: #ffffff;">
-                    <i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Anular Nota de Entrada
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.3;"></button>
-            </div>
-            <form method="POST" action="?url=notaentrada&type=anular">
-                <div class="modal-body" style="color: rgba(255,255,255,0.8);">
-                    <p>¿Estás seguro de anular esta nota de entrada?</p>
-                    <p><strong style="color: rgba(255,255,255,0.5);">Proveedor:</strong> <span id="modalProveedor" style="color: #ffffff;"></span></p>
-                    <div class="alert" style="background: rgba(220,53,69,0.08); border: 1px solid rgba(220,53,69,0.12); color: #ea868f; border-radius: 12px; padding: 12px 16px;">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Al anular, el stock de los productos se revertirá automáticamente.
-                    </div>
-                    <input type="hidden" name="id_nota_entrada" id="modalIdNota">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Motivo de Anulación <span class="text-danger">*</span></label>
-                        <textarea name="motivo_anulacion" class="form-control" rows="3" required 
-                                  placeholder="Describe el motivo por el cual se anula esta nota"
-                                  style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ffffff; border-radius: 10px;"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.05); border-radius: 0 0 16px 16px;">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-ban me-1"></i> Anular Nota
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-
-<!-- ============================================================ -->
-<!-- DATOS EN JSON + JAVASCRIPT                                   -->
-<!-- ============================================================ -->
-<script id="notasEntradaData" type="application/json">
-<?= json_encode(
-    isset($notas) && is_array($notas) ? array_values($notas) : [],
-    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
-) ?>
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    'use strict';
-
-    // ============================================================
-    // DATOS DE NOTAS DE ENTRADA
-    // ============================================================
-    const notasData = JSON.parse(document.getElementById('notasEntradaData').textContent);
-    const notasPorId = {};
-    notasData.forEach(function(n) {
-        notasPorId[parseInt(n.id_nota_entrada)] = n;
-    });
-
-    // ============================================================
-    // VER DETALLE
-    // ============================================================
-    window.verDetalleNotaEntrada = function(id) {
-        const n = notasPorId[id];
-        if (!n) return;
-
-        const anulada = (n.estado || 'ACTIVA') === 'ANULADA';
-
-        document.getElementById('ver-nota-id').textContent = 'Nota #' + n.id_nota_entrada;
-        
-        const badge = document.getElementById('ver-nota-estado');
-        if (anulada) {
-            badge.textContent = 'Inactivo';
-            badge.style.background = 'rgba(220,53,69,0.12)';
-            badge.style.color = '#dc3545';
-        } else {
-            badge.textContent = 'Activo';
-            badge.style.background = 'rgba(40,167,69,0.12)';
-            badge.style.color = '#28a745';
-        }
-
-        document.getElementById('ver-nota-fecha').textContent = n.fecha_ingreso || '—';
-        document.getElementById('ver-nota-total').textContent = '$' + parseFloat(n.costo_total || 0).toFixed(2);
-        document.getElementById('ver-nota-proveedor').textContent = n.razon_social || 'N/A';
-        document.getElementById('ver-nota-encargado').textContent = n.encargado_nombre || 'Sin asignar';
-
-        // Productos (lista)
-        document.getElementById('ver-nota-productos').textContent = n.productos_lista || 'Sin productos';
-
-        new bootstrap.Modal(document.getElementById('modalVerNotaEntrada')).show();
-    };
-
-    // ============================================================
-    // MODAL ANULAR
-    // ============================================================
-    const anularModal = document.getElementById('anularModal');
-    if (anularModal) {
-        anularModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const id = button.getAttribute('data-id');
-            const proveedor = button.getAttribute('data-proveedor');
-            document.getElementById('modalIdNota').value = id;
-            document.getElementById('modalProveedor').textContent = proveedor;
-        });
+<style>
+    .btn-action-circle.btn-reactivate {
+        background: #28a745 !important;
+        color: #fff !important;
     }
+    .btn-action-circle.btn-reactivate:hover {
+        background: #218838 !important;
+        box-shadow: 0 6px 20px rgba(40, 167, 69, .4);
+    }
+</style>
 
-    // ============================================================
-    // AUTO-CIERRE DE ALERTAS
-    // ============================================================
-    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
-        var ms = parseInt(el.dataset.autoDismiss, 10) || 5000;
-        setTimeout(function () {
-            if (!el.parentNode) return;
-            el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(-8px)';
-            setTimeout(function () { el.remove(); }, 400);
-        }, ms);
-    });
-});
-</script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="/pirotecnica_fenix/assets/js/nota_entrada.js"></script>
+
+
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

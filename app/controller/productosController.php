@@ -55,7 +55,7 @@ class ProveedorProcessor {
     private $db;
     public function __construct($db) { $this->db = $db; }
     public function obtenerProveedores() {
-        $sql = "SELECT id_proveedor, razon_social, rif, numero_contacto FROM proveedor WHERE eliminado = 0 AND status = 'activo' ORDER BY razon_social ASC";
+        $sql = "SELECT id_proveedor, razon_social, rif, numero_contacto FROM proveedor WHERE eliminado = 0 ORDER BY razon_social ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
