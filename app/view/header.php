@@ -1,26 +1,156 @@
 <?php
-// ==========================================
-// CARGAR PERMISOS DEL USUARIO ACTUAL
-// ==========================================
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 try {
     $db_menu = (new ConnectDB())->getConnection();
-    $id_rol_actual = $_SESSION['id_rol'] ?? 0;
+    $id_rol_actual = (int) ($_SESSION['id_rol'] ?? 0);
     $modulosVisibles = $id_rol_actual > 0
         ? PermisoHelper::modulosVisibles($db_menu, $id_rol_actual)
         : [];
 } catch (Exception $e) {
+    error_log('Error al cargar permisos del menú: ' . $e->getMessage());
     $modulosVisibles = [];
 }
 
-// Helper rápido para verificar si el usuario tiene acceso a un módulo
-$tieneModulo = function($nombre) use ($modulosVisibles) {
-    return in_array($nombre, $modulosVisibles);
+$tieneModulo = static function ($nombre) use (&$modulosVisibles): bool {
+    return in_array($nombre, $modulosVisibles, true);
 };
 
 $currentUrl = $_GET['url'] ?? 'main';
+$nombreUsuario = trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
+
+$renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): void {
+    $itemStyle = static function (string $url) use ($currentUrl): string {
+        $active = $currentUrl === $url;
+        return 'border:none;background:' . ($active ? 'rgba(243,156,18,0.12)' : 'transparent')
+            . ';color:' . ($active ? '#f39c12' : 'rgba(255,255,255,0.72)')
+            . ';font-weight:' . ($active ? '600' : '400');
+    };
+
+    $linkStyle = static function (string $url) use ($currentUrl): string {
+        $active = $currentUrl === $url;
+        return 'color:' . ($active ? '#f39c12' : 'rgba(255,255,255,0.72)')
+            . ';background:' . ($active ? 'rgba(243,156,18,0.12)' : 'transparent');
+    };
+
+    $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida'], true);
+    $verNotaEntrada = $tieneModulo('Notas de Entrada') && (int) ($_SESSION['id_rol'] ?? 0) !== 3;
+    $verNotaSalida = $tieneModulo('Notas de Salida');
+    $verCategorias = $tieneModulo('Categorias');
+    $verUsuarios = $tieneModulo('Usuarios');
+    $verRoles = $tieneModulo('Roles');
+    $verReporteMovimiento = $tieneModulo('Reportes');
+    $verReporteCaja = $tieneModulo('ReporteCaja');
+    $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles'], true);
+    $isReportesActive = in_array($currentUrl, ['reportes', 'reportecaja'], true);
+    ?>
+    <div class="d-flex flex-column gap-1">
+        <h6 class="text-uppercase small fw-bold mb-2 px-3" style="color:rgba(255,255,255,.45);letter-spacing:.5px">
+            <i class="fas fa-compass me-2 text-warning"></i>Navegación
+        </h6>
+
+        <a href="?url=main" class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="<?= htmlspecialchars($itemStyle('main'), ENT_QUOTES, 'UTF-8') ?>">
+            <i class="fas fa-home" style="width:20px"></i><span>Inicio</span>
+        </a>
+
+        <?php if ($tieneModulo('Proveedores')): ?>
+            <a href="?url=proveedores" class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="<?= htmlspecialchars($itemStyle('proveedores'), ENT_QUOTES, 'UTF-8') ?>">
+                <i class="fas fa-truck" style="width:20px"></i><span>Proveedores</span>
+            </a>
+        <?php endif; ?>
+
+        <?php if ($tieneModulo('Clientes')): ?>
+            <a href="?url=clientes" class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="<?= htmlspecialchars($itemStyle('clientes'), ENT_QUOTES, 'UTF-8') ?>">
+                <i class="fas fa-users" style="width:20px"></i><span>Clientes</span>
+            </a>
+        <?php endif; ?>
+
+        <?php if ($tieneModulo('Productos')): ?>
+            <a href="?url=productos" class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="<?= htmlspecialchars($itemStyle('productos'), ENT_QUOTES, 'UTF-8') ?>">
+                <i class="fas fa-box" style="width:20px"></i><span>Productos</span>
+            </a>
+        <?php endif; ?>
+
+        <?php if ($verNotaEntrada || $verNotaSalida): ?>
+            <div class="w-100">
+                <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 text-decoration-none"
+                   data-bs-toggle="collapse" href="#menuNotas<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
+                   role="button" aria-expanded="<?= $isNotasActive ? 'true' : 'false' ?>"
+                   aria-controls="menuNotas<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
+                   style="background:<?= $isNotasActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;color:<?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.72)' ?>">
+                    <i class="fas fa-file-invoice" style="width:20px"></i><span class="flex-grow-1">Notas</span><i class="fas fa-chevron-down small"></i>
+                </a>
+                <div class="collapse <?= $isNotasActive ? 'show' : '' ?>" id="menuNotas<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="d-flex flex-column ps-3 mt-1 rounded-3 p-2" style="background:#0D0D1A">
+                        <?php if ($verNotaEntrada): ?>
+                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=notaentrada" style="<?= htmlspecialchars($linkStyle('notaentrada'), ENT_QUOTES, 'UTF-8') ?>">
+                                <i class="fas fa-sign-in-alt me-2"></i>Nota de Entrada
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($verNotaSalida): ?>
+                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=notasalida" style="<?= htmlspecialchars($linkStyle('notasalida'), ENT_QUOTES, 'UTF-8') ?>">
+                                <i class="fas fa-sign-out-alt me-2"></i>Nota de Salida
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($verCategorias || $verUsuarios || $verRoles): ?>
+            <div class="w-100">
+                <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 text-decoration-none"
+                   data-bs-toggle="collapse" href="#menuConfiguracion<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
+                   role="button" aria-expanded="<?= $isConfigActive ? 'true' : 'false' ?>"
+                   aria-controls="menuConfiguracion<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
+                   style="background:<?= $isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;color:<?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.72)' ?>">
+                    <i class="fas fa-cog" style="width:20px"></i><span class="flex-grow-1">Configuración</span><i class="fas fa-chevron-down small"></i>
+                </a>
+                <div class="collapse <?= $isConfigActive ? 'show' : '' ?>" id="menuConfiguracion<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="d-flex flex-column ps-3 mt-1 rounded-3 p-2" style="background:#0D0D1A">
+                        <?php if ($verCategorias): ?>
+                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=categorias" style="<?= htmlspecialchars($linkStyle('categorias'), ENT_QUOTES, 'UTF-8') ?>"><i class="fas fa-tags me-2"></i>Categorías</a>
+                        <?php endif; ?>
+                        <?php if ($verUsuarios): ?>
+                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=usuarios" style="<?= htmlspecialchars($linkStyle('usuarios'), ENT_QUOTES, 'UTF-8') ?>"><i class="fas fa-users-cog me-2"></i>Usuarios</a>
+                        <?php endif; ?>
+                        <?php if ($verRoles): ?>
+                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=roles" style="<?= htmlspecialchars($linkStyle('roles'), ENT_QUOTES, 'UTF-8') ?>"><i class="fas fa-user-shield me-2"></i>Roles</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($verReporteMovimiento || $verReporteCaja): ?>
+            <div class="w-100">
+                <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 text-decoration-none"
+                   data-bs-toggle="collapse" href="#menuReportes<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
+                   role="button" aria-expanded="<?= $isReportesActive ? 'true' : 'false' ?>"
+                   aria-controls="menuReportes<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
+                   style="background:<?= $isReportesActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;color:<?= $isReportesActive ? '#f39c12' : 'rgba(255,255,255,0.72)' ?>">
+                    <i class="fas fa-file-alt" style="width:20px"></i><span class="flex-grow-1">Reportes</span><i class="fas fa-chevron-down small"></i>
+                </a>
+                <div class="collapse <?= $isReportesActive ? 'show' : '' ?>" id="menuReportes<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="d-flex flex-column ps-3 mt-1 rounded-3 p-2" style="background:#0D0D1A">
+                        <?php if ($verReporteMovimiento): ?>
+                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=reportes" style="<?= htmlspecialchars($linkStyle('reportes'), ENT_QUOTES, 'UTF-8') ?>"><i class="fas fa-boxes-stacked me-2"></i>Reporte de Movimiento</a>
+                        <?php endif; ?>
+                        <?php if ($verReporteCaja): ?>
+                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=reportecaja" style="<?= htmlspecialchars($linkStyle('reportecaja'), ENT_QUOTES, 'UTF-8') ?>"><i class="fas fa-cash-register me-2"></i>Reporte de Caja</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+};
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -28,263 +158,85 @@ $currentUrl = $_GET['url'] ?? 'main';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema Pirotecnica Fénix</title>
-    
     <base href="/pirotecnica_fenix/">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilo.css">
-    <!-- ⭐ VALIDACIONES GLOBALES -->
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/validaciones.css">
     <script src="/pirotecnica_fenix/assets/js/validaciones.js" defer></script>
+    <style>
+        body { padding-top: 60px; background: #0e0e18; }
+        .app-navbar { 
+            min-height: 60px; 
+            background: #1a1a2e; 
+            z-index: 1050; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .app-sidebar {
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            background: #1a1a2e;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .app-offcanvas { 
+            background: #1a1a2e; 
+            color: #fff; 
+            z-index: 1060; 
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        @media (max-width: 991.98px) {
+            .content-wrapper { min-height: calc(100vh - 110px); }
+        }
+    </style>
 </head>
 <body>
-
-<!-- ==========================================
-NAVBAR SUPERIOR
-========================================== -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background: #1a1a2e !important; min-height: 60px; padding: 5px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 1050; border-bottom: 1px solid rgba(255,255,255,0.05);">
+<nav class="navbar navbar-dark fixed-top app-navbar shadow">
     <div class="container-fluid">
-        <a class="navbar-brand d-flex align-items-center" href="?url=main" style="gap: 10px;">
-            <img src="assets/imagenes/logo.png" alt="Logo" 
-                 style="width: 40px !important; height: 40px !important; object-fit: contain; border-radius: 50%; background:  rgba(255, 247, 22, 0.72); padding: 0.5px;">
-            <span style="font-size: 1.1rem; font-weight: 700; color: #ffffff; white-space: nowrap;">
-                <span style="color: #DAA520;">Sistema</span> Pirotecnica Fénix
-            </span>
+        <a class="navbar-brand d-flex align-items-center gap-2" href="?url=main">
+            <img src="assets/imagenes/logo.png" alt="Logo" class="rounded-circle" style="width:40px;height:40px;object-fit:contain;background:rgba(255,247,22,.72)">
+            <span class="d-none d-sm-inline"><span class="text-warning">Sistema</span> Pirotecnica Fénix</span>
+            <span class="d-sm-none"><span class="text-warning">Pirotecnica</span> Fénix</span>
         </a>
-        
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+
+        <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuMovil" aria-controls="menuMovil" aria-label="Abrir menú">
             <span class="navbar-toggler-icon"></span>
         </button>
-        
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item">
-                    <span class="nav-link text-white" style="font-size: 0.9rem;">
-                        <i class="fas fa-user me-1"></i> 
-                        <?= htmlspecialchars(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? '')) ?>
-                    </span>
-                </li>
-                <li class="nav-item">
-                    <a href="?url=logout" class="btn btn-outline-light btn-sm">
-                        <i class="fas fa-sign-out-alt"></i> Salir
-                    </a>
-                </li>
-            </ul>
+
+        <div class="d-flex align-items-center gap-2 ms-auto">
+            <span class="navbar-text text-white d-none d-md-inline">
+                <i class="fas fa-user me-1"></i><?= htmlspecialchars($nombreUsuario, ENT_QUOTES, 'UTF-8') ?>
+            </span>
+            <a href="?url=logout" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-sign-out-alt"></i><span class="d-none d-sm-inline ms-1">Salir</span>
+            </a>
         </div>
     </div>
 </nav>
 
-<!-- ==========================================
-CONTENEDOR PRINCIPAL
-========================================== -->
-<div class="container-fluid" style="margin-top: 60px;">
-    <div class="row align-items-stretch">
-        
-<!-- ==========================================
-MENÚ LATERAL
-========================================== -->
-<div class="col-md-3 col-lg-2" style="padding: 0; height: calc(100vh - 60px); position: sticky; top: 60px; z-index: 1040; align-self: flex-start;">
-    <div class="card shadow-sm border-0 rounded-0" style="background: #1a1a2e; border: 1px solid rgba(255,255,255,0.05); height: 100%; min-height: calc(100vh - 60px); border-radius: 0 !important;">
-        <div class="card-body p-3" style="height: 100%; overflow-y: auto;">
-            <h6 class="text-uppercase small fw-bold mb-3" style="color: rgba(255,255,255,0.4); letter-spacing: 0.5px;">
-                <i class="fas fa-compass me-2" style="color: #f39c12;"></i> Navegación
-            </h6>
-            
-            <div class="list-group list-group-flush" style="display: flex; flex-direction: column; gap: 2px;">
-                
-                <!-- ===== INICIO ===== -->
-                <a href="?url=main" 
-                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'main' ? 'active' : '' ?>"
-                   style="border: none; background: <?= $currentUrl == 'main' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'main' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'main' ? '600' : '400' ?>; transition: all 0.3s ease;">
-                    <i class="fas fa-home" style="width: 20px; color: <?= $currentUrl == 'main' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-                    <span>Inicio</span>
-                </a>
-                
-                <!-- ===== PROVEEDORES ===== -->
-                <?php if ($tieneModulo('Proveedores')): ?>
-                <a href="?url=proveedores" 
-                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'proveedores' ? 'active' : '' ?>"
-                   style="border: none; background: <?= $currentUrl == 'proveedores' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'proveedores' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'proveedores' ? '600' : '400' ?>; transition: all 0.3s ease;">
-                    <i class="fas fa-truck" style="width: 20px; color: <?= $currentUrl == 'proveedores' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-                    <span>Proveedores</span>
-                </a>
-                <?php endif; ?>
-                
-                <!-- ===== CLIENTES ===== -->
-                <?php if ($tieneModulo('Clientes')): ?>
-                <a href="?url=clientes" 
-                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'clientes' ? 'active' : '' ?>"
-                   style="border: none; background: <?= $currentUrl == 'clientes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'clientes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'clientes' ? '600' : '400' ?>; transition: all 0.3s ease;">
-                    <i class="fas fa-users" style="width: 20px; color: <?= $currentUrl == 'clientes' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-                    <span>Clientes</span>
-                </a>
-                <?php endif; ?>
-                
-                <!-- ===== PRODUCTOS ===== -->
-                <?php if ($tieneModulo('Productos')): ?>
-                <a href="?url=productos" 
-                   class="list-group-item list-group-item-action d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $currentUrl == 'productos' ? 'active' : '' ?>"
-                   style="border: none; background: <?= $currentUrl == 'productos' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $currentUrl == 'productos' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $currentUrl == 'productos' ? '600' : '400' ?>; transition: all 0.3s ease;">
-                    <i class="fas fa-box" style="width: 20px; color: <?= $currentUrl == 'productos' ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-                    <span>Productos</span>
-                </a>
-                <?php endif; ?>
-                
-                <!-- ===== NOTAS (DROPDOWN) ===== -->
-                <?php 
-                $isNotasActive = in_array($currentUrl, ['notaentrada', 'notasalida']);
-                $verNotaEntrada = $tieneModulo('Notas de Entrada');
-                $verNotaSalida = $tieneModulo('Notas de Salida');
-                $verNotas = $verNotaEntrada || $verNotaSalida;
-                ?>
-                
-                <?php if ($verNotas): ?>
-                <div class="w-100">
-                    <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isNotasActive ? 'active' : '' ?>" 
-                       data-bs-toggle="collapse" href="#menuNotas" role="button" aria-expanded="<?= $isNotasActive ? 'true' : 'false' ?>" aria-controls="menuNotas"
-                       style="border: none; width: 100%; background: <?= $isNotasActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isNotasActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
-                        <i class="fas fa-file-invoice" style="width: 20px; color: <?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-                        <span style="flex: 1;">Notas</span>
-                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
-                    </a>
-                    
-                    <div class="collapse <?= $isNotasActive ? 'show' : '' ?>" id="menuNotas">
-                        <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
-                            <?php if ($verNotaEntrada): ?>
-                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notaentrada" 
-                               style="color: <?= $currentUrl == 'notaentrada' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.85rem; transition: all 0.3s ease; background: <?= $currentUrl == 'notaentrada' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='<?= $currentUrl == 'notaentrada' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'notaentrada' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
-                                <i class="fas fa-sign-in-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Entrada
-                            </a>
-                            <?php endif; ?>
-                            <?php if ($verNotaSalida): ?>
-                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=notasalida" 
-                               style="color: <?= $currentUrl == 'notasalida' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.85rem; transition: all 0.3s ease; background: <?= $currentUrl == 'notasalida' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='<?= $currentUrl == 'notasalida' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'notasalida' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
-                                <i class="fas fa-sign-out-alt me-2" style="color: rgba(255,255,255,0.3);"></i> Nota de Salida
-                            </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
-                
-                <!-- ===== CONFIGURACIÓN (DROPDOWN) ===== -->
-                <?php 
-                $isConfigActive = in_array($currentUrl, ['categorias', 'usuarios', 'roles']);
-                $verCategorias = $tieneModulo('Categorias');
-                $verUsuarios = $tieneModulo('Usuarios');
-                $verRoles = $tieneModulo('Roles');
-                $verConfig = $verCategorias || $verUsuarios || $verRoles;
-                ?>
-                
-                <?php if ($verConfig): ?>
-                <div class="w-100">
-                    <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isConfigActive ? 'active' : '' ?>" 
-                       data-bs-toggle="collapse" href="#menuConfiguracion" role="button" aria-expanded="<?= $isConfigActive ? 'true' : 'false' ?>" aria-controls="menuConfiguracion"
-                       style="border: none; width: 100%; background: <?= $isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isConfigActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
-                        <i class="fas fa-cog" style="width: 20px; color: <?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-                        <span style="flex: 1;">Configuración</span>
-                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
-                    </a>
-                    
-                    <div class="collapse <?= $isConfigActive ? 'show' : '' ?>" id="menuConfiguracion">
-                        <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
-                            <?php if ($verCategorias): ?>
-                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=categorias" 
-                               style="color: <?= $currentUrl == 'categorias' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.85rem; transition: all 0.3s ease; background: <?= $currentUrl == 'categorias' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='<?= $currentUrl == 'categorias' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'categorias' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
-                                <i class="fas fa-tags me-2" style="color: rgba(255,255,255,0.3);"></i> Categorías
-                            </a>
-                            <?php endif; ?>
-                            <?php if ($verUsuarios): ?>
-                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=usuarios" 
-                               style="color: <?= $currentUrl == 'usuarios' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.85rem; transition: all 0.3s ease; background: <?= $currentUrl == 'usuarios' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='<?= $currentUrl == 'usuarios' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'usuarios' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
-                                <i class="fas fa-users-cog me-2" style="color: rgba(255,255,255,0.3);"></i> Usuarios
-                            </a>
-                            <?php endif; ?>
-                            <?php if ($verRoles): ?>
-                            <a class="dropdown-item py-2 px-3 rounded-2" href="?url=roles" 
-                               style="color: <?= $currentUrl == 'roles' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.85rem; transition: all 0.3s ease; background: <?= $currentUrl == 'roles' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;"
-                               onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                               onmouseout="this.style.background='<?= $currentUrl == 'roles' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'roles' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
-                                <i class="fas fa-user-shield me-2" style="color: rgba(255,255,255,0.3);"></i> Roles
-                            </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
-                
-              <!-- ===== REPORTES (DROPDOWN) ===== -->
-                <?php
-                $verReporteMovimiento = $tieneModulo('Reportes');
-                $verReporteCaja       = $tieneModulo('ReporteCaja');
-                $verReportes          = $verReporteMovimiento || $verReporteCaja;
-                $isReportesActive     = in_array($currentUrl, ['reportes', 'reportecaja']);
-                ?>
-                <?php if ($verReportes): ?>
-                <div class="w-100">
-                    <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 <?= $isReportesActive ? 'active' : '' ?>" 
-                    data-bs-toggle="collapse" href="#menuReportes" role="button" aria-expanded="<?= $isReportesActive ? 'true' : 'false' ?>" aria-controls="menuReportes"
-                    style="border: none; width: 100%; background: <?= $isReportesActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; color: <?= $isReportesActive ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-weight: <?= $isReportesActive ? '600' : '400' ?>; text-decoration: none; transition: all 0.3s ease; cursor: pointer; padding: 8px 12px;">
-                        <i class="fas fa-file-alt" style="width: 20px; color: <?= $isReportesActive ? '#f39c12' : 'rgba(255,255,255,0.3)' ?>;"></i> 
-                        <span style="flex: 1;">Reportes</span>
-                        <i class="fas fa-chevron-down" style="font-size: 0.7rem; opacity: 0.5; transition: transform 0.3s ease;"></i>
-                    </a>
+<div class="offcanvas offcanvas-start app-offcanvas d-lg-none" tabindex="-1" id="menuMovil" aria-labelledby="menuMovilLabel">
+    <div class="offcanvas-header border-bottom border-secondary">
+        <h5 class="offcanvas-title" id="menuMovilLabel"><i class="fas fa-compass text-warning me-2"></i>Menú</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar menú"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+        <?php $renderMenu('Movil'); ?>
+        <div class="mt-auto pt-3 text-center border-top border-secondary">
+            <small class="text-white-50">Pirotecnia Fénix · v1.0.0</small>
+        </div>
+    </div>
+</div>
 
-                    <div class="collapse <?= $isReportesActive ? 'show' : '' ?>" id="menuReportes">
-                        <div class="d-flex flex-column ps-3 mt-1" style="background: #0D0D1A; border-radius: 8px; padding: 6px;">
-                            
-                            <!-- Opción 1: Reporte de Movimiento (solo si tiene permiso) -->
-                            <?php if ($verReporteMovimiento): ?>
-                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=reportes" 
-                            style="color: <?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.8rem; transition: all 0.3s ease; background: <?= $currentUrl == 'reportes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; white-space: nowrap;"
-                            onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                            onmouseout="this.style.background='<?= $currentUrl == 'reportes' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'reportes' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
-                                <i class="fas fa-boxes-stacked me-1" style="color: rgba(255,255,255,0.3);"></i> Reporte de Movimiento
-                            </a>
-                            <?php endif; ?>
-                            
-                           
-                            <?php if ($verReporteCaja): ?>
-                            <a class="dropdown-item py-2 px-2 rounded-2" href="?url=reportecaja" 
-                            style="color: <?= $currentUrl == 'reportecaja' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>; font-size: 0.8rem; transition: all 0.3s ease; background: <?= $currentUrl == 'reportecaja' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>; white-space: nowrap;"
-                            onmouseover="this.style.background='rgba(243,156,18,0.12)'; this.style.color='#f39c12';"
-                            onmouseout="this.style.background='<?= $currentUrl == 'reportecaja' ? 'rgba(243,156,18,0.12)' : 'transparent' ?>'; this.style.color='<?= $currentUrl == 'reportecaja' ? '#f39c12' : 'rgba(255,255,255,0.6)' ?>';">
-                                <i class="fas fa-cash-register me-1" style="color: rgba(255,255,255,0.3);"></i> Reporte de Caja
-                            </a>
-                            <?php endif; ?>
-            
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-                 
-                
-                <!-- ===== ESPACIO ===== -->
-                <div style="flex: 1;"></div>
-                
-                <!-- ===== VERSIÓN ===== -->
-                <div class="mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
-                    <small style="color: rgba(255,255,255,0.2); font-size: 0.65rem; display: block; text-align: center;">
-                        <i class="fas fa-code-branch me-1"></i> v1.0.0
-                    </small>
-                    <small style="color: rgba(255,255,255,0.15); font-size: 0.6rem; display: block; text-align: center;">
-                        Pirotecnia Fénix
-                    </small>
+<div class="container-fluid px-0">
+    <div class="row align-items-stretch g-0">
+        <aside class="col-lg-2 d-none d-lg-block app-sidebar">
+            <div class="p-3 h-100 d-flex flex-column">
+                <?php $renderMenu('Pc'); ?>
+                <div class="mt-auto pt-3 text-center border-top border-secondary">
+                    <small class="text-white-50">Pirotecnia Fénix · v1.0.0</small>
                 </div>
-                
             </div>
-        </div>
-    </div>
-</div>
-        <!-- CONTENIDO PRINCIPAL -->
-        <div class="col-md-9 col-lg-10">
+        </aside>
+        <div class="col-lg-10 col-12">
             <div class="content-wrapper p-3">
-                <!-- Las vistas se inyectan aquí -->

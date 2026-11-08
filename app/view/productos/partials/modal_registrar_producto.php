@@ -20,24 +20,29 @@
                     <input type="hidden" name="accion" value="store">
                     
                     <div class="row g-3">
+                        <!-- VALIDACIÓN DE TEXTO -->
                         <div class="col-md-12">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombre del Producto *</label>
-                            <input type="text" name="descripcion" class="form-control" required
+                            <input type="text" name="descripcion" id="reg-prod-descripcion" class="form-control" required
                                    placeholder="Ej: Pólvora"
+                                   data-validate="razon"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                            <small class="feedback-validacion info" id="reg-prod-descripcion-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
+                            </small>
                         </div>
                         
-                    <!-- CATEGORÍA CON BOTÓN DE REGISTRO RÁPIDO -->
+                        <!-- CATEGORÍA CON BOTÓN DE REGISTRO RÁPIDO -->
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Categoría *</label>
                             <div class="input-group">
-                            <select name="id_categoria" id="id_categoria" class="form-select" required
-                                style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
-                            <option value="">Seleccione una Categoría...</option>
-                            <?php foreach (($categorias ?? []) as $cat): ?>
-                                <option value="<?= $cat['id_categoria'] ?>"><?= htmlspecialchars($cat['nombre_categoria']) ?></option>
-                            <?php endforeach; ?>
-                            </select>
+                                <select name="id_categoria" id="id_categoria" class="form-select" required
+                                        style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                                    <option value="">Seleccione una Categoría...</option>
+                                    <?php foreach (($categorias ?? []) as $cat): ?>
+                                        <option value="<?= $cat['id_categoria'] ?>"><?= htmlspecialchars($cat['nombre_categoria']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                                 <button type="button" 
                                         id="btnAbrirModalCategoria"
                                         class="btn" 
@@ -47,34 +52,34 @@
                                 </button>
                             </div>
                         </div>
-                       <!-- PROVEEDOR CON BOTÓN DE REGISTRO RÁPIDO -->
+
+                        <!-- PROVEEDOR CON BOTÓN DE REGISTRO RÁPIDO -->
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
                             <div class="input-group">
-                                <select name="id_proveedor" id="id_proveedor" class="form-select" required
-                                        style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                                <select name="id_proveedor" id="id_proveedor" class="form-select" required data-searchable="true"
+                                        style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                     <option value="">Seleccione un proveedor...</option>
                                     <?php foreach (($proveedores ?? []) as $prov): ?>
-                                        <option value="<?= $prov['id_proveedor'] ?>"><?= htmlspecialchars($prov['razon_social']) ?></option>
+                                        <option value="<?= htmlspecialchars($prov['id_proveedor']) ?>"><?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                                <button type="button" 
-                                        id="btnAbrirModalProveedor"
-                                        class="btn" 
-                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 15px; display: flex; align-items: center; justify-content: center;"
-                                        title="Registrar nuevo proveedor">
-                                    <i class="fas fa-plus"></i>
-                                </button>
                             </div>
                         </div>
 
+                        <!-- VALIDACIÓN DE NÚMERO -->
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo *</label>
-                            <input type="number" name="stock_minimo" class="form-control" min="1" value="10" required
+                            <input type="number" name="stock_minimo" id="reg-prod-stock" class="form-control" min="1" value="10" required
+                                   data-validate="numero_positivo"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                            <small class="feedback-validacion info" id="reg-prod-stock-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Alerta cuando el stock baje a este nivel
+                            </small>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Especificaciones</label>
+
+                        <div class="col-12">
+                            <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Especificaciones (Opcional)</label>
                             <textarea name="especificaciones" class="form-control" rows="2"
                                       style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
                                       placeholder="Ej: Peso: 2kg, Color: Rojo"></textarea>

@@ -130,7 +130,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                     $idProductoHeredado = $_GET['id_producto'] ?? $_SESSION['nuevo_producto_id'] ?? '';
                                                     $productos = $productos ?? [];
                                                 ?>
-                                                <select id="producto" class="form-select" required style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
+                                                <!-- SE QUITÓ EL REQUIRED AQUÍ -->
+                                                <select id="producto" class="form-select" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px 0 0 12px; color: #ffffff; padding: 10px 16px;">
                                                     <option value="">Seleccione un producto...</option>
                                                     <?php foreach ($productos as $p): ?>
                                                         <option value="<?= $p['id_producto'] ?>" 
@@ -413,7 +414,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const detalles = [];
 
     // 1. MOSTRAR CATEGORÍA AL SELECCIONAR PRODUCTO
-
     productoSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         const categoria = selectedOption.getAttribute('data-categoria');
@@ -430,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function() {
     productoSelect.dispatchEvent(new Event('change'));
 
     // 2. AGREGAR PRODUCTO
-
     btnAgregar.addEventListener('click', function(e) {
         e.preventDefault();
 
@@ -493,11 +492,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         actualizarCamposOcultos();
-        cantidadInput.value = 1;
+
+        // ============================================================
+        // AQUÍ ESTÁ LA CORRECCIÓN PARA LIMPIAR LOS CAMPOS
+        // ============================================================
+        
+        // 1. Limpiar el select real
+        if (productoSelect) productoSelect.value = '';
+
+        // 2. Limpiar el input visible de select-search.js
+        const ssWrapper = productoSelect.closest('.ss-wrapper');
+        if (ssWrapper) {
+            const ssInput = ssWrapper.querySelector('.ss-input');
+            if (ssInput) ssInput.value = '';
+        }
+
+        // 3. Limpiar los otros campos
+        if (categoriaInput) categoriaInput.value = '';
+        if (cantidadInput) cantidadInput.value = '';
+        if (stockActual) stockActual.textContent = '0';
+
+        // 4. Devolver el foco
+        if (ssWrapper) {
+            const ssInput = ssWrapper.querySelector('.ss-input');
+            if (ssInput) ssInput.focus();
+        } else if (productoSelect) {
+            productoSelect.focus();
+        }
     });
 
     // 3. ELIMINAR PRODUCTO
-
     tbody.addEventListener('click', function(e) {
         const btn = e.target.closest('.eliminar-producto');
         if (btn) {
@@ -525,7 +549,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 4. ACTUALIZAR CAMPOS OCULTOS
-
     function actualizarCamposOcultos() {
         detallesContainer.innerHTML = '';
         
@@ -565,7 +588,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 5. VALIDAR ANTES DE GUARDAR
-
     const formNotaSalida = document.getElementById('formNotaSalida');
     formNotaSalida.addEventListener('submit', function(e) {
         const filasActuales = tbody.querySelectorAll('tr[data-id]');
@@ -587,37 +609,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // MÓDULO DE REGISTRO RÁPIDO DE CLIENTE (MODAL + AJAX)
     // ============================================================
 
-    // ABRIR MODAL
     const btnAbrirModal = document.getElementById('btnAbrirModalCliente');
     if (btnAbrirModal) {
         btnAbrirModal.addEventListener('click', function () {
-            // Resetear formularios
             document.getElementById('formRapidoClienteNatural').reset();
             document.getElementById('formRapidoClienteJuridico').reset();
             document.getElementById('modal-rapido-cliente-error').style.display = 'none';
             
-            // Resetear feedback visual sin borrar la lógica del validador global
             if (typeof Validador !== 'undefined') {
                 Validador.resetEstadoVisual(document.getElementById('modalRapidoCliente'));
             }
             
-            // Abrir modal
             new bootstrap.Modal(document.getElementById('modalRapidoCliente')).show();
         });
     }
 
-    // GUARDAR CLIENTE RÁPIDO (AJAX)
     const btnGuardar = document.getElementById('btnGuardarClienteRapido');
     if (btnGuardar) {
         btnGuardar.addEventListener('click', function () {
-            // Determinar qué pestaña está activa
             const tabActiva = document.querySelector('#modalRapidoCliente .nav-link.active');
             const esJuridico = tabActiva && tabActiva.id === 'tab-rapido-juridico';
             
             const formId = esJuridico ? 'formRapidoClienteJuridico' : 'formRapidoClienteNatural';
             const form = document.getElementById(formId);
             
-            // Validar formulario con el validador global
             if (typeof Validador !== 'undefined') {
                 Validador.init(document.getElementById('modalRapidoCliente'));
                 if (!Validador.validarFormulario(formId)) {
@@ -625,14 +640,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Recopilar datos
             const formData = new FormData(form);
             
-            // Deshabilitar botón para evitar doble click
             btnGuardar.disabled = true;
             btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
             
-            // Enviar por AJAX
             fetch('?url=notasalida&type=store_rapido_cliente_ajax', {
                 method: 'POST',
                 body: formData
@@ -643,16 +655,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnGuardar.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Cliente';
                 
                 if (!data.success) {
-                    // Mostrar error
                     document.getElementById('modal-rapido-cliente-error-msg').textContent = data.error || 'Error al guardar el cliente';
                     document.getElementById('modal-rapido-cliente-error').style.display = 'block';
                     return;
                 }
                 
-                // ✅ ÉXITO: agregar al select de clientes
                 const selectCliente = document.getElementById('id_cliente');
                 if (selectCliente) {
-                    // Verificar si ya existe
                     let existe = false;
                     for (let i = 0; i < selectCliente.options.length; i++) {
                         if (selectCliente.options[i].value == data.id_cliente) {
@@ -661,7 +670,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                     
-                    // Si no existe, agregar
                     if (!existe) {
                         const nuevaOpcion = document.createElement('option');
                         nuevaOpcion.value = data.id_cliente;
@@ -669,15 +677,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         selectCliente.appendChild(nuevaOpcion);
                     }
                     
-                    // Seleccionar el cliente nuevo
                     selectCliente.value = data.id_cliente;
                 }
                 
-                // Cerrar modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('modalRapidoCliente'));
                 if (modal) modal.hide();
                 
-                // Mostrar mensaje de éxito
                 mostrarMensajeExito('✅ Cliente "' + data.nombre_cliente + '" registrado exitosamente');
                 
             })
@@ -690,7 +695,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // MOSTRAR MENSAJE DE ÉXITO TEMPORAL
     function mostrarMensajeExito(mensaje) {
         const contenedor = document.getElementById('formNotaSalida');
         if (!contenedor) return;
@@ -715,7 +719,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     }
 
-    // ESTILO DE PESTAÑAS DEL MODAL
     document.querySelectorAll('#modalRapidoCliente .nav-link').forEach(function (tab) {
         tab.addEventListener('shown.bs.tab', function (e) {
             document.querySelectorAll('#modalRapidoCliente .nav-link').forEach(function (t) {

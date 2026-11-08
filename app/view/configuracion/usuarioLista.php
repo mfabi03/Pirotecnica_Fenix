@@ -116,6 +116,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="py-3">Teléfono</th>
                         <th class="py-3">Correo</th>
                         <th class="py-3">Rol</th>
+                        <th class="py-3 text-center">Status</th>
                         <th class="pe-4 py-3 text-center">Acciones</th>
                     </tr>
                 </thead>
@@ -140,12 +141,35 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         </span>
                                     <?php endif; ?>
                                 </td>
+                                <td class="text-center">
+                                    <?php if (($usuario['eliminado'] ?? 0) == 0): ?>
+                                        <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-check-circle me-1"></i> Activo
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-times-circle me-1"></i> Inactivo
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <button type="button" class="btn-action-circle btn-view btn-ver-usuario" title="Ver" data-id="<?= $usuario['id_usuario'] ?>"><i class="fas fa-eye"></i></button>
-                                        <button type="button" class="btn-action-circle btn-edit btn-editar-usuario" title="Editar" data-id="<?= $usuario['id_usuario'] ?>"><i class="fas fa-edit"></i></button>
-                                        <?php if (($usuario['id_usuario'] ?? 0) != $_SESSION['id_usuario']): ?>
-                                        <button type="button" class="btn-action-circle btn-delete btn-eliminar-usuario" title="Eliminar" data-id="<?= $usuario['id_usuario'] ?>" data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>"><i class="fas fa-trash-alt"></i></button>
+                                        
+                                        <?php if (($usuario['eliminado'] ?? 0) == 1): ?>
+                                            <!-- Botón REACTIVAR si está inactivo -->
+                                            <button type="button" class="btn-action-circle btn-reactivar-usuario" title="Reactivar Usuario"
+                                                    style="background: rgba(40,167,69,0.15); color: #28a745; border: none;"
+                                                    data-id="<?= $usuario['id_usuario'] ?>" 
+                                                    data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>">
+                                                <i class="fas fa-undo-alt"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <!-- Botones EDITAR y ELIMINAR si está activo -->
+                                            <button type="button" class="btn-action-circle btn-edit btn-editar-usuario" title="Editar" data-id="<?= $usuario['id_usuario'] ?>"><i class="fas fa-edit"></i></button>
+                                            <?php if (($usuario['id_usuario'] ?? 0) != $_SESSION['id_usuario']): ?>
+                                            <button type="button" class="btn-action-circle btn-delete btn-eliminar-usuario" title="Inactivar" data-id="<?= $usuario['id_usuario'] ?>" data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>"><i class="fas fa-trash-alt"></i></button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -153,7 +177,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="8" class="text-center py-5 dark-empty">
+                            <td colspan="9" class="text-center py-5 dark-empty">
                                 <div class="py-4">
                                     <i class="fas fa-users fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">No hay usuarios registrados</p>
@@ -320,15 +344,18 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px;">
             <div class="modal-header" style="background: #1a1a2e;">
-                <h5 class="modal-title" style="color: #ffffff;"><i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Eliminar Usuario</h5>
+                <h5 class="modal-title" style="color: #ffffff;"><i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Inactivar Usuario</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
             </div>
             <div class="modal-body">
-                <p>¿Estás seguro de eliminar a <strong id="eliminar-usuario-nombre"></strong>?</p>
+                <p>¿Estás seguro de inactivar a <strong id="eliminar-usuario-nombre"></strong>?</p>
+                <div class="alert alert-warning" style="font-size: 0.85rem;">
+                    El usuario no podrá iniciar sesión, pero sus datos se conservarán en el sistema.
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" id="btnConfirmarEliminarUsuario" class="btn btn-danger">Sí, eliminar</button>
+                <button type="button" id="btnConfirmarEliminarUsuario" class="btn btn-danger">Sí, inactivar</button>
             </div>
         </div>
     </div>
@@ -381,20 +408,17 @@ document.addEventListener('DOMContentLoaded', function() {
             inputs.forEach(input => {
                 input.classList.remove('is-invalid');
                 
-                // Validar campo vacío
                 if (!input.value.trim()) {
                     input.classList.add('is-invalid');
                     valido = false;
                     if (!primerError) primerError = input;
                 } 
-                // Validar con el Validador global
                 else if (typeof Validador !== 'undefined' && !Validador.validarCampo(input)) {
                     valido = false;
                     if (!primerError) primerError = input;
                 }
             });
 
-            // Validar contraseñas en el paso 2
             if (currentTab === 1) {
                 const pass = document.getElementById('wiz-clave');
                 const passConfirm = document.getElementById('wiz-clave-confirm');
@@ -436,7 +460,6 @@ document.addEventListener('DOMContentLoaded', function() {
              <b>Usuario:</b> ${document.getElementById('wiz-usuario').value}`;
     }
 
-    // Al abrir modal, resetear
     modalRegistrar.addEventListener('show.bs.modal', function () {
         document.getElementById('formRegistrarUsuario').reset();
         if (typeof Validador !== 'undefined') {
@@ -475,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 5. Editar, Ver y Eliminar (Igual que antes)
+    // 5. Editar, Ver y Eliminar
     document.querySelectorAll('.btn-editar-usuario').forEach(function(btn) {
         btn.addEventListener('click', async function() {
             const id = this.getAttribute('data-id');
@@ -543,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!idEliminar) return;
         const btn = this;
         btn.disabled = true;
-        btn.innerHTML = 'Eliminando...';
+        btn.innerHTML = 'Inactivando...';
         
         const fd = new FormData();
         fd.append('accion', 'delete_ajax');
@@ -553,12 +576,38 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data.success) {
             mostrarAlerta(data.mensaje, 'success');
             bootstrap.Modal.getInstance(document.getElementById('modalEliminarUsuario')).hide();
-            document.querySelector(`tr[data-id="${idEliminar}"]`).remove();
+            setTimeout(() => window.location.reload(), 1000);
         } else {
             mostrarAlerta(data.mensaje, 'error');
             btn.disabled = false;
-            btn.innerHTML = 'Sí, eliminar';
+            btn.innerHTML = 'Sí, inactivar';
         }
+    });
+
+    // 6. Reactivar Usuario
+    document.querySelectorAll('.btn-reactivar-usuario').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            const id = this.getAttribute('data-id');
+            const nombre = this.getAttribute('data-nombre');
+            
+            if (!confirm(`¿Deseas reactivar el usuario "${nombre}"?`)) return;
+            
+            const btnElement = this;
+            btnElement.disabled = true;
+            
+            const fd = new FormData();
+            fd.append('accion', 'reactivar_ajax');
+            fd.append('id_usuario', id);
+            
+            const data = await fetchAJAX('?url=usuarios', fd);
+            if(data.success) {
+                mostrarAlerta(data.mensaje, 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                mostrarAlerta(data.mensaje, 'error');
+                btnElement.disabled = false;
+            }
+        });
     });
 
     document.getElementById('formEditarUsuario').addEventListener('submit', async function(e){
@@ -583,4 +632,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php require_once __DIR__ . '/../footer.php'; ?>ñ
+<?php require_once __DIR__ . '/../footer.php'; ?>

@@ -9,29 +9,19 @@
         "proveedor": "BELLA.C.A",
         "id_proveedor": 19
     },
-    "40": {
-        "especificaciones": "r",
-        "proveedor": "\"ZZZPRUEBA",
-        "id_proveedor": 26
-    },
     "41": {
         "especificaciones": "tr",
         "proveedor": "\"ZZZPRUEBA",
         "id_proveedor": 26
-    },
-    "42": {
-        "especificaciones": "rr",
-        "proveedor": "anais escobar",
-        "id_proveedor": 25
     },
     "43": {
         "especificaciones": "gtg",
         "proveedor": "\"ZZZPRUEBA",
         "id_proveedor": 26
     },
-    "29": {
-        "especificaciones": "wilmaa",
-        "proveedor": "ariannysv",
-        "id_proveedor": 16
+    "46": {
+        "especificaciones": "12x12",
+        "proveedor": "anais escobar",
+        "id_proveedor": 25
     }
 }

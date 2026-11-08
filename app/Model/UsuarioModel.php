@@ -18,13 +18,14 @@ class UsuarioModel {
     // LECTURA
     // ==========================================
 
-    // Obtener todos los usuarios con su persona y rol
+    // Obtener todos los usuarios con su persona y rol (incluye inactivos)
     public function obtenerUsuariosConPersona() {
         try {
             $sql = "SELECT 
                         u.id_usuario,
                         u.usuario,
                         u.id_rol,
+                        u.eliminado,
                         p.id_persona,
                         p.nombre,
                         p.apellido,
@@ -36,8 +37,7 @@ class UsuarioModel {
                     FROM usuario u
                     INNER JOIN persona p ON u.id_persona = p.id_persona
                     LEFT JOIN rol r ON u.id_rol = r.id_rol
-                    WHERE u.eliminado = 0 AND p.eliminado = 0
-                    ORDER BY u.id_usuario DESC";
+                    ORDER BY u.eliminado ASC, u.id_usuario DESC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -57,15 +57,14 @@ class UsuarioModel {
                 $sql = "SELECT COUNT(*) 
                         FROM usuario u
                         INNER JOIN persona p ON u.id_persona = p.id_persona
-                        WHERE u.eliminado = 0 AND p.eliminado = 0
-                        AND (u.usuario LIKE :busqueda
+                        WHERE (u.usuario LIKE :busqueda
                            OR p.nombre LIKE :busqueda 
                            OR p.apellido LIKE :busqueda
                            OR p.cedula LIKE :busqueda)";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([':busqueda' => '%' . $busqueda . '%']);
             } else {
-                $sql = "SELECT COUNT(*) FROM usuario WHERE eliminado = 0";
+                $sql = "SELECT COUNT(*) FROM usuario";
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute();
             }
@@ -84,6 +83,7 @@ class UsuarioModel {
                         u.id_usuario,
                         u.usuario,
                         u.id_rol,
+                        u.eliminado,
                         p.id_persona,
                         p.nombre,
                         p.apellido,
@@ -96,7 +96,6 @@ class UsuarioModel {
                     INNER JOIN persona p ON u.id_persona = p.id_persona
                     LEFT JOIN rol r ON u.id_rol = r.id_rol
                     WHERE u.id_usuario = :id
-                    AND u.eliminado = 0
                     LIMIT 1";
             
             $stmt = $this->db->prepare($sql);
@@ -108,13 +107,14 @@ class UsuarioModel {
         }
     }
 
-    // Buscar usuarios
+    // Buscar usuarios (incluye inactivos)
     public function buscarUsuarios($busqueda) {
         try {
             $sql = "SELECT 
                         u.id_usuario,
                         u.usuario,
                         u.id_rol,
+                        u.eliminado,
                         p.id_persona,
                         p.nombre,
                         p.apellido,
@@ -126,12 +126,11 @@ class UsuarioModel {
                     FROM usuario u
                     INNER JOIN persona p ON u.id_persona = p.id_persona
                     LEFT JOIN rol r ON u.id_rol = r.id_rol
-                    WHERE u.eliminado = 0 AND p.eliminado = 0
-                    AND (u.usuario LIKE :busqueda
+                    WHERE (u.usuario LIKE :busqueda
                        OR p.nombre LIKE :busqueda 
                        OR p.apellido LIKE :busqueda
                        OR p.cedula LIKE :busqueda)
-                    ORDER BY u.id_usuario DESC";
+                    ORDER BY u.eliminado ASC, u.id_usuario DESC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':busqueda' => '%' . $busqueda . '%']);
@@ -146,9 +145,6 @@ class UsuarioModel {
     // VALIDACIONES ÚNICAS (para AJAX)
     // ==========================================
 
-    /**
-     * Verifica si existe un usuario con el nombre dado
-     */
     public function existeUsuario($usuario, $idExcluir = null) {
         try {
             $sql = "SELECT COUNT(*) FROM usuario 
@@ -171,9 +167,6 @@ class UsuarioModel {
         }
     }
 
-    /**
-     * Verifica si existe una persona con la cédula dada
-     */
     public function existeCedula($cedula, $idPersonaExcluir = null) {
         try {
             $sql = "SELECT COUNT(*) FROM persona 
@@ -200,11 +193,9 @@ class UsuarioModel {
     // ESCRITURA
     // ==========================================
 
-    // Registrar un nuevo usuario con su persona asociada
     public function registrarUsuarioCompleto($datosPersona, $datosUsuario) {
         $this->db->beginTransaction();
         try {
-            // Validar usuario único
             $checkUserSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario AND eliminado = 0";
             $checkUserStmt = $this->db->prepare($checkUserSql);
             $checkUserStmt->execute([':usuario' => $datosUsuario['usuario']]);
@@ -212,7 +203,6 @@ class UsuarioModel {
                 throw new Exception("El nombre de usuario '{$datosUsuario['usuario']}' ya está registrado.");
             }
 
-            // Validar cédula única
             $checkCedulaSql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula AND eliminado = 0";
             $checkCedulaStmt = $this->db->prepare($checkCedulaSql);
             $checkCedulaStmt->execute([':cedula' => $datosPersona['cedula']]);
@@ -264,7 +254,6 @@ class UsuarioModel {
         }
     }
 
-    // Actualizar un usuario y su persona asociada
     public function actualizarUsuario($id, array $datos) {
         $this->db->beginTransaction();
         try {
@@ -369,6 +358,39 @@ class UsuarioModel {
             $this->db->rollBack();
             $this->lastError = $e->getMessage();
             error_log("Error en eliminarUsuario: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Reactivar usuario (borrado lógico inverso)
+    public function reactivarUsuario($id) {
+        $this->db->beginTransaction();
+        try {
+            $checkSql = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
+            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt->execute([':id' => $id]);
+            $usuario = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$usuario) {
+                throw new Exception("El usuario con ID {$id} no existe.");
+            }
+
+            $idPersona = $usuario['id_persona'];
+
+            $sqlUsuario = "UPDATE usuario SET eliminado = 0 WHERE id_usuario = :id";
+            $stmtUsuario = $this->db->prepare($sqlUsuario);
+            $stmtUsuario->execute([':id' => $id]);
+
+            $sqlPersona = "UPDATE persona SET eliminado = 0 WHERE id_persona = :id_persona";
+            $stmtPersona = $this->db->prepare($sqlPersona);
+            $stmtPersona->execute([':id_persona' => $idPersona]);
+
+            $this->db->commit();
+            return true;
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            $this->lastError = $e->getMessage();
+            error_log("Error en reactivarUsuario: " . $e->getMessage());
             return false;
         }
     }

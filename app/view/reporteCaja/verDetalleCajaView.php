@@ -112,9 +112,16 @@ window.verDetalleCaja = function(id) {
     document.getElementById('ver-nota-contenido').style.display = 'none';
     document.getElementById('ver-nota-id').textContent = '#' + id;
 
-    new bootstrap.Modal(document.getElementById('modalVerNotaCaja')).show();
+    // Aseguramos que el modal se muestre usando bootstrap de forma segura
+    const modalEl = document.getElementById('modalVerNotaCaja');
+    let modal = bootstrap.Modal.getInstance(modalEl);
+    if (!modal) {
+        modal = new bootstrap.Modal(modalEl);
+    }
+    modal.show();
 
-    let url = '?url=reportecaja&type=detalle_json&id=' + id;
+    // 🔥 RUTA CORREGIDA
+    let url = '?url=detalle_caja_json&id=' + id;
 
     fetch(url)
         .then(response => response.json())

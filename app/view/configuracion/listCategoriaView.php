@@ -52,25 +52,37 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </div>
     </div>
 
-    <!-- FILTRO DE BÚSQUEDA -->
+       <!-- FILTRO DE BÚSQUEDA -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
-        <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
+        <form method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="categorias">
             <input type="hidden" name="action" value="lista">
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                <!-- data-no-search para evitar que select-search.js lo convierta -->
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-6">
-                <input type="text" name="busqueda" class="form-control" 
+            <!-- FILTRO DE ESTADO IGUAL AL DE CLIENTES -->
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
+                <select name="estado_categoria" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
+                    <option value="todos" <?= (($estado_categoria ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
+                    <option value="activos" <?= (($estado_categoria ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
+                    <option value="inactivos" <?= (($estado_categoria ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
+                <input type="text" name="busqueda" class="form-control form-control-sm" 
                        list="listaCategorias"
-                       placeholder="Buscar por nombre o ID..."
+                       placeholder="Nombre o ID..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                 <datalist id="listaCategorias">
                     <?php
@@ -104,15 +116,26 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </form>
     </div>
 
-    <?php if (isset($mensaje) && !empty($mensaje)): ?>
-    <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
-        <div class="d-flex align-items-center">
-            <i class="fas <?= ($tipo_mensaje ?? '') === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?> me-3 fs-4"></i>
-            <span><?= htmlspecialchars($mensaje) ?></span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    <!-- MENSAJES -->
+    <?php
+    $mapaTipos = [
+        'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
+        'danger'  => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+        'error'   => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
+        'warning' => ['clase' => 'dark-alert-warning', 'icono' => 'fa-exclamation-triangle'],
+        'info'    => ['clase' => 'dark-alert-info',    'icono' => 'fa-info-circle'],
+    ];
+    $estiloMsg = $mapaTipos[$tipo_mensaje ?? 'info'] ?? $mapaTipos['info'];
+    ?>
+    <?php if (!empty($mensaje)): ?>
+        <div class="alert <?= $estiloMsg['clase'] ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
+            <div class="d-flex align-items-center">
+                <i class="fas <?= $estiloMsg['icono'] ?> me-3"></i>
+                <span><?= htmlspecialchars($mensaje) ?></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
         </div>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
 
     <!-- TABLA DE CATEGORÍAS -->
     <div class="dark-card card shadow-sm dark-table-header">
@@ -126,10 +149,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             <table class="table table-hover align-middle m-0">
                 <thead>
                     <tr>
-                        <th class="ps-4 py-3">ID</th>
-                        <th class="py-3">Nombre</th>
-                        <th class="py-3">Descripción</th>
-                        <th class="pe-4 py-3 text-center">Acciones</th>
+                        <th class="ps-4 py-3">NOMBRE</th>
+                        <th class="py-3">DESCRIPCIÓN</th>
+                        <th class="py-3">STATUS</th>
+                        <th class="pe-4 py-3 text-center">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -146,9 +169,21 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <?php else: ?>
                         <?php foreach ($categorias as $cat): ?>
                             <tr>
-                                <td class="ps-4 fw-bold"><?= htmlspecialchars($cat['id_categoria'] ?? 'N/A') ?></td>
-                                <td><?= htmlspecialchars($cat['nombre_categoria'] ?? '') ?></td>
+                                <td class="ps-4 fw-bold"><?= htmlspecialchars($cat['nombre_categoria'] ?? '') ?></td>
                                 <td><?= htmlspecialchars($cat['descripcion'] ?? 'N/A') ?></td>
+                                
+                                <td>
+                                    <?php if (($cat['eliminado'] ?? 0) == 1): ?>
+                                        <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-times-circle me-1"></i> Inactivo
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-check-circle me-1"></i> Activo
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <!-- VER -->
@@ -157,20 +192,30 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <!-- EDITAR -->
-                                        <?php if ($puede_editar_categoria): ?>
-                                        <button type="button" class="btn-action-circle btn-edit" title="Editar"
-                                                onclick="editarCategoria(<?= (int) $cat['id_categoria'] ?>)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <?php endif; ?>
-                                        
-                                        <!-- ELIMINAR -->
-                                        <?php if ($puede_eliminar_categoria): ?>
-                                        <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
-                                                onclick="confirmarEliminarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                        <?php if (($cat['eliminado'] ?? 0) == 1): ?>
+                                            <!-- INACTIVA: SOLO REACTIVAR -->
+                                            <?php if ($puede_editar_categoria): ?>
+                                            <button type="button" class="btn-action-circle" title="Reactivar Categoría"
+                                                    style="background: rgba(40,167,69,0.15); color: #28a745; border: none; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
+                                                    onclick="confirmarReactivarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
+                                                <i class="fas fa-undo-alt"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <!-- ACTIVA: EDITAR Y ELIMINAR -->
+                                            <?php if ($puede_editar_categoria): ?>
+                                            <button type="button" class="btn-action-circle btn-edit" title="Editar"
+                                                    onclick="editarCategoria(<?= (int) $cat['id_categoria'] ?>)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($puede_eliminar_categoria): ?>
+                                            <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
+                                                    onclick="confirmarEliminarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -191,17 +236,60 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- MODALES                                                      -->
-<!-- ============================================================ -->
+<!-- MODALES -->
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_registrar_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_ver_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_editar_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_eliminar_categoria.php'; ?>
 
-<!-- ============================================================ -->
-<!-- DATOS EN JSON + JAVASCRIPT                                   -->
-<!-- ============================================================ -->
+<!-- NUEVO: MODAL REACTIVAR -->
+<?php if ($puede_editar_categoria): ?>
+<div class="modal fade" id="modalReactivarCategoria" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(40,167,69,0.3); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i class="fas fa-undo-alt me-2" style="color: #28a745;"></i> Reactivar Categoría
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+
+            <form method="POST" action="?url=categorias&action=reactivar">
+                <input type="hidden" name="accion" value="reactivar">
+                <input type="hidden" name="id_categoria" id="reactivar-categoria-id">
+                
+                <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
+                    <p style="margin-bottom: 12px;">¿Deseas reactivar esta categoría?</p>
+                    
+                    <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 8px;">
+                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Categoría a reactivar</strong>
+                        <span id="reactivar-categoria-nombre" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
+                    </div>
+
+                    <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
+                        <i class="fas fa-check-circle me-2"></i>
+                        La categoría volverá a estar <strong>Activa</strong> y disponible para asignarse a productos.
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                            style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn"
+                            style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
+                        <i class="fas fa-check me-1"></i> Sí, reactivar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- DATOS EN JSON + JAVASCRIPT -->
 <script id="categoriasData" type="application/json">
 <?= json_encode(
     isset($categorias) && is_array($categorias) ? array_values($categorias) : [],
@@ -212,61 +300,41 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
-document.addEventListener('DOMContentLoaded', function() {
-    'use strict';
-
-    // ============================================================
-    // INICIALIZAR VALIDADOR EN LOS MODALES
-    // ============================================================
-    if (typeof Validador !== 'undefined') {
-        Validador.init(document.getElementById('modalRegistrarCategoria'));
-        Validador.init(document.getElementById('modalEditarCategoria'));
-    }
-
-    // ============================================================
-    // VALIDAR AL ENVIAR FORMULARIOS
-    // ============================================================
-    ['formRegistrarCategoria', 'formEditarCategoria'].forEach(function(id) {
-        const form = document.getElementById(id);
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                if (!Validador.validarFormulario(id)) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-        }
-    });
-
-    // ... (resto del código: categoriasData, verDetalleCategoria, etc.) ...
-});
-    // ============================================================
-    // DATOS DE CATEGORÍAS
-    // ============================================================
+    
     const categoriasData = JSON.parse(document.getElementById('categoriasData').textContent);
     const categoriasPorId = {};
     categoriasData.forEach(function(c) {
         categoriasPorId[parseInt(c.id_categoria)] = c;
     });
 
-    // ============================================================
-    // VER DETALLE
-    // ============================================================
+    // VER DETALLE (Inyecta el Estatus en el modal)
     window.verDetalleCategoria = function(id) {
         const c = categoriasPorId[id];
         if (!c) return;
 
         document.getElementById('ver-categoria-nombre').textContent = c.nombre_categoria || 'Sin nombre';
-        document.getElementById('ver-categoria-id').textContent = c.id_categoria;
+        
+        // Configuramos el badge del estatus
+        var badgeEstatus = document.getElementById('ver-categoria-estatus');
+        if (badgeEstatus) {
+            if (c.eliminado == 1) {
+                badgeEstatus.textContent = 'Inactivo';
+                badgeEstatus.style.background = 'rgba(220,53,69,0.15)';
+                badgeEstatus.style.color = '#dc3545';
+            } else {
+                badgeEstatus.textContent = 'Activo';
+                badgeEstatus.style.background = 'rgba(40,167,69,0.15)';
+                badgeEstatus.style.color = '#28a745';
+            }
+        }
+
         document.getElementById('ver-categoria-nombre-detalle').textContent = c.nombre_categoria || 'N/A';
         document.getElementById('ver-categoria-descripcion').textContent = c.descripcion || 'Sin descripción';
 
         new bootstrap.Modal(document.getElementById('modalVerCategoria')).show();
     };
 
-    // ============================================================
     // EDITAR
-    // ============================================================
     window.editarCategoria = function(id) {
         const c = categoriasPorId[id];
         if (!c) return;
@@ -279,20 +347,24 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Modal(document.getElementById('modalEditarCategoria')).show();
     };
 
-    // ============================================================
     // ELIMINAR
-    // ============================================================
     window.confirmarEliminarCategoria = function(id, nombre) {
         document.getElementById('eliminar-categoria-id').value = id;
         document.getElementById('eliminar-categoria-nombre').textContent = nombre || 'Categoría #' + id;
         new bootstrap.Modal(document.getElementById('modalEliminarCategoria')).show();
     };
+
+    // REACTIVAR (NUEVO)
+    window.confirmarReactivarCategoria = function(id, nombre) {
+        document.getElementById('reactivar-categoria-id').value = id;
+        document.getElementById('reactivar-categoria-nombre').textContent = nombre || 'Categoría #' + id;
+        new bootstrap.Modal(document.getElementById('modalReactivarCategoria')).show();
+    };
 });
 </script>
-<!-- ============================================================ -->
-<!-- AUTO-CIERRE DE ALERTAS                                       -->
-<!-- ============================================================ -->
+
 <script>
+// Auto-cierre de alertas
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
         var ms = parseInt(el.dataset.autoDismiss, 10) || 5000;
@@ -306,4 +378,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-<?php require_once __DIR__ . '/../footer.php'; ?>
+
+<?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

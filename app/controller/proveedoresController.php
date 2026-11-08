@@ -114,11 +114,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'razon_social' => trim($_POST['razon_social'] ?? ''),
             'numero_contacto' => trim($_POST['numero_contacto'] ?? ''),
             'direccion' => trim($_POST['direccion'] ?? ''),
-            'correo_electronico' => trim($_POST['correo_electronico'] ?? '')
+            'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
+            'status' => trim($_POST['status'] ?? '')
         ];
 
         if (empty($datos['rif']) || empty($datos['razon_social']) || empty($datos['numero_contacto']) || empty($datos['direccion'])) {
             $error = 'RIF, Razón Social, Contacto y Dirección son obligatorios.';
+        } elseif (!in_array($datos['status'], ['activo', 'inactivo'], true)) {
+            $error = 'Debe seleccionar un estado válido para el proveedor.';
         } else {
             try {
                 $resultado = $modelo->registrarProveedor($datos);
@@ -222,6 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 if ($modelo->actualizarProveedor($id, $datos)) {
                     $_SESSION['mensaje'] = 'Proveedor actualizado.';
+                    $_SESSION['tipo_mensaje'] = 'success';
                     header("Location: ?url=proveedores&type=list");
                     exit();
                 }
@@ -238,11 +242,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             if ($modelo->eliminarProveedor($id)) {
                 $_SESSION['mensaje'] = 'Proveedor eliminado.';
+                $_SESSION['tipo_mensaje'] = 'success';
             } else {
                 $_SESSION['mensaje'] = 'No se pudo eliminar.';
+                $_SESSION['tipo_mensaje'] = 'danger';
             }
         } catch (Exception $e) {
-            $_SESSION['mensaje'] = 'Error: ' . $e->getMessage();
+            $_SESSION['mensaje'] = $e->getMessage();
+            $_SESSION['tipo_mensaje'] = 'danger';
         }
         header("Location: ?url=proveedores&type=list");
         exit();
@@ -307,7 +314,8 @@ try {
 
     if (isset($_SESSION['mensaje'])) {
         $success = $_SESSION['mensaje'];
-        unset($_SESSION['mensaje']);
+        $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? 'success';
+        unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
     }
 } catch (Exception $e) {
     die("ERROR al listar: " . $e->getMessage());

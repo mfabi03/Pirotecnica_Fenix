@@ -17,6 +17,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+if ((int) ($_SESSION['id_rol'] ?? 0) === 3) {
+    $_SESSION['error'] = 'No tienes permiso para acceder a las Notas de Entrada.';
+    header('Location: ?url=dashboard');
+    exit();
+}
+
 // 1. CARGA DE MODELOS
 $rutaRaiz = dirname(__DIR__, 2);
 

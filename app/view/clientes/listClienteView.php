@@ -275,8 +275,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                             <input type="checkbox" 
                                                    <?= $estaActivo ? 'checked' : '' ?>
                                                    onchange="<?= $estaActivo 
-                                                       ? 'confirmarEliminarCliente(' . (int)$c['id_cliente'] . ', \'' . htmlspecialchars(addslashes($nombreCliente)) . '\')' 
-                                                       : 'confirmarReactivarCliente(' . (int)$c['id_cliente'] . ', \'' . htmlspecialchars(addslashes($nombreCliente)) . '\')' ?>">
+                                                       ? 'confirmarEliminarCliente(' . (int)$c['id_cliente'] . ', \'' . htmlspecialchars(addslashes($nombreCliente)) . '\', this)' 
+                                                       : 'confirmarReactivarCliente(' . (int)$c['id_cliente'] . ', \'' . htmlspecialchars(addslashes($nombreCliente)) . '\', this)' ?>">
                                             <span class="slider"></span>
                                         </label>
                                     <?php else: ?>
@@ -681,17 +681,35 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     <?php // CONFIRMAR DESACTIVAR (desde el switch) ?>
-    window.confirmarEliminarCliente = function(id, nombre) {
+    window.confirmarEliminarCliente = function(id, nombre, checkbox) {
         document.getElementById('eliminar-cliente-id').value = id;
         document.getElementById('eliminar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
-        new bootstrap.Modal(document.getElementById('modalEliminarCliente')).show();
+        
+        const modalEl = document.getElementById('modalEliminarCliente');
+        
+        // Si el usuario cierra el modal (porque canceló), devolvemos el switch a su estado original
+        modalEl.addEventListener('hidden.bs.modal', function onHidden() {
+            if (checkbox) checkbox.checked = true; // Lo volvemos a encender
+            modalEl.removeEventListener('hidden.bs.modal', onHidden);
+        }, { once: true });
+
+        new bootstrap.Modal(modalEl).show();
     };
 
     <?php // CONFIRMAR ACTIVAR (desde el switch) ?>
-    window.confirmarReactivarCliente = function(id, nombre) {
+    window.confirmarReactivarCliente = function(id, nombre, checkbox) {
         document.getElementById('reactivar-cliente-id').value = id;
         document.getElementById('reactivar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
-        new bootstrap.Modal(document.getElementById('modalReactivarCliente')).show();
+        
+        const modalEl = document.getElementById('modalReactivarCliente');
+
+        // Si el usuario cierra el modal (porque canceló), devolvemos el switch a su estado original
+        modalEl.addEventListener('hidden.bs.modal', function onHidden() {
+            if (checkbox) checkbox.checked = false; // Lo volvemos a apagar
+            modalEl.removeEventListener('hidden.bs.modal', onHidden);
+        }, { once: true });
+
+        new bootstrap.Modal(modalEl).show();
     };
 
     <?php // ESTILO DE PESTAÑAS ?>

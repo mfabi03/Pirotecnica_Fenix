@@ -31,7 +31,7 @@ class NotaentradaModel {
             $sql = "SELECT p.id_proveedor, p.razon_social, p.rif, pe.nombre, pe.apellido, pe.telefono
                     FROM proveedor p
                     INNER JOIN persona pe ON p.id_persona = pe.id_persona
-                    WHERE p.eliminado = 0 AND pe.eliminado = 0
+                    WHERE p.eliminado = 0 AND p.status = 'activo' AND pe.eliminado = 0
                     ORDER BY p.razon_social ASC";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();

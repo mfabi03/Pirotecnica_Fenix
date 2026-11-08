@@ -23,43 +23,21 @@ $pagina_actual  = $paginaActual;
 $totalRegistros = $totalRegistros;
 $totalPaginas   = $totalPaginas;
 
-$fechaFiltro = $_GET['fecha'] ?? date('Y-m-d');
+$fechaFiltro = $fechaFiltro ?? ''; 
 $cajaCerrada = $cajaCerrada ?? false;
 
 require_once dirname(__DIR__, 2) . "/view/header.php";
 ?>
 
-<!-- ========================================================= -->
-<!-- CSS DE IMPRESIÓN (Solo se imprime el modal)               -->
-<!-- ========================================================= -->
 <style>
 @media print {
     body * { visibility: hidden !important; }
     #modalCierreCaja, #modalCierreCaja * { visibility: visible !important; }
-    #modalCierreCaja {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        display: block !important;
-        background: #fff !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    #modalCierreCaja .modal-dialog {
-        display: block !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-    }
-    #modalCierreCaja .modal-content {
-        border: none !important;
-        box-shadow: none !important;
-        background: #fff !important;
-    }
-    #modalCierreCaja .modal-header,
-    #modalCierreCaja .modal-footer { display: none !important; }
+    #modalCierreCaja { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; display: block !important; background: #fff !important; margin: 0 !important; padding: 0 !important; }
+    #modalCierreCaja .modal-dialog { display: block !important; max-width: 100% !important; margin: 0 !important; }
+    #modalCierreCaja .modal-content { border: none !important; box-shadow: none !important; background: #fff !important; }
+    #modalCierreCaja .modal-header, #modalCierreCaja .modal-footer { display: none !important; }
     .modal-backdrop { display: none !important; }
-    
     .table { border-collapse: collapse !important; width: 100% !important; }
     .table th, .table td { border-bottom: 1px solid #ddd !important; padding: 8px !important; font-size: 12px !important; }
 }
@@ -67,9 +45,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
 <div class="col-md-8 col-lg-12">
     
-    <!-- ========================================== -->
-    <!-- TARJETA DE TÍTULO + BOTÓN DE CIERRE        -->
-    <!-- ========================================== -->
+    <!-- TARJETA DE TÍTULO + BOTÓN DE CIERRE -->
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center g-3">
             <div class="col-xl-8">
@@ -82,26 +58,30 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </small>
             </div>
             <div class="col-xl-4 text-end">
-                <!-- ÚNICO BOTÓN EN LA CABECERA: REALIZAR CIERRE -->
-                <button type="button"
-                        id="btnAbrirCierreCaja"
-                        class="btn btn-dark-gold"
-                        data-fecha="<?= htmlspecialchars($fechaFiltro) ?>"
-                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
-                    <i class="fas fa-lock me-1"></i> Realizar Cierre
-                </button>
+                <!-- 🔥 BOTÓN QUE SE OCULTA SI LA CAJA ESTÁ CERRADA -->
+                <?php if (!$cajaCerrada): ?>
+                    <button type="button"
+                            id="btnAbrirCierreCaja"
+                            class="btn btn-dark-gold"
+                            data-fecha="<?= htmlspecialchars($fechaFiltro) ?>"
+                            style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
+                        <i class="fas fa-lock me-1"></i> Realizar Cierre
+                    </button>
+                <?php else: ?>
+                    <button type="button" class="btn btn-secondary" disabled
+                            style="border-radius: 50px; padding: 8px 22px; font-weight: 600; opacity: 0.6;">
+                        <i class="fas fa-check-circle me-1"></i> Caja Cerrada
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- FILTROS                                    -->
-    <!-- ========================================== -->
+    <!-- FILTROS -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportecaja">
             
-            <!-- Mostrar -->
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Mostrar</label>
                 <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
@@ -111,14 +91,12 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </select>
             </div>
 
-            <!-- Fecha -->
             <div class="col-md-3">
                 <label class="form-label fw-bold small text-dark">Fecha</label>
                 <input type="date" name="fecha" class="form-control form-control-sm" 
                        value="<?= htmlspecialchars($fechaFiltro) ?>">
             </div>
 
-            <!-- Categoría -->
             <div class="col-md-3">
                 <label class="form-label fw-bold small text-dark">Categoría</label>
                 <select name="id_categoria" class="form-select form-select-sm" data-no-search="true">
@@ -132,7 +110,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </select>
             </div>
 
-            <!-- Producto -->
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Producto</label>
                 <input type="text" name="busqueda" class="form-control form-control-sm" 
@@ -150,7 +127,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </datalist>
             </div>
 
-            <!-- Botones -->
             <div class="col-md-2">
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-gold btn-sm fw-bold">
@@ -185,9 +161,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     <?php endif; ?>
 
-    <!-- ========================================== -->
-    <!-- TARJETA ESTADÍSTICA (Centrada)             -->
-    <!-- ========================================== -->
+    <!-- TARJETA ESTADÍSTICA -->
     <div class="row mb-4 justify-content-center">
         <div class="col-md-5">
             <div class="card card-total-notas border-left-danger text-center p-3 shadow-sm">
@@ -202,14 +176,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- TABLA DE MOVIMIENTOS                       -->
-    <!-- ========================================== -->
+    <!-- TABLA DE MOVIMIENTOS -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h5 class="m-0">
-                <i class="fas fa-history me-2"></i> Movimientos del Día
-            </h5>
+            <h5 class="m-0"><i class="fas fa-history me-2"></i> Movimientos del Día</h5>
         </div>
         
         <div class="table-responsive">
@@ -240,7 +210,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         </tr>
                     <?php elseif (!empty($movimientos)): ?>
                         <?php 
-                        // Agrupamos los movimientos por nota
                         $notasAgrupadas = [];
                         foreach ($movimientos as $m) {
                             $idNota = $m['id_documento'];
@@ -326,15 +295,11 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
 </div>
 
-<!-- ========================================================= -->
-<!-- INCLUIR MODALES EXTERNOS                                  -->
-<!-- ========================================================= -->
+<!-- INCLUIR MODALES EXTERNOS -->
 <?php require_once __DIR__ . '/verDetalleCajaView.php'; ?>
 <?php require_once __DIR__ . '/CierreCajaView.php'; ?>
 
-<!-- ========================================================= -->
-<!-- SCRIPT PARA FILTROS Y CIERRE DE CAJA                      -->
-<!-- ========================================================= -->
+<!-- SCRIPT PARA FILTROS Y CIERRE DE CAJA -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('formFiltros');
@@ -379,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btnAceptarCierreExito) {
         btnAceptarCierreExito.addEventListener('click', function () {
             const fechaInputActiva = document.querySelector('input[name="fecha"]');
-            const fechaActual = fechaInputActiva ? fechaInputActiva.value : (btn.dataset.fecha || new Date().toISOString().slice(0, 10));
+            const fechaActual = fechaInputActiva && fechaInputActiva.value ? fechaInputActiva.value : (btn.dataset.fecha || new Date().toISOString().slice(0, 10));
             const fechaSiguiente = new Date(`${fechaActual}T00:00:00`);
             fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
             const fechaSiguienteStr = fechaSiguiente.toISOString().slice(0, 10);
@@ -395,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (btnCerrarCaja) {
         btnCerrarCaja.addEventListener('click', async function () {
-            const fechaSeleccionada = fechaInput?.value || btn.dataset.fecha || new Date().toISOString().slice(0, 10);
+            const fechaSeleccionada = (fechaInput && fechaInput.value) ? fechaInput.value : new Date().toISOString().slice(0, 10);
             btnCerrarCaja.disabled = true;
             btnCerrarCaja.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
 
@@ -453,7 +418,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function buildExportUrls(fecha) {
-        const params = new URLSearchParams({ fecha: fecha });
+        const params = new URLSearchParams();
+        if (fecha) params.set('fecha', fecha);
         const categoria = new URLSearchParams(window.location.search).get('id_categoria');
         const busqueda = new URLSearchParams(window.location.search).get('busqueda');
         if (categoria) params.set('id_categoria', categoria);
@@ -467,26 +433,22 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btnCsv) {
         btnCsv.addEventListener('click', function (event) {
             event.preventDefault();
-            if (btnCsv.href) {
-                window.open(btnCsv.href, '_blank', 'noopener,noreferrer');
-            }
+            if (btnCsv.href) window.open(btnCsv.href, '_blank', 'noopener,noreferrer');
         });
     }
 
     if (btnPdf) {
         btnPdf.addEventListener('click', function (event) {
             event.preventDefault();
-            if (btnPdf.href) {
-                window.open(btnPdf.href, '_blank', 'noopener,noreferrer');
-            }
+            if (btnPdf.href) window.open(btnPdf.href, '_blank', 'noopener,noreferrer');
         });
     }
 
     btn.addEventListener('click', async function () {
-        const fechaSeleccionada = fechaInput?.value || btn.dataset.fecha || new Date().toISOString().slice(0, 10);
+        const fechaSeleccionada = (fechaInput && fechaInput.value) ? fechaInput.value : new Date().toISOString().slice(0, 10);
         btn.dataset.fecha = fechaSeleccionada;
 
-        const exportUrls = buildExportUrls(fechaSeleccionada);
+        const exportUrls = buildExportUrls(fechaInput && fechaInput.value ? fechaSeleccionada : '');
         btnCsv.href = exportUrls.csv;
         btnPdf.href = exportUrls.pdf;
 
@@ -498,7 +460,11 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.show();
 
         try {
-            const resp = await fetch(`?url=cierre_caja_ajax&fecha=${encodeURIComponent(fechaSeleccionada)}`);
+            const urlFetch = fechaInput && fechaInput.value 
+                ? `?url=cierre_caja_ajax&fecha=${encodeURIComponent(fechaSeleccionada)}`
+                : `?url=cierre_caja_ajax`;
+                
+            const resp = await fetch(urlFetch);
             const data = await resp.json();
 
             if (!data.success) {
@@ -583,17 +549,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                 });
             } else {
-                filasDetalle = `<tr><td colspan="8" class="text-center text-muted py-4">No hay notas registradas hoy</td></tr>`;
+                filasDetalle = `<tr><td colspan="8" class="text-center text-muted py-4">No hay notas pendientes por cerrar</td></tr>`;
             }
 
             contenedor.innerHTML = `
                 <div class="dark-card card shadow-sm dark-table-header border-0">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                        <h5 class="m-0">
-                            <i class="fas fa-history me-2"></i> Movimientos del Día
-                        </h5>
+                        <h5 class="m-0"><i class="fas fa-history me-2"></i> Movimientos del Día</h5>
                     </div>
-
                     <div class="table-responsive">
                         <table class="table table-hover align-middle m-0">
                             <thead>
@@ -608,12 +571,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <th class="py-3">ENCARGADO</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                ${filasDetalle}
-                            </tbody>
+                            <tbody>${filasDetalle}</tbody>
                         </table>
                     </div>
-
                     <div class="card-footer py-3 d-flex justify-content-between align-items-center">
                         <span class="text-muted small fw-bold">
                             <i class="fas fa-file-invoice me-1"></i> Total de notas: <span class="text-danger ms-1">${r.total_documentos}</span>

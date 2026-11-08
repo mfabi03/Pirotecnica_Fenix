@@ -86,88 +86,69 @@ switch ($url) {
         $dashboardController->index();
         break;
 
-    // ============================================
     // CLIENTES
-    // ============================================
     case 'clientes':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Clientes', 'leer');
         require_once __DIR__ . '/app/Controller/clientesController.php';
         break;
 
-    // ============================================
     // NOTA DE SALIDA
-    // ============================================
     case 'notasalida':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Notas de Salida', 'leer');
         require_once __DIR__ . '/app/Controller/notasalidaController.php';
         break;
 
-    // ============================================
     // NOTA DE ENTRADA
-    // ============================================
     case 'notaentrada':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Notas de Entrada', 'leer');
         require_once __DIR__ . '/app/Controller/notaentradaController.php';
         break;
 
-    // ============================================
     // PRODUCTOS
-    // ============================================
     case 'productos':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Productos', 'leer');
         require_once __DIR__ . '/app/Controller/productosController.php';
         break;
 
-    // ============================================
     // PROVEEDORES
-    // ============================================
     case 'proveedores':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Proveedores', 'leer');
         require_once __DIR__ . '/app/Controller/proveedoresController.php';
         break;
 
-    // ============================================
     // CATEGORÍAS
-    // ============================================
     case 'categorias':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Categorias', 'leer');
         require_once __DIR__ . '/app/Controller/CategoriaController.php';
         break;
 
-    // ============================================
     // USUARIOS
-    // ============================================
     case 'usuarios':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Usuarios', 'leer');
         require_once __DIR__ . '/app/Controller/UsuarioController.php';
         break;
 
-    // ============================================
     // ROLES
-    // ============================================
     case 'roles':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Roles', 'leer');
         require_once __DIR__ . '/app/Controller/RolController.php';
         break;
 
-    // ============================================
     // PERMISOS
-    // ============================================
     case 'permisos':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Roles', 'actualizar');
         require_once __DIR__ . '/app/Controller/PermisosController.php';
         $permisosController = new \App\Pirotecnicafenix\Controller\PermisosController($pdo);
         
-        // Verificar si es POST (guardar) o GET (ver)
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $permisosController->guardar();
         } else {
@@ -175,9 +156,7 @@ switch ($url) {
         }
         break;
 
-    // ============================================
     // REPORTES GENERALES
-    // ============================================
     case 'reportes':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
@@ -186,9 +165,6 @@ switch ($url) {
         $reportesController->index();
         break;
 
-    // ============================================
-    // EXPORTAR CSV (Reportes Generales)
-    // ============================================
     case 'exportar_csv':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'Reportes', 'leer');
@@ -205,9 +181,6 @@ switch ($url) {
         $reportesController->exportarPDF();
         break;
 
-    // ============================================
-    // AJAX PARA VER EL MOTIVO DE ANULACIÓN
-    // ============================================
     case 'obtener_motivo_ajax':
         AuthMiddleware::requireAuth();
         require_once __DIR__ . '/app/Controller/ReportesController.php';
@@ -215,9 +188,7 @@ switch ($url) {
         $reportesController->obtenerMotivoAjax();
         break;
 
-    // ============================================
     // REPORTE DIARIO DE CAJA
-    // ============================================
     case 'reportecaja':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
@@ -226,7 +197,6 @@ switch ($url) {
         $reporteCajaController->index();
         break;
 
-    // Exportar CSV de Caja
     case 'exportar_caja_csv':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
@@ -235,7 +205,6 @@ switch ($url) {
         $reporteCajaController->exportarCSV();
         break;
 
-    // Exportar PDF de Caja
     case 'exportar_caja_pdf':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
@@ -244,7 +213,6 @@ switch ($url) {
         $reporteCajaController->exportarPDF();
         break;
 
-    // Endpoint AJAX para el Modal del Cierre de Caja
     case 'cierre_caja_ajax':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
@@ -253,7 +221,6 @@ switch ($url) {
         $reporteCajaController->obtenerCierreDiaAjax();
         break;
 
-    // Confirmar cierre del día y guardar historial
     case 'confirmar_cierre_caja':
         AuthMiddleware::requireAuth();
         AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
@@ -262,9 +229,14 @@ switch ($url) {
         $reporteCajaController->confirmarCierreCajaAjax();
         break;
 
-    // ============================================
-    // 404 - POR DEFECTO
-    // ============================================
+    case 'detalle_caja_json':
+        AuthMiddleware::requireAuth();
+        AuthMiddleware::requirePermiso($pdo, 'ReporteCaja', 'leer');
+        require_once __DIR__ . '/app/Controller/ReporteCajaController.php';
+        $reporteCajaController = new \App\Pirotecnicafenix\Controller\ReporteCajaController($pdo);
+        $reporteCajaController->verDetalleAjax();
+        break;
+
     default:
         http_response_code(404);
         require_once __DIR__ . '/app/view/header.php';

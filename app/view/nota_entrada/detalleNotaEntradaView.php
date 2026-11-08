@@ -17,6 +17,7 @@ if (!isset($db) || $db === null) {
 // Obtener permisos del usuario actual
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'eliminar') : false;
+$nota = $nota ?? null;
 ?>
 
 <div class="container-fluid px-4">

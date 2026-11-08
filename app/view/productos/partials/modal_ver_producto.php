@@ -16,10 +16,13 @@
             <!-- BODY BLANCO -->
             <div class="modal-body" style="padding: 20px 24px;">
                 
-                <!-- Título y badge -->
+                <!-- Título y ESTATUS -->
                 <div class="text-center mb-4">
-                    <h4 id="ver-producto-nombre" style="color: #f39c12; font-weight: 700; margin-bottom: 6px;">—</h4>
-                    <span id="ver-producto-categoria" class="badge" style="background: #e9ecef; color: #1a1a2e; padding: 6px 16px; border-radius: 50px; font-size: 0.75rem;">—</span>
+                    <h4 id="ver-producto-nombre" style="color: #f39c12; font-weight: 700; margin-bottom: 10px;">—</h4>
+                    <div class="d-flex justify-content-center align-items-center">
+                        <!-- Solo el badge de estatus -->
+                        <span id="ver-producto-estatus" class="badge" style="padding: 6px 20px; border-radius: 50px; font-size: 0.85rem; font-weight: 600;">—</span>
+                    </div>
                 </div>
 
                 <div class="row g-4">

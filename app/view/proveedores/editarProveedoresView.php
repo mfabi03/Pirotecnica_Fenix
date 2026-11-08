@@ -77,6 +77,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 </h6>
                                 <div class="row g-3">
                                     <div class="col-md-6">
+                                        <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">ID</label>
+                                        <input type="text" class="form-control" value="<?= htmlspecialchars($proveedor['id_proveedor'] ?? '') ?>" readonly>
+                                    </div>
+                                    <div class="col-md-6">
                                         <label for="rif" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
                                         <input type="text" id="rif" name="rif" class="form-control" 
                                                style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);" 
@@ -103,6 +107,13 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);" 
                                                placeholder="correo@empresa.com" 
                                                value="<?= htmlspecialchars($proveedor['correo_electronico'] ?? '') ?>">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="status" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Status *</label>
+                                        <select id="status" name="status" class="form-select" required>
+                                            <option value="activo" <?= ($proveedor['status'] ?? 'activo') === 'activo' ? 'selected' : '' ?>>Activo</option>
+                                            <option value="inactivo" <?= ($proveedor['status'] ?? '') === 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
+                                        </select>
                                     </div>
                                     <div class="col-md-12">
                                         <label for="direccion" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección *</label>

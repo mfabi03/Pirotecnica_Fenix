@@ -11,7 +11,7 @@ class ReportesModel {
     }
 
     // ============================================================
-    // OBTENER MOVIMIENTOS AGRUPADOS POR NOTA (Para la tabla del reporte)
+    // OBTENER MOVIMIENTOS AGRUPADOS POR NOTA
     // ============================================================
     public function obtenerMovimientosDiarios($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $limit = 10, $offset = 0) {
         $whereEntrada = [];
@@ -47,14 +47,11 @@ class ReportesModel {
         $whereClauseEntrada = !empty($whereEntrada) ? ' WHERE ' . implode(' AND ', $whereEntrada) : '';
         $whereClauseSalida = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
 
-        // --------------------------------------------------------
-        // QUERY DE ENTRADAS AGRUPADAS POR NOTA
-        // --------------------------------------------------------
         $sqlEntrada = "SELECT 
             ne.id_nota_entrada AS id_documento,
             ne.fecha_ingreso AS fecha_movimiento,
             CASE WHEN ne.eliminado = 1 THEN 'Anulación' ELSE 'Entrada' END AS tipo_movimiento,
-            'entrada' AS tipo_origen, /* 🔥 AGREGADO PARA EL FILTRO DE ANULACIÓN */
+            'entrada' AS tipo_origen,
             COALESCE(pr.razon_social, 'Sin proveedor') AS nombre_cliente,
             pr.rif AS documento_cliente,
             COALESCE(CONCAT(per_u.nombre, ' ', per_u.apellido), 'N/A') AS usuario_activo,
@@ -72,14 +69,11 @@ class ReportesModel {
         {$whereClauseEntrada}
         GROUP BY ne.id_nota_entrada, ne.fecha_ingreso, ne.eliminado, ne.motivo_anulacion, pr.razon_social, pr.rif, per_u.nombre, per_u.apellido";
 
-        // --------------------------------------------------------
-        // QUERY DE SALIDAS AGRUPADAS POR NOTA
-        // --------------------------------------------------------
         $sqlSalida = "SELECT 
             ns.id_nota_salida AS id_documento,
             ns.fecha AS fecha_movimiento,
             CASE WHEN ns.eliminado = 1 THEN 'Anulación' ELSE 'Salida' END AS tipo_movimiento,
-            'salida' AS tipo_origen, /* 🔥 AGREGADO PARA EL FILTRO DE ANULACIÓN */
+            'salida' AS tipo_origen,
             CASE 
                 WHEN cj.id_cliente_juridico IS NOT NULL THEN cj.razon_social
                 ELSE CONCAT_WS(' ', p_cliente.nombre, p_cliente.apellido)
@@ -101,9 +95,6 @@ class ReportesModel {
         {$whereClauseSalida}
         GROUP BY ns.id_nota_salida, ns.fecha, ns.eliminado, ns.motivo_anulacion, cj.id_cliente_juridico, cj.razon_social, cj.rif, p_cliente.nombre, p_cliente.apellido, p_cliente.cedula, per_u.nombre, per_u.apellido";
 
-        // --------------------------------------------------------
-        // LÓGICA DE FILTRADO Y UNIÓN
-        // --------------------------------------------------------
         $tipoNormalizado = $tipo_movimiento;
         if (is_string($tipoNormalizado)) {
             $tipoNormalizado = trim($tipoNormalizado);
@@ -124,11 +115,11 @@ class ReportesModel {
                         SELECT * FROM ({$sqlSalida}) AS s WHERE s.estado_anulado = 1
                     ) AS t";
         } else {
-            // 🔥 CORRECCIÓN: Cuando es "Todos" (null), solo mostramos las activas (anulado = 0)
+            // 🔥 CAMBIO CLAVE: Ahora trae TODO (Entradas, Salidas y Anuladas) cuando no se filtra
             $sql = "SELECT * FROM (
-                        SELECT * FROM ({$sqlEntrada}) AS t1 WHERE t1.estado_anulado = 0
+                        SELECT * FROM ({$sqlEntrada}) AS t1 
                         UNION ALL
-                        SELECT * FROM ({$sqlSalida}) AS t2 WHERE t2.estado_anulado = 0
+                        SELECT * FROM ({$sqlSalida}) AS t2
                     ) AS t";
         }
 
@@ -153,7 +144,7 @@ class ReportesModel {
     }
 
     // ============================================================
-    // OBTENER TOTALES (Para las tarjetas de estadísticas arriba de la tabla)
+    // OBTENER TOTALES (Para las tarjetas de estadísticas)
     // ============================================================
     public function obtenerTotalesReporte($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null) {
         $where = [];

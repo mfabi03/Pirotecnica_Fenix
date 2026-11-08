@@ -19,7 +19,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // ==========================================
-// 2. VERIFICAR ADMIN
+// 2. VERIFICAR AUTENTICACIÓN
 // ==========================================
 if (!isset($_SESSION['id_usuario']) || empty($_SESSION['id_usuario'])) {
     header('Location: ?url=login');
@@ -62,7 +62,7 @@ unset($_SESSION['tipo_mensaje']);
 $busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 
 // ==========================================
-// 6. ENDPOINTS AJAX (tuneo del sistema)
+// 6. ENDPOINTS AJAX
 // ==========================================
 
 // ===== AJAX 1: Validar usuario único =====
@@ -97,7 +97,6 @@ if ($action === 'check_cedula') {
     }
     
     try {
-        // Para excluir, necesitamos el id_persona del usuario
         $idPersonaExcluir = null;
         if ($idExcluir !== null) {
             $sql = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
@@ -147,10 +146,7 @@ if ($action === 'show_ajax') {
             ]
         ]);
     } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'mensaje' => $e->getMessage()
-        ]);
+        echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
     }
     exit;
 }
@@ -160,22 +156,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store
     header('Content-Type: application/json');
     
     try {
-        // Validaciones básicas
-        if (empty(trim($_POST['usuario'] ?? ''))) {
-            throw new Exception("El nombre de usuario es obligatorio.");
-        }
-        if (empty(trim($_POST['clave'] ?? ''))) {
-            throw new Exception("La contraseña es obligatoria.");
-        }
-        if (empty(trim($_POST['id_rol'] ?? ''))) {
-            throw new Exception("El rol es obligatorio.");
-        }
-        if (empty(trim($_POST['nombre'] ?? ''))) {
-            throw new Exception("El nombre es obligatorio.");
-        }
-        if (empty(trim($_POST['cedula'] ?? ''))) {
-            throw new Exception("La cédula es obligatoria.");
-        }
+        if (empty(trim($_POST['usuario'] ?? ''))) throw new Exception("El nombre de usuario es obligatorio.");
+        if (empty(trim($_POST['clave'] ?? ''))) throw new Exception("La contraseña es obligatoria.");
+        if (empty(trim($_POST['id_rol'] ?? ''))) throw new Exception("El rol es obligatorio.");
+        if (empty(trim($_POST['nombre'] ?? ''))) throw new Exception("El nombre es obligatorio.");
+        if (empty(trim($_POST['cedula'] ?? ''))) throw new Exception("La cédula es obligatoria.");
         
         $datosPersona = [
             'nombre' => trim($_POST['nombre']),
@@ -195,18 +180,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store
         $resultado = $modelo->registrarUsuarioCompleto($datosPersona, $datosUsuario);
         
         if ($resultado) {
-            echo json_encode([
-                'success' => true,
-                'mensaje' => "Usuario '{$datosUsuario['usuario']}' registrado exitosamente"
-            ]);
+            echo json_encode(['success' => true, 'mensaje' => "Usuario '{$datosUsuario['usuario']}' registrado exitosamente"]);
         } else {
             throw new Exception($modelo->getLastError() ?: "No se pudo registrar el usuario.");
         }
     } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'mensaje' => $e->getMessage()
-        ]);
+        echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
     }
     exit;
 }
@@ -252,14 +231,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'updat
             ':id_persona' => $idPersona
         ]);
         
-        $sqlUsuario = "UPDATE usuario SET 
-                            usuario = :usuario,
-                            id_rol = :id_rol";
-        
-        if (!empty(trim($_POST['clave'] ?? ''))) {
-            $sqlUsuario .= ", clave = :clave";
-        }
-        
+        $sqlUsuario = "UPDATE usuario SET usuario = :usuario, id_rol = :id_rol";
+        if (!empty(trim($_POST['clave'] ?? ''))) $sqlUsuario .= ", clave = :clave";
         $sqlUsuario .= " WHERE id_usuario = :id";
         
         $params = [
@@ -275,20 +248,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'updat
         $stmtU = $db->prepare($sqlUsuario);
         $stmtU->execute($params);
         
-        echo json_encode([
-            'success' => true,
-            'mensaje' => "Usuario actualizado exitosamente"
-        ]);
+        echo json_encode(['success' => true, 'mensaje' => "Usuario actualizado exitosamente"]);
     } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'mensaje' => $e->getMessage()
-        ]);
+        echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
     }
     exit;
 }
 
-// ===== AJAX 6: Eliminar usuario =====
+// ===== AJAX 6: Eliminar (inactivar) usuario =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delete_ajax') {
     header('Content-Type: application/json');
     
@@ -296,23 +263,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delet
         $id = (int) ($_POST['id_usuario'] ?? 0);
         
         if ($id <= 0) throw new Exception("ID de usuario inválido.");
-        if ($id == $_SESSION['id_usuario']) throw new Exception("No puedes eliminar tu propio usuario.");
+        if ($id == $_SESSION['id_usuario']) throw new Exception("No puedes inactivar tu propio usuario.");
         
         $resultado = $modelo->eliminarUsuario($id);
         
         if ($resultado) {
-            echo json_encode([
-                'success' => true,
-                'mensaje' => "Usuario eliminado exitosamente"
-            ]);
+            echo json_encode(['success' => true, 'mensaje' => "Usuario inactivado exitosamente"]);
         } else {
-            throw new Exception($modelo->getLastError() ?: "No se pudo eliminar el usuario.");
+            throw new Exception($modelo->getLastError() ?: "No se pudo inactivar el usuario.");
         }
     } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'mensaje' => $e->getMessage()
-        ]);
+        echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ===== AJAX 7: Reactivar usuario =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'reactivar_ajax') {
+    header('Content-Type: application/json');
+    
+    try {
+        $id = (int) ($_POST['id_usuario'] ?? 0);
+        if ($id <= 0) throw new Exception("ID de usuario inválido.");
+        
+        $resultado = $modelo->reactivarUsuario($id);
+        
+        if ($resultado) {
+            echo json_encode(['success' => true, 'mensaje' => "Usuario reactivado exitosamente"]);
+        } else {
+            throw new Exception($modelo->getLastError() ?: "No se pudo reactivar el usuario.");
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
     }
     exit;
 }
@@ -321,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delet
 // 7. PROCESAR POST TRADICIONALES (legacy)
 // ==========================================
 
-// Guardar usuario (legacy)
+// (Mantenemos el código legacy por si acaso, igual que antes)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guardar') {
     try {
         if (empty(trim($_POST['usuario']))) throw new Exception("El nombre de usuario es obligatorio.");
@@ -361,7 +343,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
     exit();
 }
 
-// Actualizar usuario (legacy)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'actualizar') {
     try {
         $id = $_POST['id_usuario'] ?? null;
@@ -415,7 +396,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// Eliminar usuario (legacy)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
     try {
         $id = $_POST['id_usuario'] ?? null;
@@ -423,7 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         if ($id == $_SESSION['id_usuario']) throw new Exception("No puedes eliminar tu propio usuario");
         
         $resultado = $modelo->eliminarUsuario($id);
-        $_SESSION['mensaje'] = $resultado ? "✅ Usuario eliminado exitosamente" : "No se pudo eliminar el usuario";
+        $_SESSION['mensaje'] = $resultado ? "✅ Usuario inactivado exitosamente" : "No se pudo inactivar el usuario";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
     } catch (Exception $e) {
         $_SESSION['mensaje'] = "Error al eliminar: " . $e->getMessage();
@@ -434,7 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 }
 
 // ==========================================
-// 8. BLOQUEAR RUTAS LEGACY DE VISTAS
+// 8. BLOQUEAR RUTAS LEGACY
 // ==========================================
 if (in_array($action, ['registrar', 'crear', 'editar', 'ver'])) {
     header("Location: ?url=usuarios&action=lista");
@@ -469,7 +449,6 @@ if ($action === 'lista' || $action === '') {
         $usuarios = $usuarios_full;
     }
     
-    // Cargar roles para el modal de registrar/editar
     $roles = [];
     try {
         $sql = "SELECT id_rol, nombre_rol FROM rol WHERE eliminado = 0 ORDER BY id_rol ASC";
