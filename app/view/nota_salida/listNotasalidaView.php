@@ -13,6 +13,14 @@ $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'crear') : false;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'eliminar') : false;
 
+$id_usuario_actual = (int)($_SESSION['id_usuario'] ?? 0);
+$caja_cerrada = false;
+if ($db) {
+    $stmtCheck = $db->prepare("SELECT 1 FROM cierre_caja WHERE fecha_cierre = CURDATE() AND id_usuario = :id LIMIT 1");
+    $stmtCheck->execute([':id' => $id_usuario_actual]);
+    $caja_cerrada = (bool)$stmtCheck->fetchColumn();
+}
+
 $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($notas) ? count($notas) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
@@ -32,10 +40,14 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </small>
             </div>
             <div class="col-auto">
-                <?php if ($puede_crear_nota): ?>
+                <?php if ($puede_crear_nota && !$caja_cerrada): ?>
                 <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                     <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
                 </a>
+                <?php elseif ($caja_cerrada): ?>
+                    <button class="btn btn-secondary" disabled style="border-radius: 50px; padding: 8px 22px; opacity: 0.7;">
+                        <i class="fas fa-lock me-1"></i> Caja Cerrada Hoy
+                    </button>
                 <?php endif; ?>
             </div>
         </div>
@@ -55,7 +67,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </select>
             </div>
 
-            <!-- NUEVO: FILTRO DE ESTADO -->
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Estado</label>
                 <select name="estado_nota" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
@@ -171,9 +182,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="ps-4 py-3">FECHA</th>
                         <th class="py-3">CLIENTE</th>
                         <th class="py-3">TIPO</th>
-                        <th class="py-3">PRODUCTOS</th>
-                        <th class="py-3">CATEGORÍAS</th>
-                        <th class="py-3">UNIDADES</th>
+                        <!-- 🔥 NUEVAS COLUMNAS SEPARADAS -->
+                        <th class="py-3 text-center">PRODUCTOS</th>
+                        <th class="py-3 text-center">CATEGORÍAS</th>
+                        <th class="py-3 text-center">UNIDADES</th>
                         <th class="py-3">ENCARGADO</th>
                         <th class="py-3 text-center">Status</th>
                         <th class="pe-4 py-3 text-center">ACCIONES</th>
@@ -204,9 +216,26 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         <?= $n['tipo_cliente'] ?? 'Natural' ?>
                                     </span>
                                 </td>
-                                <td><div class="text-truncate" style="max-width: 150px;"><?= htmlspecialchars($n['productos_lista'] ?? 'N/A') ?></div></td>
-                                <td><div class="text-truncate" style="max-width: 100px;"><?= htmlspecialchars($n['categorias_lista'] ?? 'N/A') ?></div></td>
-                                <td class="fw-bold"><?= $n['total_unidades'] ?? 0 ?></td>
+                                <!-- 🔥 SOLO LOS NÚMEROS -->
+                                <td class="text-center">
+                                    <span class="fw-bold" style="color: #1a1a2e; font-size: 1.05rem;">
+                                        <?= (int)($n['total_productos'] ?? 0) ?>
+                                    </span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Prod.</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-bold" style="color: #6c757d; font-size: 1.05rem;">
+                                        <?= (int)($n['total_categorias'] ?? 0) ?>
+                                    </span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Cat.</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-bold" style="color: #1a1a2e; font-size: 1.05rem;">
+                                        <?= (int)($n['total_unidades'] ?? 0) ?>
+                                    </span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Und.</small>
+                                </td>
+                                </td>
                                 <td><?= htmlspecialchars(($n['usuario_nombre'] ?? '') . ' ' . ($n['usuario_apellido'] ?? '')) ?></td>
                                 <td class="text-center">
                                     <?php if ($anulada): ?>
@@ -248,11 +277,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     </div>
 </div>
 
-<!-- MODAL 1: VER DETALLE DE NOTA (DISEÑO FACTURA CORREGIDO SIN ID) -->
+<!-- MODAL 1: VER DETALLE DE NOTA -->
 <div class="modal fade" id="modalVerNota" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-eye me-2" style="color: #f39c12;"></i> 
@@ -260,21 +288,16 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
-
             <div class="modal-body" style="padding: 20px 24px;">
-                
                 <div id="ver-nota-cargando" class="text-center py-5">
                     <div class="spinner-border" style="color: #f39c12;" role="status"></div>
                     <p class="mt-3" style="color: #6c757d;">Cargando información de la nota...</p>
                 </div>
-
                 <div id="ver-nota-error" class="text-center py-5" style="display: none;">
                     <i class="fas fa-exclamation-triangle fa-3x mb-3" style="color: #dc3545;"></i>
                     <p id="ver-nota-error-msg" style="color: #6c757d;">Error al cargar la nota</p>
                 </div>
-
                 <div id="ver-nota-contenido" style="display: none;">
-                    
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
@@ -307,8 +330,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             </div>
                         </div>
                     </div>
-
-                    <!-- TABLA TIPO FACTURA SIN COLUMNA ID -->
                     <div class="card" style="border: 1px solid #e9ecef; border-radius: 12px; overflow: hidden;">
                         <div class="card-header py-3" style="background: #1a1a2e; border: none;">
                             <h6 class="m-0" style="color: #ffffff; font-weight: 700;">
@@ -341,7 +362,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     </div>
                 </div>
             </div>
-
             <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
                 <button type="button" class="btn btn-danger me-auto" onclick="imprimirNotaPDF()" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
                     <i class="fas fa-file-pdf me-1"></i> Imprimir esta Nota
@@ -365,28 +385,22 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
-
             <form method="POST" action="?url=notasalida&type=eliminar">
                 <input type="hidden" name="id_nota_salida" id="anular-nota-id">
-                
                 <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
                     <p style="margin-bottom: 16px; font-weight: 500;">¿Estás seguro de anular esta nota de salida?</p>
-                    
                     <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #dc3545; border-radius: 8px;">
                         <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente de la nota</strong>
                         <span id="anular-nota-cliente" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
                     </div>
-
                     <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;">
                         <i class="fas fa-info-circle me-2"></i> Al anular, el stock de los productos se <strong>revertirá automáticamente</strong>.
                     </div>
-
                     <div class="mb-0">
                         <label class="form-label fw-bold" style="color: #1a1a2e; font-size: 0.85rem;">Motivo de Anulación <span class="text-danger">*</span></label>
                         <textarea name="motivo_eliminacion" class="form-control" rows="3" required placeholder="Describe el motivo de la anulación..." style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); resize: vertical;"></textarea>
                     </div>
                 </div>
-
                 <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">Cancelar</button>
                     <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">Sí, anular</button>
@@ -444,31 +458,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         const tr = document.createElement('tr');
                         
-                        // 1. Producto
                         const tdProd = document.createElement('td');
                         tdProd.className = 'ps-4';
                         tdProd.style.color = '#1a1a2e';
                         tdProd.style.fontWeight = '600';
                         tdProd.textContent = d.nombre_producto;
 
-                        // 2. Categoría
                         const tdCat = document.createElement('td');
                         tdCat.style.color = '#6c757d';
                         tdCat.textContent = d.nombre_categoria || 'Sin categoría';
 
-                        // 3. Cantidad
                         const tdCant = document.createElement('td');
                         tdCant.className = 'text-center fw-bold';
                         tdCant.style.color = '#1a1a2e';
                         tdCant.textContent = cantidad;
 
-                        // 4. Costo
                         const tdCosto = document.createElement('td');
                         tdCosto.className = 'text-center';
                         tdCosto.style.color = '#1a1a2e';
                         tdCosto.textContent = '$' + costo.toFixed(2);
 
-                        // 5. Subtotal
                         const tdSubtotal = document.createElement('td');
                         tdSubtotal.className = 'pe-4 text-center fw-bold';
                         tdSubtotal.style.color = '#f39c12';

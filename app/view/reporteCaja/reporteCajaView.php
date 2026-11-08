@@ -1,7 +1,4 @@
 ﻿<?php
-// ============================================================
-// Variables de la vista
-// ============================================================
 $movimientos     = $movimientos ?? [];
 $paginaActual    = $paginaActual ?? 1;
 $totalPaginas    = $totalPaginas ?? 1;
@@ -10,7 +7,6 @@ $porPaginaActual = $porPaginaActual ?? 10;
 $totalUnidades   = $totalUnidades ?? 0;
 $totalDocumentos = $totalDocumentos ?? 0;
 
-// Categorías para el filtro
 $categorias = [];
 try {
     $stmt = $db->prepare("SELECT id_categoria, nombre_categoria FROM categoria ORDER BY nombre_categoria ASC");
@@ -45,7 +41,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
 <div class="col-md-8 col-lg-12">
     
-    <!-- TARJETA DE TÍTULO + BOTÓN DE CIERRE -->
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center g-3">
             <div class="col-xl-8">
@@ -58,7 +53,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </small>
             </div>
             <div class="col-xl-4 text-end">
-                <!-- 🔥 BOTÓN QUE SE OCULTA SI LA CAJA ESTÁ CERRADA -->
                 <?php if (!$cajaCerrada): ?>
                     <button type="button"
                             id="btnAbrirCierreCaja"
@@ -77,7 +71,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     </div>
 
-    <!-- FILTROS -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportecaja">
@@ -161,7 +154,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     <?php endif; ?>
 
-    <!-- TARJETA ESTADÍSTICA -->
     <div class="row mb-4 justify-content-center">
         <div class="col-md-5">
             <div class="card card-total-notas border-left-danger text-center p-3 shadow-sm">
@@ -176,7 +168,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     </div>
 
-    <!-- TABLA DE MOVIMIENTOS -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0"><i class="fas fa-history me-2"></i> Movimientos del Día</h5>
@@ -209,60 +200,29 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                             </td>
                         </tr>
                     <?php elseif (!empty($movimientos)): ?>
-                        <?php 
-                        $notasAgrupadas = [];
-                        foreach ($movimientos as $m) {
-                            $idNota = $m['id_documento'];
-                            if (!isset($notasAgrupadas[$idNota])) {
-                                $notasAgrupadas[$idNota] = [
-                                    'id_documento' => $idNota,
-                                    'fecha_movimiento' => $m['fecha_movimiento'],
-                                    'usuario_activo' => $m['usuario_activo'],
-                                    'cliente' => $m['nombre_cliente'] ?? 'N/A',
-                                    'tipo_cliente' => $m['tipo_cliente'] ?? 'Natural',
-                                    'productos' => [],
-                                    'categorias' => [],
-                                    'total_unidades' => 0
-                                ];
-                            }
-                            $prodLimpio = preg_replace('/\s*\(x\d+\)/', '', $m['nombre_producto']);
-                            if (!in_array($prodLimpio, $notasAgrupadas[$idNota]['productos'])) {
-                                $notasAgrupadas[$idNota]['productos'][] = $prodLimpio;
-                            }
-                            if (!empty($m['categoria']) && !in_array($m['categoria'], $notasAgrupadas[$idNota]['categorias'])) {
-                                $notasAgrupadas[$idNota]['categorias'][] = $m['categoria'];
-                            }
-                            $notasAgrupadas[$idNota]['total_unidades'] += abs((int)$m['cantidad']);
-                        }
-                        uasort($notasAgrupadas, function ($a, $b) {
-                            return ((int)$b['id_documento']) <=> ((int)$a['id_documento']);
-                        });
-                        ?>
-                        <?php foreach ($notasAgrupadas as $nota): ?>
+                        <?php foreach ($movimientos as $m): ?>
                             <tr>
-                                <td class="ps-4 fw-bold">#<?= (int)$nota['id_documento'] ?></td>
-                                <td><?= date('d/m/Y', strtotime($nota['fecha_movimiento'])) ?></td>
-                                <td><?= htmlspecialchars($nota['cliente']) ?></td>
+                                <td class="ps-4 fw-bold">#<?= (int)$m['id_documento'] ?></td>
+                                <td><?= date('d/m/Y', strtotime($m['fecha_movimiento'])) ?></td>
+                                <td><?= htmlspecialchars($m['nombre_cliente'] ?? 'N/A') ?></td>
                                 <td>
-                                    <?php 
-                                    $badgeColor = ($nota['tipo_cliente'] === 'Jurídico') ? 'background: #e0f2fe; color: #0369a1;' : 'background: #dcfce7; color: #15803d;';
-                                    ?>
+                                    <?php $badgeColor = ($m['tipo_cliente'] === 'Jurídico') ? 'background: #e0f2fe; color: #0369a1;' : 'background: #dcfce7; color: #15803d;'; ?>
                                     <span class="badge" style="<?= $badgeColor ?> padding: 4px 12px; border-radius: 50px; font-weight: 600;">
-                                        <?= htmlspecialchars($nota['tipo_cliente']) ?>
+                                        <?= htmlspecialchars($m['tipo_cliente'] ?? 'Natural') ?>
                                     </span>
                                 </td>
                                 <td class="fw-medium" style="max-width: 250px; white-space: normal;">
-                                    <?= htmlspecialchars(implode(', ', $nota['productos'])) ?>
+                                    <?= htmlspecialchars(preg_replace('/\s*\(x\d+\)/', '', $m['nombre_producto'])) ?>
                                 </td>
                                 <td class="text-muted" style="max-width: 200px; white-space: normal;">
-                                    <?= htmlspecialchars(implode(', ', $nota['categorias'])) ?>
+                                    <?= htmlspecialchars($m['categoria'] ?? '') ?>
                                 </td>
-                                <td class="text-center fw-bold"><?= $nota['total_unidades'] ?></td>
-                                <td><?= htmlspecialchars($nota['usuario_activo']) ?></td>
+                                <td class="text-center fw-bold"><?= (int)$m['cantidad'] ?></td>
+                                <td><?= htmlspecialchars($m['usuario_activo'] ?? 'N/A') ?></td>
                                 <td class="pe-4 text-center">
                                     <button type="button" class="btn btn-sm btn-action-circle"
                                             style="background: #1a1a2e; color: #0d6efd; border: 1px solid #0d6efd; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.25); transition: all 0.2s; width: 32px; height: 32px; padding: 0; border-radius: 50%;"
-                                            onclick="verDetalleCaja(<?= (int)$nota['id_documento'] ?>)"
+                                            onclick="verDetalleCaja(<?= (int)$m['id_documento'] ?>)"
                                             title="Ver Detalle">
                                         <i class="fas fa-eye"></i>
                                     </button>
@@ -295,11 +255,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
 </div>
 
-<!-- INCLUIR MODALES EXTERNOS -->
 <?php require_once __DIR__ . '/verDetalleCajaView.php'; ?>
 <?php require_once __DIR__ . '/CierreCajaView.php'; ?>
 
-<!-- SCRIPT PARA FILTROS Y CIERRE DE CAJA -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('formFiltros');
@@ -345,16 +303,9 @@ document.addEventListener('DOMContentLoaded', function () {
         btnAceptarCierreExito.addEventListener('click', function () {
             const fechaInputActiva = document.querySelector('input[name="fecha"]');
             const fechaActual = fechaInputActiva && fechaInputActiva.value ? fechaInputActiva.value : (btn.dataset.fecha || new Date().toISOString().slice(0, 10));
-            const fechaSiguiente = new Date(`${fechaActual}T00:00:00`);
-            fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
-            const fechaSiguienteStr = fechaSiguiente.toISOString().slice(0, 10);
-
-            if (fechaInputActiva) {
-                fechaInputActiva.value = fechaSiguienteStr;
-            }
-
+            
             modal.hide();
-            window.location.href = `?url=reportecaja&fecha=${encodeURIComponent(fechaSiguienteStr)}`;
+            window.location.href = `?url=reportecaja&fecha=${encodeURIComponent(fechaActual)}`;
         });
     }
 

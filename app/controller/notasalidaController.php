@@ -55,6 +55,27 @@ $clientes = [];
 $resumen = [];
 $tipo_mensaje = '';
 
+// 🔥 NUEVO: Definir el filtro de usuario
+$esAdmin = (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 1) || (strtolower($_SESSION['nombre_rol'] ?? '') === 'administrador');
+$id_usuario_filtro = $esAdmin ? null : (int)($_SESSION['id_usuario'] ?? 0);
+
+// 🔥 VALIDACIÓN: Bloquear registro si ya se cerró caja
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store') {
+    $fecha_hoy = date('Y-m-d');
+    $id_usuario_real = (int)($_SESSION['id_usuario'] ?? 0);
+    
+    $sqlCierre = "SELECT COUNT(*) FROM cierre_caja WHERE fecha_cierre = :fecha AND id_usuario = :id_usuario";
+    $stmtCierre = $db->prepare($sqlCierre);
+    $stmtCierre->execute([':fecha' => $fecha_hoy, ':id_usuario' => $id_usuario_real]);
+    
+    if ($stmtCierre->fetchColumn() > 0) {
+        $_SESSION['mensaje'] = "❌ Error: Ya has cerrado la caja de hoy. No puedes registrar más notas de salida hasta mañana.";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=notasalida&type=list");
+        exit();
+    }
+}
+
 if ($type === 'detalle_json' && $id) {
     header('Content-Type: application/json; charset=utf-8');
     try {
@@ -96,7 +117,7 @@ if ($type === 'exportar_csv') {
     fwrite($output, "\xEF\xBB\xBF");
     fputcsv($output, ['ID', 'Fecha', 'Cliente', 'Documento', 'Productos', 'Categorías', 'Total Unidades', 'Encargado']);
     
-    $notas_export = $modelo->listarNotasSalida();
+    $notas_export = $modelo->listarNotasSalida($id_usuario_filtro);
     foreach ($notas_export as $n) {
         $clienteNombre = !empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : trim($n['cliente_nombre'] . ' ' . $n['cliente_apellido']);
         $encargado = trim($n['usuario_nombre'] . ' ' . $n['usuario_apellido']);
@@ -139,8 +160,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'eliminar', '?url=notasalida&type=list');
         try {
             $idNota = $_POST['id_nota_salida'] ?? 0;
-            
-            // Unificación de ambos cambios: Leer ambos nombres de motivo y obtener el usuario válido
             $motivo = trim($_POST['motivo_eliminacion'] ?? $_POST['motivo_anulacion'] ?? '');
             $idUsuario = obtenerIdUsuarioValido($db);
             
@@ -157,9 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'nota_salida';
 
-// ==========================================
-// RUTA PARA GENERAR EL PDF DE LA NOTA
-// ==========================================
 if ($type === 'generar_pdf' && $id) {
     $archivoPdf = $baseViewPath . "/generar_pdf.php";
     if (file_exists($archivoPdf)) {
@@ -173,7 +189,6 @@ if ($type === 'generar_pdf' && $id) {
 if ($type === 'create') {
     try {
         $productos = $modelo->obtenerProductosConCategoria();
-        // AQUI ESTA LA MAGIA: true obliga a traer SOLO los clientes activos
         $clientes = $clienteModel->obtenerClientes(true); 
         $categorias = $productoModel->obtenerCategorias();
     } catch (Exception $e) { die("ERROR al obtener datos: " . $e->getMessage()); }
@@ -195,15 +210,13 @@ if ($type === 'show' && $id) {
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 
-    // NUEVO: Filtro de estado
     $estado_nota = strtolower(trim((string) ($_GET['estado_nota'] ?? 'todos')));
     if (!in_array($estado_nota, ['todos', 'activos', 'inactivos'], true)) {
         $estado_nota = 'todos';
     }
 
-    $notas_full = !empty($buscar) ? $modelo->buscarNotasSalida($buscar) : $modelo->listarNotasSalida();
+    $notas_full = !empty($buscar) ? $modelo->buscarNotasSalida($buscar, $id_usuario_filtro) : $modelo->listarNotasSalida($id_usuario_filtro);
     
-    // Aplicar filtro
     if ($estado_nota === 'activos') {
         $notas_full = array_values(array_filter($notas_full, function ($n) {
             return ((int) ($n['eliminado'] ?? 0)) === 0;
@@ -214,7 +227,7 @@ try {
         }));
     }
 
-    $resumen = $modelo->getResumen();
+    $resumen = $modelo->getResumen($id_usuario_filtro);
     
     $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));

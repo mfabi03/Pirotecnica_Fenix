@@ -302,7 +302,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'react
 // ==========================================
 // 7. PROCESAR POST TRADICIONALES (legacy)
 // ==========================================
-
 // (Mantenemos el código legacy por si acaso, igual que antes)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guardar') {
     try {
@@ -426,42 +425,53 @@ if (in_array($action, ['registrar', 'crear', 'editar', 'ver'])) {
 // ==========================================
 $basePath = __DIR__ . "/../view/configuracion/";
 
-// ===== LISTA DE USUARIOS =====
-if ($action === 'lista' || $action === '') {
-    if (!empty($busqueda)) {
-        $usuarios_full = $modelo->buscarUsuarios($busqueda);
-    } else {
-        $usuarios_full = $modelo->obtenerUsuariosConPersona();
-    }
-    
-    if (!is_array($usuarios_full)) $usuarios_full = [];
+    // ===== LISTA DE USUARIOS =====
+    if ($action === 'lista' || $action === '') {
+        if (!empty($busqueda)) {
+            $usuarios_full = $modelo->buscarUsuarios($busqueda);
+        } else {
+            $usuarios_full = $modelo->obtenerUsuariosConPersona();
+        }
+        
+        if (!is_array($usuarios_full)) $usuarios_full = [];
 
-    $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
-    $offset        = ($pagina_actual - 1) * $por_pagina;
-    
-    $totalRegistros = count($usuarios_full);
-    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-    
-    if ($por_pagina > 0) {
-        $usuarios = array_slice($usuarios_full, $offset, $por_pagina);
-    } else {
-        $usuarios = $usuarios_full;
+        // ⬇️ Lógica de la Papelera ⬇️
+        $ver_papelera = isset($_GET['papelera']) && $_GET['papelera'] == '1';
+        
+        $usuarios_full = array_values(array_filter($usuarios_full, function ($usuario) use ($ver_papelera) {
+            $esta_eliminado = ((int) ($usuario['eliminado'] ?? 0)) === 1;
+            return $ver_papelera ? $esta_eliminado : !$esta_eliminado;
+        }));
+        // ⬆️ FIN DE LA LÓGICA DE PAPELERA ⬆️
+
+        $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
+        $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+        $offset        = ($pagina_actual - 1) * $por_pagina;
+        
+        $totalRegistros = count($usuarios_full);
+        $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+        
+        if ($por_pagina > 0) {
+            $usuarios = array_slice($usuarios_full, $offset, $por_pagina);
+        } else {
+            $usuarios = $usuarios_full;
+        }
+        
+        $roles = [];
+        try {
+            $sql = "SELECT id_rol, nombre_rol FROM rol WHERE eliminado = 0 ORDER BY id_rol ASC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute();
+            $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error al obtener roles: " . $e->getMessage());
+        }
+        
+        $ver_papelera = $ver_papelera; 
+
+        require_once $basePath . "usuarioLista.php";
+        exit();
     }
-    
-    $roles = [];
-    try {
-        $sql = "SELECT id_rol, nombre_rol FROM rol WHERE eliminado = 0 ORDER BY id_rol ASC";
-        $stmt = $db->prepare($sql);
-        $stmt->execute();
-        $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Exception $e) {
-        error_log("Error al obtener roles: " . $e->getMessage());
-    }
-    
-    require_once $basePath . "usuarioLista.php";
-    exit();
-}
 
 // ===== DEFAULT: LISTA =====
 $usuarios_full = $modelo->obtenerUsuariosConPersona();

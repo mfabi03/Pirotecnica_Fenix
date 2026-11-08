@@ -125,35 +125,26 @@ class ReporteCajaModel {
         }
     }
 
+    // 🔥 CONSULTA POR USUARIO: Si no hay ID de usuario, asumimos que no hay cierre
     public function existeCierreCaja($fecha, $id_usuario = null) {
-        $sql = "SELECT 1 FROM cierre_caja WHERE fecha_cierre = :fecha_cierre AND id_usuario <=> :id_usuario LIMIT 1";
+        $this->asegurarTablaCierreCaja();
+        
+        if (empty($id_usuario)) {
+            return false; 
+        }
+
+        $sql = "SELECT 1 FROM cierre_caja WHERE fecha_cierre = :fecha_cierre AND id_usuario = :id_usuario LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':fecha_cierre', $fecha);
-        $stmt->bindValue(':id_usuario', $id_usuario !== null && $id_usuario !== '' ? (int)$id_usuario : null, PDO::PARAM_INT);
+        $stmt->bindValue(':id_usuario', (int)$id_usuario, PDO::PARAM_INT);
         $stmt->execute();
+        
         return (bool)$stmt->fetchColumn();
     }
 
-    public function fechaCerradaParaCaja($fecha, $id_usuario = null) {
-        if (empty($fecha)) return false;
-
-        $cierre = $this->obtenerUltimoCierreCaja($fecha, $id_usuario);
-        if (!$cierre) return false;
-
-        if (!isset($cierre['ultimo_id_nota_salida']) || $cierre['ultimo_id_nota_salida'] === null) {
-            return false;
-        }
-
-        $ultimoId = (int)$cierre['ultimo_id_nota_salida'];
-        $ultimoNotaActual = $this->obtenerUltimoIdNotaSalidaPorUsuarioFecha($fecha, $id_usuario);
-
-        if ($ultimoNotaActual !== null && $ultimoNotaActual > $ultimoId) {
-            return false;
-        }
-
-        return true;
-    }
-
+    // ============================================================
+    // CONSULTAS CON ARRASTRE (Filtrado por el usuario actual)
+    // ============================================================
     public function obtenerSalidasCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null, $limit = 10, $offset = 0) {
         $where = ["ns.eliminado = 0"];
         $params = [];
@@ -162,10 +153,19 @@ class ReporteCajaModel {
             $where[] = "ns.id_usuario = :id_usuario";
             $params[':id_usuario'] = $id_usuario;
         }
-        
+
         if (!empty($fecha)) {
-            $where[] = "DATE(ns.fecha) = :fecha";
-            $params[':fecha'] = $fecha;
+            // Buscamos el último cierre de ESTE usuario (en la fecha anterior)
+            $cierreAnterior = $this->obtenerUltimoCierreCaja(date('Y-m-d', strtotime($fecha . ' -1 day')), $id_usuario);
+            
+            if ($cierreAnterior && isset($cierreAnterior['ultimo_id_nota_salida'])) {
+                $where[] = "(DATE(ns.fecha) = :fecha OR ns.id_nota_salida > :ultimo_id_cierre)";
+                $params[':fecha'] = $fecha;
+                $params[':ultimo_id_cierre'] = (int)$cierreAnterior['ultimo_id_nota_salida'];
+            } else {
+                $where[] = "DATE(ns.fecha) = :fecha";
+                $params[':fecha'] = $fecha;
+            }
         }
 
         if (!empty($id_categoria) && $id_categoria > 0) {
@@ -175,13 +175,6 @@ class ReporteCajaModel {
         if (!empty($busqueda)) {
             $where[] = "prod.descripcion LIKE :busqueda";
             $params[':busqueda'] = '%' . $busqueda . '%';
-        }
-
-        // 🔥 FILTRO DE CIERRE: Si hay un cierre para esta fecha, solo trae notas nuevas
-        $cierre = $this->obtenerUltimoCierreCaja($fecha, $id_usuario);
-        if ($cierre && isset($cierre['ultimo_id_nota_salida']) && $cierre['ultimo_id_nota_salida'] !== null) {
-            $where[] = "ns.id_nota_salida > :ultimo_id_cierre";
-            $params[':ultimo_id_cierre'] = (int)$cierre['ultimo_id_nota_salida'];
         }
 
         $whereSql = ' WHERE ' . implode(' AND ', $where);
@@ -226,105 +219,25 @@ class ReporteCajaModel {
     }
 
     public function contarSalidasCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null) {
-        $where = ["ns.eliminado = 0"];
-        $params = [];
-
-        if (!empty($id_usuario)) {
-            $where[] = "ns.id_usuario = :id_usuario";
-            $params[':id_usuario'] = $id_usuario;
-        }
-        if (!empty($fecha)) {
-            $where[] = "DATE(ns.fecha) = :fecha";
-            $params[':fecha'] = $fecha;
-        }
-
-        if (!empty($id_categoria) && $id_categoria > 0) {
-            $where[] = "prod.id_categoria = :id_categoria";
-            $params[':id_categoria'] = $id_categoria;
-        }
-        if (!empty($busqueda)) {
-            $where[] = "prod.descripcion LIKE :busqueda";
-            $params[':busqueda'] = '%' . $busqueda . '%';
-        }
-
-        // Filtro de cierre para el contador
-        $cierre = $this->obtenerUltimoCierreCaja($fecha, $id_usuario);
-        if ($cierre && isset($cierre['ultimo_id_nota_salida']) && $cierre['ultimo_id_nota_salida'] !== null) {
-            $where[] = "ns.id_nota_salida > :ultimo_id_cierre";
-            $params[':ultimo_id_cierre'] = (int)$cierre['ultimo_id_nota_salida'];
-        }
-
-        $sql = "SELECT COUNT(DISTINCT ns.id_nota_salida) AS total
-                FROM nota_de_salida ns
-                INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
-                INNER JOIN producto prod ON ds.id_producto = prod.id_producto
-                WHERE " . implode(' AND ', $where);
-
-        $stmt = $this->db->prepare($sql);
-        foreach ($params as $k => $v) $stmt->bindValue($k, $v);
-        $stmt->execute();
-        return (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+        $movimientos = $this->obtenerSalidasCajero($id_usuario, $fecha, $busqueda, $id_categoria, 99999, 0);
+        return count($movimientos);
     }
 
     public function obtenerResumenCierreCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null) {
-        $where = ["ns.eliminado = 0", "DATE(ns.fecha) = :fecha"];
-        $params = [':fecha' => $fecha];
-
-        if (!empty($id_usuario)) {
-            $where[] = "ns.id_usuario = :id_usuario";
-            $params[':id_usuario'] = $id_usuario;
-        }
-
-        if (!empty($id_categoria) && $id_categoria > 0) {
-            $where[] = "prod.id_categoria = :id_categoria";
-            $params[':id_categoria'] = (int)$id_categoria;
-        }
-        if (!empty($busqueda)) {
-            $where[] = "prod.descripcion LIKE :busqueda";
-            $params[':busqueda'] = '%' . trim($busqueda) . '%';
-        }
-
-        // Filtro de cierre para el resumen
-        $cierre = $this->obtenerUltimoCierreCaja($fecha, $id_usuario);
-        if ($cierre && isset($cierre['ultimo_id_nota_salida']) && $cierre['ultimo_id_nota_salida'] !== null) {
-            $where[] = "ns.id_nota_salida > :ultimo_id_cierre";
-            $params[':ultimo_id_cierre'] = (int)$cierre['ultimo_id_nota_salida'];
-        }
-
-        $sql = "SELECT 
-                    COUNT(DISTINCT ns.id_nota_salida) AS total_documentos,
-                    COALESCE(SUM(ds.cantidad), 0)     AS total_unidades,
-                    COUNT(*)                          AS total_lineas
-                FROM nota_de_salida ns
-                INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
-                INNER JOIN producto prod ON ds.id_producto = prod.id_producto
-                WHERE " . implode(' AND ', $where);
-
-        $stmt = $this->db->prepare($sql);
-        foreach ($params as $k => $v) $stmt->bindValue($k, $v);
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $movimientos = $this->obtenerSalidasCajero($id_usuario, $fecha, $busqueda, $id_categoria, 99999, 0);
+        
+        $totalDocumentos = count(array_unique(array_column($movimientos, 'id_documento')));
+        $totalUnidades = array_sum(array_column($movimientos, 'cantidad'));
+        $totalLineas = 0; 
 
         return [
-            'total_documentos' => (int)($row['total_documentos'] ?? 0),
-            'total_unidades'   => (int)($row['total_unidades'] ?? 0),
-            'total_lineas'     => (int)($row['total_lineas'] ?? 0),
+            'total_documentos' => $totalDocumentos,
+            'total_unidades'   => $totalUnidades,
+            'total_lineas'     => $totalLineas,
         ];
     }
 
     public function obtenerResumenCierreDia($id_usuario, $fecha) {
         return $this->obtenerResumenCierreCajero($id_usuario, $fecha);
-    }
-
-    public function obtenerNombreCajero($id_usuario) {
-        $sql = "SELECT CONCAT(COALESCE(per.nombre,''), ' ', COALESCE(per.apellido,'')) AS nombre
-                FROM usuario u
-                LEFT JOIN persona per ON u.id_persona = per.id_persona
-                WHERE u.id_usuario = :id LIMIT 1";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':id', $id_usuario, PDO::PARAM_INT);
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row['nombre'] ?? 'N/A';
     }
 }

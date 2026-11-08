@@ -71,16 +71,18 @@ switch ($url) {
         require_once __DIR__ . '/app/view/configuracion/main.php';
         break;
 
-    case 'login':
+       case 'login':
+      
         if (isLoggedIn()) {
             header('Location: ?url=dashboard');
             exit();
         }
+        
         require_once __DIR__ . '/app/Controller/LoginController.php';
         break;
 
     case 'dashboard':
-        AuthMiddleware::requireAuth();
+        AuthMiddleware::requireAuth(); // Te manda a login si no hay sesión
         require_once __DIR__ . '/app/Controller/DashboardController.php';
         $dashboardController = new DashboardController($pdo);
         $dashboardController->index();

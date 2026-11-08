@@ -12,17 +12,25 @@ class ReporteCajaController {
     private $modeloNota;
 
     public function __construct($db) {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $this->db = $db;
         $this->model = new ReporteCajaModel($db);
         $this->modeloNota = new notasalidaModel($db);
     }
 
-    // Vista principal
+    private function esAdmin() {
+        return (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 1) || (strtolower($_SESSION['nombre_rol'] ?? '') === 'administrador');
+    }
+
+    // ============================================================
+    // VISTA PRINCIPAL
+    // ============================================================
     public function index() {
-        $esAdmin = (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 1) || (strtolower($_SESSION['nombre_rol'] ?? '') === 'administrador');
+        $esAdmin = $this->esAdmin();
         
-        // Fecha vacía por defecto
-        $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : null;
+        $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : date('Y-m-d');
         $busqueda = $_GET['busqueda'] ?? null;
         $id_categoria = $_GET['id_categoria'] ?? null;
 
@@ -30,32 +38,29 @@ class ReporteCajaController {
         $pagina_actual = max(1, (int)($_GET['pagina'] ?? 1));
         $offset = ($pagina_actual - 1) * $por_pagina;
 
-        // Obtenemos el último cierre global
-        $cierreGlobal = $this->model->obtenerUltimoCierreCaja($fecha, null);
-        $ultimoIdCierre = ($cierreGlobal && $cierreGlobal['ultimo_id_nota_salida']) ? (int)$cierreGlobal['ultimo_id_nota_salida'] : 0;
+        // 🔥 OBTENEMOS EL ID DEL USUARIO REAL LOGUEADO (Sea Admin o no)
+        $id_usuario_filtro = (int)($_SESSION['id_usuario'] ?? 0);
 
-        $id_usuario_filtro = $esAdmin ? null : ($_SESSION['id_usuario'] ?? null);
-        $movimientos = $this->model->obtenerSalidasCajero($id_usuario_filtro, $fecha, $busqueda, $id_categoria, $por_pagina, $offset);
-        
-        // Filtramos notas ya cobradas
-        if ($ultimoIdCierre > 0) {
-            $movimientos = array_filter($movimientos, function($m) use ($ultimoIdCierre) {
-                return (int)$m['id_documento'] > $ultimoIdCierre;
-            });
+        // Evaluamos si ESTE usuario ya hizo cierre en ESTA fecha
+        $cajaCerrada = $this->model->existeCierreCaja($fecha, $id_usuario_filtro);
+
+        if ($cajaCerrada) {
+            $movimientos = [];
+            $totalRegistros = 0;
+            $totalDocumentos = 0;
+            $totalUnidades = 0;
+        } else {
+            $movimientos = $this->model->obtenerSalidasCajero($id_usuario_filtro, $fecha, $busqueda, $id_categoria, $por_pagina, $offset);
+            $totalRegistros = count($movimientos);
+            $totalDocumentos = count(array_unique(array_column($movimientos, 'id_documento')));
+            $totalUnidades = array_sum(array_column($movimientos, 'cantidad'));
         }
-        $movimientos = array_values($movimientos);
-
-        $totalDocumentos = count(array_unique(array_column($movimientos, 'id_documento')));
-        $totalUnidades = array_sum(array_column($movimientos, 'cantidad'));
         
-        $totalRegistros = $totalDocumentos;
         $porPaginaActual = $por_pagina;
         $paginaActual = $pagina_actual;
         $totalPaginas = $por_pagina > 0 ? ceil($totalRegistros / $por_pagina) : 1;
         
-        // Si no hay movimientos, la caja se considera cerrada/limpia
-        $cajaCerrada = ($totalDocumentos === 0);
-        $fechaFiltro = $fecha ?? ''; 
+        $fechaFiltro = $fecha; 
         
         $db = $this->db;
 
@@ -67,26 +72,16 @@ class ReporteCajaController {
         }
     }
 
-    // AJAX Modal
+    // ============================================================
+    // AJAX Modal de Cierre
+    // ============================================================
     public function obtenerCierreDiaAjax() {
         header('Content-Type: application/json; charset=utf-8');
         try {
-            $esAdmin = (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 1);
-            $id_usuario = $esAdmin ? null : ($_SESSION['id_usuario'] ?? null);
-            $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : null;
-
-            $cierreGlobal = $this->model->obtenerUltimoCierreCaja($fecha, null);
-            $ultimoIdCierre = ($cierreGlobal && $cierreGlobal['ultimo_id_nota_salida']) ? (int)$cierreGlobal['ultimo_id_nota_salida'] : 0;
+            $id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
+            $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : date('Y-m-d');
 
             $movimientos = $this->model->obtenerSalidasCajero($id_usuario, $fecha, null, null, 9999, 0);
-            
-            if ($ultimoIdCierre > 0) {
-                $movimientos = array_filter($movimientos, function($m) use ($ultimoIdCierre) {
-                    return (int)$m['id_documento'] > $ultimoIdCierre;
-                });
-            }
-            $movimientos = array_values($movimientos);
-
             $totalDocs = count(array_unique(array_column($movimientos, 'id_documento')));
             $totalUnds = array_sum(array_column($movimientos, 'cantidad'));
 
@@ -97,7 +92,7 @@ class ReporteCajaController {
                     'fecha_movimiento' => $m['fecha_movimiento'],
                     'usuario_activo' => $m['usuario_activo'],
                     'nombre_cliente' => $m['nombre_cliente'],
-                    'tipo_cliente' => $m['tipo_cliente'],
+                    'tipo_cliente' => $m['tipo_cliente'] ?? 'Natural',
                     'nombre_producto' => $m['nombre_producto'],
                     'categoria' => $m['categoria'],
                     'cantidad' => $m['cantidad']
@@ -118,49 +113,81 @@ class ReporteCajaController {
         exit();
     }
 
-    // PDF
-    public function exportarPDF() {
+    // ============================================================
+    // CONFIRMAR CIERRE DE CAJA (CON SEGURIDAD DE FECHAS Y USUARIO)
+    // ============================================================
+    public function confirmarCierreCajaAjax() {
+        header('Content-Type: application/json; charset=utf-8');
+
         try {
-            $esAdmin = (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 1);
-            $id_usuario = $esAdmin ? null : ($_SESSION['id_usuario'] ?? null);
-            $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : null;
-            $busqueda = $_GET['busqueda'] ?? null;
-            $id_categoria = $_GET['id_categoria'] ?? null;
-
-            $cierreGlobal = $this->model->obtenerUltimoCierreCaja($fecha, null);
-            $ultimoIdCierre = ($cierreGlobal && $cierreGlobal['ultimo_id_nota_salida']) ? (int)$cierreGlobal['ultimo_id_nota_salida'] : 0;
-
-            $movimientos = $this->model->obtenerSalidasCajero($id_usuario, $fecha, $busqueda, $id_categoria, 9999, 0);
-            
-            if ($ultimoIdCierre > 0) {
-                $movimientos = array_filter($movimientos, function($m) use ($ultimoIdCierre) {
-                    return (int)$m['id_documento'] > $ultimoIdCierre;
-                });
-            }
-            $movimientos = array_values($movimientos);
-
-            $totalDocs = count(array_unique(array_column($movimientos, 'id_documento')));
-            $totalUnds = array_sum(array_column($movimientos, 'cantidad'));
-
-            $datos_pdf = [
-                'fecha' => $fecha ? date('d/m/Y', strtotime($fecha)) : date('d/m/Y'),
-                'total_documentos' => $totalDocs,
-                'total_unidades' => $totalUnds,
-                'movimientos' => $movimientos
-            ];
-
-            $archivoPdf = dirname(__DIR__) . '/view/reporteCaja/generar_pdfCajaView.php';
-            if (file_exists($archivoPdf)) {
-                require_once $archivoPdf;
+            $idSesion = $_SESSION['id_usuario'] ?? null;
+            if ($idSesion === null) {
+                echo json_encode(['success' => false, 'mensaje' => 'Sesión no válida']);
                 exit();
-            } else {
-                die("Error: No se encuentra generar_pdfCajaView.php en $archivoPdf");
             }
+
+            $fecha_solicitada = $_POST['fecha'] ?? $_GET['fecha'] ?? date('Y-m-d');
+            $fecha_servidor = date('Y-m-d'); // La fecha real del servidor
+
+            // 🔥 VALIDACIÓN DE SEGURIDAD: No permitir fechas futuras (comentada para pruebas)
+            /*
+            if ($fecha_solicitada > $fecha_servidor) {
+                echo json_encode([
+                    'success' => false, 
+                    'mensaje' => 'Error de seguridad: No puedes cerrar una caja en una fecha futura. La fecha del servidor es ' . date('d/m/Y', strtotime($fecha_servidor))
+                ]);
+                exit();
+            }
+            */
+
+            // 🔥 FORZAMOS EL ID DEL USUARIO (Sin importar si es Admin)
+            $id_usuario = (int)$idSesion;
+
+            // Validamos el cierre solo para ESTE usuario
+            if ($this->model->existeCierreCaja($fecha_solicitada, $id_usuario)) {
+                echo json_encode([
+                    'success' => false, 
+                    'mensaje' => 'Ya has cerrado tu caja para esta fecha. Las ventas nuevas se arrastrarán a tu siguiente turno.'
+                ]);
+                exit();
+            }
+
+            $resumen = $this->model->obtenerResumenCierreCajero($id_usuario, $fecha_solicitada);
+
+            $guardado = $this->model->guardarCierreCaja(
+                $fecha_solicitada,
+                $id_usuario, 
+                (int)($resumen['total_documentos'] ?? 0),
+                (int)($resumen['total_unidades'] ?? 0),
+                (int)($resumen['total_lineas'] ?? 0)
+            );
+
+            if (!$guardado) {
+                echo json_encode(['success' => false, 'mensaje' => 'No se pudo guardar el cierre del día']);
+                exit();
+            }
+
+            echo json_encode([
+                'success' => true,
+                'mensaje' => 'Cierre del día guardado correctamente',
+                'data' => [
+                    'fecha' => $fecha_solicitada,
+                    'total_documentos' => (int)($resumen['total_documentos'] ?? 0),
+                    'total_unidades' => (int)($resumen['total_unidades'] ?? 0),
+                ]
+            ]);
+            exit();
+
         } catch (Exception $e) {
-            die("Error al generar el PDF: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'mensaje' => 'Error al guardar el cierre']);
+            exit();
         }
     }
 
+    // ============================================================
+    // AJAX: VER DETALLE DE NOTA (EL OJITO)
+    // ============================================================
     public function verDetalleAjax() {
         header('Content-Type: application/json; charset=utf-8');
         $id = $_GET['id'] ?? 0;
@@ -177,32 +204,71 @@ class ReporteCajaController {
         exit();
     }
 
-    public function exportarCSV() { exit(); }
-
-    // Confirmar cierre con validación
-    public function confirmarCierreCajaAjax() {
-        header('Content-Type: application/json; charset=utf-8');
+    // ============================================================
+    // PDF
+    // ============================================================
+       public function exportarPDF() {
         try {
-            $fecha = $_POST['fecha'] ?? date('Y-m-d');
-            $id_usuario_guardar = $_SESSION['id_usuario'] ?? 1; 
-            
-            // Verificamos si ya existe un cierre para esta fecha
-            $cierreExistente = $this->model->obtenerUltimoCierreCaja($fecha, null);
-            $resumen = $this->model->obtenerResumenCierreCajero(null, $fecha);
-            
-            if ($cierreExistente && $resumen['total_documentos'] == 0) {
-                echo json_encode(['success' => false, 'mensaje' => 'La caja de esta fecha ya fue cerrada.']);
-                exit();
-            }
-            
-            $guardado = $this->model->guardarCierreCaja(
-                $fecha, $id_usuario_guardar, $resumen['total_documentos'], $resumen['total_unidades'], $resumen['total_lineas']
-            );
+            $esAdmin = $this->esAdmin();
+            $id_usuario = $esAdmin ? null : ($_SESSION['id_usuario'] ?? null);
+            $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : date('Y-m-d');
+            $busqueda = $_GET['busqueda'] ?? null;
+            $id_categoria = $_GET['id_categoria'] ?? null;
 
-            echo json_encode(['success' => $guardado]);
+            // 1. Buscamos los movimientos
+            $movimientos = $this->model->obtenerSalidasCajero($id_usuario, $fecha, $busqueda, $id_categoria, 9999, 0);
+            $totalDocs = count(array_unique(array_column($movimientos, 'id_documento')));
+            $totalUnds = array_sum(array_column($movimientos, 'cantidad'));
+
+            // 2. Calculamos la hora de apertura
+            $hora_apertura = 'Sin ventas';
+            if (!empty($movimientos)) {
+                $primeraVenta = end($movimientos);
+                if ($primeraVenta && !empty($primeraVenta['fecha_movimiento'])) {
+                    $hora_apertura = date('h:i A', strtotime($primeraVenta['fecha_movimiento']));
+                }
+            }
+
+            
+            
+            $id_usuario_sesion = (int)($_SESSION['id_usuario'] ?? 0);
+            
+            if ($id_usuario_sesion > 0) {
+                $sqlUsuario = "SELECT p.nombre, p.apellido 
+                               FROM usuario u 
+                               INNER JOIN persona p ON u.id_persona = p.id_persona 
+                               WHERE u.id_usuario = :id";
+                $stmtUsuario = $this->db->prepare($sqlUsuario);
+                $stmtUsuario->execute([':id' => $id_usuario_sesion]);
+                $datosPersona = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+                
+                if ($datosPersona) {
+                    $usuario_activo = trim($datosPersona['nombre'] . ' ' . $datosPersona['apellido']);
+                }
+            }
+
+            // 4. Armamos los datos para el PDF
+            $datos_pdf = [
+                'fecha' => $fecha ? date('d/m/Y', strtotime($fecha)) : date('d/m/Y'),
+                'hora_apertura' => $hora_apertura,
+                'total_documentos' => $totalDocs,
+                'total_unidades' => $totalUnds,
+                'movimientos' => $movimientos,
+                'encargado' => $usuario_activo // 🔥 Le pasamos el nombre real al PDF
+            ];
+
+            // 5. Cargamos la vista del PDF
+            $archivoPdf = dirname(__DIR__) . '/view/reporteCaja/generar_pdfCajaView.php';
+            if (file_exists($archivoPdf)) {
+                require_once $archivoPdf;
+                exit();
+            } else {
+                die("Error: No se encuentra generar_pdfCajaView.php en $archivoPdf");
+            }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
+            die("Error al generar el PDF: " . $e->getMessage());
         }
-        exit();
     }
+
+    public function exportarCSV() { exit(); }
 }

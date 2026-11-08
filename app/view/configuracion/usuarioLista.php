@@ -85,9 +85,20 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
             </div>
+            <div class="col-auto">
+                <?php if (isset($_GET['papelera']) && $_GET['papelera'] == '1'): ?>
+                    <a href="?url=usuarios&action=lista" class="btn btn-success" style="border-radius: 50px;">
+                        <i class="fas fa-arrow-left me-1"></i> Volver
+                    </a>
+                <?php else: ?>
+                    <a href="?url=usuarios&action=lista&papelera=1" class="btn btn-secondary" style="border-radius: 50px;">
+                        <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
+                    </a>
+                <?php endif; ?>
+            </div>
         </form>
     </div>
-
+    
     <!-- MENSAJES -->
     <?php if (isset($mensaje) && !empty($mensaje)): ?>
         <div class="alert <?= ($tipo_mensaje ?? '') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
@@ -141,6 +152,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         </span>
                                     <?php endif; ?>
                                 </td>
+                                
+                                <!-- ESTATUS -->
                                 <td class="text-center">
                                     <?php if (($usuario['eliminado'] ?? 0) == 0): ?>
                                         <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
@@ -148,27 +161,32 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         </span>
                                     <?php else: ?>
                                         <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-times-circle me-1"></i> Inactivo
+                                            <i class="fas fa-trash-alt me-1"></i> En Papelera
                                         </span>
                                     <?php endif; ?>
                                 </td>
+
+                                <!-- ACCIONES -->
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
+                                        
+                                        <!-- Ver Detalle (Siempre visible) -->
                                         <button type="button" class="btn-action-circle btn-view btn-ver-usuario" title="Ver" data-id="<?= $usuario['id_usuario'] ?>"><i class="fas fa-eye"></i></button>
                                         
-                                        <?php if (($usuario['eliminado'] ?? 0) == 1): ?>
-                                            <!-- Botón REACTIVAR si está inactivo -->
-                                            <button type="button" class="btn-action-circle btn-reactivar-usuario" title="Reactivar Usuario"
-                                                    style="background: rgba(40,167,69,0.15); color: #28a745; border: none;"
-                                                    data-id="<?= $usuario['id_usuario'] ?>" 
-                                                    data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>">
-                                                <i class="fas fa-undo-alt"></i>
-                                            </button>
+                                        <?php if (isset($ver_papelera) && $ver_papelera): ?>
+                                            <!-- SOLO EN LA PAPELERA: Botón Restaurar -->
+                                        <button type="button" class="btn-action-circle btn-reactivar-usuario" title="Restaurar Usuario"
+                                                style="background: rgba(13,110,253,0.15); color: #0065fd; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;"
+                                                data-id="<?= $usuario['id_usuario'] ?>" 
+                                                data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>">
+                                            <i class="fas fa-undo-alt"></i>
+                                        </button>
                                         <?php else: ?>
-                                            <!-- Botones EDITAR y ELIMINAR si está activo -->
+                                            <!-- SOLO EN ACTIVOS: Botones Editar y Eliminar -->
                                             <button type="button" class="btn-action-circle btn-edit btn-editar-usuario" title="Editar" data-id="<?= $usuario['id_usuario'] ?>"><i class="fas fa-edit"></i></button>
+                                            
                                             <?php if (($usuario['id_usuario'] ?? 0) != $_SESSION['id_usuario']): ?>
-                                            <button type="button" class="btn-action-circle btn-delete btn-eliminar-usuario" title="Inactivar" data-id="<?= $usuario['id_usuario'] ?>" data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>"><i class="fas fa-trash-alt"></i></button>
+                                                <button type="button" class="btn-action-circle btn-delete btn-eliminar-usuario" title="Mover a Papelera" data-id="<?= $usuario['id_usuario'] ?>" data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>"><i class="fas fa-trash-alt"></i></button>
                                             <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
@@ -179,8 +197,15 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <tr>
                             <td colspan="9" class="text-center py-5 dark-empty">
                                 <div class="py-4">
-                                    <i class="fas fa-users fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                    <p class="mb-0">No hay usuarios registrados</p>
+                                    <?php if (isset($ver_papelera) && $ver_papelera): ?>
+                                        <i class="fas fa-trash-alt fa-3x d-block mb-3" style="opacity: 0.3;"></i>
+                                        <p class="mb-0">La papelera está vacía</p>
+                                        <small>No hay usuarios eliminados</small>
+                                    <?php else: ?>
+                                        <i class="fas fa-users fa-3x d-block mb-3" style="opacity: 0.3;"></i>
+                                        <p class="mb-0">No hay usuarios registrados</p>
+                                        <small>Comienza registrando un nuevo usuario</small>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -270,7 +295,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 </div>
 
 <!-- ============================================================ -->
-<!-- MODAL 2: EDITAR USUARIO                                       -->
+<!-- MODAL 2: EDITAR USUARIO (CORREGIDO)                           -->
 <!-- ============================================================ -->
 <div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -290,8 +315,26 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <div class="col-md-6"><label class="form-label">Correo *</label><input type="email" name="correo_electronico" id="editar-usuario-correo" class="form-control" required data-validate="correo"></div>
                         <div class="col-md-6"><label class="form-label">Dirección</label><input type="text" name="direccion" id="editar-usuario-direccion" class="form-control" data-validate="direccion"></div>
                         <div class="col-md-6"><label class="form-label">Usuario *</label><input type="text" name="usuario" id="editar-usuario-usuario" class="form-control" required data-validate="nombre" data-unico-endpoint="?url=usuarios&action=check_usuario" data-unico-campo="usuario"></div>
-                        <div class="col-md-6"><label class="form-label">Nueva Clave</label><input type="password" name="clave" id="editar-usuario-clave" class="form-control" placeholder="Dejar vacío para no cambiar"></div>
-                        <div class="col-md-6"><label class="form-label">Rol *</label><select name="id_rol" id="editar-usuario-rol" class="form-select" required><?php foreach ($roles as $rol): ?><option value="<?= $rol['id_rol'] ?>"><?= htmlspecialchars($rol['nombre_rol']) ?></option><?php endforeach; ?></select></div>
+                        
+                        <!-- NUEVOS CAMPOS DE CONTRASEÑA -->
+                        <div class="col-md-6">
+                            <label class="form-label">Nueva Clave</label>
+                            <input type="password" name="clave" id="editar-usuario-clave" class="form-control" placeholder="Dejar vacío para no cambiar">
+                        </div>
+                       
+                        <div class="col-md-6 mt-3">
+                            <label class="form-label">Rol *</label>
+                            <select name="id_rol" id="editar-usuario-rol" class="form-select" required data-no-search="true">
+                                <?php foreach ($roles as $rol): ?>
+                                    <option value="<?= $rol['id_rol'] ?>"><?= htmlspecialchars($rol['nombre_rol']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Confirmar Clave</label>
+                            <input type="password" id="editar-usuario-clave-confirm" class="form-control" placeholder="Repite la nueva clave">
+                            <small id="editar-clave-confirm-feedback" class="feedback-validacion info"></small>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -344,18 +387,18 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px;">
             <div class="modal-header" style="background: #1a1a2e;">
-                <h5 class="modal-title" style="color: #ffffff;"><i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Inactivar Usuario</h5>
+                <h5 class="modal-title" style="color: #ffffff;"><i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Eliminar Usuario</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
             </div>
             <div class="modal-body">
-                <p>¿Estás seguro de inactivar a <strong id="eliminar-usuario-nombre"></strong>?</p>
+                <p>¿Estás seguro de Eliminar a <strong id="eliminar-usuario-nombre"></strong>?</p>
                 <div class="alert alert-warning" style="font-size: 0.85rem;">
                     El usuario no podrá iniciar sesión, pero sus datos se conservarán en el sistema.
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" id="btnConfirmarEliminarUsuario" class="btn btn-danger">Sí, inactivar</button>
+                <button type="button" id="btnConfirmarEliminarUsuario" class="btn btn-danger">Sí, Eliminar</button>
             </div>
         </div>
     </div>
@@ -503,10 +546,18 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', async function() {
             const id = this.getAttribute('data-id');
             const modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
+            
+            // Limpiamos el formulario antes de abrir
+            document.getElementById('formEditarUsuario').reset();
+            document.getElementById('editar-usuario-clave').value = '';
+            document.getElementById('editar-usuario-clave-confirm').value = '';
+            document.getElementById('editar-clave-confirm-feedback').innerHTML = '';
+            
             modal.show();
             
             const resp = await fetch(`?url=usuarios&action=show_ajax&id=${id}`);
             const data = await resp.json();
+            
             if(data.success) {
                 const u = data.data;
                 document.getElementById('editar-usuario-id').value = u.id_usuario;
@@ -517,7 +568,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('editar-usuario-correo').value = u.correo_electronico;
                 document.getElementById('editar-usuario-direccion').value = u.direccion;
                 document.getElementById('editar-usuario-usuario').value = u.usuario;
-                document.getElementById('editar-usuario-rol').value = u.id_rol;
+                
+                // Asignación correcta del rol
+                setTimeout(() => {
+                    const selectRol = document.getElementById('editar-usuario-rol');
+                    if (selectRol) {
+                        selectRol.value = u.id_rol;
+                        selectRol.dispatchEvent(new Event('change')); 
+                    }
+                }, 100);
+
                 document.getElementById('editar-usuario-nombre-header').textContent = u.nombre + ' ' + u.apellido;
                 
                 document.getElementById('editar-usuario-cedula').dataset.excluirId = u.id_usuario;
@@ -580,7 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             mostrarAlerta(data.mensaje, 'error');
             btn.disabled = false;
-            btn.innerHTML = 'Sí, inactivar';
+            btn.innerHTML = 'Sí, Eliminar';
         }
     });
 
@@ -590,7 +650,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = this.getAttribute('data-id');
             const nombre = this.getAttribute('data-nombre');
             
-            if (!confirm(`¿Deseas reactivar el usuario "${nombre}"?`)) return;
+            // Usamos la alerta bonita en lugar del confirm
+            mostrarAlerta(`Restaurando al usuario "${nombre}"...`, 'info', false);
             
             const btnElement = this;
             btnElement.disabled = true;
@@ -610,14 +671,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // 7. Actualizar formulario de edición (CON VALIDACIÓN DE CONTRASEÑA)
     document.getElementById('formEditarUsuario').addEventListener('submit', async function(e){
         e.preventDefault();
         if (!Validador.validarFormulario('formEditarUsuario')) return;
         
+        // Validar contraseñas
+        const clave = document.getElementById('editar-usuario-clave').value;
+        const claveConfirm = document.getElementById('editar-usuario-clave-confirm').value;
+        const feedback = document.getElementById('editar-clave-confirm-feedback');
+
+        if (clave !== '' || claveConfirm !== '') {
+            if (clave !== claveConfirm) {
+                document.getElementById('editar-usuario-clave-confirm').classList.add('is-invalid');
+                feedback.innerHTML = '<i class="fas fa-times-circle me-1"></i> Las contraseñas no coinciden';
+                feedback.className = 'feedback-validacion error';
+                return;
+            } else {
+                document.getElementById('editar-usuario-clave-confirm').classList.remove('is-invalid');
+                feedback.innerHTML = '<i class="fas fa-check-circle me-1"></i> Las contraseñas coinciden';
+                feedback.className = 'feedback-validacion success';
+            }
+        }
+        
         const btn = this.querySelector('button[type="submit"]');
         btn.disabled = true;
+        
         const fd = new FormData(this);
         fd.append('accion', 'update_ajax');
+        
+        // 🔥 FORZAR EL ROL
+        const selectRol = document.getElementById('editar-usuario-rol');
+        if (selectRol) {
+            fd.set('id_rol', selectRol.value);
+        }
+        
         const data = await fetchAJAX('?url=usuarios', fd);
         btn.disabled = false;
         
