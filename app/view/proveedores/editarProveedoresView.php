@@ -109,10 +109,10 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                value="<?= htmlspecialchars($proveedor['correo_electronico'] ?? '') ?>">
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="status" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Status *</label>
-                                        <select id="status" name="status" class="form-select" required>
-                                            <option value="activo" <?= ($proveedor['status'] ?? 'activo') === 'activo' ? 'selected' : '' ?>>Activo</option>
-                                            <option value="inactivo" <?= ($proveedor['status'] ?? '') === 'inactivo' ? 'selected' : '' ?>>Inactivo</option>
+                                        <label for="eliminado" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Estado *</label>
+                                        <select id="eliminado" name="eliminado" class="form-select" required>
+                                            <option value="0" <?= (int) ($proveedor['eliminado'] ?? 0) === 0 ? 'selected' : '' ?>>Activo</option>
+                                            <option value="1" <?= (int) ($proveedor['eliminado'] ?? 0) === 1 ? 'selected' : '' ?>>Inactivo</option>
                                         </select>
                                     </div>
                                     <div class="col-md-12">
