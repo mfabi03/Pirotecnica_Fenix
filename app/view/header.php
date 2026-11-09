@@ -165,7 +165,7 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/validaciones.css">
     <script src="/pirotecnica_fenix/assets/js/validaciones.js" defer></script>
     <style>
-        body { padding-top: 60px; background: #0e0e18; }
+        body { padding-top: 60px; background: #ffffff !important; }
         .app-navbar { 
             min-height: 60px; 
             background: #1a1a2e; 
