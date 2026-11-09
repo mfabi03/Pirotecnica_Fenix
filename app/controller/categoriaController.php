@@ -40,10 +40,10 @@ $action = $_GET['action'] ?? $_POST['action'] ?? 'lista';
 $id = $_GET['id'] ?? $_POST['id_categoria'] ?? null;
 $busqueda = $_GET['busqueda'] ?? '';
 
-// NUEVO: Parámetro de estado
-$estado_categoria = strtolower(trim((string) ($_REQUEST['estado_categoria'] ?? 'todos')));
+// 🔥 CAMBIO: Por defecto se muestran los ACTIVOS (igual que en Clientes/Productos)
+$estado_categoria = strtolower(trim((string) ($_REQUEST['estado_categoria'] ?? 'activos')));
 if (!in_array($estado_categoria, ['todos', 'activos', 'inactivos'], true)) {
-    $estado_categoria = 'todos';
+    $estado_categoria = 'activos';
 }
 
 // ENDPOINTS AJAX
@@ -151,11 +151,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensaje'] = "Error al eliminar: " . $e->getMessage();
             $_SESSION['tipo_mensaje'] = "danger";
         }
-        header("Location: ?url=categorias");
+        // 🔥 Redirige a la pestaña de activos tras eliminar
+        header("Location: ?url=categorias&action=lista&estado_categoria=activos"); 
         exit();
     }
 
-    // REACTIVAR (NUEVO)
+    // REACTIVAR
     if ($accion === 'reactivar' || $accion === 'restore') {
         CheckPermiso::verificar($db, 'Categorias', 'actualizar', '?url=categorias');
         try {
@@ -170,7 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensaje'] = "Error al reactivar: " . $e->getMessage();
             $_SESSION['tipo_mensaje'] = "danger";
         }
-        header("Location: ?url=categorias");
+        // 🔥 Redirige a la pestaña de inactivos tras reactivar
+        header("Location: ?url=categorias&action=lista&estado_categoria=inactivos"); 
         exit();
     }
 }
@@ -185,7 +187,7 @@ if ($action === 'lista' || $action === '' || $action === 'list') {
         $categorias_full = $modelo->obtenerCategorias();
     }
 
-    // FILTRADO POR ESTADO (NUEVO)
+    // FILTRADO POR ESTADO
     if ($estado_categoria === 'activos') {
         $categorias_full = array_values(array_filter($categorias_full, function ($cat) {
             return ((int) ($cat['eliminado'] ?? 0)) === 0;

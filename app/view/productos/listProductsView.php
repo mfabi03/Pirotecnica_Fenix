@@ -25,28 +25,58 @@ $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($productos) ? count($productos) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
+
+// Saber si estamos en la vista de eliminados (para cambiar el título)
+$esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
 ?>
 
+<!-- ESTILOS PARA LOS BOTONES DE ACCIÓN CIRCULARES -->
+<style>
+.btn-action-circle {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s ease;
+    padding: 0; font-size: 0.85rem; color: #ffffff;
+    text-decoration: none;
+}
+.btn-action-circle:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); filter: brightness(1.1); }
+.btn-action-circle.btn-view { background: rgba(13,110,253,0.15); color: #0d6efd; }
+.btn-action-circle.btn-view:hover { background: #0d6efd; color: #fff; }
+.btn-action-circle.btn-edit { background: rgba(243,156,18,0.15); color: #f39c12; }
+.btn-action-circle.btn-edit:hover { background: #f39c12; color: #fff; }
+.btn-action-circle.btn-delete { background: rgba(220,53,69,0.15); color: #dc3545; }
+.btn-action-circle.btn-delete:hover { background: #dc3545; color: #fff; }
+.btn-action-circle.btn-reactivar { background: rgba(40,167,69,0.15); color: #28a745; }
+.btn-action-circle.btn-reactivar:hover { background: #28a745; color: #fff; }
+</style>
+
 <div class="col-md-8 col-lg-12">
-            
+    
     <!-- TARJETA DE TÍTULO -->
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center">
             <div class="col">
                 <h3 class="m-0 dark-title">
-                    <i class="fas fa-cube text-gold me-2"></i> Lista de Productos
+                    <i class="fas fa-cube text-gold me-2"></i> 
+                    <?= $esVistaEliminados ? 'Productos Eliminados' : 'Lista de Productos' ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    Gestiona los productos registrados en el sistema
+                    <?= $esVistaEliminados ? 'Productos inactivos en el sistema' : 'Gestiona los productos registrados en el sistema' ?>
                 </small>
             </div>
             <div class="col-auto">
-                <?php if ($puede_crear_producto): ?>
-                <button type="button" class="btn btn-dark-gold" 
-                        data-bs-toggle="modal" data-bs-target="#modalRegistrarProducto"
-                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
-                    <i class="fas fa-plus me-1"></i> Registrar Producto
-                </button>
+                <?php if ($esVistaEliminados): ?>
+                    <a href="?url=productos&type=list" class="btn btn-secondary" style="border-radius: 50px; padding: 8px 22px; font-weight: 600;">
+                        <i class="fas fa-arrow-left me-1"></i> Volver a Productos Activos
+                    </a>
+                <?php else: ?>
+                    <?php if ($puede_crear_producto): ?>
+                    <button type="button" class="btn btn-dark-gold" 
+                            data-bs-toggle="modal" data-bs-target="#modalRegistrarProducto"
+                            style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
+                        <i class="fas fa-plus me-1"></i> Registrar Producto
+                    </button>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -54,26 +84,17 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
     <!-- FILTRO DE BÚSQUEDA -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
-        <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
+        <form id="formFiltroProductos" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="productos">
             <input type="hidden" name="type" value="list">
+            <input type="hidden" name="estado_producto" value="<?= $esVistaEliminados ? 'inactivos' : 'activos' ?>">
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
-                </select>
-            </div>
-
-            <!-- NUEVO: FILTRO DE ESTADO -->
-            <div class="col-md-2">
-                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
-                <select name="estado_producto" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
-                    <option value="todos" <?= (($estado_producto ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
-                    <option value="activos" <?= (($estado_producto ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
-                    <option value="inactivos" <?= (($estado_producto ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
                 </select>
             </div>
 
@@ -81,7 +102,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
                 <input type="text" name="busqueda" class="form-control form-control-sm" 
                        list="listaProductos"
-                       placeholder="Buscar por nombre, código o categoría..."
+                       placeholder="Nombre, código o categoría..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
                 <datalist id="listaProductos">
                     <?php
@@ -102,22 +123,35 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <?php endforeach; ?>
                 </datalist>
             </div>
-            
+
             <div class="col-md-2">
                 <button type="submit" class="btn btn-gold w-100">
                     <i class="fas fa-search me-1"></i> Buscar
                 </button>
             </div>
-            
+
             <div class="col-md-2">
                 <a href="?url=productos&type=list" class="btn btn-secondary w-100">
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
             </div>
+
+            <!-- 🔥 BOTÓN VER ELIMINADOS EN LOS FILTROS -->
+            <div class="col-md-2">
+                <?php if ($esVistaEliminados): ?>
+                    <a href="?url=productos&type=list" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
+                        <i class="fas fa-undo-alt me-1"></i> Ver Activos
+                    </a>
+                <?php else: ?>
+                    <a href="?url=productos&type=list&estado_producto=inactivos" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
+                        <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
+                    </a>
+                <?php endif; ?>
+            </div>
         </form>
     </div>
 
-       <!-- MENSAJES -->
+    <!-- MENSAJES -->
     <?php
     $mapaTipos = [
         'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
@@ -127,7 +161,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         'info'    => ['clase' => 'dark-alert-info',    'icono' => 'fa-info-circle'],
     ];
     
-    // Usamos la variable $tipo_mensaje que viene del controlador
     $estiloMsg = $mapaTipos[$tipo_mensaje ?? 'info'] ?? $mapaTipos['info'];
     ?>
     
@@ -194,7 +227,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
-                <i class="fas fa-cube me-2"></i> Productos Registrados
+                <i class="fas fa-cube me-2"></i> 
+                <?= $esVistaEliminados ? 'Productos Inactivos' : 'Productos Registrados' ?>
             </h5>
         </div>
         
@@ -207,13 +241,16 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="py-3">ESPECIFICACIONES</th>
                         <th class="py-3">COSTO</th>
                         <th class="py-3">STOCK</th>
-                        <th class="py-3">Status</th>
+                        <th class="py-3 text-center">Status</th>
                         <th class="pe-4 py-3 text-center">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (isset($productos) && is_array($productos) && count($productos) > 0): ?>
                         <?php foreach ($productos as $p): ?>
+                            <?php 
+                                $estaActivo = (($p['eliminado'] ?? 0) == 0);
+                            ?>
                             <tr>
                                 <td class="ps-4 fw-bold"><?= htmlspecialchars($p['descripcion'] ?? '') ?></td>
                                 
@@ -255,8 +292,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 </td>
 
                                 <!-- COLUMNA ESTADO -->
-                                <td>
-                                    <?php if (($p['eliminado'] ?? 0) == 1): ?>
+                                <td class="text-center">
+                                    <?php if (!$estaActivo): ?>
                                         <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
                                             <i class="fas fa-times-circle me-1"></i> Inactivo
                                         </span>
@@ -274,11 +311,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <?php if (($p['eliminado'] ?? 0) == 1): ?>
+                                        <?php if (!$estaActivo): ?>
                                             <!-- INACTIVO: SOLO REACTIVAR -->
                                             <?php if ($puede_editar_producto): ?>
-                                            <button type="button" class="btn-action-circle" title="Reactivar Producto"
-                                                    style="background: rgba(40,167,69,0.15); color: #28a745; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
+                                            <button type="button" class="btn-action-circle btn-reactivar" title="Reactivar Producto"
                                                     onclick="confirmarReactivarProducto(<?= (int) $p['id_producto'] ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
                                                 <i class="fas fa-undo-alt"></i>
                                             </button>
@@ -306,7 +342,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             <td colspan="7" class="text-center py-5 dark-empty">
                                 <div class="py-4">
                                     <i class="fas fa-cube fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                    <p class="mb-0">No hay productos registrados</p>
+                                    <p class="mb-0">
+                                        <?= $esVistaEliminados ? 'No hay productos inactivos' : 'No hay productos registrados' ?>
+                                    </p>
+                                    <small><?= $esVistaEliminados ? 'Los productos activos están en la lista principal' : 'Comienza registrando un nuevo producto' ?></small>
                                 </div>
                             </td>
                         </tr>
@@ -332,7 +371,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 <?php require_once __DIR__ . '/partials/modal_editar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_eliminar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_rapido_categoria.php'; ?>
-
+<?php require_once __DIR__ . '/partials/modal_rapido_proveedor.php'; ?>
 <!-- NUEVO: MODAL REACTIVAR PRODUCTO -->
 <?php if ($puede_editar_producto): ?>
 <div class="modal fade" id="modalReactivarProducto" tabindex="-1" aria-hidden="true">
@@ -384,6 +423,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Auto-cierre de alertas
     document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
         var ms = parseInt(el.dataset.autoDismiss, 10) || 5000;
         setTimeout(function () {
@@ -394,6 +434,44 @@ document.addEventListener('DOMContentLoaded', function () {
             setTimeout(function () { el.remove(); }, 400);
         }, ms);
     });
+
+    // 🔥 AJAX para el filtro (Igual que en Clientes)
+    const formProductos = document.getElementById('formFiltroProductos');
+    if (formProductos) {
+        const enviarFiltroProductos = function () {
+            const formData = new FormData(formProductos);
+            formData.set('ajax', '1');
+
+            fetch('?url=productos&type=list', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || !data.html) return;
+                const wrap = document.createElement('div');
+                wrap.innerHTML = data.html;
+                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12');
+                if (!nuevaVista) return;
+                const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
+                if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
+            })
+            .catch(() => {
+                formProductos.submit();
+            });
+        };
+
+        formProductos.addEventListener('submit', function (e) {
+            e.preventDefault();
+            enviarFiltroProductos();
+        });
+
+        formProductos.querySelectorAll('select').forEach(function (selectEl) {
+            selectEl.addEventListener('change', function () {
+                enviarFiltroProductos();
+            });
+        });
+    }
 });
 </script>
 

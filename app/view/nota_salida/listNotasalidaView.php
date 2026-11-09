@@ -1,10 +1,10 @@
 <?php
-// app/view/nota_salida/listNotasalidaView.php
 require_once __DIR__ . '/../header.php';
 
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
+// Verificar conexión a BD si no viene desde el controlador
 if (!isset($db) || $db === null) {
     try { $db = (new ConnectDB())->getConnection(); } catch (Exception $e) { $db = null; }
 }
@@ -12,7 +12,9 @@ if (!isset($db) || $db === null) {
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'crear') : false;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'eliminar') : false;
+$puede_reactivar_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'actualizar') : false;
 
+// Validar si el cajero ya cerró la caja hoy
 $id_usuario_actual = (int)($_SESSION['id_usuario'] ?? 0);
 $caja_cerrada = false;
 if ($db) {
@@ -21,11 +23,33 @@ if ($db) {
     $caja_cerrada = (bool)$stmtCheck->fetchColumn();
 }
 
+// Variables de paginación
 $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($notas) ? count($notas) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
+
+// Bandera para saber si estamos en la vista de eliminados
+$esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
 ?>
+
+<style>
+/* Botones circulares */
+.btn-action-circle {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s ease;
+    padding: 0; font-size: 0.85rem; color: #ffffff;
+    text-decoration: none;
+}
+.btn-action-circle:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); filter: brightness(1.1); }
+.btn-action-circle.btn-view { background: rgba(13,110,253,0.15); color: #0d6efd; }
+.btn-action-circle.btn-view:hover { background: #0d6efd; color: #fff; }
+.btn-action-circle.btn-delete { background: rgba(220,53,69,0.15); color: #dc3545; }
+.btn-action-circle.btn-delete:hover { background: #dc3545; color: #fff; }
+.btn-action-circle.btn-reactivate { background: #28a745; color: #fff; }
+.btn-action-circle.btn-reactivate:hover { background: #218838; box-shadow: 0 6px 20px rgba(40, 167, 69, .4); }
+</style>
 
 <div class="col-md-8 col-lg-12">
             
@@ -33,46 +57,45 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         <div class="row align-items-center">
             <div class="col">
                 <h3 class="m-0 dark-title">
-                    <i class="fas fa-sign-out-alt text-gold me-2"></i> Lista de Notas de Salida
+                    <i class="fas fa-sign-out-alt text-gold me-2"></i> 
+                    <?= $esVistaEliminados ? 'Notas de Salida Eliminadas' : 'Lista de Notas de Salida' ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    Gestiona las notas de salida de productos
+                    <?= $esVistaEliminados ? 'Notas inactivas o anuladas' : 'Gestiona las notas de salida de productos' ?>
                 </small>
             </div>
             <div class="col-auto">
-                <?php if ($puede_crear_nota && !$caja_cerrada): ?>
-                <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
-                    <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
-                </a>
-                <?php elseif ($caja_cerrada): ?>
-                    <button class="btn btn-secondary" disabled style="border-radius: 50px; padding: 8px 22px; opacity: 0.7;">
-                        <i class="fas fa-lock me-1"></i> Caja Cerrada Hoy
-                    </button>
+                <?php if ($esVistaEliminados): ?>
+                    <a href="?url=notasalida&type=list" class="btn btn-secondary" style="border-radius: 50px; padding: 8px 22px; font-weight: 600;">
+                        <i class="fas fa-arrow-left me-1"></i> Volver a Notas Activas
+                    </a>
+                <?php else: ?>
+                    <?php if ($puede_crear_nota && !$caja_cerrada): ?>
+                    <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
+                        <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
+                    </a>
+                    <?php elseif ($caja_cerrada): ?>
+                        <button class="btn btn-secondary" disabled style="border-radius: 50px; padding: 8px 22px; opacity: 0.7;">
+                            <i class="fas fa-lock me-1"></i> Caja Cerrada Hoy
+                        </button>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 
     <div class="card shadow-sm p-3 mb-4 bg-white">
-        <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
+        <form id="formFiltroNotasSalida" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="notasalida">
             <input type="hidden" name="type" value="list">
+            <input type="hidden" name="estado_nota" value="<?= $esVistaEliminados ? 'inactivos' : 'activos' ?>">
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
-                <select name="estado_nota" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
-                    <option value="todos" <?= (($estado_nota ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
-                    <option value="activos" <?= (($estado_nota ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
-                    <option value="inactivos" <?= (($estado_nota ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
                 </select>
             </div>
 
@@ -108,10 +131,23 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
             </div>
+
+            <div class="col-md-2">
+                <?php if ($esVistaEliminados): ?>
+                    <a href="?url=notasalida&type=list" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
+                        <i class="fas fa-undo-alt me-1"></i> Ver Activos
+                    </a>
+                <?php else: ?>
+                    <a href="?url=notasalida&type=list&estado_nota=inactivos" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
+                        <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
+                    </a>
+                <?php endif; ?>
+            </div>
         </form>
     </div>
 
     <?php
+    // Mapeo de estilos para las alertas flash
     $mapaTipos = [
         'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
         'danger'  => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
@@ -171,7 +207,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
-                <i class="fas fa-list me-2"></i> Notas Registradas
+                <i class="fas fa-list me-2"></i> 
+                <?= $esVistaEliminados ? 'Notas Inactivas' : 'Notas Registradas' ?>
             </h5>
         </div>
         
@@ -182,7 +219,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="ps-4 py-3">FECHA</th>
                         <th class="py-3">CLIENTE</th>
                         <th class="py-3">TIPO</th>
-                        <!-- 🔥 NUEVAS COLUMNAS SEPARADAS -->
                         <th class="py-3 text-center">PRODUCTOS</th>
                         <th class="py-3 text-center">CATEGORÍAS</th>
                         <th class="py-3 text-center">UNIDADES</th>
@@ -197,7 +233,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             <td colspan="9" class="text-center py-5 dark-empty">
                                 <div class="py-4">
                                     <i class="fas fa-inbox fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                    <p class="mb-0">No hay notas de salida registradas</p>
+                                    <p class="mb-0">
+                                        <?= $esVistaEliminados ? 'No hay notas eliminadas' : 'No hay notas de salida registradas' ?>
+                                    </p>
+                                    <small><?= $esVistaEliminados ? 'Las notas activas están en la lista principal' : 'Comienza registrando una nueva nota' ?></small>
                                 </div>
                             </td>
                         </tr>
@@ -216,7 +255,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         <?= $n['tipo_cliente'] ?? 'Natural' ?>
                                     </span>
                                 </td>
-                                <!-- 🔥 SOLO LOS NÚMEROS -->
                                 <td class="text-center">
                                     <span class="fw-bold" style="color: #1a1a2e; font-size: 1.05rem;">
                                         <?= (int)($n['total_productos'] ?? 0) ?>
@@ -235,8 +273,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                     </span>
                                     <small class="text-muted" style="font-size: 0.75rem;">Und.</small>
                                 </td>
-                                </td>
                                 <td><?= htmlspecialchars(($n['usuario_nombre'] ?? '') . ' ' . ($n['usuario_apellido'] ?? '')) ?></td>
+                                
                                 <td class="text-center">
                                     <?php if ($anulada): ?>
                                         <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
@@ -248,16 +286,28 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         </span>
                                     <?php endif; ?>
                                 </td>
+                                
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
+                                        <!-- Botón ver detalle -->
                                         <button type="button" class="btn-action-circle btn-view" title="Ver Detalle" onclick="verDetalleNota(<?= (int) $n['id_nota_salida'] ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <?php if (!$anulada && $puede_anular_nota): ?>
-                                        <button type="button" class="btn-action-circle btn-delete" title="Anular Nota" onclick="confirmarAnularNota(<?= (int) $n['id_nota_salida'] ?>, '<?= htmlspecialchars(addslashes(!empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : (($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')))) ?>')">
-                                            <i class="fas fa-ban"></i>
-                                        </button>
+                                        <?php if (!$anulada): ?>
+                                            <!-- Botón anular (solo si está activa y tiene permiso) -->
+                                            <?php if ($puede_anular_nota): ?>
+                                            <button type="button" class="btn-action-circle btn-delete" title="Anular Nota" onclick="confirmarAnularNota(<?= (int) $n['id_nota_salida'] ?>, '<?= htmlspecialchars(addslashes(!empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : (($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')))) ?>')">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <!-- Botón reactivar (solo si está anulada y tiene permiso) -->
+                                            <?php if ($puede_reactivar_nota): ?>
+                                            <button type="button" class="btn-action-circle btn-reactivate" title="Reactivar Nota" onclick="confirmarReactivarNota(<?= (int) $n['id_nota_salida'] ?>, '<?= htmlspecialchars(addslashes(!empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : (($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')))) ?>')">
+                                                <i class="fas fa-undo-alt"></i>
+                                            </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -277,7 +327,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     </div>
 </div>
 
-<!-- MODAL 1: VER DETALLE DE NOTA -->
+<!-- Modal: Ver detalle de la nota -->
 <div class="modal fade" id="modalVerNota" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
@@ -330,6 +380,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             </div>
                         </div>
                     </div>
+                    
                     <div class="card" style="border: 1px solid #e9ecef; border-radius: 12px; overflow: hidden;">
                         <div class="card-header py-3" style="background: #1a1a2e; border: none;">
                             <h6 class="m-0" style="color: #ffffff; font-weight: 700;">
@@ -340,21 +391,18 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             <table class="table table-hover align-middle m-0" style="table-layout: fixed; width: 100%;">
                                 <thead>
                                     <tr style="background: #f8f9fa;">
-                                        <th class="ps-4 py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 35%;">PRODUCTO</th>
+                                        <th class="ps-4 py-3 text-center" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 8%;">#</th>
+                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 52%;">PRODUCTO</th>
                                         <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 25%;">CATEGORÍA</th>
-                                        <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 10%;">CANT.</th>
-                                        <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 15%;">COSTO</th>
-                                        <th class="pe-4 text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 15%;">SUBTOTAL</th>
+                                        <th class="pe-4 text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 15%;">CANTIDAD</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ver-nota-productos-tbody">
                                 </tbody>
                                 <tfoot>
                                     <tr style="border-top: 2px solid rgba(243,156,18,0.2); background: #f8f9fa;">
-                                        <th colspan="2" class="ps-4 py-3 text-end" style="color: #495057; font-size: 0.85rem;">Total Unidades:</th>
-                                        <th class="text-center py-3" id="ver-nota-total-unidades" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">0</th>
-                                        <th class="text-end py-3" style="color: #495057; font-size: 0.85rem;">Total $:</th>
-                                        <th class="pe-4 text-center py-3" id="ver-nota-total-costo" style="color: #28a745; font-size: 1.1rem; font-weight: 700;">$0.00</th>
+                                        <th colspan="3" class="ps-4 py-3 text-end" style="color: #495057; font-size: 0.85rem;">Total Unidades:</th>
+                                        <th class="pe-4 text-center py-3" id="ver-nota-total-unidades" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">0</th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -374,7 +422,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     </div>
 </div>
 
-<!-- MODAL 2: ANULAR NOTA -->
+<!-- Modal: Anular nota -->
 <?php if ($puede_anular_nota): ?>
 <div class="modal fade" id="modalAnularNota" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -411,10 +459,82 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 </div>
 <?php endif; ?>
 
+<!-- Modal: Reactivar nota -->
+<?php if ($puede_reactivar_nota): ?>
+<div class="modal fade" id="modalReactivarNota" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(40,167,69,0.3); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i class="fas fa-undo-alt me-2" style="color: #28a745;"></i> Reactivar Nota de Salida
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+            <form method="POST" action="?url=notasalida&type=reactivar">
+                <input type="hidden" name="id_nota_salida" id="reactivar-nota-id">
+                <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
+                    <p style="margin-bottom: 16px; font-weight: 500;">¿Deseas reactivar esta nota de salida?</p>
+                    <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 8px;">
+                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente de la nota</strong>
+                        <span id="reactivar-nota-cliente" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
+                    </div>
+                    <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
+                        <i class="fas fa-info-circle me-2"></i> Al reactivar, el stock de los productos se <strong>descontará nuevamente</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">Cancelar</button>
+                    <button type="submit" class="btn" style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">Sí, reactivar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
+    // Filtro AJAX para no recargar la página
+    const formNotasSalida = document.getElementById('formFiltroNotasSalida');
+    if (formNotasSalida) {
+        const enviarFiltroNotas = function () {
+            const formData = new FormData(formNotasSalida);
+            formData.set('ajax', '1');
+
+            fetch('?url=notasalida&type=list', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success || !data.html) return;
+                const wrap = document.createElement('div');
+                wrap.innerHTML = data.html;
+                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12');
+                if (!nuevaVista) return;
+                const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
+                if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
+            })
+            .catch(() => {
+                formNotasSalida.submit();
+            });
+        };
+
+        formNotasSalida.addEventListener('submit', function (e) {
+            e.preventDefault();
+            enviarFiltroNotas();
+        });
+
+        formNotasSalida.querySelectorAll('select').forEach(function (selectEl) {
+            selectEl.addEventListener('change', function () {
+                enviarFiltroNotas();
+            });
+        });
+    }
+
+    // Modal para ver el detalle de la nota
     window.verDetalleNota = function(id) {
         document.getElementById('ver-nota-cargando').style.display = 'block';
         document.getElementById('ver-nota-error').style.display = 'none';
@@ -445,21 +565,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tbody = document.getElementById('ver-nota-productos-tbody');
                 tbody.innerHTML = '';
                 let totalUnidades = 0;
-                let totalCosto = 0;
 
                 if (nota.detalles && nota.detalles.length > 0) {
-                    nota.detalles.forEach(function(d) {
+                    nota.detalles.forEach(function(d, index) {
                         let cantidad = parseInt(d.cantidad) || 0;
-                        let costo = parseFloat(d.costo_unitario) || 0;
-                        let subtotal = cantidad * costo;
-
                         totalUnidades += cantidad;
-                        totalCosto += subtotal;
 
                         const tr = document.createElement('tr');
                         
+                        // Columna de enumeración (1, 2, 3...)
+                        const tdNum = document.createElement('td');
+                        tdNum.className = 'ps-4 text-center';
+                        tdNum.style.color = '#6c757d';
+                        tdNum.style.fontWeight = '600';
+                        tdNum.textContent = (index + 1);
+
                         const tdProd = document.createElement('td');
-                        tdProd.className = 'ps-4';
                         tdProd.style.color = '#1a1a2e';
                         tdProd.style.fontWeight = '600';
                         tdProd.textContent = d.nombre_producto;
@@ -469,34 +590,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         tdCat.textContent = d.nombre_categoria || 'Sin categoría';
 
                         const tdCant = document.createElement('td');
-                        tdCant.className = 'text-center fw-bold';
-                        tdCant.style.color = '#1a1a2e';
+                        tdCant.className = 'pe-4 text-center fw-bold';
+                        tdCant.style.color = '#f39c12';
+                        tdCant.style.fontSize = '1.1rem';
                         tdCant.textContent = cantidad;
 
-                        const tdCosto = document.createElement('td');
-                        tdCosto.className = 'text-center';
-                        tdCosto.style.color = '#1a1a2e';
-                        tdCosto.textContent = '$' + costo.toFixed(2);
-
-                        const tdSubtotal = document.createElement('td');
-                        tdSubtotal.className = 'pe-4 text-center fw-bold';
-                        tdSubtotal.style.color = '#f39c12';
-                        tdSubtotal.textContent = '$' + subtotal.toFixed(2);
-
+                        tr.appendChild(tdNum);
                         tr.appendChild(tdProd);
                         tr.appendChild(tdCat);
                         tr.appendChild(tdCant);
-                        tr.appendChild(tdCosto);
-                        tr.appendChild(tdSubtotal);
                         
                         tbody.appendChild(tr);
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3" style="color: #6c757d;"><i class="fas fa-box-open me-2"></i> No hay productos en esta nota</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-3" style="color: #6c757d;"><i class="fas fa-box-open me-2"></i> No hay productos en esta nota</td></tr>`;
                 }
                 
                 document.getElementById('ver-nota-total-unidades').textContent = totalUnidades;
-                document.getElementById('ver-nota-total-costo').textContent = '$' + totalCosto.toFixed(2);
             })
             .catch(err => {
                 document.getElementById('ver-nota-cargando').style.display = 'none';
@@ -505,6 +615,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     };
 
+    // Imprimir PDF
     window.imprimirNotaPDF = function() {
         var textoId = document.getElementById('ver-nota-id').textContent;
         var idNota = textoId.replace('#', '').trim();
@@ -516,10 +627,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // Modales de confirmación
     window.confirmarAnularNota = function(id, cliente) {
         document.getElementById('anular-nota-id').value = id;
         document.getElementById('anular-nota-cliente').textContent = cliente || 'Nota #' + id;
         new bootstrap.Modal(document.getElementById('modalAnularNota')).show();
+    };
+
+    window.confirmarReactivarNota = function(id, cliente) {
+        document.getElementById('reactivar-nota-id').value = id;
+        document.getElementById('reactivar-nota-cliente').textContent = cliente || 'Nota #' + id;
+        new bootstrap.Modal(document.getElementById('modalReactivarNota')).show();
     };
 });
 </script>

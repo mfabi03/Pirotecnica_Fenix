@@ -45,10 +45,10 @@ $productos = [];
 $categorias = [];
 $proveedores = [];
 
-// NUEVO: Filtro de estado
-$estado_producto = strtolower(trim((string) ($_REQUEST['estado_producto'] ?? 'todos')));
+// 🔥 CAMBIO CLAVE: Por defecto solo muestra ACTIVOS. Los inactivos solo si se pide explícitamente.
+$estado_producto = strtolower(trim((string) ($_REQUEST['estado_producto'] ?? 'activos')));
 if (!in_array($estado_producto, ['todos', 'activos', 'inactivos'], true)) {
-    $estado_producto = 'todos';
+    $estado_producto = 'activos';
 }
 
 class ProveedorProcessor {
@@ -229,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensaje'] = $e->getMessage();
             $_SESSION['tipo_mensaje'] = 'danger';
         }
-        header("Location: ?url=productos&type=list");
+        header("Location: ?url=productos&type=list&estado_producto=activos"); // Redirige a activos
         exit();
     }
 
@@ -247,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensaje'] = "Error al reactivar: " . $e->getMessage();
             $_SESSION['tipo_mensaje'] = 'danger';
         }
-        header("Location: ?url=productos&type=list");
+        header("Location: ?url=productos&type=list&estado_producto=inactivos"); // Redirige a inactivos
         exit();
     }
 }
