@@ -46,9 +46,11 @@ unset($_SESSION['tipo_mensaje']);
 // Parámetros de búsqueda
 $busqueda = trim((string) ($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? ''));
 $tipo = trim((string) ($_REQUEST['tipo'] ?? 'todos'));
-$estado_cliente = strtolower(trim((string) ($_REQUEST['estado_cliente'] ?? 'todos')));
+
+// 🔥 CAMBIO CLAVE: Por defecto solo muestra ACTIVOS. Los inactivos solo si se pide explícitamente.
+$estado_cliente = strtolower(trim((string) ($_REQUEST['estado_cliente'] ?? 'activos')));
 if (!in_array($estado_cliente, ['todos', 'activos', 'inactivos'], true)) {
-    $estado_cliente = 'todos';
+    $estado_cliente = 'activos';
 }
 
 /* ============================================================
@@ -156,7 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
             $_SESSION['tipo_mensaje'] = "danger";
         }
     }
-    header("Location: ?url=clientes&type=list");
+    // Después de eliminar, regresamos a la lista de activos
+    header("Location: ?url=clientes&type=list&estado_cliente=activos");
     exit();
 }
 
@@ -175,7 +178,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'reactivar' || (isset($_
         $_SESSION['mensaje'] = $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
-    header("Location: ?url=clientes&type=list");
+    // Después de reactivar, regresamos a la lista de inactivos
+    header("Location: ?url=clientes&type=list&estado_cliente=inactivos");
     exit();
 }
 
@@ -409,6 +413,7 @@ if ($type === 'list' || $type === '') {
         $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
     }
 
+    // 🔥 FILTRO DE ESTADO: Solo activos si no se especifica lo contrario
     if ($estado_cliente === 'activos') {
         $clientes_full = array_values(array_filter($clientes_full, function ($cliente) {
             return ((int) ($cliente['eliminado'] ?? 0)) === 0;
@@ -443,12 +448,6 @@ if ($type === 'list' || $type === '') {
 
     require_once $basePath . "listClienteView.php";
 } else {
-    // ============================================================
-    // IMPORTANTE: Las vistas de registrar, editar y detalle ahora
-    // se manejan con MODALES dentro de listClienteView.php.
-    // Si alguien entra por URL directa a esas rutas, lo redirigimos
-    // al listado (donde están los modales disponibles).
-    // ============================================================
     switch ($type) {
         case 'register':
         case 'register_juridico':

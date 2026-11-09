@@ -25,116 +25,69 @@ $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($clientes) ? count($clientes) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
+
+// Saber si estamos en la vista de eliminados (para cambiar el título)
+$esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
 ?>
 
-<?php // CSS DEL SWITCH CON TEXTO "ACTIVO" / "INACTIVO" DENTRO ?>
+<!-- ESTILOS PARA LOS BOTONES DE ACCIÓN CIRCULARES -->
 <style>
-.switch-estado {
-    position: relative;
-    display: inline-block;
-    width: 110px;
-    height: 34px;
-    margin: 0;
-    vertical-align: middle;
-    cursor: pointer;
+.btn-action-circle {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s ease;
+    padding: 0; font-size: 0.85rem; color: #ffffff;
+    text-decoration: none;
 }
-
-.switch-estado input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.switch-estado .slider {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #dc3545; 
-    transition: .3s;
-    border-radius: 34px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-}
-
-<?php // Círculo deslizante ?>
-.switch-estado .slider::before {
-    position: absolute;
-    content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .3s;
-    border-radius: 50%;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 2;
-}
-
-<?php // Texto cuando está INACTIVO ?>
-.switch-estado .slider::after {
-    content: 'INACTIVO';
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: white;
-    transition: .3s;
-    pointer-events: none;
-    z-index: 1;
-}
-
-<?php // Cuando está ACTIVO ?>
-.switch-estado input:checked + .slider {
-    background-color: #28a745; 
-}
-
-.switch-estado input:checked + .slider::before {
-    transform: translateX(76px);
-}
-
-.switch-estado input:checked + .slider::after {
-    content: 'ACTIVO';
-    left: 14px;
-    right: auto;
-    color: white;
-}
+.btn-action-circle:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); filter: brightness(1.1); }
+.btn-action-circle.btn-view { background: rgba(13,110,253,0.15); color: #0d6efd; }
+.btn-action-circle.btn-view:hover { background: #0d6efd; color: #fff; }
+.btn-action-circle.btn-edit { background: rgba(243,156,18,0.15); color: #f39c12; }
+.btn-action-circle.btn-edit:hover { background: #f39c12; color: #fff; }
+.btn-action-circle.btn-delete { background: rgba(220,53,69,0.15); color: #dc3545; }
+.btn-action-circle.btn-delete:hover { background: #dc3545; color: #fff; }
+.btn-action-circle.btn-reactivar { background: rgba(40,167,69,0.15); color: #28a745; }
+.btn-action-circle.btn-reactivar:hover { background: #28a745; color: #fff; }
 </style>
 
 <div class="col-md-8 col-lg-12">
     
-    <?php // TARJETA DE TÍTULO ?>
+    <!-- TARJETA DE TÍTULO -->
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center">
             <div class="col">
                 <h3 class="m-0 dark-title">
-                    <i class="fas fa-users text-gold me-2"></i> Lista de Clientes
+                    <i class="fas fa-users text-gold me-2"></i> 
+                    <?= $esVistaEliminados ? 'Clientes Eliminados' : 'Lista de Clientes' ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    Gestiona los clientes registrados en el sistema
+                    <?= $esVistaEliminados ? 'Clientes inactivos en el sistema' : 'Gestiona los clientes registrados en el sistema' ?>
                 </small>
             </div>
             <div class="col-auto">
-                <?php if ($puede_crear_cliente): ?>
-                <button type="button" class="btn btn-dark-gold" 
-                        data-bs-toggle="modal" data-bs-target="#modalRegistrarCliente"
-                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
-                    <i class="fas fa-plus me-1"></i> Registrar Cliente
-                </button>
+                <?php if ($esVistaEliminados): ?>
+                    <a href="?url=clientes&type=list" class="btn btn-secondary" style="border-radius: 50px; padding: 8px 22px; font-weight: 600;">
+                        <i class="fas fa-arrow-left me-1"></i> Volver a Clientes Activos
+                    </a>
+                <?php else: ?>
+                    <?php if ($puede_crear_cliente): ?>
+                    <button type="button" class="btn btn-dark-gold" 
+                            data-bs-toggle="modal" data-bs-target="#modalRegistrarCliente"
+                            style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
+                        <i class="fas fa-plus me-1"></i> Registrar Cliente
+                    </button>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <?php // FILTRO DE BÚSQUEDA ?>
+    <!-- FILTRO DE BÚSQUEDA -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form id="formFiltroClientes" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="clientes">
             <input type="hidden" name="type" value="list">
+            <input type="hidden" name="estado_cliente" value="<?= $esVistaEliminados ? 'inactivos' : 'activos' ?>">
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
@@ -142,15 +95,6 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
-                <select name="estado_cliente" class="form-select form-select-sm" data-no-search="true">
-                    <option value="todos" <?= (($estado_cliente ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
-                    <option value="activos" <?= (($estado_cliente ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
-                    <option value="inactivos" <?= (($estado_cliente ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
                 </select>
             </div>
 
@@ -191,10 +135,23 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
             </div>
+
+            <!-- 🔥 BOTÓN VER ELIMINADOS EN LOS FILTROS -->
+            <div class="col-md-2">
+                <?php if ($esVistaEliminados): ?>
+                    <a href="?url=clientes&type=list" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
+                        <i class="fas fa-undo-alt me-1"></i> Ver Activos
+                    </a>
+                <?php else: ?>
+                    <a href="?url=clientes&type=list&estado_cliente=inactivos" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
+                        <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
+                    </a>
+                <?php endif; ?>
+            </div>
         </form>
     </div>
 
-    <?php // MENSAJES ?>
+    <!-- MENSAJES -->
     <?php
     $mapaTipos = [
         'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
@@ -215,11 +172,12 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         </div>
     <?php endif; ?>
 
-    <?php // TABLA DE CLIENTES ?>
+    <!-- TABLA DE CLIENTES -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
-                <i class="fas fa-users me-2"></i> Clientes Registrados
+                <i class="fas fa-users me-2"></i> 
+                <?= $esVistaEliminados ? 'Clientes Inactivos' : 'Clientes Registrados' ?>
             </h5>
         </div>
         
@@ -268,43 +226,52 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <td><?= htmlspecialchars($c['telefono'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($c['correo_electronico'] ?? 'N/A') ?></td>
                                 
-                                <?php // COLUMNA STATUS: SWITCH CON TEXTO DENTRO ?>
+                                <!-- STATUS COMO BADGE (SIN SWITCH) -->
                                 <td class="text-center">
-                                    <?php if ($puede_eliminar_cliente || $puede_editar_cliente): ?>
-                                        <label class="switch-estado" title="<?= $estaActivo ? 'Desactivar Cliente' : 'Activar Cliente' ?>">
-                                            <input type="checkbox" 
-                                                   <?= $estaActivo ? 'checked' : '' ?>
-                                                   onchange="<?= $estaActivo 
-                                                       ? 'confirmarEliminarCliente(' . (int)$c['id_cliente'] . ', \'' . htmlspecialchars(addslashes($nombreCliente)) . '\', this)' 
-                                                       : 'confirmarReactivarCliente(' . (int)$c['id_cliente'] . ', \'' . htmlspecialchars(addslashes($nombreCliente)) . '\', this)' ?>">
-                                            <span class="slider"></span>
-                                        </label>
+                                    <?php if ($estaActivo): ?>
+                                        <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-check-circle me-1"></i> Activo
+                                        </span>
                                     <?php else: ?>
-                                        <?php // Sin permisos: solo mostramos el estado como badge ?>
-                                        <span class="badge <?= $estaActivo ? 'bg-success' : 'bg-danger' ?>">
-                                            <?= $estaActivo ? 'Activo' : 'Inactivo' ?>
+                                        <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                            <i class="fas fa-times-circle me-1"></i> Inactivo
                                         </span>
                                     <?php endif; ?>
                                 </td>
                                 
-                                <?php // COLUMNA ACCIONES: SOLO VER Y EDITAR ?>
+                                <!-- ACCIONES -->
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        
-                                        <?php // Botón Ver Detalle (siempre visible) ?>
+                                        <!-- Ver Detalle (siempre visible) -->
                                         <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
                                                 onclick="verDetalleCliente(<?= (int) $c['id_cliente'] ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <?php // Botón Editar (solo si está activo y tiene permiso) ?>
-                                        <?php if ($estaActivo && $puede_editar_cliente): ?>
-                                            <button type="button" class="btn-action-circle btn-edit" title="Editar"
-                                                    onclick="editarCliente(<?= (int) $c['id_cliente'] ?>)">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
+                                        <?php if ($estaActivo): ?>
+                                            <!-- ACTIVO: Editar y Eliminar -->
+                                            <?php if ($puede_editar_cliente): ?>
+                                                <button type="button" class="btn-action-circle btn-edit" title="Editar"
+                                                        onclick="editarCliente(<?= (int) $c['id_cliente'] ?>)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($puede_eliminar_cliente): ?>
+                                                <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
+                                                        onclick="confirmarEliminarCliente(<?= (int) $c['id_cliente'] ?>, '<?= htmlspecialchars(addslashes($nombreCliente)) ?>')">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <!-- INACTIVO: Solo Reactivar -->
+                                            <?php if ($puede_editar_cliente): ?>
+                                                <button type="button" class="btn-action-circle btn-reactivar" title="Reactivar Cliente"
+                                                        onclick="confirmarReactivarCliente(<?= (int) $c['id_cliente'] ?>, '<?= htmlspecialchars(addslashes($nombreCliente)) ?>')">
+                                                    <i class="fas fa-undo-alt"></i>
+                                                </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
-                                        
                                     </div>
                                 </td>
                             </tr>
@@ -314,8 +281,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             <td colspan="7" class="text-center py-5 dark-empty">
                                 <div class="py-4">
                                     <i class="fas fa-users fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                    <p class="mb-0">No hay clientes registrados</p>
-                                    <small>Comienza registrando un nuevo cliente</small>
+                                    <p class="mb-0">
+                                        <?= $esVistaEliminados ? 'No hay clientes inactivos' : 'No hay clientes registrados' ?>
+                                    </p>
+                                    <small><?= $esVistaEliminados ? 'Los clientes activos están en la lista principal' : 'Comienza registrando un nuevo cliente' ?></small>
                                 </div>
                             </td>
                         </tr>
@@ -680,36 +649,18 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Modal(document.getElementById('modalEditarCliente')).show();
     };
 
-    <?php // CONFIRMAR DESACTIVAR (desde el switch) ?>
-    window.confirmarEliminarCliente = function(id, nombre, checkbox) {
+    <?php // CONFIRMAR DESACTIVAR (SIN SWITCH) ?>
+    window.confirmarEliminarCliente = function(id, nombre) {
         document.getElementById('eliminar-cliente-id').value = id;
         document.getElementById('eliminar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
-        
-        const modalEl = document.getElementById('modalEliminarCliente');
-        
-        // Si el usuario cierra el modal (porque canceló), devolvemos el switch a su estado original
-        modalEl.addEventListener('hidden.bs.modal', function onHidden() {
-            if (checkbox) checkbox.checked = true; // Lo volvemos a encender
-            modalEl.removeEventListener('hidden.bs.modal', onHidden);
-        }, { once: true });
-
-        new bootstrap.Modal(modalEl).show();
+        new bootstrap.Modal(document.getElementById('modalEliminarCliente')).show();
     };
 
-    <?php // CONFIRMAR ACTIVAR (desde el switch) ?>
-    window.confirmarReactivarCliente = function(id, nombre, checkbox) {
+    <?php // CONFIRMAR ACTIVAR (SIN SWITCH) ?>
+    window.confirmarReactivarCliente = function(id, nombre) {
         document.getElementById('reactivar-cliente-id').value = id;
         document.getElementById('reactivar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
-        
-        const modalEl = document.getElementById('modalReactivarCliente');
-
-        // Si el usuario cierra el modal (porque canceló), devolvemos el switch a su estado original
-        modalEl.addEventListener('hidden.bs.modal', function onHidden() {
-            if (checkbox) checkbox.checked = false; // Lo volvemos a apagar
-            modalEl.removeEventListener('hidden.bs.modal', onHidden);
-        }, { once: true });
-
-        new bootstrap.Modal(modalEl).show();
+        new bootstrap.Modal(document.getElementById('modalReactivarCliente')).show();
     };
 
     <?php // ESTILO DE PESTAÑAS ?>

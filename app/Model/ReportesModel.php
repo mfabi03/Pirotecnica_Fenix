@@ -47,6 +47,7 @@ class ReportesModel {
         $whereClauseEntrada = !empty($whereEntrada) ? ' WHERE ' . implode(' AND ', $whereEntrada) : '';
         $whereClauseSalida = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
 
+        // 🔥 ENTRADAS: Se agrega COUNT(DISTINCT c.id_categoria) AS total_categorias
         $sqlEntrada = "SELECT 
             ne.id_nota_entrada AS id_documento,
             ne.fecha_ingreso AS fecha_movimiento,
@@ -56,19 +57,23 @@ class ReportesModel {
             pr.rif AS documento_cliente,
             COALESCE(CONCAT(per_u.nombre, ' ', per_u.apellido), 'N/A') AS usuario_activo,
             COUNT(de.id_detalle_entrada) AS total_productos,
+            COUNT(DISTINCT c.id_categoria) AS total_categorias,
             GROUP_CONCAT(CONCAT(prod.descripcion, ' (x', de.cantidad, ')') ORDER BY de.id_detalle_entrada SEPARATOR ', ') AS productos_lista,
+            GROUP_CONCAT(DISTINCT c.nombre_categoria ORDER BY c.nombre_categoria SEPARATOR ', ') AS categoria,
             SUM(de.cantidad) AS total_unidades,
             ne.eliminado AS estado_anulado,
             ne.motivo_anulacion AS motivo_anulacion
         FROM nota_de_entrada ne
         INNER JOIN detalle_entrada de ON ne.id_nota_entrada = de.id_nota_entrada
         INNER JOIN producto prod ON de.id_producto = prod.id_producto
+        LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
         LEFT JOIN proveedor pr ON ne.id_proveedor = pr.id_proveedor
         LEFT JOIN usuario u ON ne.id_usuario = u.id_usuario
         LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
         {$whereClauseEntrada}
         GROUP BY ne.id_nota_entrada, ne.fecha_ingreso, ne.eliminado, ne.motivo_anulacion, pr.razon_social, pr.rif, per_u.nombre, per_u.apellido";
 
+        // 🔥 SALIDAS: Se agrega COUNT(DISTINCT c.id_categoria) AS total_categorias
         $sqlSalida = "SELECT 
             ns.id_nota_salida AS id_documento,
             ns.fecha AS fecha_movimiento,
@@ -81,13 +86,16 @@ class ReportesModel {
             COALESCE(cj.rif, p_cliente.cedula, 'N/A') AS documento_cliente,
             COALESCE(CONCAT(per_u.nombre, ' ', per_u.apellido), 'N/A') AS usuario_activo,
             COUNT(ds.id_detalle_salida) AS total_productos,
+            COUNT(DISTINCT c.id_categoria) AS total_categorias,
             GROUP_CONCAT(CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') ORDER BY ds.id_detalle_salida SEPARATOR ', ') AS productos_lista,
+            GROUP_CONCAT(DISTINCT c.nombre_categoria ORDER BY c.nombre_categoria SEPARATOR ', ') AS categoria,
             SUM(ds.cantidad) AS total_unidades,
             ns.eliminado AS estado_anulado,
             ns.motivo_anulacion AS motivo_anulacion
         FROM nota_de_salida ns
         INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
         INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+        LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
         LEFT JOIN persona p_cliente ON ns.id_persona = p_cliente.id_persona
         LEFT JOIN cliente_juridico cj ON p_cliente.id_persona = cj.id_persona
         LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
@@ -115,7 +123,6 @@ class ReportesModel {
                         SELECT * FROM ({$sqlSalida}) AS s WHERE s.estado_anulado = 1
                     ) AS t";
         } else {
-            // 🔥 CAMBIO CLAVE: Ahora trae TODO (Entradas, Salidas y Anuladas) cuando no se filtra
             $sql = "SELECT * FROM (
                         SELECT * FROM ({$sqlEntrada}) AS t1 
                         UNION ALL
@@ -230,3 +237,4 @@ class ReportesModel {
         return $this->obtenerTotalesReporte();
     }
 }
+?>

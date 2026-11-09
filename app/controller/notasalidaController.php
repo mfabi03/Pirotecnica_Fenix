@@ -18,9 +18,19 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $rutaRaiz = dirname(__DIR__, 2);
 
-$pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'notasalidaModel.php';
-$pathProductoModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'ProductoModel.php';
-$pathClienteModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'clientesModel.php';
+$pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'notasalidaModel.php';
+$pathProductoModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'ProductoModel.php';
+$pathClienteModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'clientesModel.php';
+
+if (!file_exists($pathNotaModel)) {
+    $pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'notasalidaModel.php';
+}
+if (!file_exists($pathProductoModel)) {
+    $pathProductoModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'ProductoModel.php';
+}
+if (!file_exists($pathClienteModel)) {
+    $pathClienteModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'clientesModel.php';
+}
 
 if (file_exists($pathNotaModel)) { require_once $pathNotaModel; } else { die("ERROR: No se encuentra notasalidaModel.php"); }
 if (file_exists($pathProductoModel)) { require_once $pathProductoModel; } else { die("ERROR: No se encuentra ProductoModel.php"); }
@@ -160,6 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'eliminar', '?url=notasalida&type=list');
         try {
             $idNota = $_POST['id_nota_salida'] ?? 0;
+            
             $motivo = trim($_POST['motivo_eliminacion'] ?? $_POST['motivo_anulacion'] ?? '');
             $idUsuario = obtenerIdUsuarioValido($db);
             
@@ -176,13 +187,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'nota_salida';
 
+// ==========================================
+// 🔥 RUTA PARA GENERAR EL PDF DE LA NOTA DE SALIDA
+// ==========================================
 if ($type === 'generar_pdf' && $id) {
-    $archivoPdf = $baseViewPath . "/generar_pdf.php";
+    $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf.php';
+    
     if (file_exists($archivoPdf)) {
         require_once $archivoPdf;
         exit();
     } else {
-        die("ERROR: No se encuentra el archivo generar_pdf.php");
+        die("ERROR: No se encuentra el archivo generar_pdf.php en: " . $archivoPdf);
     }
 }
 

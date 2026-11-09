@@ -106,6 +106,20 @@ class ReportesController {
 
     public function exportarPDF() {
         try {
+            $tipo = $_GET['tipo'] ?? 'reporte';
+
+            // 1. SI ES UNA NOTA (SALIDA O ENTRADA), CARGAMOS EL ARCHIVO DE LA CARPETA REPORTES
+            if ($tipo === 'salida') {
+                $archivoPdf = dirname(__DIR__) . '/view/reportes/generar_pdf_salida.php';
+                if (file_exists($archivoPdf)) { require_once $archivoPdf; exit(); }
+            }
+            
+            if ($tipo === 'entrada') {
+                $archivoPdf = dirname(__DIR__) . '/view/reportes/generar_pdf_entrada.php';
+                if (file_exists($archivoPdf)) { require_once $archivoPdf; exit(); }
+            }
+
+            // 2. SI ES EL REPORTE COMPLETO
             $fecha_inicio = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? trim($_GET['fecha_inicio']) : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? trim($_GET['fecha']) : null);
             $fecha_fin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? trim($_GET['fecha_fin']) : null;
             $busqueda = isset($_GET['busqueda']) && $_GET['busqueda'] !== '' ? trim($_GET['busqueda']) : null;
@@ -114,27 +128,18 @@ class ReportesController {
 
             $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
             
-            $totalEntradas = 0;
-            $totalSalidas = 0;
-            $totalAnuladas = 0;
-
+            $totalEntradas = 0; $totalSalidas = 0; $totalAnuladas = 0;
             foreach ($movimientos as $m) {
-                $tipo = $m['tipo_movimiento'] ?? '';
-                $esAnulacion = (strpos($tipo, 'Anulación') === 0 || stripos($tipo, 'anulad') !== false);
-                
-                if ($esAnulacion) {
-                    $totalAnuladas++;
-                } elseif ($tipo === 'Entrada') {
-                    $totalEntradas++;
-                } elseif ($tipo === 'Salida') {
-                    $totalSalidas++;
-                }
+                $t = $m['tipo_movimiento'] ?? '';
+                $esAnulacion = (strpos($t, 'Anulación') === 0 || stripos($t, 'anulad') !== false);
+                if ($esAnulacion) $totalAnuladas++;
+                elseif ($t === 'Entrada') $totalEntradas++;
+                elseif ($t === 'Salida') $totalSalidas++;
             }
 
             $filtrosStr = [];
             if (!empty($fecha_inicio)) $filtrosStr[] = "Desde: " . date('d/m/Y', strtotime($fecha_inicio));
             if (!empty($fecha_fin)) $filtrosStr[] = "Hasta: " . date('d/m/Y', strtotime($fecha_fin));
-            if (!empty($tipo_movimiento)) $filtrosStr[] = "Tipo: " . $tipo_movimiento;
             
             $datos_pdf = [
                 'fecha_reporte' => date('d/m/Y h:i A'),
@@ -146,7 +151,6 @@ class ReportesController {
             ];
 
             $archivoPdf = dirname(__DIR__) . '/view/reportes/generar_pdfReportesView.php';
-            
             if (file_exists($archivoPdf)) {
                 require_once $archivoPdf;
                 exit();

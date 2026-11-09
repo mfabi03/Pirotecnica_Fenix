@@ -17,69 +17,80 @@ try {
     $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {}
 
+$fecha_inicio = $_GET['fecha_inicio'] ?? $_GET['fecha'] ?? '';
+$fecha_fin = $_GET['fecha_fin'] ?? '';
+
 $paramsExport = http_build_query([
-    'fecha' => $_GET['fecha'] ?? '',
+    'fecha_inicio' => $fecha_inicio,
+    'fecha_fin' => $fecha_fin,
     'tipo_movimiento' => $_GET['tipo_movimiento'] ?? '',
     'id_categoria' => $_GET['id_categoria'] ?? '',
     'busqueda' => $_GET['busqueda'] ?? ''
 ]);
 ?>
 
-<!-- ========================================================= -->
-<!-- ESTILOS PARA LOS BOTONES DE ACCIÓN (color fijo)            -->
-<!-- ========================================================= -->
+<!-- ESTILOS PARA LOS BOTONES DE ACCIÓN CIRCULARES -->
 <style>
-/* Botón circular base */
 .btn-action-circle {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-    padding: 0;
-    font-size: 0.85rem;
-    color: #ffffff;
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s ease;
+    padding: 0; font-size: 0.85rem; color: #ffffff;
+    text-decoration: none;
+}
+.btn-action-circle:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); filter: brightness(1.05); }
+
+/* Botón Ver Detalle (Azul) */
+.btn-action-circle.btn-view { 
+    background: rgba(13,110,253,0.15); 
+    color: #0d6efd; 
+}
+.btn-action-circle.btn-view:hover { 
+    background: #0d6efd; 
+    color: #fff; 
 }
 
-.btn-action-circle:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-    filter: brightness(1.1);
+/* Botón Ver Motivo (ROJO SUAVE FIJO) */
+.btn-action-circle.btn-motivo { 
+    background: #e63946 !important; 
+    color: #ffffff !important; 
+    opacity: 1 !important;
+    box-shadow: none !important;
+}
+.btn-action-circle.btn-motivo:hover { 
+    background: #d62839 !important; 
+    color: #ffffff !important; 
+    opacity: 1 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+    filter: brightness(1.05) !important;
 }
 
-.btn-action-circle:active {
-    transform: translateY(0);
-    filter: brightness(0.95);
+/* Fila de anulación: TODAS las letras en negro y sin opacidad */
+tr.fila-anulada,
+tr.fila-anulada td,
+tr.fila-anulada th,
+tr.fila-anulada span,
+tr.fila-anulada div,
+tr.fila-anulada small,
+tr.fila-anulada strong,
+tr.fila-anulada b,
+tr.fila-anulada p {
+    color: #000000 !important;
+    opacity: 1 !important;
 }
-
-/* Botón Ver Detalle (azul sólido fijo) */
-.btn-action-circle.btn-view {
-    background-color: #0d6efd;
-    color: #ffffff;
+tr.fila-anulada {
+    background-color: rgba(0, 0, 0, 0.05) !important;
 }
-
-.btn-action-circle.btn-view:hover {
-    background-color: #0b5ed7;
-}
-
-/* Botón Ver Motivo (rojo sólido fijo) */
-.btn-action-circle.btn-motivo {
-    background-color: #dc3545;
-    color: #ffffff;
-}
-
-.btn-action-circle.btn-motivo:hover {
-    background-color: #c82333;
+/* El badge del tipo mantiene su fondo, pero con letra negra */
+tr.fila-anulada .badge {
+    color: #000000 !important;
+    opacity: 1 !important;
 }
 </style>
 
 <div class="col-md-8 col-lg-12">
     
-    <!-- TÍTULO Y BOTONES -->
+    <!-- TARJETA DE TÍTULO -->
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center g-3">
             <div class="col-xl-8">
@@ -105,6 +116,7 @@ $paramsExport = http_build_query([
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" action="?url=reportes" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportes">
+            
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Mostrar</label>
                 <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
@@ -113,10 +125,16 @@ $paramsExport = http_build_query([
                     <?php endforeach; ?>
                 </select>
             </div>
+
             <div class="col-md-2">
-                <label class="form-label fw-bold small text-dark">Fecha</label>
-                <input type="date" name="fecha" class="form-control form-control-sm" value="<?= htmlspecialchars($_GET['fecha'] ?? $_GET['fecha_inicio'] ?? '') ?>">
+                <label class="form-label fw-bold small text-dark">Desde</label>
+                <input type="date" name="fecha_inicio" class="form-control form-control-sm" value="<?= htmlspecialchars($fecha_inicio) ?>">
             </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-dark">Hasta</label>
+                <input type="date" name="fecha_fin" class="form-control form-control-sm" value="<?= htmlspecialchars($fecha_fin) ?>">
+            </div>
+            
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Tipo</label>
                 <select name="tipo_movimiento" class="form-select form-select-sm" data-no-search="true">
@@ -128,6 +146,7 @@ $paramsExport = http_build_query([
                     <option value="Anulación Salida" <?= (($_GET['tipo_movimiento'] ?? '') == 'Anulación Salida') ? 'selected' : '' ?>>Anuladas de Salida</option>
                 </select>
             </div>
+
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Categoría</label>
                 <select name="id_categoria" class="form-select form-select-sm" data-no-search="true">
@@ -139,37 +158,72 @@ $paramsExport = http_build_query([
                     <?php endforeach; ?>
                 </select>
             </div>
+
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Producto</label>
                 <input type="text" name="busqueda" class="form-control form-control-sm" placeholder="Buscar..." value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
             </div>
-            <div class="col-md-2">
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-gold btn-sm fw-bold"><i class="fas fa-search"></i> Buscar</button>
-                    <a href="?url=reportes" class="btn btn-secondary btn-sm fw-bold">Limpiar</a>
+
+            <div class="col-md-12 mt-3">
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="?url=reportes" class="btn btn-secondary btn-sm fw-bold px-4"><i class="fas fa-eraser"></i> Limpiar</a>
+                    <button type="submit" class="btn btn-gold btn-sm fw-bold px-4"><i class="fas fa-search"></i> Buscar</button>
                 </div>
             </div>
         </form>
     </div>
 
     <!-- ESTADÍSTICAS -->
-    <div class="row mb-4">
+    <div class="row mb-4 g-3">
         <div class="col-md-4">
-            <div class="card card-total-notas border-left-gold text-center p-3">
-                <h6 class="card-title text-muted">TOTAL ENTRADAS (OPS)</h6>
-                <h2 class="card-number text-success">+ <?= $totalEntradas ?></h2>
+            <div class="dark-card card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
+                    <div>
+                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                            <i class="fas fa-sign-in-alt me-1"></i> Total Entradas
+                        </h6>
+                        <h2 style="color: #28a745; font-weight: 700; font-size: 2.2rem; margin: 0;">
+                            + <?= (int) $totalEntradas ?>
+                        </h2>
+                    </div>
+                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(40,167,69,0.12); display: flex; align-items: center; justify-content: center; color: #28a745; font-size: 1.5rem;">
+                        <i class="fas fa-sign-in-alt"></i>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card card-total-notas border-left-danger text-center p-3">
-                <h6 class="card-title text-muted">TOTAL SALIDAS (OPS)</h6>
-                <h2 class="card-number text-danger">- <?= $totalSalidas ?></h2>
+            <div class="dark-card card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
+                    <div>
+                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                            <i class="fas fa-sign-out-alt me-1"></i> Total Salidas
+                        </h6>
+                        <h2 style="color: #dc3545; font-weight: 700; font-size: 2.2rem; margin: 0;">
+                            - <?= (int) $totalSalidas ?>
+                        </h2>
+                    </div>
+                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 1.5rem;">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card card-total-notas border-left-info text-center p-3">
-                <h6 class="card-title text-muted">ANULADAS</h6>
-                <h2 class="card-number text-warning"><?= $totalAnuladas ?></h2>
+            <div class="dark-card card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
+                    <div>
+                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                            <i class="fas fa-ban me-1"></i> Anuladas
+                        </h6>
+                        <h2 style="color: #d97706; font-weight: 700; font-size: 2.2rem; margin: 0;">
+                            <?= (int) $totalAnuladas ?>
+                        </h2>
+                    </div>
+                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(217, 119, 6, 0.15); display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 1.5rem;">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -184,12 +238,12 @@ $paramsExport = http_build_query([
             <table class="table table-hover align-middle m-0">
                 <thead>
                     <tr>
-                        <th class="ps-4 py-3">N° NOTA</th>
-                        <th class="py-3">FECHA</th>
+                        <th class="ps-4 py-3">FECHA</th>
                         <th class="py-3">CLIENTE / PROVEEDOR</th>
                         <th class="py-3">TIPO</th>
-                        <th class="py-3">PRODUCTOS</th>
-                        <th class="py-3">UNIDADES</th>
+                        <th class="py-3 text-center">PRODUCTOS</th>
+                        <th class="py-3 text-center">CATEGORÍAS</th>
+                        <th class="py-3 text-center">UNIDADES</th>
                         <th class="py-3">ENCARGADO</th>
                         <th class="pe-4 py-3 text-center">ACCIONES</th>
                     </tr>
@@ -198,65 +252,55 @@ $paramsExport = http_build_query([
                     <?php if (!empty($movimientos)): ?>
                         <?php foreach ($movimientos as $m): 
                             $tipo = $m['tipo_movimiento'] ?? '';
-                            
-                            // Detección robusta de anulación
-                            $esAnulacion = (
-                                strpos($tipo, 'Anulación') === 0
-                                || strpos($tipo, 'Anulacion') === 0
-                                || stripos($tipo, 'anulad') !== false
-                                || (isset($m['anulado']) && (int)$m['anulado'] === 1)
-                                || (isset($m['status']) && in_array(strtolower((string)$m['status']), ['anulada','anulado','anulada_entrada','anulada_salida'], true))
-                            );
-
+                            $esAnulacion = (strpos($tipo, 'Anulación') === 0 || stripos($tipo, 'anulad') !== false);
                             $tipoBase = $tipo;
                             if ($esAnulacion) {
-                                if (stripos($tipo, 'Entrada') !== false)    $tipoBase = 'Entrada';
+                                if (stripos($tipo, 'Entrada') !== false) $tipoBase = 'Entrada';
                                 elseif (stripos($tipo, 'Salida') !== false) $tipoBase = 'Salida';
                             }
-
                             $esEntrada = ($tipoBase === 'Entrada');
-                            $badgeClass = $esAnulacion
-                                ? 'bg-secondary'
-                                : ($esEntrada ? 'bg-success' : 'bg-danger');
-
+                            $badgeClass = $esAnulacion ? 'bg-secondary' : ($esEntrada ? 'bg-success' : 'bg-danger');
                             $motivo = $m['motivo_anulacion'] ?? 'No se registró un motivo.';
                         ?>
-                            <tr>
-                                <td class="ps-4 fw-bold">#<?= htmlspecialchars($m['id_documento']) ?></td>
-                                <td><?= formatoFechaVenezuela($m['fecha_movimiento']) ?></td>
-                                <td><?= htmlspecialchars($m['nombre_cliente'] ?? 'N/A') ?></td>
+                            <tr class="<?= $esAnulacion ? 'fila-anulada' : '' ?>">
+                                <td class="ps-4"><?= formatoFechaVenezuela($m['fecha_movimiento']) ?></td>
                                 <td>
-                                    <span class="badge <?= $badgeClass ?>">
+                                    <div class="text-truncate" style="max-width: 150px;">
+                                        <?= htmlspecialchars($m['nombre_cliente'] ?? 'N/A') ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge <?= $badgeClass ?>" style="padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
                                         <?= htmlspecialchars($tipo) ?>
                                     </span>
                                 </td>
-                                <td>
-                                    <?php 
-                                    $productosLista = trim((string)($m['productos_lista'] ?? ''));
-                                    $productosLimpios = preg_replace('/\s*\(x\d+\)/', '', $productosLista);
-                                    ?>
-                                    <?= !empty($productosLimpios) ? htmlspecialchars($productosLimpios) : ((int)($m['total_productos'] ?? 0) . ' items') ?>
+                                <td class="text-center">
+                                    <span class="fw-bold" style="font-size: 1.05rem;">
+                                        <?= (int)($m['total_productos'] ?? 0) ?> Prod.
+                                    </span>
                                 </td>
-                                <td class="fw-bold"><?= $m['total_unidades'] ?? 0 ?></td>
+                                <td class="text-center">
+                                    <span class="fw-bold" style="font-size: 1.05rem;">
+                                        <?= (int)($m['total_categorias'] ?? 0) ?> Cat.
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-bold" style="font-size: 1.05rem;">
+                                        <?= (int)($m['total_unidades'] ?? 0) ?> Und.
+                                    </span>
+                                </td>
                                 <td><?= htmlspecialchars($m['usuario_activo']) ?></td>
-                                
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <?php if ($esAnulacion): ?>
-                                            <!-- Botón circular Ver Motivo (rojo sólido fijo) -->
-                                            <button type="button"
-                                                    class="btn-action-circle btn-motivo btn-ver-motivo"
-                                                    title="Ver Motivo"
+                                            <button type="button" class="btn-action-circle btn-motivo btn-ver-motivo" title="Ver Motivo"
                                                     data-documento="#<?= $m['id_documento'] ?>"
                                                     data-producto="<?= htmlspecialchars($m['nombre_cliente'] ?? 'N/A') ?>"
                                                     data-motivo="<?= htmlspecialchars($motivo) ?>">
                                                 <i class="fas fa-exclamation-circle"></i>
                                             </button>
                                         <?php else: ?>
-                                            <!-- Botón circular Ver Detalle (azul sólido fijo) -->
-                                            <button type="button"
-                                                    class="btn-action-circle btn-view btn-ver-detalle"
-                                                    title="Ver Detalle"
+                                            <button type="button" class="btn-action-circle btn-view btn-ver-detalle" title="Ver Detalle"
                                                     onclick="verDetalleNota(<?= $m['id_documento'] ?>, '<?= htmlspecialchars($tipoBase) ?>')">
                                                 <i class="fas fa-eye"></i>
                                             </button>
@@ -268,8 +312,10 @@ $paramsExport = http_build_query([
                     <?php else: ?>
                         <tr>
                             <td colspan="8" class="text-center py-5 dark-empty">
-                                <i class="fas fa-inbox fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                <p class="mb-0">No hay movimientos registrados</p>
+                                <div class="py-4">
+                                    <i class="fas fa-inbox fa-3x d-block mb-3" style="opacity: 0.3;"></i>
+                                    <p class="mb-0">No hay movimientos registrados</p>
+                                </div>
                             </td>
                         </tr>
                     <?php endif; ?>
@@ -284,19 +330,11 @@ $paramsExport = http_build_query([
     </div>
 </div>
 
-<!-- ========================================================= -->
-<!-- INCLUIR MODALES EXTERNOS                                  -->
-<!-- ========================================================= -->
 <?php require_once __DIR__ . '/verDetalleView.php'; ?>
 <?php require_once __DIR__ . '/MotivoAnulacionView.php'; ?>
 
-<!-- ========================================================= -->
-<!-- SCRIPT PARA FILTROS AJAX Y MODAL MOTIVO                   -->
-<!-- ========================================================= -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    
-    // 1. Filtro AJAX
     const form = document.getElementById('formFiltros');
     if (form) {
         form.addEventListener('submit', function (e) {
@@ -319,19 +357,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
             })
             .catch(() => {
-                const url = new URL(window.location.href);
-                url.search = new URLSearchParams(new FormData(form)).toString();
-                window.location.href = url.toString();
+                form.submit();
             });
         });
     }
 
-    // 2. Delegación de Eventos para el Botón "Ver Motivo"
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.btn-ver-motivo');
         if (btn) {
             e.preventDefault();
-            
             const doc = btn.getAttribute('data-documento');
             const prod = btn.getAttribute('data-producto');
             const motivo = btn.getAttribute('data-motivo');
@@ -341,8 +375,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('modal-motivo-texto').textContent = motivo;
             
             const modalEl = document.getElementById('modalMotivoAnulacion');
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
         }
     });
 });

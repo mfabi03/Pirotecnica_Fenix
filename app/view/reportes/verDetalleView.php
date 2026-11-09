@@ -8,7 +8,6 @@
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
             
-            <!-- HEADER OSCURO -->
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-eye me-2" style="color: #f39c12;"></i> 
@@ -19,7 +18,6 @@
 
             <div class="modal-body" style="padding: 20px 24px;">
                 
-                <!-- ESTADO DE CARGA -->
                 <div id="ver-nota-cargando" class="text-center py-5">
                     <div class="spinner-border" style="color: #f39c12;" role="status">
                         <span class="visually-hidden">Cargando...</span>
@@ -27,16 +25,13 @@
                     <p class="mt-3" style="color: #6c757d;">Cargando información de la nota...</p>
                 </div>
 
-                <!-- ESTADO DE ERROR -->
                 <div id="ver-nota-error" class="text-center py-5" style="display: none;">
                     <i class="fas fa-exclamation-triangle fa-3x mb-3" style="color: #dc3545;"></i>
                     <p id="ver-nota-error-msg" style="color: #6c757d;">Error al cargar la nota</p>
                 </div>
 
-                <!-- CONTENIDO DE LA NOTA -->
                 <div id="ver-nota-contenido" style="display: none;">
                     
-                    <!-- TARJETAS SUPERIORES -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
@@ -70,7 +65,6 @@
                         </div>
                     </div>
 
-                    <!-- TABLA DE PRODUCTOS -->
                     <div class="card" style="border: 1px solid #e9ecef; border-radius: 12px; overflow: hidden;">
                         <div class="card-header py-3" style="background: #1a1a2e; border: none;">
                             <h6 class="m-0" style="color: #ffffff; font-weight: 700;">
@@ -82,11 +76,8 @@
                                 <thead>
                                     <tr style="background: #f8f9fa;">
                                         <th class="ps-4 py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">Producto</th>
-                                        <!-- 🔥 ID AGREGADO AQUÍ PARA CAMBIAR EL TEXTO DINÁMICAMENTE -->
                                         <th class="py-3" id="ver-nota-th-descripcion" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">Descripción</th>
                                         <th class="py-3 text-center" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">Cant.</th>
-                                        
-                                        <!-- Columnas exclusivas de Entrada (visibles por defecto) -->
                                         <th class="col-dinero py-3 text-end" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">Costo</th>
                                         <th class="col-dinero pe-4 py-3 text-end" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">Subtotal</th>
                                     </tr>
@@ -97,8 +88,6 @@
                                     <tr style="border-top: 2px solid rgba(243,156,18,0.2);">
                                         <th colspan="2" class="ps-4 py-2 text-end" style="color: #495057; font-size: 0.85rem;">Total Unidades:</th>
                                         <th class="py-2 text-center" id="ver-nota-total-unidades" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">0</th>
-                                        
-                                        <!-- Totales exclusivos de Entrada -->
                                         <th class="col-dinero py-2 text-end" style="color: #495057; font-size: 0.85rem;">Total $:</th>
                                         <th class="col-dinero pe-4 py-2 text-end" id="ver-nota-total-dolares" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">$0.00</th>
                                     </tr>
@@ -109,7 +98,10 @@
                 </div>
             </div>
 
-            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+                <a href="#" id="btnImprimirNotaIndividual" target="_blank" class="btn btn-danger" style="border-radius: 50px; padding: 8px 25px; font-weight: 600;">
+                    <i class="fas fa-file-pdf me-1"></i> Imprimir esta Nota
+                </a>
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal"
                         style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
                     <i class="fas fa-times me-1"></i> Cerrar
@@ -120,39 +112,39 @@
 </div>
 
 <script>
-// ============================================================
-// JAVASCRIPT PARA LLENAR EL MODAL
-// ============================================================
 window.verDetalleNota = function(id, tipo) {
-    // Resetear estados
     document.getElementById('ver-nota-cargando').style.display = 'block';
     document.getElementById('ver-nota-error').style.display = 'none';
     document.getElementById('ver-nota-contenido').style.display = 'none';
     document.getElementById('ver-nota-id').textContent = '#' + id;
 
-    // Mostrar modal
     new bootstrap.Modal(document.getElementById('modalVerNota')).show();
 
-    // 🔥 CORRECCIÓN: Detecta si es Entrada o Anulación Entrada
     const esEntrada = (tipo === 'Entrada' || tipo === 'Anulación Entrada' || (typeof tipo === 'string' && tipo.includes('Entrada')));
 
-    // --- LÓGICA DE DISEÑO DINÁMICO ---
     const columnasDinero = document.querySelectorAll('.col-dinero');
     const thDescripcion = document.getElementById('ver-nota-th-descripcion');
     
     if (esEntrada) {
-        // ENTRADA: Mostramos las columnas de dinero y el título dice "Descripción"
         columnasDinero.forEach(el => el.classList.remove('d-none'));
         document.getElementById('ver-nota-label-cliente').textContent = 'PROVEEDOR';
         thDescripcion.textContent = 'Descripción';
     } else {
-        // SALIDA: Ocultamos las columnas de dinero y el título dice "Categoría"
         columnasDinero.forEach(el => el.classList.add('d-none'));
         document.getElementById('ver-nota-label-cliente').textContent = 'CLIENTE';
         thDescripcion.textContent = 'Categoría';
     }
 
-    // Determinar endpoint
+    // 🔥 ACTUALIZAMOS EL ENLACE DEL BOTÓN DE IMPRIMIR PARA QUE USE TU CONTROLADOR DE REPORTES
+    const btnImprimir = document.getElementById('btnImprimirNotaIndividual');
+    if (btnImprimir) {
+        if (esEntrada) {
+            btnImprimir.href = `?url=exportar_pdf&tipo=entrada&id=${id}`;
+        } else {
+            btnImprimir.href = `?url=exportar_pdf&tipo=salida&id=${id}`;
+        }
+    }
+
     let url = esEntrada 
         ? '?url=notaentrada&type=show_json&id=' + id 
         : '?url=notasalida&type=detalle_json&id=' + id;
@@ -171,7 +163,6 @@ window.verDetalleNota = function(id, tipo) {
             const nota = data.nota;
             document.getElementById('ver-nota-contenido').style.display = 'block';
 
-            // Datos generales
             document.getElementById('ver-nota-fecha').textContent = Validador.formatearFecha(nota.fecha || nota.fecha_ingreso);
             document.getElementById('ver-nota-encargado').textContent = nota.usuario_responsable || nota.encargado_nombre || 'N/A';
             
@@ -183,7 +174,6 @@ window.verDetalleNota = function(id, tipo) {
                 document.getElementById('ver-nota-documento').textContent = nota.cedula || nota.rif || 'N/A';
             }
 
-            // Productos
             const tbody = document.getElementById('ver-nota-productos-tbody');
             tbody.innerHTML = '';
             let totalUnidades = 0;
@@ -194,16 +184,7 @@ window.verDetalleNota = function(id, tipo) {
                     const cantidad = parseInt(d.cantidad) || 0;
                     totalUnidades += cantidad;
                     
-                    // ⚠️ AQUÍ ESTÁ LA MAGIA: SEPARAMOS LA LÓGICA
-                    let columnaDescripcion = '';
-                    
-                    if (esEntrada) {
-                        // Para ENTRADA, mostramos la descripción global de la nota
-                        columnaDescripcion = nota.descripcion || 'Sin descripción';
-                    } else {
-                        // Para SALIDA, mostramos la categoría del producto
-                        columnaDescripcion = d.nombre_categoria || d.descripcion || 'N/A';
-                    }
+                    let columnaDescripcion = esEntrada ? (nota.descripcion || 'Sin descripción') : (d.nombre_categoria || d.descripcion || 'N/A');
 
                     let filaHTML = `
                         <tr>
@@ -212,7 +193,6 @@ window.verDetalleNota = function(id, tipo) {
                             <td class="text-center fw-bold" style="color: #1a1a2e;">${cantidad}</td>
                     `;
 
-                    // SI ES ENTRADA: Calculamos e inyectamos el costo y subtotal
                     if (esEntrada) {
                         const costo = parseFloat(d.costo_unitario) || 0;
                         const subtotal = cantidad * costo;
@@ -234,7 +214,6 @@ window.verDetalleNota = function(id, tipo) {
 
             document.getElementById('ver-nota-total-unidades').textContent = totalUnidades;
             
-            // Actualizar el total en dólares solo si es Entrada
             if (esEntrada) {
                 document.getElementById('ver-nota-total-dolares').textContent = '$' + totalDolares.toFixed(2);
             }

@@ -36,9 +36,20 @@ if ((int) ($_SESSION['id_rol'] ?? 0) === 3) {
 // 1. CARGA DE MODELOS
 $rutaRaiz = dirname(__DIR__, 2);
 
-$pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'NotaentradaModel.php';
-$pathProductoModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'ProductoModel.php';
-$pathProveedorModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'ProveedoresModel.php';
+// 🔥 BUSCAMOS LOS MODELOS EN LA CARPETA CORRECTA (Model con M mayúscula o model con m minúscula)
+$pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'NotaentradaModel.php';
+$pathProductoModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'ProductoModel.php';
+$pathProveedorModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'ProveedoresModel.php';
+
+if (!file_exists($pathNotaModel)) {
+    $pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'NotaentradaModel.php';
+}
+if (!file_exists($pathProductoModel)) {
+    $pathProductoModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'ProductoModel.php';
+}
+if (!file_exists($pathProveedorModel)) {
+    $pathProveedorModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'ProveedoresModel.php';
+}
 
 if (file_exists($pathNotaModel)) {
     require_once $pathNotaModel;
@@ -395,7 +406,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $id = $_POST['id_nota_entrada'] ?? 0;
             
-            // ⚠️ LEER AMBOS NOMBRES POR SI ACASO
             $motivo = trim($_POST['motivo_eliminacion'] ?? $_POST['motivo_anulacion'] ?? '');
             
             $idUsuario = obtenerIdUsuarioValido($db);
@@ -463,6 +473,25 @@ if ($esSolicitudJson) {
 
 // 4. VISTAS
 $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'nota_entrada';
+
+// ==========================================
+// 🔥 RUTA PARA GENERAR EL PDF DE LA NOTA DE ENTRADA
+// ==========================================
+if ($type === 'generar_pdf' && $id) {
+    $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf_entrada.php';
+    
+    // Si no existe con ese nombre, intentamos con generar_pdf.php
+    if (!file_exists($archivoPdf)) {
+        $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf.php';
+    }
+    
+    if (file_exists($archivoPdf)) {
+        require_once $archivoPdf;
+        exit();
+    } else {
+        die("ERROR: No se encuentra el archivo generar_pdf_entrada.php ni generar_pdf.php en: " . $baseViewPath);
+    }
+}
 
 // CREAR
 if ($type === 'create') {
