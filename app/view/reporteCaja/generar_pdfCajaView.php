@@ -24,11 +24,10 @@ $hora_apertura = $datos_pdf['hora_apertura'] ?? '—';
 $hora_cierre = date('h:i A'); 
 $total_documentos = $datos_pdf['total_documentos'] ?? 0;
 $total_unidades = $datos_pdf['total_unidades'] ?? 0;
+$total_productos = $datos_pdf['total_productos'] ?? 0;
+$total_clientes = $datos_pdf['total_clientes'] ?? 0;
 $movimientos = $datos_pdf['movimientos'] ?? [];
-$usuario_activo = trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
-if (empty($usuario_activo)) {
-    $usuario_activo = $datos_pdf['encargado'] ?? 'Administrador';
-}
+$usuario_activo = $datos_pdf['encargado'] ?? ($_SESSION['usuario_nombre'] ?? 'Administrador');
 
 $logoPath = dirname(__DIR__, 3) . '/assets/imagenes/logo.png';
 $logoDisponible = file_exists($logoPath);
@@ -43,7 +42,6 @@ class PDF extends FPDF
         if ($this->tieneLogo) {
             $this->Image($this->logoPath, 10, 8, 20, 20);
         }
-
         $this->SetXY(35, 9);
         $this->SetFont('Arial', 'B', 14);
         $this->SetTextColor(26, 26, 46);
@@ -63,7 +61,6 @@ class PDF extends FPDF
         $this->SetLineWidth(0.8);
         $this->Line(10, 32, 200, 32);
         $this->SetLineWidth(0.2);
-
         $this->SetY(36);
     }
 
@@ -81,21 +78,17 @@ $pdf->logoPath = $logoPath;
 $pdf->tieneLogo = $logoDisponible;
 $pdf->AddPage();
 $pdf->SetAutoPageBreak(true, 20);
-
 $yInicio = $pdf->GetY();
 
 $pdf->SetFillColor(248, 249, 250);
 $pdf->SetDrawColor(230, 230, 230);
 
-// ==========================================
 // BLOQUE DE DATOS DEL TURNO (IZQUIERDA)
-// ==========================================
 $pdf->SetXY(10, $yInicio);
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->SetTextColor(108, 117, 125);
 $pdf->Cell(95, 8, pdf_txt('DATOS DEL TURNO'), 1, 1, 'L', true); 
 
-// Fila 1: Fecha
 $pdf->SetX(10);
 $pdf->SetFont('Arial', '', 9);
 $pdf->SetTextColor(26, 26, 46);
@@ -103,36 +96,30 @@ $pdf->Cell(30, 7, pdf_txt('Fecha'), 'LR', 0, 'L', true);
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->Cell(65, 7, pdf_txt($fecha_reporte), 'LR', 1, 'L', true); 
 
-// Fila 2: Apertura
 $pdf->SetX(10);
 $pdf->SetFont('Arial', '', 9);
 $pdf->Cell(30, 7, pdf_txt('Hora Apertura'), 'LR', 0, 'L', true);
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->Cell(65, 7, pdf_txt($hora_apertura), 'LR', 1, 'L', true);
 
-// Fila 3: Cierre
 $pdf->SetX(10);
 $pdf->SetFont('Arial', '', 9);
 $pdf->Cell(30, 7, pdf_txt('Hora Cierre'), 'LR', 0, 'L', true);
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->Cell(65, 7, pdf_txt($hora_cierre), 'LR', 1, 'L', true);
 
-// Fila 4: Encargado
 $pdf->SetX(10);
 $pdf->SetFont('Arial', '', 9);
 $pdf->Cell(30, 7, pdf_txt('Encargado'), 'LR', 0, 'L', true);
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->Cell(65, 7, pdf_txt($usuario_activo), 'LRB', 1, 'L', true); 
 
-// ==========================================
 // BLOQUE DE RESUMEN (DERECHA)
-// ==========================================
 $pdf->SetXY(110, $yInicio); 
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->SetTextColor(108, 117, 125);
 $pdf->Cell(90, 8, pdf_txt('RESUMEN DEL DÍA'), 1, 1, 'L', true); 
 
-// Fila 1: Total Notas
 $pdf->SetXY(110, $yInicio + 8);
 $pdf->SetFont('Arial', '', 9);
 $pdf->SetTextColor(26, 26, 46);
@@ -140,32 +127,39 @@ $pdf->Cell(35, 7, pdf_txt('Total Notas'), 'LR', 0, 'L', true);
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->Cell(55, 7, pdf_txt($total_documentos), 'LR', 1, 'L', true);
 
-// Fila 2: Total Unidades
 $pdf->SetXY(110, $yInicio + 15);
 $pdf->SetFont('Arial', '', 9);
 $pdf->Cell(35, 7, pdf_txt('Total Unidades'), 'LR', 0, 'L', true);
 $pdf->SetFont('Arial', 'B', 9);
 $pdf->Cell(55, 7, pdf_txt($total_unidades), 'LR', 1, 'L', true);
 
-// Fila 3: Estatus
 $pdf->SetXY(110, $yInicio + 22);
 $pdf->SetFont('Arial', '', 9);
-$pdf->Cell(35, 14, pdf_txt('Estatus Caja'), 'LR', 0, 'L', true);
-$pdf->SetFont('Arial', 'B', 11);
-$pdf->SetTextColor(220, 53, 69);
-$pdf->Cell(55, 14, pdf_txt('CERRADA'), 'LRB', 1, 'L', true);
+$pdf->Cell(35, 7, pdf_txt('Prods. Distintos'), 'LR', 0, 'L', true);
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(55, 7, pdf_txt($total_productos), 'LR', 1, 'L', true);
+
+$pdf->SetXY(110, $yInicio + 29);
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell(35, 7, pdf_txt('Clientes Atend.'), 'LR', 0, 'L', true);
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(55, 7, pdf_txt($total_clientes), 'LR', 1, 'L', true);
+
+$pdf->SetXY(110, $yInicio + 36);
+$pdf->SetFont('Arial', '', 9);
+$pdf->Cell(35, 7, pdf_txt('Estatus Caja'), 'LR', 0, 'L', true);
+$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetTextColor(220, 53, 69); 
+$pdf->Cell(55, 7, pdf_txt('CERRADA'), 'LRB', 1, 'L', true); 
 $pdf->SetTextColor(26, 26, 46);
 
-// Línea divisoria final
-$yCierre = $yInicio + 37; 
+$yCierre = $yInicio + 44; 
 $pdf->SetDrawColor(230, 230, 230);
 $pdf->Line(10, $yCierre, 105, $yCierre);  
 $pdf->Line(110, $yCierre, 200, $yCierre); 
 $pdf->SetY($yCierre + 8);
 
-// ==========================================
 // TABLA DE MOVIMIENTOS
-// ==========================================
 $pdf->SetFont('Arial', 'B', 10);
 $pdf->SetTextColor(26, 26, 46);
 $pdf->Cell(0, 7, pdf_txt('DETALLE DE MOVIMIENTOS'), 0, 1, 'L');
@@ -181,11 +175,11 @@ $pdf->SetFillColor(245, 245, 245);
 $pdf->SetTextColor(73, 80, 87);
 $pdf->SetFont('Arial', 'B', 7);
 
-$w = [12, 18, 35, 15, 38, 28, 12, 32];
-$headers = ['ID', 'Fecha', 'Cliente', 'Tipo', 'Productos', 'Categorías', 'Cant.', 'Encargado'];
+$w = [12, 32, 40, 18, 15, 15, 15, 43]; 
+$headers = ['ID', 'Hora', 'Cliente', 'Tipo', 'Prod.', 'Cat.', 'Und.', 'Encargado'];
 
 foreach ($headers as $i => $h) {
-    $align = in_array($i, [0, 3, 6]) ? 'C' : 'L';
+    $align = in_array($i, [0, 1, 3, 4, 5, 6]) ? 'C' : 'L';
     $pdf->Cell($w[$i], 8, pdf_txt($h), 'TB', 0, $align, true);
 }
 $pdf->Ln();
@@ -199,29 +193,23 @@ if (empty($movimientos)) {
 } else {
     foreach ($movimientos as $m) {
         $cliente = trim((string) ($m['nombre_cliente'] ?? 'N/A'));
-        if (strlen($cliente) > 20) $cliente = substr($cliente, 0, 17) . '...';
+        if (strlen($cliente) > 22) $cliente = substr($cliente, 0, 19) . '...';
+        $encargado = trim((string) ($m['usuario_activo'] ?? 'N/A'));
+        if (strlen($encargado) > 20) $encargado = substr($encargado, 0, 17) . '...';
 
-        $productos = trim((string) ($m['nombre_producto'] ?? ''));
-        $productos = preg_replace('/\s*\(x\d+\)/i', '', $productos);
-        if (strlen($productos) > 22) $productos = substr($productos, 0, 20) . '...';
-
-        $categorias = trim((string) ($m['categoria'] ?? ''));
-        if (strlen($categorias) > 16) $categorias = substr($categorias, 0, 14) . '...';
-
-        $encargado = trim((string) ($m['usuario_activo'] ?? ''));
-        if (strlen($encargado) > 18) $encargado = substr($encargado, 0, 16) . '...';
-
-        $fecha_mov = isset($m['fecha_movimiento']) ? date('d/m/Y', strtotime($m['fecha_movimiento'])) : '';
+        $fecha_hora_completa = $m['fecha_movimiento']; 
+        $solo_hora = substr($fecha_hora_completa, 11); 
 
         $fill = $alt;
         $pdf->SetFillColor(250, 250, 250);
 
         $pdf->Cell($w[0], 8, '#' . $m['id_documento'], 'B', 0, 'C', $fill);
-        $pdf->Cell($w[1], 8, pdf_txt($fecha_mov), 'B', 0, 'L', $fill);
+        $pdf->Cell($w[1], 8, pdf_txt($solo_hora), 'B', 0, 'C', $fill); 
         $pdf->Cell($w[2], 8, pdf_txt($cliente), 'B', 0, 'L', $fill);
         $pdf->Cell($w[3], 8, pdf_txt($m['tipo_cliente'] ?? 'Natural'), 'B', 0, 'C', $fill);
-        $pdf->Cell($w[4], 8, pdf_txt($productos), 'B', 0, 'L', $fill);
-        $pdf->Cell($w[5], 8, pdf_txt($categorias), 'B', 0, 'L', $fill);
+        
+        $pdf->Cell($w[4], 8, (string)($m['total_productos'] ?? 0), 'B', 0, 'C', $fill);
+        $pdf->Cell($w[5], 8, (string)($m['total_categorias'] ?? 0), 'B', 0, 'C', $fill);
         
         $pdf->SetTextColor(243, 156, 18);
         $pdf->SetFont('Arial', 'B', 7);
@@ -235,7 +223,6 @@ if (empty($movimientos)) {
     }
 }
 
-// Fila de totales
 $pdf->Ln(2);
 $pdf->SetFillColor(248, 249, 250);
 $pdf->SetDrawColor(220, 220, 220);
@@ -252,15 +239,11 @@ $pdf->SetTextColor(73, 80, 87);
 $pdf->SetFont('Arial', 'B', 8);
 $pdf->Cell($w[7], 10, '', 'T', 1, 'R', true);
 
-// ==========================================
-// PIE DE PÁGINA Y GENERACIÓN DEL PDF
-// ==========================================
 $pdf->Ln(10);
 $pdf->SetFont('Arial', 'I', 8);
 $pdf->SetTextColor(120, 120, 120);
 $pdf->Cell(0, 6, pdf_txt('Gracias por su preferencia - Pirotecnia Fenix C.A.'), 0, 1, 'C');
 $pdf->Cell(0, 6, pdf_txt('Generado el ' . date('d/m/Y H:i:s')), 0, 1, 'R');
-
 
 $pdf->Output('I', 'Cierre_Caja_' . date('Ymd_His') . '.pdf');
 exit;

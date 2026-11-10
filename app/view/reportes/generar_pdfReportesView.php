@@ -153,7 +153,6 @@ $pdf->SetTextColor(73, 80, 87);
 $pdf->SetFont('Arial', 'B', 8);
 
 // Anchos para A4 horizontal (277 mm útiles)
-// N° NOTA | FECHA | CLIENTE/PROVEEDOR | TIPO | PRODUCTOS | CATEGORÍAS | UNIDADES | ENCARGADO
 $w = [18, 22, 55, 28, 30, 30, 30, 64];
 $headers = ['N° NOTA', 'FECHA', 'CLIENTE / PROVEEDOR', 'TIPO', 'PRODUCTOS', 'CATEGORÍAS', 'UNIDADES', 'ENCARGADO'];
 foreach ($headers as $i => $h) {
@@ -170,37 +169,68 @@ if (empty($movimientos)) {
     $pdf->Cell(array_sum($w), 12, pdf_txt('No hay movimientos con estos filtros'), 1, 1, 'C', true);
 } else {
     foreach ($movimientos as $m) {
-        $cliente = trim((string) ($m['nombre_cliente'] ?? 'N/A'));
-        if (strlen($cliente) > 34) $cliente = substr($cliente, 0, 31) . '...';
-        $encargado = trim((string) ($m['usuario_activo'] ?? ''));
-        if (strlen($encargado) > 40) $encargado = substr($encargado, 0, 37) . '...';
-        $fecha_mov = isset($m['fecha_movimiento']) ? date('d/m/Y', strtotime($m['fecha_movimiento'])) : '';
         $tipo = $m['tipo_movimiento'] ?? 'Entrada';
+
+        // 🔥 DETECCIÓN DE CIERRE DE CAJA
+        $esCierre = ($tipo === 'Cierre de Caja' || stripos($tipo, 'cierre') !== false);
         $esAnulacion = (strpos($tipo, 'Anulación') === 0 || stripos($tipo, 'anulad') !== false);
 
-        $fill = $alt;
-        $pdf->SetFillColor(250, 250, 250);
+        // Datos base
+        $cliente = trim((string) ($m['nombre_cliente'] ?? 'N/A'));
+        $encargado = trim((string) ($m['usuario_activo'] ?? ''));
+        $fecha_mov = isset($m['fecha_movimiento']) ? date('d/m/Y', strtotime($m['fecha_movimiento'])) : '';
 
-        $pdf->Cell($w[0], 8, '#' . $m['id_documento'], 'B', 0, 'C', $fill);
+        // 🔥 SI ES CIERRE: ajustamos etiquetas y rescatamos totales reales
+        if ($esCierre) {
+            $cliente = 'Cierre Global de Turno';
+            $prodLabel = 'Global';
+            $catLabel  = 'Global';
+            // El cierre guarda sus totales en estas columnas (según tu tabla cierre_caja)
+            $undCierre = (int)($m['total_unidades_cierre']
+                        ?? $m['unidades_cierre']
+                        ?? $m['total_unidades']
+                        ?? 0);
+            $undLabel = $undCierre . ' Und.';
+        } else {
+            if (strlen($cliente) > 34) $cliente = substr($cliente, 0, 31) . '...';
+            $prodLabel = (int)($m['total_productos'] ?? 0) . ' Prod.';
+            $catLabel  = (int)($m['total_categorias'] ?? 0) . ' Cat.';
+            $undLabel  = (int)($m['total_unidades'] ?? 0) . ' Und.';
+        }
+
+        if (strlen($encargado) > 40) $encargado = substr($encargado, 0, 37) . '...';
+
+        // 🔥 FONDO DESTACADO PARA CIERRES (amarillo suave)
+        if ($esCierre) {
+            $pdf->SetFillColor(255, 243, 205);
+            $fill = true;
+        } else {
+            $pdf->SetFillColor(250, 250, 250);
+            $fill = $alt;
+        }
+
+        $pdf->Cell($w[0], 8, '#' . ($m['id_documento'] ?? '—'), 'B', 0, 'C', $fill);
         $pdf->Cell($w[1], 8, pdf_txt($fecha_mov), 'B', 0, 'L', $fill);
         $pdf->Cell($w[2], 8, pdf_txt($cliente), 'B', 0, 'L', $fill);
 
-        if ($esAnulacion) $pdf->SetTextColor(108, 117, 125);
-        elseif (stripos($tipo, 'Entrada') !== false) $pdf->SetTextColor(40, 167, 69);
-        else $pdf->SetTextColor(220, 53, 69);
+        // 🔥 COLOR SEGÚN TIPO (respetando tu lógica original)
+        if ($esCierre) {
+            $pdf->SetTextColor(180, 95, 0); // naranja oscuro para cierre
+        } elseif ($esAnulacion) {
+            $pdf->SetTextColor(108, 117, 125);
+        } elseif (stripos($tipo, 'Entrada') !== false) {
+            $pdf->SetTextColor(40, 167, 69);
+        } else {
+            $pdf->SetTextColor(220, 53, 69);
+        }
 
         $pdf->Cell($w[3], 8, pdf_txt($tipo), 'B', 0, 'C', $fill);
         $pdf->SetTextColor(26, 26, 46);
 
-        // PRODUCTOS -> "X Prod."
         $pdf->SetFont('Arial', 'B', 8);
-        $pdf->Cell($w[4], 8, (int)($m['total_productos'] ?? 0) . ' Prod.', 'B', 0, 'C', $fill);
-
-        // CATEGORÍAS -> "X Cat."
-        $pdf->Cell($w[5], 8, (int)($m['total_categorias'] ?? 0) . ' Cat.', 'B', 0, 'C', $fill);
-
-        // UNIDADES -> "X Und."
-        $pdf->Cell($w[6], 8, (int)($m['total_unidades'] ?? 0) . ' Und.', 'B', 0, 'C', $fill);
+        $pdf->Cell($w[4], 8, pdf_txt($prodLabel), 'B', 0, 'C', $fill);
+        $pdf->Cell($w[5], 8, pdf_txt($catLabel), 'B', 0, 'C', $fill);
+        $pdf->Cell($w[6], 8, pdf_txt($undLabel), 'B', 0, 'C', $fill);
 
         $pdf->SetFont('Arial', '', 8);
         $pdf->Cell($w[7], 8, pdf_txt($encargado), 'B', 1, 'L', $fill);

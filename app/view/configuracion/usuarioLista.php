@@ -35,22 +35,24 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     </div>
 
     <!-- FILTRO DE BÚSQUEDA -->
+       <!-- FILTRO DE BÚSQUEDA -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
-        <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
+        <form method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="usuarios">
             <input type="hidden" name="action" value="lista">
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-6">
-                <input type="text" name="busqueda" class="form-control" 
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
+                <input type="text" name="busqueda" class="form-control form-control-sm" 
                        list="listaUsuarios"
                        placeholder="Buscar por nombre, apellido, cédula o correo..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
@@ -85,13 +87,15 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
             </div>
-            <div class="col-auto">
-                <?php if (isset($_GET['papelera']) && $_GET['papelera'] == '1'): ?>
-                    <a href="?url=usuarios&action=lista" class="btn btn-success" style="border-radius: 50px;">
-                        <i class="fas fa-arrow-left me-1"></i> Volver
+
+            <!-- 🔥 BOTÓN VER ELIMINADOS ESTILO PRODUCTOS -->
+            <div class="col-md-2">
+                <?php if (isset($ver_papelera) && $ver_papelera): ?>
+                    <a href="?url=usuarios&action=lista" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
+                        <i class="fas fa-undo-alt me-1"></i> Ver Activos
                     </a>
                 <?php else: ?>
-                    <a href="?url=usuarios&action=lista&papelera=1" class="btn btn-secondary" style="border-radius: 50px;">
+                    <a href="?url=usuarios&action=lista&papelera=1" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
                         <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
                     </a>
                 <?php endif; ?>
@@ -172,16 +176,17 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                         
                                         <!-- Ver Detalle (Siempre visible) -->
                                         <button type="button" class="btn-action-circle btn-view btn-ver-usuario" title="Ver" data-id="<?= $usuario['id_usuario'] ?>"><i class="fas fa-eye"></i></button>
-                                        
-                                        <?php if (isset($ver_papelera) && $ver_papelera): ?>
+
+                                         <?php if (isset($ver_papelera) && $ver_papelera): ?>
                                             <!-- SOLO EN LA PAPELERA: Botón Restaurar -->
-                                        <button type="button" class="btn-action-circle btn-reactivar-usuario" title="Restaurar Usuario"
-                                                style="background: rgba(13,110,253,0.15); color: #0065fd; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;"
-                                                data-id="<?= $usuario['id_usuario'] ?>" 
-                                                data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>">
-                                            <i class="fas fa-undo-alt"></i>
-                                        </button>
+                                            <button type="button" class="btn-action-circle btn-reactivar-usuario" title="Restaurar Usuario"
+                                                    style="background: #07e49a; color: #ffffff; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);"
+                                                    data-id="<?= $usuario['id_usuario'] ?>" 
+                                                    data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>">
+                                                <i class="fas fa-undo-alt"></i>
+                                            </button>
                                         <?php else: ?>
+                                        
                                             <!-- SOLO EN ACTIVOS: Botones Editar y Eliminar -->
                                             <button type="button" class="btn-action-circle btn-edit btn-editar-usuario" title="Editar" data-id="<?= $usuario['id_usuario'] ?>"><i class="fas fa-edit"></i></button>
                                             

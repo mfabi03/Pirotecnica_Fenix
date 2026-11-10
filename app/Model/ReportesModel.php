@@ -11,43 +11,51 @@ class ReportesModel {
     }
 
     // ============================================================
-    // OBTENER MOVIMIENTOS AGRUPADOS POR NOTA
+    // OBTENER MOVIMIENTOS AGRUPADOS POR NOTA (Entradas, Salidas y Cierres)
     // ============================================================
     public function obtenerMovimientosDiarios($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $limit = 10, $offset = 0) {
         $whereEntrada = [];
         $whereSalida = [];
+        $whereCierre = [];
         $params = [];
 
         if (!empty($fecha_inicio)) {
             if (!empty($fecha_fin) && $fecha_fin !== $fecha_inicio) {
                 $whereEntrada[] = "DATE(ne.fecha_ingreso) >= :fecha_inicio";
                 $whereSalida[] = "DATE(ns.fecha) >= :fecha_inicio";
+                $whereCierre[] = "DATE(c.created_at) >= :fecha_inicio";
                 $params[':fecha_inicio'] = $fecha_inicio;
 
                 $whereEntrada[] = "DATE(ne.fecha_ingreso) <= :fecha_fin";
                 $whereSalida[] = "DATE(ns.fecha) <= :fecha_fin";
+                $whereCierre[] = "DATE(c.created_at) <= :fecha_fin";
                 $params[':fecha_fin'] = $fecha_fin;
             } else {
                 $whereEntrada[] = "DATE(ne.fecha_ingreso) = :fecha_inicio";
                 $whereSalida[] = "DATE(ns.fecha) = :fecha_inicio";
+                $whereCierre[] = "DATE(c.created_at) = :fecha_inicio";
                 $params[':fecha_inicio'] = $fecha_inicio;
             }
         }
+        
         if (!empty($id_categoria) && $id_categoria > 0) {
             $whereEntrada[] = "prod.id_categoria = :id_categoria";
             $whereSalida[] = "prod.id_categoria = :id_categoria";
+            $whereCierre[] = "1 = 0"; 
             $params[':id_categoria'] = $id_categoria;
         }
         if (!empty($busqueda)) {
             $whereEntrada[] = "prod.descripcion LIKE :busqueda";
             $whereSalida[] = "prod.descripcion LIKE :busqueda";
+            $whereCierre[] = "CONCAT(p.nombre, ' ', p.apellido) LIKE :busqueda";
             $params[':busqueda'] = '%' . $busqueda . '%';
         }
 
         $whereClauseEntrada = !empty($whereEntrada) ? ' WHERE ' . implode(' AND ', $whereEntrada) : '';
         $whereClauseSalida = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
+        $whereClauseCierre = !empty($whereCierre) ? ' WHERE ' . implode(' AND ', $whereCierre) : '';
 
-        // 🔥 ENTRADAS: Se agrega COUNT(DISTINCT c.id_categoria) AS total_categorias
+        // 1. ENTRADAS
         $sqlEntrada = "SELECT 
             ne.id_nota_entrada AS id_documento,
             ne.fecha_ingreso AS fecha_movimiento,
@@ -73,7 +81,7 @@ class ReportesModel {
         {$whereClauseEntrada}
         GROUP BY ne.id_nota_entrada, ne.fecha_ingreso, ne.eliminado, ne.motivo_anulacion, pr.razon_social, pr.rif, per_u.nombre, per_u.apellido";
 
-        // 🔥 SALIDAS: Se agrega COUNT(DISTINCT c.id_categoria) AS total_categorias
+        // 2. SALIDAS
         $sqlSalida = "SELECT 
             ns.id_nota_salida AS id_documento,
             ns.fecha AS fecha_movimiento,
@@ -103,15 +111,35 @@ class ReportesModel {
         {$whereClauseSalida}
         GROUP BY ns.id_nota_salida, ns.fecha, ns.eliminado, ns.motivo_anulacion, cj.id_cliente_juridico, cj.razon_social, cj.rif, p_cliente.nombre, p_cliente.apellido, p_cliente.cedula, per_u.nombre, per_u.apellido";
 
-        $tipoNormalizado = $tipo_movimiento;
-        if (is_string($tipoNormalizado)) {
-            $tipoNormalizado = trim($tipoNormalizado);
-        }
+        // 3. CIERRES DE CAJA (Corregido para evitar error de columna)
+        $sqlCierre = "SELECT 
+            c.id_cierre AS id_documento,
+            c.created_at AS fecha_movimiento,
+            'Cierre de Caja' AS tipo_movimiento,
+            'cierre' AS tipo_origen,
+            'Cierre Global' AS nombre_cliente,
+            'N/A' AS documento_cliente,
+            COALESCE(CONCAT(p.nombre, ' ', p.apellido), 'N/A') AS usuario_activo,
+            c.total_productos_distintos AS total_productos,
+            0 AS total_categorias, 
+            '---' AS productos_lista,
+            '---' AS categoria,
+            c.total_unidades AS total_unidades,
+            0 AS estado_anulado,
+            NULL AS motivo_anulacion
+        FROM cierre_caja c
+        LEFT JOIN usuario u ON c.id_usuario = u.id_usuario
+        LEFT JOIN persona p ON u.id_persona = p.id_persona
+        {$whereClauseCierre}";
+
+        $tipoNormalizado = is_string($tipo_movimiento) ? trim($tipo_movimiento) : null;
 
         if ($tipoNormalizado === 'Entrada' || $tipoNormalizado === 'Entradas') {
             $sql = "SELECT * FROM ({$sqlEntrada}) AS t WHERE t.estado_anulado = 0";
         } elseif ($tipoNormalizado === 'Salida' || $tipoNormalizado === 'Salidas') {
             $sql = "SELECT * FROM ({$sqlSalida}) AS t WHERE t.estado_anulado = 0";
+        } elseif ($tipoNormalizado === 'Cierre de Caja' || $tipoNormalizado === 'Cierres') {
+            $sql = "SELECT * FROM ({$sqlCierre}) AS t";
         } elseif ($tipoNormalizado === 'Anulación Entrada' || $tipoNormalizado === 'Anulaciones Entrada') {
             $sql = "SELECT * FROM ({$sqlEntrada}) AS t WHERE t.estado_anulado = 1";
         } elseif ($tipoNormalizado === 'Anulación Salida' || $tipoNormalizado === 'Anulaciones Salida') {
@@ -127,6 +155,8 @@ class ReportesModel {
                         SELECT * FROM ({$sqlEntrada}) AS t1 
                         UNION ALL
                         SELECT * FROM ({$sqlSalida}) AS t2
+                        UNION ALL
+                        SELECT * FROM ({$sqlCierre}) AS t3
                     ) AS t";
         }
 
@@ -142,9 +172,6 @@ class ReportesModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // ============================================================
-    // CONTAR NOTAS (Para la paginación)
-    // ============================================================
     public function contarMovimientosDiarios($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null) {
         $movimientos = $this->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
         return count($movimientos);
@@ -183,6 +210,8 @@ class ReportesModel {
                 $where[] = "tipo_movimiento = 'Entrada'";
             } elseif (in_array($tipoNormalizado, ['Salida', 'Salidas'], true)) {
                 $where[] = "tipo_movimiento = 'Salida'";
+            } elseif ($tipoNormalizado === 'Cierre de Caja' || $tipoNormalizado === 'Cierres') {
+                $where[] = "tipo_movimiento = 'Cierre de Caja'";
             } else {
                 $where[] = "tipo_movimiento = :tipo_movimiento";
                 $params[':tipo_movimiento'] = $tipoNormalizado;
@@ -195,6 +224,7 @@ class ReportesModel {
             SUM(CASE WHEN tipo_movimiento = 'Entrada' THEN 1 ELSE 0 END) AS total_entradas,
             SUM(CASE WHEN tipo_movimiento = 'Salida' THEN 1 ELSE 0 END) AS total_salidas,
             SUM(CASE WHEN tipo_movimiento = 'Anulación' THEN 1 ELSE 0 END) AS total_anuladas,
+            SUM(CASE WHEN tipo_movimiento = 'Cierre de Caja' THEN 1 ELSE 0 END) AS total_cierres,
             COUNT(*) AS total_notas
         FROM (
             SELECT
@@ -216,6 +246,14 @@ class ReportesModel {
             FROM nota_de_salida ns
             INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
             INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+            UNION ALL
+            SELECT
+                'Cierre de Caja' AS tipo_movimiento,
+                'cierre' AS tipo_origen,
+                'Cierre Global' AS nombre_producto,
+                0 AS id_categoria,
+                DATE(created_at) AS fecha_movimiento
+            FROM cierre_caja
         ) resumen{$whereSql}";
 
         $stmt = $this->db->prepare($sql);
@@ -229,6 +267,7 @@ class ReportesModel {
             'total_entradas' => (int)($row['total_entradas'] ?? 0),
             'total_salidas' => (int)($row['total_salidas'] ?? 0),
             'total_anuladas' => (int)($row['total_anuladas'] ?? 0),
+            'total_cierres' => (int)($row['total_cierres'] ?? 0),
             'total_notas' => (int)($row['total_notas'] ?? 0),
         ];
     }

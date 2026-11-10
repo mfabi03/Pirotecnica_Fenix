@@ -62,7 +62,6 @@ $busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 // 5. ENDPOINTS AJAX
 // ==========================================
 
-// ===== AJAX 1: Validar nombre único =====
 if ($action === 'check_nombre') {
     header('Content-Type: application/json');
     $nombre = trim($_GET['valor'] ?? '');
@@ -82,7 +81,6 @@ if ($action === 'check_nombre') {
     exit;
 }
 
-// ===== AJAX 2: Obtener detalle de un rol =====
 if ($action === 'show_ajax') {
     header('Content-Type: application/json');
     $id = (int) ($_GET['id'] ?? 0);
@@ -114,7 +112,6 @@ if ($action === 'show_ajax') {
     exit;
 }
 
-// ===== AJAX 3: Guardar rol =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store_ajax') {
     header('Content-Type: application/json');
     
@@ -142,7 +139,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store
     exit;
 }
 
-// ===== AJAX 4: Actualizar rol =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'update_ajax') {
     header('Content-Type: application/json');
     
@@ -167,7 +163,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'updat
     exit;
 }
 
-// ===== AJAX 5: Eliminar (inactivar) rol =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delete_ajax') {
     header('Content-Type: application/json');
     
@@ -199,7 +194,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delet
     exit;
 }
 
-// ===== AJAX 5.1: Reactivar rol =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'reactivar_ajax') {
     header('Content-Type: application/json');
     
@@ -220,7 +214,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'react
     exit;
 }
 
-// ===== AJAX 6: Obtener datos de permisos de un rol =====
 if ($action === 'permisos_ajax') {
     header('Content-Type: application/json');
     $id_rol = (int) ($_GET['id_rol'] ?? 0);
@@ -259,7 +252,6 @@ if ($action === 'permisos_ajax') {
     exit;
 }
 
-// ===== AJAX 7: Guardar permisos de un rol =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'save_permisos_ajax') {
     header('Content-Type: application/json');
     
@@ -307,6 +299,14 @@ if ($action === 'lista' || $action === '' || $action === 'roles') {
     }
     
     if (!is_array($roles_full)) $roles_full = [];
+
+    // 🔥 FILTRO DE PAPELERA
+    $ver_papelera = isset($_GET['papelera']) && $_GET['papelera'] == '1';
+    
+    $roles_full = array_values(array_filter($roles_full, function ($rol) use ($ver_papelera) {
+        $esta_eliminado = ((int) ($rol['eliminado'] ?? 0)) === 1;
+        return $ver_papelera ? $esta_eliminado : !$esta_eliminado;
+    }));
 
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));

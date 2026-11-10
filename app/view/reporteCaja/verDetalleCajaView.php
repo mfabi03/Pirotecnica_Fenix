@@ -112,7 +112,6 @@ window.verDetalleCaja = function(id) {
     document.getElementById('ver-nota-contenido').style.display = 'none';
     document.getElementById('ver-nota-id').textContent = '#' + id;
 
-    // Aseguramos que el modal se muestre usando bootstrap de forma segura
     const modalEl = document.getElementById('modalVerNotaCaja');
     let modal = bootstrap.Modal.getInstance(modalEl);
     if (!modal) {
@@ -120,7 +119,6 @@ window.verDetalleCaja = function(id) {
     }
     modal.show();
 
-    // 🔥 RUTA CORREGIDA
     let url = '?url=detalle_caja_json&id=' + id;
 
     fetch(url)
@@ -137,11 +135,29 @@ window.verDetalleCaja = function(id) {
             const nota = data.nota;
             document.getElementById('ver-nota-contenido').style.display = 'block';
 
-            const fechaFormateada = (typeof Validador !== 'undefined') 
-                ? Validador.formatearFecha(nota.fecha || nota.fecha_movimiento) 
-                : (nota.fecha || nota.fecha_movimiento || 'N/A');
+            // 🔥 SOLUCIÓN AL FORMATO RARO DE LA FECHA
+            const fechaOriginal = nota.fecha || nota.fecha_movimiento || '';
+            let fechaFormateada = 'N/A';
 
+            if (fechaOriginal) {
+                // Cortamos la hora si viene (ej: "2026-11-09 23:04:19" -> "2026-11-09")
+                const soloFecha = fechaOriginal.split(' ')[0]; 
+                
+                if (typeof Validador !== 'undefined') {
+                    fechaFormateada = Validador.formatearFecha(soloFecha);
+                } else {
+                    // Respaldo por si el Validador no está cargado
+                    const partes = soloFecha.split('-');
+                    if (partes.length === 3) {
+                        fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                    } else {
+                        fechaFormateada = soloFecha;
+                    }
+                }
+            }
             document.getElementById('ver-nota-fecha').textContent = fechaFormateada;
+
+            // 🔥 SOLUCIÓN AL "UNDEFINED" EN RESPONSABLE
             document.getElementById('ver-nota-encargado').textContent = nota.usuario_responsable || 'N/A';
             document.getElementById('ver-nota-cliente').textContent = nota.cliente || 'N/A';
             document.getElementById('ver-nota-documento').textContent = nota.cedula || nota.rif || 'N/A';

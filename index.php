@@ -239,6 +239,20 @@ switch ($url) {
         $reporteCajaController->verDetalleAjax();
         break;
 
+    case 'obtener_cierre_ajax':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/ReportesController.php';
+        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
+        $reportesController->obtenerCierreAjax();
+        break;
+
+    case 'exportar_cierre_pdf':
+        AuthMiddleware::requireAuth();
+        require_once __DIR__ . '/app/Controller/ReportesController.php';
+        $reportesController = new \App\Pirotecnicafenix\Controller\ReportesController($pdo);
+        $reportesController->exportarCierrePDF();
+        break;
+
     default:
         http_response_code(404);
         require_once __DIR__ . '/app/view/header.php';

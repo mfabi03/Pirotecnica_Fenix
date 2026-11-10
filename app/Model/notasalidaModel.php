@@ -60,7 +60,7 @@ class notasalidaModel {
         }
     }
 
-    // REGISTRAR SALIDA
+    // REGISTRAR SALIDA (AQUÍ SE GUARDA LA HORA)
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
             $stmtCheck = $this->db->prepare("SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0");
@@ -82,6 +82,7 @@ class notasalidaModel {
             
             $this->db->beginTransaction();
             try {
+                // 🔥 AQUÍ ESTÁ LA MAGIA: NOW() guarda Fecha y Hora exacta
                 $stmt = $this->db->prepare("INSERT INTO nota_de_salida (fecha, id_persona, id_usuario, eliminado) VALUES (NOW(), ?, ?, 0)");
                 $stmt->execute([$datos['id_cliente'], $idUsuario]);
                 
@@ -178,7 +179,7 @@ class notasalidaModel {
                 $n['productos_lista'] = implode(', ', array_map(function($p) { return $p['producto'] . ' (x' . $p['cantidad'] . ')'; }, $listaProductos));
                 $n['total_productos'] = count($listaProductos); 
                 $n['categorias_lista'] = implode(', ', $listaCategorias);
-                $n['total_categorias'] = count($listaCategorias); // 🔥 CONTADOR DE CATEGORÍAS
+                $n['total_categorias'] = count($listaCategorias);
                 $n['productos_detalle'] = $productos;
                 
                 $stmtUnidades = $this->db->prepare("SELECT COALESCE(SUM(cantidad), 0) as total FROM detalle_salida WHERE id_nota_salida = ?");
@@ -276,7 +277,7 @@ class notasalidaModel {
                 $n['productos_lista'] = implode(', ', array_map(function($p) { return $p['producto'] . ' (x' . $p['cantidad'] . ')'; }, $listaProductos));
                 $n['total_productos'] = count($listaProductos); 
                 $n['categorias_lista'] = implode(', ', $listaCategorias);
-                $n['total_categorias'] = count($listaCategorias); // 🔥 CONTADOR DE CATEGORÍAS
+                $n['total_categorias'] = count($listaCategorias);
                 $n['productos_detalle'] = $productos;
 
                 $stmtUnidades = $this->db->prepare("SELECT COALESCE(SUM(cantidad), 0) as total FROM detalle_salida WHERE id_nota_salida = ?");
@@ -292,7 +293,7 @@ class notasalidaModel {
         }
     }
 
-          // OBTENER NOTA POR ID
+    // OBTENER NOTA POR ID
     public function obtenerNotaPorId($id) {
         try {
             $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado, motivo_anulacion
@@ -332,12 +333,12 @@ class notasalidaModel {
                 $nota['usuario_responsable'] = 'N/A';
             }
             
-            // CONSULTA CORREGIDA: SIN COSTO
             $detSql = "SELECT 
                             ds.id_detalle_salida,
                             ds.id_producto,
                             ds.cantidad,
                             p.descripcion AS nombre_producto,
+                            p.costo_unitario,  
                             c.nombre_categoria
                         FROM detalle_salida ds
                         JOIN producto p ON ds.id_producto = p.id_producto
@@ -354,43 +355,8 @@ class notasalidaModel {
         }
     }
 
-       // Reactivar una nota anulada: hay que volver a restar el stock
-    public function reactivarNota($id) {
-        try {
-            $stmtCheck = $this->db->prepare("SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 1");
-            $stmtCheck->execute([$id]);
-            if (!$stmtCheck->fetch()) throw new Exception("La nota no existe o ya está activa");
-            
-            $this->db->beginTransaction();
-            try {
-                // Obtener los productos de la nota para volver a restarlos del inventario
-                $stmtDet = $this->db->prepare("SELECT id_producto, cantidad FROM detalle_salida WHERE id_nota_salida = ?");
-                $stmtDet->execute([$id]);
-                $detalles = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
-
-                $stmtRestar = $this->db->prepare("UPDATE producto SET cantidad = cantidad - ? WHERE id_producto = ?");
-                foreach ($detalles as $d) {
-                    $stmtRestar->execute([$d['cantidad'], $d['id_producto']]);
-                }
-
-                // Quitar la bandera de eliminado y limpiar el motivo
-                $stmtUpd = $this->db->prepare("UPDATE nota_de_salida SET eliminado = 0, motivo_anulacion = NULL WHERE id_nota_salida = :id");
-                $stmtUpd->execute([':id' => $id]);
-                
-                $this->db->commit();
-                return true;
-            } catch (Exception $e) {
-                $this->db->rollBack();
-                throw $e;
-            }
-        } catch (Exception $e) {
-            error_log("Error en reactivarNota: " . $e->getMessage());
-            throw $e;
-        }
-    }
-
-    // Anular nota: se devuelve el stock y se guarda el motivo
-    public function eliminarNota($id, $motivo = null) {
+    // ELIMINAR NOTA
+    public function eliminarNota($id) {
         try {
             $stmtCheck = $this->db->prepare("SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0");
             $stmtCheck->execute([$id]);
@@ -398,7 +364,6 @@ class notasalidaModel {
             
             $this->db->beginTransaction();
             try {
-                // Devolver las cantidades al inventario
                 $stmtDet = $this->db->prepare("SELECT id_producto, cantidad FROM detalle_salida WHERE id_nota_salida = ?");
                 $stmtDet->execute([$id]);
                 $detalles = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
@@ -408,9 +373,8 @@ class notasalidaModel {
                     $stmtRestaurar->execute([$d['cantidad'], $d['id_producto']]);
                 }
 
-                // Marcar como eliminada y guardar el motivo
-                $stmtUpd = $this->db->prepare("UPDATE nota_de_salida SET eliminado = 1, motivo_anulacion = :motivo WHERE id_nota_salida = :id");
-                $stmtUpd->execute([':motivo' => $motivo, ':id' => $id]);
+                $stmtUpd = $this->db->prepare("UPDATE nota_de_salida SET eliminado = 1 WHERE id_nota_salida = :id");
+                $stmtUpd->execute([':id' => $id]);
                 
                 $this->db->commit();
                 return true;

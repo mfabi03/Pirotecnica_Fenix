@@ -7,6 +7,7 @@ $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($roles) ? count($roles) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
+$ver_papelera = isset($ver_papelera) ? $ver_papelera : false;
 ?>
 
 <div class="col-md-8 col-lg-12">
@@ -16,13 +17,15 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-user-tag text-gold me-2"></i> Lista de Roles
+                            <i class="fas fa-user-tag text-gold me-2"></i> 
+                            <?= $ver_papelera ? 'Papelera de Roles' : 'Lista de Roles' ?>
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                            Gestiona los roles del sistema
+                            <?= $ver_papelera ? 'Roles inactivos. Puedes restaurarlos.' : 'Gestiona los roles del sistema' ?>
                         </small>
                     </div>
                     <div class="col-auto">
+                        <?php if (!$ver_papelera): ?>
                         <button type="button" 
                                 class="btn btn-dark-gold" 
                                 data-bs-toggle="modal" 
@@ -30,29 +33,31 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
                             <i class="fas fa-plus me-1"></i> Registrar Rol
                         </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
 
             <!-- FILTRO DE BÚSQUEDA -->
             <div class="card shadow-sm p-3 mb-4 bg-white">
-                <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
+                <form method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
                     <input type="hidden" name="url" value="roles">
                     <input type="hidden" name="action" value="lista">
                     
                     <div class="col-md-2">
                         <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
                             <?php foreach ([5, 10, 25, 50] as $o): ?>
                                 <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
                         <input type="text" 
                                name="busqueda" 
-                               class="form-control" 
+                               class="form-control form-control-sm" 
                                placeholder="Buscar rol por nombre..."
                                value="<?= htmlspecialchars($busqueda ?? '') ?>">
                     </div>
@@ -67,6 +72,19 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <a href="?url=roles&action=lista" class="btn btn-secondary w-100">
                             <i class="fas fa-times me-1"></i> Limpiar
                         </a>
+                    </div>
+
+                    <!-- 🔥 BOTÓN PAPELERA -->
+                    <div class="col-md-2">
+                        <?php if ($ver_papelera): ?>
+                            <a href="?url=roles&action=lista" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
+                                <i class="fas fa-undo-alt me-1"></i> Ver Activos
+                            </a>
+                        <?php else: ?>
+                            <a href="?url=roles&action=lista&papelera=1" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
+                                <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
@@ -86,7 +104,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             <div class="dark-card card shadow-sm dark-table-header">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h5 class="m-0">
-                        <i class="fas fa-user-tag me-2"></i> Roles Registrados
+                        <i class="fas fa-user-tag me-2"></i> <?= $ver_papelera ? 'Roles Eliminados' : 'Roles Registrados' ?>
                     </h5>
                 </div>
                 
@@ -123,21 +141,14 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <?php if (($rol['id_rol'] ?? 0) == 1): ?>
-                                                <!-- El rol Administrador siempre está Activo -->
-                                                <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                                    <i class="fas fa-check-circle me-1"></i> Activo
+                                            <?php if (($rol['eliminado'] ?? 0) == 1): ?>
+                                                <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                                    <i class="fas fa-trash-alt me-1"></i> En Papelera
                                                 </span>
                                             <?php else: ?>
-                                                <?php if (($rol['eliminado'] ?? 0) == 0): ?>
-                                                    <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                                        <i class="fas fa-check-circle me-1"></i> Activo
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                                        <i class="fas fa-times-circle me-1"></i> Inactivo
-                                                    </span>
-                                                <?php endif; ?>
+                                                <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
+                                                    <i class="fas fa-check-circle me-1"></i> Activo
+                                                </span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="pe-4 text-center">
@@ -152,18 +163,18 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                                 </button>
                                                 
                                                 <?php if (($rol['id_rol'] ?? 0) != 1): ?>
-                                                    <?php if (($rol['eliminado'] ?? 0) == 1): ?>
-                                                        <!-- Botón REACTIVAR si está inactivo -->
+                                                    <?php if ($ver_papelera): ?>
+                                                        <!-- SOLO EN PAPELERA: Botón Restaurar -->
                                                         <button type="button" 
                                                                 class="btn-action-circle btn-reactivar-rol" 
-                                                                title="Reactivar Rol"
-                                                                style="background: rgba(40,167,69,0.15); color: #28a745; border: none;"
+                                                                title="Restaurar Rol"
+                                                                style="background: #10b981; color: #ffffff; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);"
                                                                 data-id="<?= $rol['id_rol'] ?>"
                                                                 data-nombre="<?= htmlspecialchars($rol['nombre_rol'] ?? '') ?>">
                                                             <i class="fas fa-undo-alt"></i>
                                                         </button>
                                                     <?php else: ?>
-                                                        <!-- Botones EDITAR, PERMISOS y ELIMINAR si está activo -->
+                                                        <!-- SOLO EN ACTIVOS: Editar, Permisos, Eliminar -->
                                                         <button type="button" 
                                                                 class="btn-action-circle btn-edit btn-editar-rol" 
                                                                 title="Editar"
@@ -199,9 +210,15 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <tr>
                                     <td colspan="5" class="text-center py-5 dark-empty">
                                         <div class="py-4">
-                                            <i class="fas fa-user-tag fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                            <p class="mb-0">No hay roles registrados</p>
-                                            <small>Comienza registrando un nuevo rol</small>
+                                            <?php if ($ver_papelera): ?>
+                                                <i class="fas fa-trash-alt fa-3x d-block mb-3" style="opacity: 0.3;"></i>
+                                                <p class="mb-0">La papelera está vacía</p>
+                                                <small>No hay roles eliminados</small>
+                                            <?php else: ?>
+                                                <i class="fas fa-user-tag fa-3x d-block mb-3" style="opacity: 0.3;"></i>
+                                                <p class="mb-0">No hay roles registrados</p>
+                                                <small>Comienza registrando un nuevo rol</small>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -541,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            // 🔥 Usamos la alerta bonita en lugar del confirm feo
             if (!confirm(`¿Estás seguro de inactivar el rol "${nombre}"?`)) return;
             
             const formData = new FormData();
@@ -564,7 +582,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = this.getAttribute('data-id');
             const nombre = this.getAttribute('data-nombre');
             
-            if (!confirm(`¿Deseas reactivar el rol "${nombre}"?`)) return;
+            // 🔥 Usamos la alerta bonita en lugar del confirm feo
+            if (!confirm(`¿Deseas restaurar el rol "${nombre}"?`)) return;
             
             const btnElement = this;
             btnElement.disabled = true;
