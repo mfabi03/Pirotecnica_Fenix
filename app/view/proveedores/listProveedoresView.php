@@ -53,7 +53,7 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                     <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
                     <div class="col-md-2">
                         <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                        <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <select name="por_pagina" class="form-select form-select-sm" data-auto-submit>
                             <?php foreach ([5, 10, 25, 50] as $o): ?>
                                 <option value="<?= $o ?>" <?= (isset($por_pagina) && $por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                             <?php endforeach; ?>
@@ -171,24 +171,24 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                             <div class="d-flex justify-content-center gap-2">
                                                 <?php if (!$proveedorInactivo): ?>
                                                     <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
-                                                            onclick="verDetalleProveedor(<?= (int) $p['id_proveedor'] ?>, this)">
+                                                            data-proveedor-action="view" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     <?php if ($puede_editar_proveedor): ?>
                                                         <button type="button" class="btn-action-circle btn-edit" title="Editar"
-                                                                onclick="editarProveedor(<?= (int) $p['id_proveedor'] ?>, this)">
+                                                                data-proveedor-action="edit" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                     <?php endif; ?>
                                                     <?php if ($puede_eliminar_proveedor): ?>
                                                         <button type="button" class="btn-action-circle btn-delete"
-                                                                title="Inactivar" onclick="confirmarEliminarProveedor(<?= (int) $p['id_proveedor'] ?>, this)">
+                                                                title="Inactivar" data-proveedor-action="inactivate" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
                                                             <i class="fas fa-ban"></i>
                                                         </button>
                                                     <?php endif; ?>
                                                 <?php elseif ($puede_eliminar_proveedor): ?>
                                                     <button type="button" class="btn-action-circle btn-reactivate"
-                                                            title="Reactivar" onclick="reactivarProveedor(<?= (int) $p['id_proveedor'] ?>, this)">
+                                                            title="Reactivar" data-proveedor-action="reactivate" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
                                                         <i class="fas fa-undo-alt"></i>
                                                     </button>
                                                 <?php endif; ?>
@@ -229,9 +229,6 @@ require_once __DIR__ . '/partials/modal_editar_proveedor.php';
 require_once __DIR__ . '/partials/modal_inactivar_proveedor.php';
 ?>
 
-<script id="proveedoresData" type="application/json">
-<?= json_encode(isset($proveedores) && is_array($proveedores) ? array_values($proveedores) : [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>
-</script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <style>
     .btn-action-circle.btn-reactivate {

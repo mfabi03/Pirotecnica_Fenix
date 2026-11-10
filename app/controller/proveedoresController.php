@@ -8,7 +8,10 @@ use App\Pirotecnicafenix\Helpers\CheckPermiso;
 use Exception;
 
 $type = $_POST['type'] ?? $_GET['type'] ?? 'list';
-$esSolicitudAjax = in_array($type, ['listar_ajax', 'detalle_ajax', 'estado_ajax'], true);
+$action = $_GET['action'] ?? '';
+$esSolicitudAjax = in_array($type, ['listar_ajax', 'detalle_ajax', 'estado_ajax'], true)
+    || in_array($type, ['store_ajax', 'update_ajax'], true)
+    || $action === 'check_rif';
 
 error_reporting(E_ALL);
 ini_set('display_errors', $esSolicitudAjax ? '0' : '1');
@@ -49,6 +52,29 @@ $error = null;
 $success = null;
 $proveedor = null;
 $proveedores = [];
+
+if ($action === 'check_rif') {
+    header('Content-Type: application/json; charset=utf-8');
+    $rif = trim($_GET['valor'] ?? '');
+    if ($rif === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Valor vacío'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    try {
+        echo json_encode([
+            'existe' => $modelo->existeRif($rif),
+            'campo' => 'rif',
+            'valor' => $rif
+        ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    } catch (Exception $e) {
+        error_log('Error en check_rif de proveedores: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'No se pudo verificar el RIF.'], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
 
 // ============================================
 // ENDPOINT AJAX: LISTAR PROVEEDORES EN JSON
@@ -114,7 +140,67 @@ if ($type === 'estado_ajax') {
             throw new Exception('Acción de estado no válida.');
         }
 
+        $_SESSION['mensaje'] = $mensaje;
+        $_SESSION['tipo_mensaje'] = 'success';
         echo json_encode(['success' => true, 'message' => $mensaje], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    } catch (Exception $e) {
+        if (http_response_code() < 400) {
+            http_response_code(400);
+        }
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+    exit;
+}
+
+if (in_array($type, ['store_ajax', 'update_ajax'], true)) {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $esActualizacion = $type === 'update_ajax';
+        $permiso = $esActualizacion ? 'actualizar' : 'crear';
+        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Proveedores', $permiso)) {
+            http_response_code(403);
+            throw new Exception('No tienes permiso para ' . ($esActualizacion ? 'actualizar' : 'registrar') . ' proveedores.');
+        }
+
+        $datos = [
+            'rif' => trim($_POST['rif'] ?? ''),
+            'razon_social' => trim($_POST['razon_social'] ?? ''),
+            'numero_contacto' => trim($_POST['numero_contacto'] ?? ''),
+            'direccion' => trim($_POST['direccion'] ?? ''),
+            'correo_electronico' => trim($_POST['correo_electronico'] ?? '')
+        ];
+        if ($datos['rif'] === '' || $datos['razon_social'] === '' || $datos['numero_contacto'] === '' || $datos['direccion'] === '') {
+            http_response_code(400);
+            throw new Exception('RIF, Razón Social, Contacto y Dirección son obligatorios.');
+        }
+
+        if ($esActualizacion) {
+            $idProveedor = $_POST['id_proveedor'] ?? '';
+            if (!ctype_digit((string) $idProveedor) || (int) $idProveedor < 1) {
+                http_response_code(400);
+                throw new Exception('ID de proveedor no válido.');
+            }
+            $datos['eliminado'] = $_POST['eliminado'] ?? '0';
+            $datos['nombre_contacto'] = 'Proveedor';
+            $datos['apellido_contacto'] = '';
+            $modelo->actualizarProveedor((int) $idProveedor, $datos);
+            $mensaje = 'Proveedor actualizado.';
+            $_SESSION['mensaje'] = $mensaje;
+            $_SESSION['tipo_mensaje'] = 'success';
+            echo json_encode(['success' => true, 'message' => $mensaje], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        } else {
+            $idProveedor = $modelo->registrarProveedor($datos);
+            $mensaje = 'Proveedor registrado.';
+            $_SESSION['mensaje'] = $mensaje;
+            $_SESSION['tipo_mensaje'] = 'success';
+            echo json_encode([
+                'success' => true,
+                'id_proveedor' => (int) $idProveedor,
+                'razon_social' => $datos['razon_social'],
+                'rif' => $datos['rif'],
+                'message' => $mensaje
+            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        }
     } catch (Exception $e) {
         if (http_response_code() < 400) {
             http_response_code(400);

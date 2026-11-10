@@ -82,6 +82,17 @@ class ProveedoresModel {
         }
     }
 
+    public function existeRif($rif) {
+        try {
+            $sql = "SELECT COUNT(*) FROM proveedor WHERE rif = :rif AND eliminado = 0";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['rif' => $rif]);
+            return (int) $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            throw new Exception("Error al verificar el RIF: " . $e->getMessage());
+        }
+    }
+
     // REGISTRAR PROVEEDOR
     public function registrarProveedor(array $datos) {
         $this->db->beginTransaction();

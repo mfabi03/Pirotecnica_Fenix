@@ -213,6 +213,8 @@ const Validador = (function () {
         const endpoint = input.dataset.unicoEndpoint;
         if (!campo || !endpoint) return Promise.resolve(true);
 
+        clearTimeout(timersUnico[input.id]);
+
         const feedbackEl = document.getElementById(input.id + '-feedback');
         if (!feedbackEl) return Promise.resolve(true);
 

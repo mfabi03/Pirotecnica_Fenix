@@ -17,7 +17,6 @@ if (!isset($db) || $db === null) {
 // Obtener permisos del usuario actual
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'crear') : false;
-$puede_editar_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'actualizar') : false;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Entrada', 'eliminar') : false;
 
 // Paginación
@@ -58,7 +57,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" data-auto-submit>
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
@@ -67,10 +66,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Estado</label>
-                <select name="estado_nota" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
+                <select name="estado_nota" class="form-select form-select-sm" data-no-search="true" data-auto-submit>
                     <option value="todos" <?= (($estado_nota ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
                     <option value="activos" <?= (($estado_nota ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
-                    <option value="inactivos" <?= (($estado_nota ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Inactivos</option>
+                    <option value="inactivos" <?= (($estado_nota ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Anuladas</option>
                 </select>
             </div>
 
@@ -199,7 +198,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                         <th class="py-3">Encargado</th>
                         <th class="py-3">Productos</th>
                         <th class="py-3">Total</th>
-                        <th class="py-3">Status</th>
+                        <th class="py-3">Estatus</th>
                         <th class="pe-4 py-3 text-center">Acciones</th>
                     </tr>
                 </thead>
@@ -249,7 +248,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 <td>
                                     <?php if ($anulada): ?>
                                         <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-ban me-1"></i> Inactivo / Anulado
+                                            <i class="fas fa-ban me-1"></i> Anulada
                                         </span>
                                     <?php else: ?>
                                         <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
@@ -261,25 +260,20 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                     <div class="d-flex justify-content-center gap-2">
                                         <?php if (!$anulada): ?>
                                             <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
-                                                    onclick="verDetalleNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, this)">
+                                                    data-nota-action="view" data-nota-id="<?= (int) $n['id_nota_entrada'] ?>">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <?php if ($puede_editar_nota): ?>
-                                                <button type="button" class="btn-action-circle btn-edit" title="Editar"
-                                                        onclick="editarNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, this)">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                            <?php endif; ?>
                                             <?php if ($puede_anular_nota): ?>
                                                 <button type="button" class="btn-action-circle btn-delete"
-                                                        onclick="prepararAnulacionNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, <?= htmlspecialchars(json_encode($n['razon_social'] ?? 'N/A', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') ?>, this)"
-                                                        title="Inactivar">
+                                                        data-nota-action="cancel" data-nota-id="<?= (int) $n['id_nota_entrada'] ?>"
+                                                        data-proveedor="<?= htmlspecialchars($n['razon_social'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?>"
+                                                        title="Anular">
                                                     <i class="fas fa-ban"></i>
                                                 </button>
                                             <?php endif; ?>
                                         <?php elseif ($puede_anular_nota): ?>
                                             <button type="button" class="btn-action-circle btn-reactivate" title="Reactivar"
-                                                    onclick="reactivarNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, this)">
+                                                    data-nota-action="reactivate" data-nota-id="<?= (int) $n['id_nota_entrada'] ?>">
                                                 <i class="fas fa-undo-alt"></i>
                                             </button>
                                         <?php endif; ?>

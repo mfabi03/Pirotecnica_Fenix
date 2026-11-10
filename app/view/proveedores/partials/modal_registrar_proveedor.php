@@ -8,12 +8,14 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
-            <form method="POST" action="?url=proveedores&type=store" class="proveedor-form">
+            <form method="POST" action="?url=proveedores&type=store" class="proveedor-form" id="formRegistrarProveedor">
                 <div class="modal-body" style="padding: 20px 24px;">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="registrar-proveedor-rif" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
-                            <input type="text" id="registrar-proveedor-rif" name="rif" class="form-control proveedor-rif" placeholder="Ej: J-123456789" required>
+                            <input type="text" id="registrar-proveedor-rif" name="rif" class="form-control proveedor-rif" placeholder="Ej: J-123456789" required
+                                   data-validate="rif" data-unico-endpoint="?url=proveedores&action=check_rif" data-unico-campo="rif">
+                            <small class="feedback-validacion info" id="registrar-proveedor-rif-feedback"></small>
                         </div>
                         <div class="col-md-6">
                             <label for="registrar-proveedor-telefono" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Número de Contacto *</label>

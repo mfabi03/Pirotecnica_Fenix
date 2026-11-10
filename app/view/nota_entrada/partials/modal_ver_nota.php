@@ -2,7 +2,7 @@
 <!-- ============================================================ -->
 <div class="modal fade" id="modalVerNotaEntrada" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+        <div class="modal-content bg-white" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-eye me-2" style="color: #f39c12;"></i>
@@ -74,15 +74,14 @@
                             </h6>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle m-0" style="table-layout: fixed; width: 100%;">
+                            <table class="table table-hover align-middle m-0" style="width: 100%;">
                                 <thead>
                                     <tr style="background: #f8f9fa;">
-                                        <th class="ps-4 py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 10%;">ID</th>
-                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 30%;">PRODUCTO</th>
-                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 20%;">CATEGORÍA</th>
-                                        <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 10%;">CANT.</th>
-                                        <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 15%;">COSTO</th>
-                                        <th class="pe-4 text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 15%;">SUBTOTAL</th>
+                                        <th class="ps-3 py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">#</th>
+                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">PRODUCTO</th>
+                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">CATEGORÍA</th>
+                                        <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">CANT.</th>
+                                        <th class="text-end text-nowrap py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">COSTO</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ver-nota-productos-tbody"></tbody>
@@ -90,8 +89,7 @@
                                     <tr style="border-top: 2px solid rgba(243,156,18,0.2); background: #f8f9fa;">
                                         <th colspan="3" class="ps-4 py-3 text-end" style="color: #495057; font-size: 0.85rem;">TOTALES:</th>
                                         <th class="text-center py-3" id="ver-nota-total-unidades" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">0</th>
-                                        <th class="text-end py-3" style="color: #495057; font-size: 0.85rem;">Total $:</th>
-                                        <th class="pe-4 text-center py-3" id="ver-nota-total-costo" style="color: #28a745; font-size: 1.1rem; font-weight: 700;">$0.00</th>
+                                        <th class="pe-3 text-end text-nowrap py-3" id="ver-nota-total-costo" style="color: #28a745; font-size: 1.1rem; font-weight: 700;">Total: $0.00</th>
                                     </tr>
                                 </tfoot>
                             </table>
