@@ -10,7 +10,6 @@
  * Cubre:
  *   1. Filtro AJAX del formulario #formFiltros
  *   2. Ver motivo de anulación (delegado)
- *   3. Ver detalle de nota entrada/salida (delegado)
  * ============================================================
  */
 
@@ -112,22 +111,11 @@
         });
 
         // ---------------------------------------------------------
-        // 3. VER DETALLE DE NOTA (delegado, sobrevive al AJAX)
+        // 3. VER DETALLE DE NOTA 
         // ---------------------------------------------------------
-        $(document).off('click.reportesDetalle', '.btn-ver-detalle')
-                   .on('click.reportesDetalle', '.btn-ver-detalle', function (e) {
-            e.preventDefault();
-
-            var $btn = $(this);
-            var id   = $btn.data('id');
-            var tipo = $btn.data('tipo') || 'Entrada';
-
-            if (typeof window.verDetalleNota === 'function' && id) {
-                window.verDetalleNota(id, tipo);
-            } else {
-                console.warn('verDetalleNota no está definido o id vacío', { id: id, tipo: tipo });
-            }
-        });
+        // 🔥 ELIMINADO: Ya se maneja directamente con el onclick 
+        // en reportesView.php llamando a la función del archivo verDetalleNota.jquery.js.
+        // Al quitar esto, evitamos el conflicto de doble clic y el error del "id vacío".
 
     });
 

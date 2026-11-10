@@ -201,8 +201,9 @@
             $('#ver-cliente-id').text('#' + c.id_cliente);
 
             var $statusBadge = $('#ver-cliente-status-badge');
-            if (c.status === 'inactivo' || parseInt(c.eliminado, 10) === 1) {
-                $statusBadge.text('Inactivo').css({ background: 'rgba(220,53,69,0.15)', color: '#dc3545' });
+            // 🔥 FORZAMOS EL TEXTO "ELIMINADO" SIEMPRE QUE EL CLIENTE ESTÉ INACTIVO
+            if (parseInt(c.eliminado, 10) === 1 || c.status === 'inactivo' || c.status === 'Eliminado' || c.eliminado == 1) {
+                $statusBadge.text('Eliminado').css({ background: 'rgba(220,53,69,0.15)', color: '#dc3545' });
             } else {
                 $statusBadge.text('Activo').css({ background: 'rgba(40,167,69,0.15)', color: '#28a745' });
             }
@@ -289,7 +290,7 @@
         };
 
         // ---------------------------------------------------------
-        // CONFIRMAR DESACTIVAR
+        // CONFIRMAR ELIMINAR
         // ---------------------------------------------------------
         window.confirmarEliminarCliente = function (id, nombre) {
             $('#eliminar-cliente-id').val(id);
@@ -298,7 +299,7 @@
         };
 
         // ---------------------------------------------------------
-        // CONFIRMAR ACTIVAR
+        // CONFIRMAR REACTIVAR
         // ---------------------------------------------------------
         window.confirmarReactivarCliente = function (id, nombre) {
             $('#reactivar-cliente-id').val(id);

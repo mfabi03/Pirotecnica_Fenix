@@ -163,7 +163,6 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilo.css">
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/validaciones.css">
-    <script src="/pirotecnica_fenix/assets/js/validaciones.js" defer></script>
     <style>
         body { padding-top: 60px; background: #ffffff !important; }
         .app-navbar { 

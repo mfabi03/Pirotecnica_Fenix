@@ -1,14 +1,14 @@
 <?php
 // ============================================================
-// PARTIAL: Modales para Desactivar y Activar Cliente
+// PARTIAL: Modales para Eliminar y Reactivar Cliente
 // ============================================================
 // Nombre técnico del archivo: eliminarClientView.php
-// Nombre visual para el usuario: Desactivar / Activar
+// Nombre visual para el usuario: Eliminar / Reactivar
 // - NO incluye header.php ni footer.php (es un fragmento).
 // - Se incluye desde listClienteView.php con require_once.
 // ============================================================
 
-// Fallback: si la vista se incluye fuera de contexto, permitir desactivar
+// Fallback: si la vista se incluye fuera de contexto, permitir eliminar
 if (!isset($puede_eliminar_cliente)) {
     $puede_eliminar_cliente = true;
 }
@@ -17,7 +17,7 @@ if (!isset($puede_eliminar_cliente)) {
 <?php if ($puede_eliminar_cliente): ?>
 
 <?php // ============================================================ ?>
-<?php // MODAL: DESACTIVAR CLIENTE (Eliminación Lógica)           ?>
+<?php // MODAL: ELIMINAR CLIENTE (Eliminación Lógica)             ?>
 <?php // ============================================================ ?>
 <div class="modal fade" id="modalEliminarCliente" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -26,7 +26,7 @@ if (!isset($puede_eliminar_cliente)) {
             <?php // HEADER OSCURO DEL MODAL ?>
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(220,53,69,0.3); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-ban me-2" style="color: #dc3545;"></i> Desactivar Cliente
+                    <i class="fas fa-trash-alt me-2" style="color: #dc3545;"></i> Eliminar Cliente
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
@@ -39,22 +39,22 @@ if (!isset($puede_eliminar_cliente)) {
                 <input type="hidden" name="id_cliente" id="eliminar-cliente-id">
                 
                 <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
-                    <p style="margin-bottom: 12px; font-weight: 500;">¿Estás seguro de desactivar este cliente?</p>
+                    <p style="margin-bottom: 12px; font-weight: 500;">¿Estás seguro de eliminar este cliente?</p>
                     
                     <?php // Nombre del cliente (se rellena desde el JS) ?>
                     <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #dc3545; border-radius: 8px;">
-                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente a desactivar</strong>
+                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente a eliminar</strong>
                         <span id="eliminar-cliente-nombre" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
                     </div>
 
-                    <?php // Advertencia: la desactivación es lógica (no se borra de la BD) ?>
+                    <?php // Advertencia: la eliminación es lógica (no se borra de la BD) ?>
                     <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
                         <i class="fas fa-info-circle me-2"></i>
-                        Esta acción realizará la <strong>desactivación lógica</strong> del cliente. Si el cliente tiene notas de entrada o salida asociadas, el sistema bloqueará la desactivación.
+                        Esta acción realizará la <strong>eliminación lógica</strong> del cliente. Si el cliente tiene notas de entrada o salida asociadas, el sistema bloqueará la eliminación.
                     </div>
                 </div>
 
-                <?php // BOTONES: Cancelar (cierra modal) y Desactivar (envía POST) ?>
+                <?php // BOTONES: Cancelar (cierra modal) y Eliminar (envía POST) ?>
                 <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal"
                             style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
@@ -62,7 +62,7 @@ if (!isset($puede_eliminar_cliente)) {
                     </button>
                     <button type="submit" class="btn"
                             style="background: #dc3545; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                        <i class="fas fa-ban me-1"></i> Sí, desactivar
+                        <i class="fas fa-trash-alt me-1"></i> Sí, eliminar
                     </button>
                 </div>
             </form>
@@ -72,16 +72,16 @@ if (!isset($puede_eliminar_cliente)) {
 
 
 <?php // ============================================================ ?>
-<?php // MODAL: ACTIVAR CLIENTE (Reactivación)                     ?>
+<?php // MODAL: REACTIVAR CLIENTE                                  ?>
 <?php // ============================================================ ?>
 <div class="modal fade" id="modalReactivarCliente" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
             
-            <?php // HEADER OSCURO DEL MODAL (verde para activar) ?>
+            <?php // HEADER OSCURO DEL MODAL (verde para reactivar) ?>
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(40,167,69,0.3); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-check-circle me-2" style="color: #28a745;"></i> Activar Cliente
+                    <i class="fas fa-check-circle me-2" style="color: #28a745;"></i> Reactivar Cliente
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
@@ -94,11 +94,11 @@ if (!isset($puede_eliminar_cliente)) {
                 <input type="hidden" name="id_cliente" id="reactivar-cliente-id">
                 
                 <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
-                    <p style="margin-bottom: 12px; font-weight: 500;">¿Deseas activar este cliente?</p>
+                    <p style="margin-bottom: 12px; font-weight: 500;">¿Deseas reactivar este cliente?</p>
                     
                     <?php // Nombre del cliente (se rellena desde el JS) ?>
                     <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 8px;">
-                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente a activar</strong>
+                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente a reactivar</strong>
                         <span id="reactivar-cliente-nombre" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
                     </div>
 
@@ -109,7 +109,7 @@ if (!isset($puede_eliminar_cliente)) {
                     </div>
                 </div>
 
-                <?php // BOTONES: Cancelar (cierra modal) y Activar (envía POST) ?>
+                <?php // BOTONES: Cancelar (cierra modal) y Reactivar (envía POST) ?>
                 <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal"
                             style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
@@ -117,7 +117,7 @@ if (!isset($puede_eliminar_cliente)) {
                     </button>
                     <button type="submit" class="btn"
                             style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                        <i class="fas fa-check me-1"></i> Sí, activar
+                        <i class="fas fa-check me-1"></i> Sí, reactivar
                     </button>
                 </div>
             </form>

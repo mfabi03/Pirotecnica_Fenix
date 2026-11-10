@@ -27,15 +27,63 @@ FOOTER - VERSIÓN PEQUEÑA
 <div id="toast-container" class="toast-container position-fixed top-50 start-50 translate-middle p-3" style="z-index: 9999;"></div>
 
 <!-- ==========================================
+MODAL GLOBAL DE CONFIRMACIÓN
+========================================== -->
+<div class="modal fade" id="modalConfirmGlobal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            
+            <div class="modal-header" id="confirm-global-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
+                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
+                    <i id="confirm-global-icon" class="fas fa-question-circle me-2" style="color: #f39c12;"></i>
+                    <span id="confirm-global-titulo">Confirmar acción</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
+            </div>
+
+            <div class="modal-body" style="padding: 24px;">
+                <p id="confirm-global-mensaje" style="margin: 0; color: #1a1a2e; font-size: 1rem; line-height: 1.5;">
+                    ¿Estás seguro?
+                </p>
+            </div>
+
+            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal"
+                        style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                    <i class="fas fa-times me-1"></i> Cancelar
+                </button>
+                <button type="button" class="btn" id="confirm-global-btn-ok"
+                        style="border-radius: 50px; padding: 10px 30px; font-weight: 600; border: none; color: #fff; background: #dc3545;">
+                    <i class="fas fa-check me-1"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
 SCRIPTS GLOBALES
 ========================================== -->
+
+<!-- 1. jQuery PRIMERO -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- 2. Bootstrap después de jQuery -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- ⭐ VALIDADOR GLOBAL - Disponible en TODAS las vistas del sistema -->
-<script src="/pirotecnica_fenix/assets/js/validaciones.js"></script>
+<!-- 3. Validador global (versión jQuery) -->
+<script src="/pirotecnica_fenix/assets/js/validaciones.jquery.js"></script>
 
-<!-- Script: habilitar búsqueda en selects dentro de formularios -->
+<!-- 4. Búsqueda en selects -->
 <script src="/pirotecnica_fenix/assets/js/select-search.js"></script>
+
+<!-- 5. Scripts del módulo (los declara cada vista con $scriptsModulo) -->
+<?php if (!empty($scriptsModulo) && is_array($scriptsModulo)): ?>
+    <?php foreach ($scriptsModulo as $script): ?>
+        <script src="/pirotecnica_fenix/assets/js/<?= htmlspecialchars($script) ?>"></script>
+    <?php endforeach; ?>
+<?php endif; ?>
+
 <style>
 /* ==========================================
    BUSCADOR DE SELECTS - UNIFICADO CON EL DISEÑO
@@ -254,26 +302,94 @@ window.mostrarAlerta = function(mensaje, tipo = 'info', autoCerrar = true) {
 };
 
 // ==========================================
-// FUNCIÓN GLOBAL fetchAJAX
+// CONFIRMACIÓN GLOBAL CON MODAL BOOTSTRAP
 // ==========================================
-window.fetchAJAX = async function(url, formData) {
-    try {
-        const respuesta = await fetch(url, {
-            method: 'POST',
-            body: formData
+window.confirmarAccion = function(opciones) {
+    var op = opciones || {};
+    var titulo   = op.titulo   || 'Confirmar acción';
+    var mensaje  = op.mensaje  || '¿Estás seguro?';
+    var tipo     = op.tipo     || 'danger'; // danger | warning | success | info | primary
+    var textoOk  = op.textoOk  || 'Confirmar';
+    var textoCancelar = op.textoCancelar || 'Cancelar';
+    var callback = op.callback || function() {};
+
+    var config = {
+        danger:  { color: '#dc3545', icon: 'fa-exclamation-triangle', headerBorder: 'rgba(220,53,69,0.3)'  },
+        warning: { color: '#ffc107', icon: 'fa-exclamation-triangle', headerBorder: 'rgba(255,193,7,0.3)'  },
+        success: { color: '#28a745', icon: 'fa-check-circle',         headerBorder: 'rgba(40,167,69,0.3)'  },
+        info:    { color: '#0dcaf0', icon: 'fa-info-circle',          headerBorder: 'rgba(13,202,240,0.3)' },
+        primary: { color: '#0d6efd', icon: 'fa-question-circle',      headerBorder: 'rgba(13,110,253,0.3)' }
+    };
+
+    var c = config[tipo] || config.danger;
+    var modalEl = document.getElementById('modalConfirmGlobal');
+    if (!modalEl) {
+        console.warn('modalConfirmGlobal no existe en el DOM');
+        return;
+    }
+
+    // Pintar modal
+    document.getElementById('confirm-global-titulo').textContent = titulo;
+    document.getElementById('confirm-global-mensaje').innerHTML  = mensaje;
+
+    var iconEl = document.getElementById('confirm-global-icon');
+    iconEl.className = 'fas ' + c.icon + ' me-2';
+    iconEl.style.color = c.color;
+    document.getElementById('confirm-global-header').style.borderBottom = '1px solid ' + c.headerBorder;
+
+    var btnOk = document.getElementById('confirm-global-btn-ok');
+    btnOk.style.background = c.color;
+    btnOk.innerHTML = '<i class="fas fa-check me-1"></i> ' + textoOk;
+
+    var btnCancelar = modalEl.querySelector('.modal-footer .btn-light');
+    if (btnCancelar) {
+        btnCancelar.innerHTML = '<i class="fas fa-times me-1"></i> ' + textoCancelar;
+    }
+
+    // Clonar el botón para eliminar listeners anteriores
+    var btnOkClonado = btnOk.cloneNode(true);
+    btnOk.parentNode.replaceChild(btnOkClonado, btnOk);
+
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    btnOkClonado.addEventListener('click', function() {
+        modal.hide();
+        modalEl.addEventListener('hidden.bs.modal', function once() {
+            modalEl.removeEventListener('hidden.bs.modal', once);
+            callback();
         });
-        
+    });
+};
+
+// ==========================================
+// FUNCIÓN GLOBAL fetchAJAX (con timeout)
+// ==========================================
+window.fetchAJAX = async function(url, formData, timeoutMs) {
+    var timeout = (typeof timeoutMs === 'number') ? timeoutMs : 15000;
+    var controller = new AbortController();
+    var timer = setTimeout(function() { controller.abort(); }, timeout);
+
+    try {
+        var respuesta = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+
         if (!respuesta.ok) {
-            throw new Error(`HTTP ${respuesta.status}`);
+            throw new Error('HTTP ' + respuesta.status);
         }
-        
-        const data = await respuesta.json();
-        return data;
+        return await respuesta.json();
     } catch (error) {
+        clearTimeout(timer);
         console.error('Error en fetchAJAX:', error);
         return {
             success: false,
-            mensaje: 'Error de conexión. Intenta nuevamente.'
+            mensaje: (error.name === 'AbortError')
+                ? 'La petición tardó demasiado. Intenta nuevamente.'
+                : 'Error de conexión. Intenta nuevamente.'
         };
     }
 };
@@ -282,83 +398,32 @@ window.fetchAJAX = async function(url, formData) {
 // FUNCIÓN GLOBAL para eliminar con confirmación
 // ==========================================
 window.eliminarConConfirmacion = function(url, formData, callback) {
-    if (!confirm('¿Estás seguro de eliminar este registro?\n\nEsta acción no se puede deshacer.')) {
-        return;
-    }
-    
-    fetchAJAX(url, formData).then(function(data) {
-        if (data.success) {
-            mostrarAlerta(data.mensaje, 'success');
-            if (typeof callback === 'function') {
-                callback(data);
-            }
-        } else {
-            mostrarAlerta(data.mensaje || 'Error al eliminar', 'error');
-        }
-    });
-};
-
-// ==========================================
-// SISTEMA DE VALIDACIÓN EN TIEMPO REAL
-// ==========================================
-window.validarCampoUnico = function(inputSelector, urlCheck, campoNombre) {
-    const input = document.querySelector(inputSelector);
-    if (!input) return;
-    
-    let timeout = null;
-    
-    input.addEventListener('input', function() {
-        clearTimeout(timeout);
-        const valor = this.value.trim();
-        
-        if (valor === '') {
-            this.classList.remove('is-valid', 'is-invalid');
-            return;
-        }
-        
-        timeout = setTimeout(async function() {
-            try {
-                const respuesta = await fetch(`${urlCheck}&valor=${encodeURIComponent(valor)}`);
-                const data = await respuesta.json();
-                
-                if (data.existe) {
-                    input.classList.remove('is-valid');
-                    input.classList.add('is-invalid');
-                    mostrarAlerta(`El ${campoNombre} "${valor}" ya existe`, 'warning');
+    window.confirmarAccion({
+        titulo:  'Eliminar registro',
+        mensaje: '¿Estás seguro de eliminar este registro?<br><small style="color:#6c757d;">Esta acción no se puede deshacer.</small>',
+        tipo:    'danger',
+        textoOk: 'Sí, eliminar',
+        callback: function() {
+            window.fetchAJAX(url, formData).then(function(data) {
+                if (data.success) {
+                    window.mostrarAlerta(data.mensaje || 'Eliminado correctamente', 'success');
+                    if (typeof callback === 'function') callback(data);
                 } else {
-                    input.classList.remove('is-invalid');
-                    input.classList.add('is-valid');
+                    window.mostrarAlerta(data.mensaje || 'Error al eliminar', 'error');
                 }
-            } catch (error) {
-                console.error('Error validando campo:', error);
-            }
-        }, 500);
+            });
+        }
     });
 };
 
 // ==========================================
-// FUNCIONES EXISTENTES
+// HELPER GLOBAL: escapeHtml
 // ==========================================
-window.confirmarEliminacion = function(mensaje) {
-    return confirm(mensaje || '¿Estás seguro de eliminar este registro?');
-};
-
-window.formatearCedula = function(input) {
-    let value = input.value.trim().toUpperCase();
-    if (/^\d+$/.test(value)) {
-        input.value = 'V-' + value;
-    } else if (/^V\d+$/.test(value)) {
-        input.value = 'V-' + value.substring(1);
-    }
-};
-
-window.formatearRif = function(input) {
-    let value = input.value.trim().toUpperCase();
-    if (/^\d+$/.test(value)) {
-        input.value = 'J-' + value;
-    } else if (/^J\d+$/.test(value)) {
-        input.value = 'J-' + value.substring(1);
-    }
+window.escapeHtml = function(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+    });
 };
 
 // ==========================================
@@ -382,10 +447,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Ocultar columnas con IDs
+    // Ocultar columnas con IDs (solo tablas con data-ocultar-id="true")
     function ocultarColumnasId() {
         const re = /\b(id|ID|Id|codigo|Código|Codigo|cod|COD)\b/i;
-        const tables = document.querySelectorAll('table');
+        const tables = document.querySelectorAll('table[data-ocultar-id="true"]');
         tables.forEach(table => {
             const ths = table.querySelectorAll('thead th');
             if (!ths || ths.length === 0) return;

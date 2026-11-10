@@ -44,10 +44,17 @@ class ReportesModel {
             $whereCierre[] = "1 = 0"; 
             $params[':id_categoria'] = $id_categoria;
         }
+        
         if (!empty($busqueda)) {
-            $whereEntrada[] = "prod.descripcion LIKE :busqueda";
-            $whereSalida[] = "prod.descripcion LIKE :busqueda";
+            // 🔥 ENTRADAS: Producto, Categoría, Proveedor (Razón Social o RIF)
+            $whereEntrada[] = "(prod.descripcion LIKE :busqueda OR c.nombre_categoria LIKE :busqueda OR pr.razon_social LIKE :busqueda OR pr.rif LIKE :busqueda)";
+            
+            // 🔥 SALIDAS: Producto, Categoría, Cliente (Nombre, Apellido, Cédula, Razón Social o RIF)
+            $whereSalida[] = "(prod.descripcion LIKE :busqueda OR c.nombre_categoria LIKE :busqueda OR p_cliente.nombre LIKE :busqueda OR p_cliente.apellido LIKE :busqueda OR p_cliente.cedula LIKE :busqueda OR cj.razon_social LIKE :busqueda OR cj.rif LIKE :busqueda)";
+            
+            // 🔥 CIERRES: Nombre del cajero
             $whereCierre[] = "CONCAT(p.nombre, ' ', p.apellido) LIKE :busqueda";
+            
             $params[':busqueda'] = '%' . $busqueda . '%';
         }
 
@@ -55,11 +62,12 @@ class ReportesModel {
         $whereClauseSalida = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
         $whereClauseCierre = !empty($whereCierre) ? ' WHERE ' . implode(' AND ', $whereCierre) : '';
 
-        // 1. ENTRADAS
+        // 1. ENTRADAS (0 AS id_usuario_cierre para igualar columnas en el UNION)
         $sqlEntrada = "SELECT 
             ne.id_nota_entrada AS id_documento,
+            0 AS id_usuario_cierre,
             ne.fecha_ingreso AS fecha_movimiento,
-            CASE WHEN ne.eliminado = 1 THEN 'Anulación' ELSE 'Entrada' END AS tipo_movimiento,
+            CASE WHEN ne.eliminado = 1 THEN 'Anulación Entrada' ELSE 'Entrada' END AS tipo_movimiento,
             'entrada' AS tipo_origen,
             COALESCE(pr.razon_social, 'Sin proveedor') AS nombre_cliente,
             pr.rif AS documento_cliente,
@@ -81,11 +89,12 @@ class ReportesModel {
         {$whereClauseEntrada}
         GROUP BY ne.id_nota_entrada, ne.fecha_ingreso, ne.eliminado, ne.motivo_anulacion, pr.razon_social, pr.rif, per_u.nombre, per_u.apellido";
 
-        // 2. SALIDAS
+        // 2. SALIDAS (0 AS id_usuario_cierre para igualar columnas en el UNION)
         $sqlSalida = "SELECT 
             ns.id_nota_salida AS id_documento,
+            0 AS id_usuario_cierre,
             ns.fecha AS fecha_movimiento,
-            CASE WHEN ns.eliminado = 1 THEN 'Anulación' ELSE 'Salida' END AS tipo_movimiento,
+            CASE WHEN ns.eliminado = 1 THEN 'Anulación Salida' ELSE 'Salida' END AS tipo_movimiento,
             'salida' AS tipo_origen,
             CASE 
                 WHEN cj.id_cliente_juridico IS NOT NULL THEN cj.razon_social
@@ -111,9 +120,10 @@ class ReportesModel {
         {$whereClauseSalida}
         GROUP BY ns.id_nota_salida, ns.fecha, ns.eliminado, ns.motivo_anulacion, cj.id_cliente_juridico, cj.razon_social, cj.rif, p_cliente.nombre, p_cliente.apellido, p_cliente.cedula, per_u.nombre, per_u.apellido";
 
-        // 3. CIERRES DE CAJA (Corregido para evitar error de columna)
+        // 3. CIERRES DE CAJA (Se agrega id_usuario y se igualan las columnas)
         $sqlCierre = "SELECT 
             c.id_cierre AS id_documento,
+            c.id_usuario AS id_usuario_cierre,
             c.created_at AS fecha_movimiento,
             'Cierre de Caja' AS tipo_movimiento,
             'cierre' AS tipo_origen,
@@ -121,7 +131,7 @@ class ReportesModel {
             'N/A' AS documento_cliente,
             COALESCE(CONCAT(p.nombre, ' ', p.apellido), 'N/A') AS usuario_activo,
             c.total_productos_distintos AS total_productos,
-            0 AS total_categorias, 
+            c.total_categorias AS total_categorias,
             '---' AS productos_lista,
             '---' AS categoria,
             c.total_unidades AS total_unidades,

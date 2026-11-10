@@ -2,11 +2,6 @@
  * ============================================================
  * VER DETALLE DE NOTA (Entrada / Salida) - Versión jQuery
  * ------------------------------------------------------------
- * Requiere:
- *   - jQuery 3.7.1
- *   - Bootstrap 5
- *   - Validador global (opcional, para formatear fecha)
- * ------------------------------------------------------------
  * Expone:
  *   window.verDetalleNota(id, tipo)
  * ============================================================
@@ -52,15 +47,17 @@
             $btnImprimir.attr('href', urlPdf);
         }
 
-        // Endpoint según tipo
-        var url = esEntrada
-            ? '?url=notaentrada&type=show_json&id=' + id
-            : '?url=notasalida&type=detalle_json&id=' + id;
+        // 🔥 PETICIÓN CORREGIDA: POST en lugar de GET
+        var url = esEntrada ? '?url=notaentrada' : '?url=notasalida';
+        var datos = esEntrada 
+            ? { type: 'show_json', id: id } 
+            : { type: 'detalle_json', id: id };
 
         $.ajax({
             url: url,
-            method: 'GET',
-            dataType: 'json'
+            method: 'POST', // 🔥 IMPORTANTE: POST
+            dataType: 'json',
+            data: datos     // 🔥 IMPORTANTE: los datos van en el body
         })
         .done(function (data) {
             $cargando.hide();

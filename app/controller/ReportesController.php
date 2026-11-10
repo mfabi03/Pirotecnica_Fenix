@@ -47,9 +47,11 @@ class ReportesController {
         $paginaActual = $pagina;
         $porPaginaActual = $porPagina;
         
+        // 🔥 VARIABLES PARA LAS TARJETAS DE ESTADÍSTICAS
         $totalEntradas = $totalesGlobales['total_entradas'] ?? 0;
         $totalSalidas = $totalesGlobales['total_salidas'] ?? 0;
         $totalAnuladas = $totalesGlobales['total_anuladas'] ?? 0;
+        $totalCierres = $totalesGlobales['total_cierres'] ?? 0; // 🔥 NUEVA LÍNEA
         $totalNotas = $totalesGlobales['total_notas'] ?? 0;
 
         $db = $this->db;
@@ -203,7 +205,6 @@ class ReportesController {
         }
     }
 
-    // 🔥 EXPORTAR PDF GENERAL DE MOVIMIENTOS (AGRUPANDO CIERRES)
     public function exportarPDF() {
         try {
             $tipo = $_GET['tipo'] ?? 'reporte';

@@ -61,7 +61,7 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
                     <?= $esVistaEliminados ? 'Clientes Eliminados' : 'Lista de Clientes' ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    <?= $esVistaEliminados ? 'Clientes inactivos en el sistema' : 'Gestiona los clientes registrados en el sistema' ?>
+                    <?= $esVistaEliminados ? 'Clientes eliminados del sistema' : 'Gestiona los clientes registrados en el sistema' ?>
                 </small>
             </div>
             <div class="col-auto">
@@ -136,7 +136,7 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
                 </a>
             </div>
 
-            <!-- 🔥 BOTÓN VER ELIMINADOS EN LOS FILTROS -->
+            <!-- BOTÓN VER ELIMINADOS EN LOS FILTROS -->
             <div class="col-md-2">
                 <?php if ($esVistaEliminados): ?>
                     <a href="?url=clientes&type=list" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
@@ -177,7 +177,7 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
                 <i class="fas fa-users me-2"></i> 
-                <?= $esVistaEliminados ? 'Clientes Inactivos' : 'Clientes Registrados' ?>
+                <?= $esVistaEliminados ? 'Clientes Eliminados' : 'Clientes Registrados' ?>
             </h5>
         </div>
         
@@ -226,7 +226,6 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
                                 <td><?= htmlspecialchars($c['telefono'] ?? 'N/A') ?></td>
                                 <td><?= htmlspecialchars($c['correo_electronico'] ?? 'N/A') ?></td>
                                 
-                                <!-- STATUS COMO BADGE (SIN SWITCH) -->
                                 <td class="text-center">
                                     <?php if ($estaActivo): ?>
                                         <span class="badge" style="background: rgba(40,167,69,0.15); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
@@ -234,22 +233,19 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
                                         </span>
                                     <?php else: ?>
                                         <span class="badge" style="background: rgba(220,53,69,0.15); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-times-circle me-1"></i> Inactivo
+                                            <i class="fas fa-times-circle me-1"></i> Eliminado
                                         </span>
                                     <?php endif; ?>
                                 </td>
                                 
-                                <!-- ACCIONES -->
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <!-- Ver Detalle (siempre visible) -->
                                         <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
                                                 onclick="verDetalleCliente(<?= (int) $c['id_cliente'] ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
                                         <?php if ($estaActivo): ?>
-                                            <!-- ACTIVO: Editar y Eliminar -->
                                             <?php if ($puede_editar_cliente): ?>
                                                 <button type="button" class="btn-action-circle btn-edit" title="Editar"
                                                         onclick="editarCliente(<?= (int) $c['id_cliente'] ?>)">
@@ -264,7 +260,6 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
                                                 </button>
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <!-- INACTIVO: Solo Reactivar -->
                                             <?php if ($puede_editar_cliente): ?>
                                                 <button type="button" class="btn-action-circle btn-reactivar" title="Reactivar Cliente"
                                                         onclick="confirmarReactivarCliente(<?= (int) $c['id_cliente'] ?>, '<?= htmlspecialchars(addslashes($nombreCliente)) ?>')">
@@ -282,7 +277,7 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
                                 <div class="py-4">
                                     <i class="fas fa-users fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">
-                                        <?= $esVistaEliminados ? 'No hay clientes inactivos' : 'No hay clientes registrados' ?>
+                                        <?= $esVistaEliminados ? 'No hay clientes eliminados' : 'No hay clientes registrados' ?>
                                     </p>
                                     <small><?= $esVistaEliminados ? 'Los clientes activos están en la lista principal' : 'Comienza registrando un nuevo cliente' ?></small>
                                 </div>
@@ -381,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php endif; ?>
 
 
-<?php // DATOS DE CLIENTES EN JSON + JAVASCRIPT ESPECÍFICO ?>
+<?php // DATOS DE CLIENTES EN JSON ?>
 <script id="clientesData" type="application/json">
 <?= json_encode(
     isset($clientes) && is_array($clientes) ? array_values($clientes) : [],
@@ -389,293 +384,6 @@ document.addEventListener('DOMContentLoaded', function() {
 ) ?>
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    'use strict';
-
-    function inicializarMapaClientes() {
-        const scriptCliente = document.getElementById('clientesData');
-        if (!scriptCliente) {
-            window.clientesPorId = {};
-            return;
-        }
-
-        try {
-            const clientesData = JSON.parse(scriptCliente.textContent || '[]');
-            const clientesPorId = {};
-            clientesData.forEach(function(c) {
-                clientesPorId[parseInt(c.id_cliente)] = c;
-            });
-            window.clientesPorId = clientesPorId;
-        } catch (error) {
-            console.error('No se pudieron cargar los datos de clientes:', error);
-            window.clientesPorId = {};
-        }
-    }
-
-    const formClientes = document.getElementById('formFiltroClientes');
-    if (formClientes) {
-        const enviarFiltroClientes = function () {
-            const formData = new FormData(formClientes);
-            formData.set('ajax', '1');
-
-            fetch('?url=clientes&type=list', {
-                method: 'POST',
-                body: formData
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success || !data.html) return;
-                const wrap = document.createElement('div');
-                wrap.innerHTML = data.html;
-                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12');
-                if (!nuevaVista) return;
-                const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
-                if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
-                inicializarMapaClientes();
-            })
-            .catch(() => {
-                formClientes.submit();
-            });
-        };
-
-        formClientes.addEventListener('submit', function (e) {
-            e.preventDefault();
-            enviarFiltroClientes();
-        });
-
-        formClientes.querySelectorAll('select').forEach(function (selectEl) {
-            selectEl.addEventListener('change', function () {
-                enviarFiltroClientes();
-            });
-        });
-    }
-
-    inicializarMapaClientes();
-
-    <?php // CALLBACK DE MENOR DE EDAD ?>
-    let modalMenorEdadMostrado = false;
-
-    Validador.onMenorEdad(function(edad) {
-        if (modalMenorEdadMostrado) return;
-
-        const modalEl = document.getElementById('modalAlertaMenorEdad');
-        if (!modalEl) {
-            console.warn('No se encontró el modal de menor de edad');
-            return;
-        }
-
-        modalMenorEdadMostrado = true;
-
-        const edadEl = document.getElementById('alerta-edad-detectada');
-        if (edadEl) edadEl.textContent = edad + ' años';
-
-        new bootstrap.Modal(modalEl).show();
-
-        modalEl.addEventListener('hidden.bs.modal', function onHidden() {
-            modalMenorEdadMostrado = false;
-            modalEl.removeEventListener('hidden.bs.modal', onHidden);
-        });
-    });
-
-    <?php // INICIALIZAR VALIDADOR EN LOS MODALES ?>
-    const modalReg = document.getElementById('modalRegistrarCliente');
-    const modalEdt = document.getElementById('modalEditarCliente');
-    if (modalReg) Validador.init(modalReg);
-    if (modalEdt) Validador.init(modalEdt);
-
-    if (modalReg) {
-        modalReg.addEventListener('show.bs.modal', function() {
-            Validador.resetFormulario('formRegistrarNatural');
-            Validador.resetFormulario('formRegistrarJuridico');
-        });
-    }
-
-    <?php // VALIDAR AL ENVIAR FORMULARIOS ?>
-    ['formRegistrarNatural', 'formRegistrarJuridico', 'formEditarNatural', 'formEditarJuridico'].forEach(function(id) {
-        const form = document.getElementById(id);
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                if (id === 'formRegistrarNatural' || id === 'formEditarNatural') {
-                    const inputFecha = id === 'formRegistrarNatural' 
-                        ? document.getElementById('reg-fecha-nac') 
-                        : document.getElementById('editar-natural-fecha');
-                    if (inputFecha && inputFecha.value) {
-                        const partes = inputFecha.value.split('-');
-                        const fechaNac = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-                        const hoy = new Date();
-                        let edad = hoy.getFullYear() - fechaNac.getFullYear();
-                        const mes = hoy.getMonth() - fechaNac.getMonth();
-                        if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) edad--;
-                        
-                        if (edad < 18) {
-                            e.preventDefault();
-                            e.stopPropagation();
-
-                            const modalEl = document.getElementById('modalAlertaMenorEdad');
-                            if (modalEl) {
-                                const edadEl = document.getElementById('alerta-edad-detectada');
-                                if (edadEl) edadEl.textContent = (edad >= 0 ? edad : 0) + ' años';
-                                new bootstrap.Modal(modalEl).show();
-                            }
-
-                            inputFecha.classList.add('campo-invalido');
-                            inputFecha.focus();
-
-                            return false;
-                        } else {
-                            inputFecha.classList.remove('campo-invalido');
-                        }
-                    }
-                }
-
-                if (!Validador.validarFormulario(id)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-            });
-        }
-    });
-
-    <?php // VER DETALLE DEL CLIENTE ?>
-    window.verDetalleCliente = function(id) {
-        const c = clientesPorId[id];
-        if (!c) return;
-
-        const esJuridico = (c.tipo_cliente === 'Jurídico');
-        const nombre = esJuridico 
-            ? (c.razon_social || 'Sin razón social') 
-            : ((c.nombre || '') + ' ' + (c.apellido || '')).trim();
-        const documento = esJuridico ? (c.rif || 'N/A') : (c.cedula || 'N/A');
-
-        document.getElementById('ver-cliente-titulo').querySelector('h4').textContent = nombre || 'Sin nombre';
-        
-        const badge = document.getElementById('ver-cliente-tipo-badge');
-        if (esJuridico) {
-            badge.textContent = 'Jurídico';
-            badge.style.background = 'rgba(13,110,253,0.15)';
-            badge.style.color = '#0d6efd';
-        } else {
-            badge.textContent = 'Natural';
-            badge.style.background = 'rgba(40,167,69,0.15)';
-            badge.style.color = '#28a745';
-        }
-
-        const idElem = document.getElementById('ver-cliente-id');
-        if (idElem) idElem.textContent = '#' + c.id_cliente;
-
-        const statusBadge = document.getElementById('ver-cliente-status-badge');
-        if (statusBadge) {
-            if (c.status === 'inactivo' || parseInt(c.eliminado) === 1) {
-                statusBadge.textContent = 'Inactivo';
-                statusBadge.style.background = 'rgba(220,53,69,0.15)';
-                statusBadge.style.color = '#dc3545';
-            } else {
-                statusBadge.textContent = 'Activo';
-                statusBadge.style.background = 'rgba(40,167,69,0.15)';
-                statusBadge.style.color = '#28a745';
-            }
-        }
-
-        document.getElementById('ver-cliente-documento').textContent = documento;
-        document.getElementById('ver-cliente-nombre').textContent = nombre;
-        document.getElementById('ver-cliente-telefono').textContent = c.telefono || 'N/A';
-        document.getElementById('ver-cliente-correo').textContent = c.correo_electronico || 'N/A';
-        document.getElementById('ver-cliente-direccion').textContent = c.direccion || 'Sin dirección registrada';
-
-        const fechaWrap = document.getElementById('ver-cliente-fecha-wrap');
-        if (esJuridico || !c.fecha_de_nacimiento) {
-            fechaWrap.style.display = 'none';
-        } else {
-            fechaWrap.style.display = 'block';
-            document.getElementById('ver-cliente-fecha').textContent = Validador.formatearFecha(c.fecha_de_nacimiento);
-        }
-
-        new bootstrap.Modal(document.getElementById('modalVerCliente')).show();
-    };
-
-    <?php // EDITAR CLIENTE ?>
-    window.editarCliente = function(id) {
-        const c = clientesPorId[id];
-        if (!c) return;
-
-        const esJuridico = (c.tipo_cliente === 'Jurídico');
-        const nombre = esJuridico 
-            ? (c.razon_social || '') 
-            : ((c.nombre || '') + ' ' + (c.apellido || '')).trim();
-        
-        document.getElementById('editar-cliente-nombre-header').textContent = nombre || 'Cliente';
-
-        const bloqueNatural = document.getElementById('editar-bloque-natural');
-        const bloqueJuridico = document.getElementById('editar-bloque-juridico');
-
-        if (esJuridico) {
-            bloqueNatural.style.display = 'none';
-            bloqueJuridico.style.display = 'block';
-
-            document.getElementById('editar-juridico-id').value = c.id_cliente;
-            document.getElementById('editar-juridico-rif').value = c.rif || '';
-            document.getElementById('editar-juridico-telefono').value = c.telefono || '';
-            document.getElementById('editar-juridico-razon').value = c.razon_social || '';
-            document.getElementById('editar-juridico-correo').value = c.correo_electronico || '';
-            document.getElementById('editar-juridico-direccion').value = c.direccion || '';
-            
-            setTimeout(function() {
-                document.querySelectorAll('#editar-bloque-juridico input[data-validate]').forEach(function(input) {
-                    Validador.validarCampo(input);
-                });
-            }, 100);
-        } else {
-            bloqueNatural.style.display = 'block';
-            bloqueJuridico.style.display = 'none';
-
-            document.getElementById('editar-natural-id').value = c.id_cliente;
-            document.getElementById('editar-natural-cedula').value = c.cedula || '';
-            document.getElementById('editar-natural-telefono').value = c.telefono || '';
-            document.getElementById('editar-natural-nombre').value = c.nombre || '';
-            document.getElementById('editar-natural-apellido').value = c.apellido || '';
-            document.getElementById('editar-natural-correo').value = c.correo_electronico || '';
-            document.getElementById('editar-natural-fecha').value = c.fecha_de_nacimiento || '';
-            document.getElementById('editar-natural-direccion').value = c.direccion || '';
-            
-            setTimeout(function() {
-                document.querySelectorAll('#editar-bloque-natural input[data-validate]').forEach(function(input) {
-                    Validador.validarCampo(input);
-                });
-            }, 100);
-        }
-
-        new bootstrap.Modal(document.getElementById('modalEditarCliente')).show();
-    };
-
-    <?php // CONFIRMAR DESACTIVAR (SIN SWITCH) ?>
-    window.confirmarEliminarCliente = function(id, nombre) {
-        document.getElementById('eliminar-cliente-id').value = id;
-        document.getElementById('eliminar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
-        new bootstrap.Modal(document.getElementById('modalEliminarCliente')).show();
-    };
-
-    <?php // CONFIRMAR ACTIVAR (SIN SWITCH) ?>
-    window.confirmarReactivarCliente = function(id, nombre) {
-        document.getElementById('reactivar-cliente-id').value = id;
-        document.getElementById('reactivar-cliente-nombre').textContent = nombre || 'Cliente #' + id;
-        new bootstrap.Modal(document.getElementById('modalReactivarCliente')).show();
-    };
-
-    <?php // ESTILO DE PESTAÑAS ?>
-    document.querySelectorAll('#modalRegistrarCliente .nav-link').forEach(function(tab) {
-        tab.addEventListener('shown.bs.tab', function(e) {
-            document.querySelectorAll('#modalRegistrarCliente .nav-link').forEach(function(t) {
-                t.style.color = '#6c757d';
-                t.style.borderBottom = 'none';
-            });
-            e.target.style.color = '#f39c12';
-            e.target.style.borderBottom = '2px solid #f39c12';
-        });
-    });
-});
-</script>
 
 <?php // AUTO-CIERRE DE ALERTAS ?>
 <script>
@@ -693,4 +401,5 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+<?php $scriptsModulo = ['clientesJquery.js']; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

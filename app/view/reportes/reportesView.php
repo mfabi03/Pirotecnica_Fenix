@@ -8,6 +8,7 @@ $porPaginaActual = $porPaginaActual ?? 10;
 $totalEntradas = $totalEntradas ?? 0;
 $totalSalidas = $totalSalidas ?? 0;
 $totalAnuladas = $totalAnuladas ?? 0;
+$totalCierres = $totalCierres ?? 0; // 🔥 Agregamos la variable para las tarjetas
 
 $categorias = [];
 try { 
@@ -23,7 +24,6 @@ $paramsExport = http_build_query([
     'fecha_inicio' => $fecha_inicio, 
     'fecha_fin' => $fecha_fin, 
     'tipo_movimiento' => $_GET['tipo_movimiento'] ?? '', 
-    'id_categoria' => $_GET['id_categoria'] ?? '', 
     'busqueda' => $_GET['busqueda'] ?? ''
 ]);
 ?>
@@ -63,6 +63,7 @@ tr.fila-anulada .badge { color: #000000 !important; opacity: 1 !important; }
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" action="?url=reportes" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportes">
+            
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Mostrar</label>
                 <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
@@ -79,31 +80,28 @@ tr.fila-anulada .badge { color: #000000 !important; opacity: 1 !important; }
                 <label class="form-label fw-bold small text-dark">Hasta</label>
                 <input type="date" name="fecha_fin" class="form-control form-control-sm" value="<?= htmlspecialchars($fecha_fin) ?>">
             </div>
-            <div class="col-md-2">
+            
+            <div class="col-md-3">
                 <label class="form-label fw-bold small text-dark">Tipo</label>
                 <select name="tipo_movimiento" class="form-select form-select-sm" data-no-search="true">
                     <option value="">Todos</option>
                     <option value="Entrada" <?= (($_GET['tipo_movimiento'] ?? '') == 'Entrada') ? 'selected' : '' ?>>Entradas</option>
                     <option value="Salida" <?= (($_GET['tipo_movimiento'] ?? '') == 'Salida') ? 'selected' : '' ?>>Salidas</option>
                     <option value="Cierre de Caja" <?= (($_GET['tipo_movimiento'] ?? '') == 'Cierre de Caja') ? 'selected' : '' ?>>Cierres de Caja</option>
-                    <option value="Anulación" <?= (($_GET['tipo_movimiento'] ?? '') == 'Anulación') ? 'selected' : '' ?>>Anulaciones</option>
+                    <option value="Anulación" <?= (($_GET['tipo_movimiento'] ?? '') == 'Anulación') ? 'selected' : '' ?>>Todas las Anulaciones</option>
+                    <option value="Anulación Entrada" <?= (($_GET['tipo_movimiento'] ?? '') == 'Anulación Entrada') ? 'selected' : '' ?>>Anuladas de Entrada</option>
+                    <option value="Anulación Salida" <?= (($_GET['tipo_movimiento'] ?? '') == 'Anulación Salida') ? 'selected' : '' ?>>Anuladas de Salida</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label fw-bold small text-dark">Categoría</label>
-                <select name="id_categoria" class="form-select form-select-sm" data-no-search="true">
-                    <option value="">Todas</option>
-                    <?php foreach ($categorias as $cat): ?>
-                        <option value="<?= $cat['id_categoria'] ?>" <?= (($_GET['id_categoria'] ?? '') == $cat['id_categoria']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($cat['nombre_categoria']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+
+            <!-- 🔥 CAMPO DE BÚSQUEDA ACTUALIZADO -->
+            <div class="col-md-3">
+                <label class="form-label fw-bold small text-dark">Buscar (Prod, Cat, Cliente, Prov)</label>
+                <input type="text" name="busqueda" class="form-control form-control-sm" 
+                       placeholder="Ej: Cohete, Juan" 
+                       value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
             </div>
-            <div class="col-md-2">
-                <label class="form-label fw-bold small text-dark">Producto</label>
-                <input type="text" name="busqueda" class="form-control form-control-sm" placeholder="Buscar..." value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
-            </div>
+
             <div class="col-md-12 mt-3">
                 <div class="d-flex justify-content-end gap-2">
                     <a href="?url=reportes" class="btn btn-secondary btn-sm fw-bold px-4"><i class="fas fa-eraser"></i> Limpiar</a>
@@ -113,10 +111,89 @@ tr.fila-anulada .badge { color: #000000 !important; opacity: 1 !important; }
         </form>
     </div>
 
+    <!-- 🔥 ESTADÍSTICAS (4 TARJETAS) -->
+    <div class="row mb-4 g-3">
+        <!-- Entradas -->
+        <div class="col-md-3">
+            <div class="dark-card card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
+                    <div>
+                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                            <i class="fas fa-sign-in-alt me-1"></i> Entradas
+                        </h6>
+                        <h2 style="color: #28a745; font-weight: 700; font-size: 2.2rem; margin: 0;">
+                            + <?= (int) $totalEntradas ?>
+                        </h2>
+                    </div>
+                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(40,167,69,0.12); display: flex; align-items: center; justify-content: center; color: #28a745; font-size: 1.5rem;">
+                        <i class="fas fa-sign-in-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Salidas -->
+        <div class="col-md-3">
+            <div class="dark-card card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
+                    <div>
+                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                            <i class="fas fa-sign-out-alt me-1"></i> Salidas
+                        </h6>
+                        <h2 style="color: #dc3545; font-weight: 700; font-size: 2.2rem; margin: 0;">
+                            - <?= (int) $totalSalidas ?>
+                        </h2>
+                    </div>
+                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 1.5rem;">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anuladas -->
+        <div class="col-md-3">
+            <div class="dark-card card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
+                    <div>
+                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                            <i class="fas fa-ban me-1"></i> Anuladas
+                        </h6>
+                        <h2 style="color: #d97706; font-weight: 700; font-size: 2.2rem; margin: 0;">
+                            <?= (int) $totalAnuladas ?>
+                        </h2>
+                    </div>
+                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(217, 119, 6, 0.15); display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 1.5rem;">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cierres de Caja -->
+        <div class="col-md-3">
+            <div class="dark-card card shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
+                    <div>
+                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                            <i class="fas fa-cash-register me-1"></i> Cierres
+                        </h6>
+                        <h2 style="color: #0d6efd; font-weight: 700; font-size: 2.2rem; margin: 0;">
+                            <?= (int) $totalCierres ?>
+                        </h2>
+                    </div>
+                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(13,110,253,0.15); display: flex; align-items: center; justify-content: center; color: #0d6efd; font-size: 1.5rem;">
+                        <i class="fas fa-cash-register"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- TABLA -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h5 class="m-0"><i class="fas fa-list me-2"></i> Historial de Notas</h5>
+            <h5 class="m-0"><i class="fas fa-list me-2"></i> Historial de Movimientos</h5>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle m-0">
@@ -152,6 +229,44 @@ tr.fila-anulada .badge { color: #000000 !important; opacity: 1 !important; }
                                 $badgeClass = $esEntrada ? 'bg-success' : 'bg-danger'; 
                             }
                             $motivo = $m['motivo_anulacion'] ?? 'No se registró un motivo.';
+                            
+                            // 🔥 LÓGICA MEJORADA: Si es cierre, calculamos desde la BD en vivo
+                            if ($esCierre) {
+                                $prodCount = $m['total_productos_distintos'] ?? $m['total_productos'] ?? 0;
+                                $catCount = $m['total_categorias'] ?? 0;
+                                
+                                // Si da 0, hacemos la consulta a la base de datos en vivo
+                                if ($catCount == 0 || $prodCount == 0) {
+                                    try {
+                                        $fechaCierre = date('Y-m-d', strtotime($m['fecha_movimiento']));
+                                        $idUsuarioCierre = $m['id_usuario_cierre'] ?? 0; // 🔥 Capturamos el ID del cajero
+                                        
+                                        $sqlCheck = "SELECT 
+                                                        COUNT(DISTINCT ds.id_producto) AS prods,
+                                                        COUNT(DISTINCT p.id_categoria) AS cats
+                                                     FROM nota_de_salida ns
+                                                     INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                                                     INNER JOIN producto p ON ds.id_producto = p.id_producto
+                                                     WHERE DATE(ns.fecha) = :fecha 
+                                                       AND ns.id_usuario = :id_usuario"; // 🔥 Filtramos por cajero
+                                        
+                                        $stmtCheck = $db->prepare($sqlCheck);
+                                        $stmtCheck->execute([
+                                            ':fecha' => $fechaCierre,
+                                            ':id_usuario' => $idUsuarioCierre
+                                        ]);
+                                        $res = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+                                        
+                                        if ($res) {
+                                            $prodCount = $res['prods'] > 0 ? $res['prods'] : $prodCount;
+                                            $catCount = $res['cats'] > 0 ? $res['cats'] : $catCount;
+                                        }
+                                    } catch (Exception $e) {}
+                                }
+                            } else {
+                                $prodCount = $m['total_productos'] ?? 0;
+                                $catCount  = $m['total_categorias'] ?? 0;
+                            }
                         ?>
                             <tr class="<?= $esAnulacion ? 'fila-anulada' : '' ?>">
                                 <td class="ps-4"><?= formatoFechaVenezuela($m['fecha_movimiento']) ?></td>
@@ -165,8 +280,8 @@ tr.fila-anulada .badge { color: #000000 !important; opacity: 1 !important; }
                                         <?= htmlspecialchars($tipo) ?>
                                     </span>
                                 </td>
-                                <td class="text-center"><span class="fw-bold" style="font-size: 1.05rem;"><?= (int)($m['total_productos'] ?? 0) ?> Prod.</span></td>
-                                <td class="text-center"><span class="fw-bold" style="font-size: 1.05rem;"><?= (int)($m['total_categorias'] ?? 0) ?> Cat.</span></td>
+                                <td class="text-center"><span class="fw-bold" style="font-size: 1.05rem;"><?= (int)$prodCount ?> Prod.</span></td>
+                                <td class="text-center"><span class="fw-bold" style="font-size: 1.05rem;"><?= (int)$catCount ?> Cat.</span></td>
                                 <td class="text-center"><span class="fw-bold" style="font-size: 1.05rem;"><?= (int)($m['total_unidades'] ?? 0) ?> Und.</span></td>
                                 <td><?= htmlspecialchars($m['usuario_activo']) ?></td>
                                 <td class="pe-4 text-center">
@@ -212,81 +327,15 @@ tr.fila-anulada .badge { color: #000000 !important; opacity: 1 !important; }
     </div>
 </div>
 
+<!-- 🔥 AQUÍ INCLUIMOS LOS MODALES -->
 <?php require_once __DIR__ . '/verDetalleView.php'; ?>
 <?php require_once __DIR__ . '/MotivoAnulacionView.php'; ?>
-
-<!-- 🔥 MODAL DE RECIBO DE CIERRE (CON LOGO Y BOTÓN IMPRIMIR) -->
-<div class="modal fade" id="modalReciboCierre" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; overflow: hidden;">
-            <div class="modal-header" style="background: #1a1a2e; padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;"><i class="fas fa-receipt me-2" style="color: #f39c12;"></i> Detalle del Cierre de Caja</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
-            </div>
-            <div class="modal-body" style="padding: 24px;">
-                <div class="d-flex align-items-center justify-content-center mb-4 gap-3">
-                    <img src="assets/imagenes/logo.png" alt="Logo" style="width: 60px; height: 60px; object-fit: contain;">
-                    <div>
-                        <h4 style="color: #1a1a2e; font-weight: 800; margin-bottom: 0;">PIROTECNICA FENIX C.A.</h4>
-                        <p style="color: #6c757d; font-size: 0.85rem; margin: 0;">Sistema de gestión - Arqueo de Turno</p>
-                    </div>
-                </div>
-
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="p-3" style="background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef;">
-                            <h6 style="font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px;">Datos del Turno</h6>
-                            <div class="mb-2"><strong>Fecha:</strong> <span id="hist-fecha"></span></div>
-                            <div class="mb-2"><strong>Hora Cierre:</strong> <span id="hist-hora"></span></div>
-                            <div class="mb-0"><strong>Encargado:</strong> <span id="hist-encargado"></span></div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3" style="background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef;">
-                            <h6 style="font-weight: 700; border-bottom: 2px solid rgba(243,156,18,0.2); padding-bottom: 8px;">Resumen</h6>
-                            <div class="mb-2"><strong>Total Notas:</strong> <span id="hist-notas"></span></div>
-                            <div class="mb-2"><strong>Total Unidades:</strong> <span id="hist-unidades"></span></div>
-                            <div class="mb-0"><strong>Prods. Distintos:</strong> <span id="hist-productos"></span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card" style="border: 1px solid #e9ecef; border-radius: 12px; overflow: hidden;">
-                    <div class="card-header py-3" style="background: #1a1a2e; border: none;">
-                        <h6 class="m-0" style="color: #ffffff; font-weight: 700;"><i class="fas fa-list me-2" style="color: #f39c12;"></i> Detalle de Movimientos</h6>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle m-0">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4 py-3">NOTA #</th>
-                                    <th class="py-3">HORA</th>
-                                    <th class="py-3">CLIENTE</th>
-                                    <th class="py-3">TIPO</th>
-                                    <th class="py-3 text-center">PRODUCTOS</th>
-                                    <th class="py-3 text-center">CATEGORÍAS</th>
-                                    <th class="py-3 text-center">UNIDADES</th>
-                                    <th class="pe-4 py-3">ENCARGADO</th>
-                                </tr>
-                            </thead>
-                            <tbody id="hist-tabla-detalles"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" style="display: flex; justify-content: space-between;">
-                <!-- 🔥 BOTÓN DE IMPRIMIR -->
-                <button type="button" id="btnImprimirCierreHist" class="btn btn-danger">
-                    <i class="fas fa-file-pdf me-1"></i> Imprimir este Cierre
-                </button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
+<?php require_once __DIR__ . '/ReciboCierreView.php'; ?> <!-- El nuevo archivo que creaste -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    
+    // 1. FILTRO AJAX
     const form = document.getElementById('formFiltros');
     if (form) {
         form.addEventListener('submit', function (e) {
@@ -308,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // 2. VER MOTIVO
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.btn-ver-motivo');
         if (btn) {
@@ -318,75 +368,143 @@ document.addEventListener('DOMContentLoaded', function () {
             bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMotivoAnulacion')).show();
         }
     });
-});
 
-// 🔥 FUNCIÓN PARA ABRIR EL MODAL CON DATOS REALES DEL CIERRE Y CONFIGURAR IMPRESIÓN
-window.verReciboCierre = function(id) {
-    const modalEl = document.getElementById('modalReciboCierre');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    
-    // Mostrar spinner en la tabla
-    document.getElementById('hist-tabla-detalles').innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-warning"></div></td></tr>';
-    modal.show();
+    // 3. VER DETALLE NOTA
+    window.verDetalleNota = function (id, tipo) {
+        const $cargando = document.getElementById('ver-nota-cargando');
+        const $error = document.getElementById('ver-nota-error');
+        const $contenido = document.getElementById('ver-nota-contenido');
 
-    fetch('?url=obtener_cierre_ajax&id=' + id)
-        .then(response => response.json())
+        $cargando.style.display = 'block';
+        $error.style.display = 'none';
+        $contenido.style.display = 'none';
+        document.getElementById('ver-nota-id').textContent = '#' + id;
+
+        const modalEl = document.getElementById('modalVerNota');
+        if (modalEl) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+
+        const esEntrada = (
+            tipo === 'Entrada' ||
+            tipo === 'Anulación Entrada' ||
+            (typeof tipo === 'string' && tipo.indexOf('Entrada') !== -1)
+        );
+
+        const columnasDinero = document.querySelectorAll('.col-dinero');
+        columnasDinero.forEach(el => {
+            if (esEntrada) el.classList.remove('d-none');
+            else el.classList.add('d-none');
+        });
+
+        document.getElementById('ver-nota-label-cliente').textContent = esEntrada ? 'PROVEEDOR' : 'CLIENTE';
+        document.getElementById('ver-nota-th-descripcion').textContent = esEntrada ? 'Descripción' : 'Categoría';
+
+        const $btnImprimir = document.getElementById('btnImprimirNotaIndividual');
+        if ($btnImprimir) {
+            const urlPdf = esEntrada
+                ? '?url=exportar_pdf&tipo=entrada&id=' + id
+                : '?url=exportar_pdf&tipo=salida&id=' + id;
+            $btnImprimir.setAttribute('href', urlPdf);
+        }
+
+        // Petición GET para el controlador
+        const url = esEntrada 
+            ? `?url=notaentrada&type=show_json&id=${id}` 
+            : `?url=notasalida&type=detalle_json&id=${id}`;
+
+        fetch(url, { method: 'GET' })
+        .then(async response => {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(text.substring(0, 500)); 
+            }
+        })
         .then(data => {
-            if (!data.success) {
-                document.getElementById('hist-tabla-detalles').innerHTML = `<tr><td colspan="8" class="text-center py-3 text-danger">${data.mensaje}</td></tr>`;
+            $cargando.style.display = 'none';
+
+            if (!data || !data.success || !data.nota) {
+                $error.style.display = 'block';
+                document.getElementById('ver-nota-error-msg').textContent = (data && data.error) || 'Error al cargar la nota';
                 return;
             }
 
-            const c = data.cierre;
-            const d = data.detalles;
+            const nota = data.nota;
+            $contenido.style.display = 'block';
 
-            // Llenar cabecera
-            document.getElementById('hist-fecha').textContent = c.fecha_cierre;
-            document.getElementById('hist-hora').textContent = new Date(c.created_at).toLocaleTimeString('es-VE');
-            document.getElementById('hist-encargado').textContent = c.nombre_usuario;
-            document.getElementById('hist-notas').textContent = c.total_documentos;
-            document.getElementById('hist-unidades').textContent = c.total_unidades;
-            document.getElementById('hist-productos').textContent = c.total_productos_distintos;
+            let fechaRaw = nota.fecha || nota.fecha_ingreso || '';
+            let fechaFmt = fechaRaw;
+            if (typeof Validador !== 'undefined' && Validador.formatearFecha) {
+                fechaFmt = Validador.formatearFecha(fechaRaw);
+            }
+            document.getElementById('ver-nota-fecha').textContent = fechaFmt || '—';
+            document.getElementById('ver-nota-encargado').textContent = nota.usuario_responsable || nota.encargado_nombre || 'N/A';
 
-            // 🔥 CONFIGURAR EL BOTÓN DE IMPRIMIR CON EL ID DEL CIERRE
-            const btnImprimir = document.getElementById('btnImprimirCierreHist');
-            if (btnImprimir) {
-                btnImprimir.onclick = function() {
-                    window.open(`?url=exportar_cierre_pdf&id_cierre=${c.id_cierre}`, '_blank');
-                };
+            if (esEntrada) {
+                document.getElementById('ver-nota-cliente').textContent = nota.razon_social || 'Sin proveedor';
+                document.getElementById('ver-nota-documento').textContent = nota.rif || 'N/A';
+            } else {
+                document.getElementById('ver-nota-cliente').textContent = nota.cliente || nota.nombre_cliente || 'N/A';
+                document.getElementById('ver-nota-documento').textContent = nota.cedula || nota.rif || nota.documento || 'N/A';
             }
 
-            // Llenar tabla de detalles
-            const tbody = document.getElementById('hist-tabla-detalles');
+            const tbody = document.getElementById('ver-nota-productos-tbody');
             tbody.innerHTML = '';
+            let totalUnidades = 0;
+            let totalDolares = 0;
 
-            if (d && d.length > 0) {
-                d.forEach(det => {
-                    let hora = det.fecha.split(' ')[1] || det.fecha;
-                    const prodArray = det.productos ? det.productos.split(', ') : [];
-                    const catArray = det.categorias ? det.categorias.split(', ') : [];
+            if (nota.detalles && nota.detalles.length > 0) {
+                nota.detalles.forEach(function (d) {
+                    const cantidad = parseInt(d.cantidad, 10) || 0;
+                    totalUnidades += cantidad;
 
-                    tbody.innerHTML += `
+                    const colDesc = esEntrada 
+                        ? (nota.descripcion || 'Sin descripción') 
+                        : (d.nombre_categoria || d.categoria || d.nombre_cat || 'Sin categoría');
+                    
+                    let filaHTML = `
                         <tr>
-                            <td class="ps-4 fw-bold">#${det.id_documento}</td>
-                            <td>${hora}</td>
-                            <td>${det.nombre_cliente}</td>
-                            <td><span class="badge ${det.tipo_cliente === 'Jurídico' ? 'bg-info text-dark' : 'bg-success'}">${det.tipo_cliente}</span></td>
-                            <td class="text-center fw-bold">${prodArray.length}</td>
-                            <td class="text-center fw-bold">${catArray.length}</td>
-                            <td class="text-center fw-bold">${det.total_unidades}</td>
-                            <td class="pe-4">${det.usuario_activo}</td>
-                        </tr>
+                            <td class="ps-4" style="color: #1a1a2e;">${d.nombre_producto || d.producto || 'N/A'}</td>
+                            <td style="color: #6c757d;">${colDesc}</td>
+                            <td class="text-center fw-bold" style="color: #1a1a2e;">${cantidad}</td>
                     `;
+
+                    if (esEntrada) {
+                        const costo = parseFloat(d.costo_unitario) || 0;
+                        const subtotal = cantidad * costo;
+                        totalDolares += subtotal;
+                        
+                        filaHTML += `
+                            <td class="text-end" style="color: #1a1a2e;">$${costo.toFixed(2)}</td>
+                            <td class="text-end pe-4 fw-bold" style="color: #1a1a2e;">$${subtotal.toFixed(2)}</td>
+                        `;
+                    }
+                    filaHTML += `</tr>`;
+                    tbody.innerHTML += filaHTML;
                 });
             } else {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3">No hay movimientos en este cierre</td></tr>`;
+                const colspan = esEntrada ? 5 : 3;
+                tbody.innerHTML = `<tr><td class="text-center py-3" colspan="${colspan}" style="color: #6c757d;">No hay productos</td></tr>`;
+            }
+
+            document.getElementById('ver-nota-total-unidades').textContent = totalUnidades;
+            if (esEntrada) {
+                document.getElementById('ver-nota-total-dolares').textContent = '$' + totalDolares.toFixed(2);
             }
         })
         .catch(err => {
-            document.getElementById('hist-tabla-detalles').innerHTML = `<tr><td colspan="8" class="text-center py-3 text-danger">Error de conexión</td></tr>`;
+            $cargando.style.display = 'none';
+            $error.style.display = 'block';
+            document.getElementById('ver-nota-error-msg').innerHTML = '<div style="font-size:12px; text-align:left; overflow:auto; max-height:200px;"><b>Error del servidor:</b><br>' + err.message.replace(/</g, "&lt;") + '</div>';
         });
-};
+    };
+
+});
 </script>
+
+<!-- 🔥 INCLUIMOS EL JS DEL CIERRE -->
+<script src="assets/js/reciboCierre.js"></script>
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

@@ -1,7 +1,7 @@
 <?php
-
-// Modal para Ver Detalle del Cliente
-
+// ============================================================
+// PARTIAL: Modal para Ver Detalle del Cliente
+// ============================================================
 ?>
 
 <div class="modal fade" id="modalVerCliente" tabindex="-1" aria-hidden="true">

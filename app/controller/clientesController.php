@@ -47,7 +47,7 @@ unset($_SESSION['tipo_mensaje']);
 $busqueda = trim((string) ($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? ''));
 $tipo = trim((string) ($_REQUEST['tipo'] ?? 'todos'));
 
-// 🔥 CAMBIO CLAVE: Por defecto solo muestra ACTIVOS. Los inactivos solo si se pide explícitamente.
+// 🔥 CAMBIO CLAVE: Por defecto solo muestra ACTIVOS. Los inactivos/eliminados solo si se pide explícitamente.
 $estado_cliente = strtolower(trim((string) ($_REQUEST['estado_cliente'] ?? 'activos')));
 if (!in_array($estado_cliente, ['todos', 'activos', 'inactivos'], true)) {
     $estado_cliente = 'activos';
@@ -146,7 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
             throw new Exception("ID de cliente inválido");
         }
         $resultado = $modelo->eliminarCliente($id);
-        $_SESSION['mensaje'] = $resultado ? "✅ Cliente inactivado exitosamente" : "No se pudo inactivar el cliente";
+        // 🔥 MENSAJE CAMBIADO A "ELIMINADO"
+        $_SESSION['mensaje'] = $resultado ? "✅ Cliente eliminado exitosamente" : "No se pudo eliminar el cliente";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
     } catch (Exception $e) {
         $msg = $e->getMessage();
@@ -158,8 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
             $_SESSION['tipo_mensaje'] = "danger";
         }
     }
-    // Después de eliminar, regresamos a la lista de activos
-    header("Location: ?url=clientes&type=list&estado_cliente=activos");
+    // 🔥 DESPUÉS DE ELIMINAR, REGRESAMOS A LA LISTA DE ELIMINADOS
+    header("Location: ?url=clientes&type=list&estado_cliente=inactivos");
     exit();
 }
 
@@ -178,8 +179,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'reactivar' || (isset($_
         $_SESSION['mensaje'] = $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
-    // Después de reactivar, regresamos a la lista de inactivos
-    header("Location: ?url=clientes&type=list&estado_cliente=inactivos");
+    // Después de reactivar, regresamos a la lista de activos
+    header("Location: ?url=clientes&type=list&estado_cliente=activos");
     exit();
 }
 
