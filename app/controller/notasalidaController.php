@@ -1,7 +1,7 @@
 <?php
 namespace App\Pirotecnicafenix\Controller;
 
-use PDO; // 🔥 ESTA ERA LA LÍNEA QUE FALTABA
+use PDO;
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\notasalidaModel;
 use App\Pirotecnicafenix\Model\ProductoModel;
@@ -19,7 +19,6 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $rutaRaiz = dirname(__DIR__, 2);
 
-// Carga de modelos con fallback por si la carpeta está en minúscula
 $pathNotaModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'notasalidaModel.php';
 $pathProductoModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'ProductoModel.php';
 $pathClienteModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'clientesModel.php';
@@ -47,7 +46,6 @@ try {
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-// Valida que el usuario tenga una sesión activa y siga existiendo en la base de datos
 function obtenerIdUsuarioValido($db) {
     $idUsuario = $_SESSION['id_usuario'] ?? $_SESSION['usuario_id'] ?? null;
     if (!$idUsuario) throw new Exception("No hay usuario en sesión.");
@@ -97,6 +95,20 @@ if ($type === 'detalle_json' && $id) {
             echo json_encode(['success' => false, 'error' => 'Nota no encontrada']); 
             exit; 
         }
+        
+        if ($nota['eliminado'] == 1) {
+            if (!empty($nota['fecha_anulacion'])) {
+                $fechaAnulacion = new \DateTime($nota['fecha_anulacion']);
+                $nota['fecha_anulacion_fmt'] = $fechaAnulacion->format('d/m/Y h:i A');
+            } else {
+                $nota['fecha_anulacion_fmt'] = 'N/A';
+            }
+            
+            $stmtTotal = $db->prepare("SELECT COALESCE(SUM(cantidad), 0) FROM detalle_salida WHERE id_nota_salida = ?");
+            $stmtTotal->execute([$id]);
+            $nota['total_productos_anulados'] = (int)$stmtTotal->fetchColumn();
+        }
+
         echo json_encode(['success' => true, 'nota' => $nota], JSON_UNESCAPED_UNICODE);
     } catch (Exception $e) { 
         echo json_encode(['success' => false, 'error' => $e->getMessage()]); 

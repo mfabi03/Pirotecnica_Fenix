@@ -12,7 +12,6 @@ class notasalidaModel {
         $this->db = $db;
     }
 
-    // OBTENER PRODUCTOS CON CATEGORIA (Excluye eliminados y sin stock)
     public function obtenerProductosConCategoria() {
         try {
             $sql = "SELECT p.id_producto, p.descripcion, p.cantidad AS stock, c.nombre_categoria, c.id_categoria
@@ -29,7 +28,6 @@ class notasalidaModel {
         }
     }
 
-    // OBTENER CLIENTES (SOLO ACTIVOS)
     public function obtenerClientes() {
         try {
             $sql = "SELECT p.id_persona AS id_cliente, p.nombre, p.apellido, cj.razon_social,
@@ -60,7 +58,6 @@ class notasalidaModel {
         }
     }
 
-    // REGISTRAR SALIDA
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
             $stmtCheck = $this->db->prepare("SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0");
@@ -71,7 +68,6 @@ class notasalidaModel {
             $stmtCheckUser->execute([$idUsuario]);
             if (!$stmtCheckUser->fetch()) throw new Exception("El usuario con ID $idUsuario no existe en la base de datos.");
             
-            // Validación de stock y trazabilidad (producto no eliminado)
             foreach ($detalles as $d) {
                 $stmtStock = $this->db->prepare("SELECT cantidad, eliminado, descripcion FROM producto WHERE id_producto = ?");
                 $stmtStock->execute([$d['id_producto']]);
@@ -115,17 +111,17 @@ class notasalidaModel {
         }
     }
 
-    // LISTAR NOTAS DE SALIDA (CON FILTRO DE USUARIO)
     public function listarNotasSalida($id_usuario = null) {
         try {
-            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado, motivo_anulacion 
+            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado, motivo_anulacion, fecha_anulacion 
                     FROM nota_de_salida";
             
             if ($id_usuario !== null) {
                 $sql .= " WHERE id_usuario = :id_usuario";
             }
             
-            $sql .= " ORDER BY id_nota_salida DESC";
+            // ORDENAMIENTO: Primero las anuladas más recientes
+            $sql .= " ORDER BY fecha_anulacion DESC, id_nota_salida DESC";
             
             $stmt = $this->db->prepare($sql);
             if ($id_usuario !== null) {
@@ -201,13 +197,12 @@ class notasalidaModel {
         }
     }
 
-    // BUSCAR NOTAS DE SALIDA (CON FILTRO DE USUARIO)
     public function buscarNotasSalida($termino, $id_usuario = null) {
         try {
             $termino = trim((string) $termino);
             if ($termino === '') return $this->listarNotasSalida($id_usuario);
 
-            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.eliminado, ns.motivo_anulacion 
+            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.eliminado, ns.motivo_anulacion, ns.fecha_anulacion 
                     FROM nota_de_salida ns
                     LEFT JOIN persona p ON ns.id_persona = p.id_persona
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
@@ -221,8 +216,9 @@ class notasalidaModel {
                 $sql .= " AND ns.id_usuario = :id_usuario";
             }
             
-            $sql .= " GROUP BY ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.eliminado, ns.motivo_anulacion
-                    ORDER BY ns.id_nota_salida DESC";
+            // 🔥 ORDENAMIENTO: Primero las anuladas más recientes
+            $sql .= " GROUP BY ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.eliminado, ns.motivo_anulacion, ns.fecha_anulacion
+                    ORDER BY ns.fecha_anulacion DESC, ns.id_nota_salida DESC";
 
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':termino', "%$termino%");
@@ -300,10 +296,9 @@ class notasalidaModel {
         }
     }
 
-    // OBTENER NOTA POR ID
     public function obtenerNotaPorId($id) {
         try {
-            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado, motivo_anulacion
+            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado, motivo_anulacion, fecha_anulacion
                     FROM nota_de_salida 
                     WHERE id_nota_salida = ?"; 
             $stmt = $this->db->prepare($sql);
@@ -361,7 +356,6 @@ class notasalidaModel {
         }
     }
 
-    // ELIMINAR NOTA (Anular y devolver stock)
     public function eliminarNota($id, $motivo = null) {
         try {
             $stmtCheck = $this->db->prepare("SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0");
@@ -379,7 +373,7 @@ class notasalidaModel {
                     $stmtRestaurar->execute([$d['cantidad'], $d['id_producto']]);
                 }
 
-                $stmtUpd = $this->db->prepare("UPDATE nota_de_salida SET eliminado = 1, motivo_anulacion = :motivo WHERE id_nota_salida = :id");
+                $stmtUpd = $this->db->prepare("UPDATE nota_de_salida SET eliminado = 1, motivo_anulacion = :motivo, fecha_anulacion = NOW() WHERE id_nota_salida = :id");
                 $stmtUpd->execute([':motivo' => $motivo, ':id' => $id]);
                 
                 $this->db->commit();
@@ -394,7 +388,6 @@ class notasalidaModel {
         }
     }
 
-    // OBTENER RESUMEN
     public function getResumen($id_usuario = null) {
         try {
             $sql = "SELECT COUNT(*) AS total_registros,
