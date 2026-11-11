@@ -161,6 +161,9 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
     <base href="/pirotecnica_fenix/">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilo.css">
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/validaciones.css">
     <style>
@@ -185,6 +188,16 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
             z-index: 1060; 
             border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
+        .fenix-wordmark {
+            font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+            font-weight: 500;
+            letter-spacing: .045em;
+        }
+        .navbar-brand .fenix-wordmark { font-size: 1.2em; }
+        .footer-fenix .fenix-wordmark {
+            font-size: .9rem;
+            letter-spacing: .14em;
+        }
         @media (max-width: 991.98px) {
             .content-wrapper { min-height: calc(100vh - 110px); }
         }
@@ -195,8 +208,8 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center gap-2" href="?url=main">
             <img src="assets/imagenes/logo.png" alt="Logo" class="rounded-circle" style="width:40px;height:40px;object-fit:contain;background:rgba(255,247,22,.72)">
-            <span class="d-none d-sm-inline"><span class="text-warning">Sistema</span> Pirotecnica Fénix</span>
-            <span class="d-sm-none"><span class="text-warning">Pirotecnica</span> Fénix</span>
+            <span class="d-none d-sm-inline fenix-wordmark"><span class="text-warning">Sistema</span> Pirotecnica Fénix</span>
+            <span class="d-sm-none fenix-wordmark"><span class="text-warning">Pirotecnica</span> Fénix</span>
         </a>
 
         <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuMovil" aria-controls="menuMovil" aria-label="Abrir menú">
@@ -204,9 +217,15 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
         </button>
 
         <div class="d-flex align-items-center gap-2 ms-auto">
-            <span class="navbar-text text-white d-none d-md-inline">
+            <span class="navbar-text text-white d-none d-md-inline me-2">
                 <i class="fas fa-user me-1"></i><?= htmlspecialchars($nombreUsuario, ENT_QUOTES, 'UTF-8') ?>
             </span>
+            
+            <!-- BOTÓN DEL MANUAL DE USUARIO -->
+            <a href="assets/manual/manual_usuario.pdf" target="_blank" class="btn btn-outline-warning btn-sm" title="Manual de Usuario">
+                <i class="fas fa-book"></i><span class="d-none d-sm-inline ms-1">Ayuda</span>
+            </a>
+
             <a href="?url=logout" class="btn btn-outline-light btn-sm">
                 <i class="fas fa-sign-out-alt"></i><span class="d-none d-sm-inline ms-1">Salir</span>
             </a>

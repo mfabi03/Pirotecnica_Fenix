@@ -13,7 +13,7 @@ FOOTER - VERSIÓN PEQUEÑA
     <div class="container text-center">
         <div style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 4px 0;">
             <span style="color: #d4af37; font-size: 0.55rem; opacity: 0.5;">✦</span>
-            <span style="color: #d4af37; letter-spacing: 1.5px; font-family: 'Cinzel', 'Times New Roman', serif; font-size: 0.65rem; font-weight: 700;">
+            <span class="fenix-wordmark" style="color: #d4af37;">
                 PIROTECNICA FÉNIX
             </span>
             <span style="color: #d4af37; font-size: 0.55rem; opacity: 0.5;">✦</span>

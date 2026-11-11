@@ -12,7 +12,7 @@ class notasalidaModel {
         $this->db = $db;
     }
 
-    // OBTENER PRODUCTOS CON CATEGORIA
+    // OBTENER PRODUCTOS CON CATEGORIA (Excluye eliminados y sin stock)
     public function obtenerProductosConCategoria() {
         try {
             $sql = "SELECT p.id_producto, p.descripcion, p.cantidad AS stock, c.nombre_categoria, c.id_categoria
@@ -60,7 +60,7 @@ class notasalidaModel {
         }
     }
 
-    // REGISTRAR SALIDA (AQUÍ SE GUARDA LA HORA)
+    // REGISTRAR SALIDA
     public function registrarSalida($datos, $detalles, $idUsuario) {
         try {
             $stmtCheck = $this->db->prepare("SELECT id_persona FROM persona WHERE id_persona = ? AND eliminado = 0");
@@ -71,18 +71,25 @@ class notasalidaModel {
             $stmtCheckUser->execute([$idUsuario]);
             if (!$stmtCheckUser->fetch()) throw new Exception("El usuario con ID $idUsuario no existe en la base de datos.");
             
+            // Validación de stock y trazabilidad (producto no eliminado)
             foreach ($detalles as $d) {
-                $stmtStock = $this->db->prepare("SELECT cantidad FROM producto WHERE id_producto = ? AND eliminado = 0");
+                $stmtStock = $this->db->prepare("SELECT cantidad, eliminado, descripcion FROM producto WHERE id_producto = ?");
                 $stmtStock->execute([$d['id_producto']]);
-                $stockActual = $stmtStock->fetchColumn();
-                if ($stockActual < $d['cantidad']) {
-                    throw new Exception("Stock insuficiente para el producto ID {$d['id_producto']}. Disponible: $stockActual");
+                $producto = $stmtStock->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$producto) {
+                    throw new Exception("El producto ID {$d['id_producto']} no existe.");
+                }
+                if ($producto['eliminado'] == 1) {
+                    throw new Exception("El producto '{$producto['descripcion']}' está eliminado y no se puede vender.");
+                }
+                if ($producto['cantidad'] < $d['cantidad']) {
+                    throw new Exception("Stock insuficiente para el producto ID {$d['id_producto']}. Disponible: {$producto['cantidad']}");
                 }
             }
             
             $this->db->beginTransaction();
             try {
-                // 🔥 AQUÍ ESTÁ LA MAGIA: NOW() guarda Fecha y Hora exacta
                 $stmt = $this->db->prepare("INSERT INTO nota_de_salida (fecha, id_persona, id_usuario, eliminado) VALUES (NOW(), ?, ?, 0)");
                 $stmt->execute([$datos['id_cliente'], $idUsuario]);
                 
@@ -338,7 +345,6 @@ class notasalidaModel {
                             ds.id_producto,
                             ds.cantidad,
                             p.descripcion AS nombre_producto,
-                            p.costo_unitario,  
                             c.nombre_categoria
                         FROM detalle_salida ds
                         JOIN producto p ON ds.id_producto = p.id_producto
@@ -355,8 +361,8 @@ class notasalidaModel {
         }
     }
 
-    // ELIMINAR NOTA
-    public function eliminarNota($id) {
+    // ELIMINAR NOTA (Anular y devolver stock)
+    public function eliminarNota($id, $motivo = null) {
         try {
             $stmtCheck = $this->db->prepare("SELECT id_nota_salida FROM nota_de_salida WHERE id_nota_salida = ? AND eliminado = 0");
             $stmtCheck->execute([$id]);
@@ -373,8 +379,8 @@ class notasalidaModel {
                     $stmtRestaurar->execute([$d['cantidad'], $d['id_producto']]);
                 }
 
-                $stmtUpd = $this->db->prepare("UPDATE nota_de_salida SET eliminado = 1 WHERE id_nota_salida = :id");
-                $stmtUpd->execute([':id' => $id]);
+                $stmtUpd = $this->db->prepare("UPDATE nota_de_salida SET eliminado = 1, motivo_anulacion = :motivo WHERE id_nota_salida = :id");
+                $stmtUpd->execute([':motivo' => $motivo, ':id' => $id]);
                 
                 $this->db->commit();
                 return true;

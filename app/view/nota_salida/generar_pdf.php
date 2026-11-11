@@ -35,7 +35,10 @@ $logoPath = dirname(__DIR__, 3) . '/assets/imagenes/logo.png';
 $logoDisponible = file_exists($logoPath);
 require_once dirname(__DIR__, 3) . '/app/Config/timezone.php';
 
+// 🔥 EXTRAEMOS LA FECHA Y LA HORA POR SEPARADO
 $fechaSolo = !empty($nota['fecha']) ? date('d/m/Y', strtotime($nota['fecha'])) : 'N/A';
+$horaSolo = !empty($nota['fecha']) ? date('h:i A', strtotime($nota['fecha'])) : 'N/A';
+
 $detalles = $nota['detalles'] ?? [];
 $totalUnidades = 0;
 foreach ($detalles as $d) { $totalUnidades += (int)($d['cantidad'] ?? 0); }
@@ -77,7 +80,7 @@ class PDF extends FPDF
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
         $this->SetTextColor(128);
-        $this->Cell(0, 10, pdf_txt('Pagina ' . $this->PageNo() . ' - Generado el ' . date('d/m/Y H:i')), 0, 0, 'C');
+        $this->Cell(0, 10, pdf_txt('Pagina ' . $this->PageNo() . ' - Generado el ' . date('d/m/Y h:i A')), 0, 0, 'C');
     }
 }
 
@@ -110,10 +113,16 @@ $pdf->SetFont('Arial', '', 10);
 $pdf->Cell(30, 8, pdf_txt('Fecha'), 'LR', 0, 'L', true);
 $pdf->Cell(60, 8, pdf_txt($fechaSolo), 'LR', 1, 'L', true);
 
+// 🔥 NUEVA FILA PARA LA HORA
+$pdf->SetX(10);
+$pdf->SetFont('Arial', '', 10);
+$pdf->Cell(30, 8, pdf_txt('Hora'), 'LR', 0, 'L', true);
+$pdf->Cell(60, 8, pdf_txt($horaSolo), 'LR', 1, 'L', true);
+
 $pdf->SetX(10);
 $pdf->SetFont('Arial', '', 10);
 $pdf->Cell(30, 8, pdf_txt('Encargado'), 'LR', 0, 'L', true);
-$pdf->Cell(60, 8, pdf_txt($nota['usuario_responsable'] ?? 'N/A'), 'LR', 1, 'L', true);
+$pdf->Cell(60, 8, pdf_txt($nota['usuario_responsable'] ?? 'N/A'), 'LRB', 1, 'L', true);
 
 $pdf->SetXY(105, $yInicio);
 $pdf->SetFont('Arial', 'B', 9);
@@ -137,13 +146,14 @@ $pdf->Cell(30, 8, pdf_txt('Estatus'), 'LR', 0, 'L', true);
 if ($estadoAnulada) {
     $pdf->SetTextColor(220, 53, 69);
     $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(65, 8, pdf_txt('ANULADA'), 'LR', 1, 'L', true);
+    $pdf->Cell(65, 8, pdf_txt('ANULADA'), 'LRB', 1, 'L', true);
 } else {
     $pdf->SetTextColor(40, 167, 69);
     $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(65, 8, pdf_txt('ACTIVA'), 'LR', 1, 'L', true);
+    $pdf->Cell(65, 8, pdf_txt('ACTIVA'), 'LRB', 1, 'L', true);
 }
 
+// Ajustamos la línea de cierre un poco más abajo porque ahora hay 4 filas en el bloque izquierdo
 $yCierre = $yInicio + 40;
 $pdf->SetDrawColor(230, 230, 230);
 $pdf->Line(10, $yCierre, 100, $yCierre);
@@ -164,8 +174,7 @@ $pdf->SetFillColor(245, 245, 245);
 $pdf->SetTextColor(73, 80, 87);
 $pdf->SetFont('Arial', 'B', 8);
 
-// COLUMNAS: NÚMERO, PRODUCTO, CATEGORÍA, CANTIDAD (Sin Costo ni Subtotal ni ID)
-$w = [12, 122, 50, 16];
+$w = [14, 120, 50, 16];
 $headers = ['#', 'Producto', 'Categoría', 'Cant.'];
 foreach ($headers as $i => $h) {
     $align = in_array($i, [0, 3]) ? 'C' : 'L';
@@ -180,7 +189,8 @@ $alt = false;
 if (empty($detalles)) {
     $pdf->Cell(array_sum($w), 12, pdf_txt('No hay productos en esta nota'), 1, 1, 'C', true);
 } else {
-    foreach ($detalles as $index => $d) {
+    $contador = 1;
+    foreach ($detalles as $d) {
         $prod = trim((string) ($d['nombre_producto'] ?? ''));
         if (strlen($prod) > 60) $prod = substr($prod, 0, 57) . '...';
         $cat = trim((string) ($d['nombre_categoria'] ?? 'Sin categoria'));
@@ -189,8 +199,7 @@ if (empty($detalles)) {
         $fill = $alt;
         $pdf->SetFillColor(250, 250, 250);
         
-        // Enumeración (1, 2, 3...)
-        $pdf->Cell($w[0], 8, (string)($index + 1), 'B', 0, 'C', $fill);
+        $pdf->Cell($w[0], 8, (string)$contador, 'B', 0, 'C', $fill);
         $pdf->Cell($w[1], 8, pdf_txt($prod), 'B', 0, 'L', $fill);
         $pdf->Cell($w[2], 8, pdf_txt($cat), 'B', 0, 'L', $fill);
         
@@ -202,6 +211,7 @@ if (empty($detalles)) {
         $pdf->SetFont('Arial', '', 9);
         
         $alt = !$alt;
+        $contador++;
     }
 }
 
@@ -211,7 +221,6 @@ $pdf->SetDrawColor(220, 220, 220);
 $pdf->SetTextColor(73, 80, 87);
 $pdf->SetFont('Arial', 'B', 9);
 
-// TOTAL UNIDADES
 $pdf->Cell($w[0] + $w[1] + $w[2], 10, pdf_txt('TOTAL UNIDADES'), 'T', 0, 'R', true);
 $pdf->SetTextColor(243, 156, 18);
 $pdf->SetFont('Arial', 'B', 11);
@@ -221,7 +230,7 @@ $pdf->Ln(10);
 $pdf->SetFont('Arial', 'I', 8);
 $pdf->SetTextColor(120, 120, 120);
 $pdf->Cell(0, 6, pdf_txt('Gracias por su preferencia - Pirotecnia Fenix C.A.'), 0, 1, 'C');
-$pdf->Cell(0, 6, pdf_txt('Generado el ' . date('d/m/Y H:i:s')), 0, 1, 'R');
+$pdf->Cell(0, 6, pdf_txt('Generado el ' . date('d/m/Y h:i:s A')), 0, 1, 'R');
 
 $pdf->Output('I', 'Nota_Salida_' . $idNota . '.pdf');
 exit;
