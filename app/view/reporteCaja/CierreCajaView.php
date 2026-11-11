@@ -24,16 +24,7 @@
                 </div>
             </div>
 
-            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
-                
-                <div>
-                    <a href="#" id="btnExportarCierreCsv" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success fw-bold me-2" style="border-radius: 50px; padding: 8px 20px;">
-                        <i class="fas fa-file-csv me-1"></i> Excel/CSV
-                    </a>
-                    <a href="#" id="btnExportarCierrePdf" target="_blank" rel="noopener noreferrer" class="btn btn-outline-danger fw-bold" style="border-radius: 50px; padding: 8px 20px;">
-                        <i class="fas fa-file-pdf me-1"></i> PDF
-                    </a>
-                </div>
+            <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px; display: flex; justify-content: flex-end; align-items: center;">
                 
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 50px; padding: 8px 20px; font-weight: 600;">

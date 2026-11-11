@@ -80,15 +80,15 @@ class ReporteCajaModel {
         try { $stmt->execute(); return $stmt->rowCount() > 0; } catch (Exception $e) { return false; }
     }
 
-    public function guardarCierreCaja($fecha, $id_usuario = null, $total_documentos = 0, $total_unidades = 0, $total_lineas = 0, $hora_apertura = null, $total_productos = 0, $total_clientes = 0) {
+    public function guardarCierreCaja($fecha, $id_usuario = null, $total_documentos = 0, $total_unidades = 0, $total_categorias = 0, $hora_apertura = null, $total_productos = 0, $total_clientes = 0) {
         if (empty($fecha)) return false;
         $this->asegurarTablaCierreCaja();
         $ultimoIdNota = $this->obtenerUltimoIdNotaSalidaPorUsuarioFecha($fecha, $id_usuario);
         if ($this->existeCierreCaja($fecha, $id_usuario)) { return $this->actualizarUltimoIdCierreCaja($fecha, $id_usuario, $ultimoIdNota); }
 
         try {
-            $sql = "INSERT INTO cierre_caja (fecha_cierre, hora_apertura, id_usuario, ultimo_id_nota_salida, total_documentos, total_productos_distintos, total_clientes, total_unidades, total_lineas)
-                    VALUES (:fecha_cierre, :hora_apertura, :id_usuario, :ultimo_id_nota_salida, :total_documentos, :total_productos, :total_clientes, :total_unidades, :total_lineas)";
+            $sql = "INSERT INTO cierre_caja (fecha_cierre, hora_apertura, id_usuario, ultimo_id_nota_salida, total_documentos, total_productos_distintos, total_categorias, total_clientes, total_unidades, total_lineas)
+                    VALUES (:fecha_cierre, :hora_apertura, :id_usuario, :ultimo_id_nota_salida, :total_documentos, :total_productos, :total_categorias, :total_clientes, :total_unidades, :total_lineas)";
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':fecha_cierre', $fecha);
             $stmt->bindValue(':hora_apertura', $hora_apertura);
@@ -96,9 +96,10 @@ class ReporteCajaModel {
             $stmt->bindValue(':ultimo_id_nota_salida', $ultimoIdNota !== null ? (int)$ultimoIdNota : null, PDO::PARAM_INT);
             $stmt->bindValue(':total_documentos', (int)$total_documentos, PDO::PARAM_INT);
             $stmt->bindValue(':total_productos', (int)$total_productos, PDO::PARAM_INT);
+            $stmt->bindValue(':total_categorias', (int)$total_categorias, PDO::PARAM_INT); 
             $stmt->bindValue(':total_clientes', (int)$total_clientes, PDO::PARAM_INT);
             $stmt->bindValue(':total_unidades', (int)$total_unidades, PDO::PARAM_INT);
-            $stmt->bindValue(':total_lineas', (int)$total_lineas, PDO::PARAM_INT);
+            $stmt->bindValue(':total_lineas', 0, PDO::PARAM_INT);
             $stmt->execute();
             return true;
         } catch (Exception $e) {
@@ -119,7 +120,6 @@ class ReporteCajaModel {
         return (bool)$stmt->fetchColumn();
     }
 
-    // 🔥 CONSULTA LIMPIA PARA LA VISTA DE CAJA (Cuenta productos y categorías)
     public function obtenerSalidasCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null, $limit = 10, $offset = 0) {
         $where = ["ns.eliminado = 0"];
         $params = [];
@@ -155,8 +155,8 @@ class ReporteCajaModel {
                     GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') ORDER BY prod.descripcion SEPARATOR ', ') AS nombre_producto,
                     GROUP_CONCAT(DISTINCT c.nombre_categoria ORDER BY c.nombre_categoria SEPARATOR ', ') AS categoria,
                     SUM(ds.cantidad) AS cantidad,
-                    COUNT(DISTINCT prod.id_producto) AS total_productos, -- 🔥 Cuenta productos
-                    COUNT(DISTINCT c.id_categoria) AS total_categorias, -- 🔥 Cuenta categorías
+                    COUNT(DISTINCT prod.id_producto) AS total_productos,
+                    COUNT(DISTINCT c.id_categoria) AS total_categorias,
                     COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
                     CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
                     COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
@@ -168,7 +168,6 @@ class ReporteCajaModel {
                 LEFT JOIN persona per ON u.id_persona = per.id_persona
                 LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
                 LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
-                LEFT JOIN cliente_natural cn ON per_cliente.id_persona = cn.id_persona
                 $whereSql
                 GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
                 ORDER BY ns.fecha DESC, ns.id_nota_salida DESC
@@ -198,6 +197,47 @@ class ReporteCajaModel {
             'total_unidades' => array_sum(array_column($movs, 'cantidad')),
             'total_lineas' => 0,
         ];
+    }
+
+    // 🔥 NUEVA FUNCIÓN PARA EL MODAL (NO FILTRA POR ULTIMO ID)
+    public function obtenerSalidasParaCierre($id_usuario, $fecha) {
+        $where = ["ns.eliminado = 0", "DATE(ns.fecha) = :fecha", "ns.id_usuario = :id_usuario"];
+        $params = [':fecha' => $fecha, ':id_usuario' => $id_usuario];
+
+        $whereSql = ' WHERE ' . implode(' AND ', $where);
+
+        $sql = "SELECT 
+                    ns.id_nota_salida AS id_documento,
+                    DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
+                    GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') ORDER BY prod.descripcion SEPARATOR ', ') AS nombre_producto,
+                    GROUP_CONCAT(DISTINCT c.nombre_categoria ORDER BY c.nombre_categoria SEPARATOR ', ') AS categoria,
+                    SUM(ds.cantidad) AS cantidad,
+                    COUNT(DISTINCT prod.id_producto) AS total_productos,
+                    COUNT(DISTINCT c.id_categoria) AS total_categorias,
+                    COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                    CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                    COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
+                FROM nota_de_salida ns
+                INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
+                LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                LEFT JOIN persona per ON u.id_persona = per.id_persona
+                LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                $whereSql
+                GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
+                ORDER BY ns.fecha DESC, ns.id_nota_salida DESC";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            foreach ($params as $k => $v) $stmt->bindValue($k, $v);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en obtenerSalidasParaCierre: " . $e->getMessage());
+            return [];
+        }
     }
 }
 ?>

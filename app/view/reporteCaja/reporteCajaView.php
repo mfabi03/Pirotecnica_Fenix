@@ -183,7 +183,15 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
             <div class="modal-footer" style="display: flex; justify-content: space-between;">
-                <button type="button" class="btn btn-danger" onclick="imprimirReciboCierre()"><i class="fas fa-file-pdf me-1"></i> Imprimir</button>
+                <!-- 🔥 NUEVOS BOTONES DE PDF Y EXCEL -->
+                <div>
+                    <a href="#" id="btnReciboPdf" target="_blank" class="btn btn-outline-danger fw-bold me-2" style="border-radius: 50px; padding: 8px 20px;">
+                        <i class="fas fa-file-pdf me-1"></i> PDF
+                    </a>
+                    <a href="#" id="btnReciboExcel" target="_blank" class="btn btn-outline-success fw-bold" style="border-radius: 50px; padding: 8px 20px;">
+                        <i class="fas fa-file-excel me-1"></i> Excel/CSV
+                    </a>
+                </div>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="window.location.reload()">Aceptar</button>
             </div>
         </div>
@@ -213,11 +221,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const modal = new bootstrap.Modal(modalEl);
     const contenedor = document.getElementById('contenidoCierreCaja');
     
-    // 🔥 SOLUCIÓN: Si el input de fecha no existe, usamos un objeto falso con la fecha de hoy
-    const fechaInput = document.querySelector('input[name="fecha"]') || { value: new Date().toISOString().slice(0, 10) };
+    // 🔥 LA CLAVE: Leemos la fecha del botón, que viene del servidor
+    const fechaSeleccionada = btn.getAttribute('data-fecha') || new Date().toISOString().slice(0, 10);
     
-    const btnCsv = document.getElementById('btnExportarCierreCsv');
-    const btnPdf = document.getElementById('btnExportarCierrePdf');
     const btnCerrarCaja = document.getElementById('btnConfirmarCierreCaja');
     const btnAceptarCierreExito = document.getElementById('btnAceptarCierreExito');
 
@@ -230,12 +236,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (btnCerrarCaja) {
         btnCerrarCaja.addEventListener('click', async function () {
-            const fechaSeleccionada = fechaInput.value;
             btnCerrarCaja.disabled = true;
             btnCerrarCaja.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
 
             try {
-                const response = await fetch('?url=confirmar_cierre_caja', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: new URLSearchParams({ fecha: fechaSeleccionada }) });
+                const response = await fetch('?url=confirmar_cierre_caja', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, 
+                    body: new URLSearchParams({ fecha: fechaSeleccionada }) 
+                });
                 const result = await response.json();
                 
                 if (!result.success) {
@@ -247,6 +256,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 modal.hide();
 
+                // 🔥 ASIGNAR LAS URLS A LOS NUEVOS BOTONES DEL RECIBO
+                const urlPdf = `?url=exportar_caja_pdf&fecha=${fechaSeleccionada}`;
+                const urlCsv = `?url=exportar_caja_csv&fecha=${fechaSeleccionada}`;
+                document.getElementById('btnReciboPdf').href = urlPdf;
+                document.getElementById('btnReciboExcel').href = urlCsv;
+
                 // 🔥 LLENAR EL MODAL DE RECIBO
                 document.getElementById('recibo-fecha').textContent = result.data.fecha;
                 document.getElementById('recibo-hora-apertura').textContent = result.data.hora_apertura || '—';
@@ -257,7 +272,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('recibo-total-productos').textContent = result.data.total_productos;
                 document.getElementById('recibo-total-clientes').textContent = result.data.total_clientes;
 
-                // 🔥 LLENAR LA TABLA DE DETALLES DEL RECIBO
                 const tbody = document.getElementById('recibo-tabla-detalles');
                 tbody.innerHTML = '';
                 
@@ -303,32 +317,32 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function buildExportUrls(fecha) {
-        const params = new URLSearchParams(); if (fecha) params.set('fecha', fecha);
-        const cat = new URLSearchParams(window.location.search).get('id_categoria'); if (cat) params.set('id_categoria', cat);
-        const bus = new URLSearchParams(window.location.search).get('busqueda'); if (bus) params.set('busqueda', bus);
-        return { csv: `?url=exportar_caja_csv&${params.toString()}`, pdf: `?url=exportar_caja_pdf&${params.toString()}` };
-    }
-
-    if (btnCsv) btnCsv.addEventListener('click', e => { e.preventDefault(); if (btnCsv.href) window.open(btnCsv.href, '_blank'); });
-    if (btnPdf) btnPdf.addEventListener('click', e => { e.preventDefault(); if (btnPdf.href) window.open(btnPdf.href, '_blank'); });
-
     btn.addEventListener('click', async function () {
-        const fechaSeleccionada = fechaInput.value;
         btn.dataset.fecha = fechaSeleccionada;
-        const exportUrls = buildExportUrls(fechaSeleccionada);
-        btnCsv.href = exportUrls.csv; btnPdf.href = exportUrls.pdf;
 
         contenedor.innerHTML = `<div class="text-center py-5"><div class="spinner-border text-warning" style="width: 3rem; height: 3rem;"></div><p class="mt-3 text-muted fw-bold">Calculando cierre...</p></div>`;
         modal.show();
 
         try {
-            const resp = await fetch(`?url=cierre_caja_ajax&fecha=${encodeURIComponent(fechaSeleccionada)}`);
+            // 🔥 ENVIAMOS LA FECHA POR POST A LA RUTA cierre_caja_ajax
+            const formData = new FormData();
+            formData.append('fecha', fechaSeleccionada);
+
+            const resp = await fetch('?url=cierre_caja_ajax', {
+                method: 'POST',
+                body: formData
+            });
+            
             const data = await resp.json();
-            if (!data.success) { contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0">${data.mensaje}</div>`; return; }
+            
+            if (!data.success) { 
+                contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0">${data.mensaje}</div>`; 
+                return; 
+            }
 
             const r = data.data;
             let filasDetalle = '';
+            
             if (r.detalle && r.detalle.length > 0) {
                 const notasAgrupadas = {};
                 r.detalle.forEach(function(m) {
@@ -358,11 +372,6 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (e) { contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0">Error de conexión.</div>`; }
     });
 });
-
-function imprimirReciboCierre() {
-    const fecha = (document.querySelector('input[name="fecha"]') || { value: new Date().toISOString().slice(0, 10) }).value;
-    window.open(`?url=exportar_caja_pdf&fecha=${fecha}`, '_blank');
-}
 </script>
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

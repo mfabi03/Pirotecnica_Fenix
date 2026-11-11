@@ -78,8 +78,10 @@ class ReporteCajaController {
         header('Content-Type: application/json; charset=utf-8');
         try {
             $id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
-            $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : date('Y-m-d');
-            $movimientos = $this->model->obtenerSalidasCajero($id_usuario, $fecha, null, null, 9999, 0);
+            $fecha = isset($_POST['fecha']) ? $_POST['fecha'] : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : date('Y-m-d'));
+            
+            $movimientos = $this->model->obtenerSalidasParaCierre($id_usuario, $fecha);
+            
             $totalDocs = count(array_unique(array_column($movimientos, 'id_documento')));
             $totalUnds = array_sum(array_column($movimientos, 'cantidad'));
 
@@ -97,7 +99,9 @@ class ReporteCajaController {
                 ];
             }
             echo json_encode(['success' => true, 'data' => ['total_documentos' => $totalDocs, 'total_unidades' => $totalUnds, 'detalle' => $detalle]]);
-        } catch (Exception $e) { echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]); }
+        } catch (Exception $e) { 
+            echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]); 
+        }
         exit();
     }
 
@@ -116,45 +120,76 @@ class ReporteCajaController {
                 exit();
             }
 
-            $movimientos = $this->model->obtenerSalidasCajero($id_usuario, $fecha_solicitada, null, null, 99999, 0);
-            $total_docs = 0; $total_unds = 0; $total_prods = 0; $total_clientes = 0; $hora_apertura = null;
-            $notas_vistas = []; $prods_vistos = []; $clientes_vistos = [];
+            $movimientos = $this->model->obtenerSalidasParaCierre($id_usuario, $fecha_solicitada);
+            $total_docs = 0; $total_unds = 0; $total_prods = 0; $total_cats = 0; $total_clientes = 0; $hora_apertura = null;
+            $notas_vistas = []; $prods_vistos = []; $cats_vistas = []; $clientes_vistos = [];
 
             if (!empty($movimientos)) {
                 $primeraVenta = end($movimientos);
-                $hora_apertura = date('h:i A', strtotime($primeraVenta['fecha_movimiento']));
+                $hora_apertura = date('H:i:s', strtotime($primeraVenta['fecha_movimiento']));
 
                 foreach ($movimientos as $m) {
-                    if (!in_array($m['id_documento'], $notas_vistas)) { $notas_vistas[] = $m['id_documento']; $total_docs++; }
+                    if (!in_array($m['id_documento'], $notas_vistas)) { 
+                        $notas_vistas[] = $m['id_documento']; 
+                        $total_docs++; 
+                    }
+                    
                     $total_unds += (int)$m['cantidad'];
+                    
                     $prod_limpio = preg_replace('/\s*\(x\d+\)/', '', $m['nombre_producto']);
-                    if (!in_array($prod_limpio, $prods_vistos)) { $prods_vistos[] = $prod_limpio; $total_prods++; }
-                    if (!in_array($m['nombre_cliente'], $clientes_vistos)) { $clientes_vistos[] = $m['nombre_cliente']; $total_clientes++; }
+                    if (!in_array($prod_limpio, $prods_vistos)) { 
+                        $prods_vistos[] = $prod_limpio; 
+                        $total_prods++; 
+                    }
+
+                    $cat_actual = $m['categoria'] ?? 'Sin Categoría';
+                    if (!in_array($cat_actual, $cats_vistas)) {
+                        $cats_vistas[] = $cat_actual;
+                        $total_cats++;
+                    }
+
+                    if (!in_array($m['nombre_cliente'], $clientes_vistos)) { 
+                        $clientes_vistos[] = $m['nombre_cliente']; 
+                        $total_clientes++; 
+                    }
                 }
             }
 
-            $guardado = $this->model->guardarCierreCaja($fecha_solicitada, $id_usuario, $total_docs, $total_unds, 0, $hora_apertura, $total_prods, $total_clientes);
+            $guardado = $this->model->guardarCierreCaja(
+                $fecha_solicitada, 
+                $id_usuario, 
+                $total_docs, 
+                $total_unds, 
+                $total_cats, 
+                $hora_apertura, 
+                $total_prods, 
+                $total_clientes
+            );
 
-            if (!$guardado) { echo json_encode(['success' => false, 'mensaje' => 'No se pudo guardar el cierre']); exit(); }
+            if (!$guardado) { 
+                echo json_encode(['success' => false, 'mensaje' => 'No se pudo guardar el cierre']); 
+                exit(); 
+            }
 
             echo json_encode([
                 'success' => true,
                 'mensaje' => 'Cierre del día guardado correctamente',
                 'data' => [
                     'fecha' => $fecha_solicitada,
-                    'hora_apertura' => $hora_apertura,
+                    'hora_apertura' => date('h:i A', strtotime($hora_apertura)),
                     'total_documentos' => $total_docs,
                     'total_unidades' => $total_unds,
                     'total_productos' => $total_prods,
+                    'total_categorias' => $total_cats,
                     'total_clientes' => $total_clientes,
-                    'encargado' => trim($_SESSION['nombre'] . ' ' . $_SESSION['apellido']),
+                    'encargado' => trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? '')),
                     'detalle' => array_map(function($m) { return [
                         'id_documento' => $m['id_documento'], 
                         'fecha_movimiento' => $m['fecha_movimiento'],
                         'nombre_cliente' => $m['nombre_cliente'], 
                         'tipo_cliente' => $m['tipo_cliente'] ?? 'Natural',
                         'nombre_producto' => $m['nombre_producto'], 
-                        'categoria' => $m['categoria'], 
+                        'categoria' => $m['categoria'] ?? 'Sin categoría', 
                         'cantidad' => $m['cantidad'],
                         'usuario_activo' => $m['usuario_activo']
                     ]; }, $movimientos)
@@ -163,7 +198,7 @@ class ReporteCajaController {
             exit();
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'mensaje' => 'Error al guardar el cierre']);
+            echo json_encode(['success' => false, 'mensaje' => 'Error al guardar el cierre: ' . $e->getMessage()]);
             exit();
         }
     }
@@ -183,7 +218,6 @@ class ReporteCajaController {
             $id_cierre = isset($_GET['id_cierre']) ? (int)$_GET['id_cierre'] : 0;
 
             if ($id_cierre > 0) {
-                // FLUJO PARA IMPRIMIR UN CIERRE HISTÓRICO
                 $sqlCierre = "SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) AS nombre_usuario
                               FROM cierre_caja c
                               LEFT JOIN usuario u ON c.id_usuario = u.id_usuario
@@ -238,7 +272,6 @@ class ReporteCajaController {
                 ];
 
             } else {
-                // FLUJO NORMAL (REPORTE DE CAJA EN VIVO)
                 $id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
                 $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : date('Y-m-d');
                 
@@ -307,6 +340,110 @@ class ReporteCajaController {
         } catch (Exception $e) { die("Error al generar el PDF: " . $e->getMessage()); }
     }
 
-    public function exportarCSV() { exit(); }
+    // 🔥 FUNCIÓN PARA EXPORTAR EL EXCEL/CSV
+    public function exportarCSV() {
+        $id_cierre = isset($_GET['id_cierre']) ? (int)$_GET['id_cierre'] : 0;
+        $id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
+        $fecha = isset($_GET['fecha']) && $_GET['fecha'] !== '' ? $_GET['fecha'] : date('Y-m-d');
+
+        try {
+            if ($id_cierre > 0) {
+                $sqlCierre = "SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) AS nombre_usuario
+                              FROM cierre_caja c
+                              LEFT JOIN usuario u ON c.id_usuario = u.id_usuario
+                              LEFT JOIN persona p ON u.id_persona = p.id_persona
+                              WHERE c.id_cierre = :id LIMIT 1";
+                $stmtC = $this->db->prepare($sqlCierre);
+                $stmtC->execute([':id' => $id_cierre]);
+                $cierre = $stmtC->fetch(PDO::FETCH_ASSOC);
+
+                if (!$cierre) { die("Error: Cierre no encontrado."); }
+
+                $sqlDet = "SELECT ns.id_nota_salida AS id_documento, DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
+                                  GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
+                                  SUM(ds.cantidad) AS cantidad,
+                                  GROUP_CONCAT(DISTINCT c.nombre_categoria SEPARATOR ', ') AS categoria,
+                                  COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                                  CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                                  COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
+                           FROM nota_de_salida ns
+                           INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                           INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                           LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
+                           LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                           LEFT JOIN persona per ON u.id_persona = per.id_persona
+                           LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                           LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                           WHERE ns.id_nota_salida <= :ultimo_id 
+                             AND ns.id_usuario = :id_usuario
+                             AND DATE(ns.fecha) = :fecha_cierre
+                             AND ns.eliminado = 0
+                           GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
+                           ORDER BY ns.fecha DESC";
+                
+                $stmtDet = $this->db->prepare($sqlDet);
+                $stmtDet->execute([
+                    ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
+                    ':id_usuario' => $cierre['id_usuario'],
+                    ':fecha_cierre' => $cierre['fecha_cierre']
+                ]);
+                $movimientos = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
+                $fechaArchivo = $cierre['fecha_cierre'];
+
+            } else {
+                $sql = "SELECT ns.id_nota_salida AS id_documento, DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
+                        GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
+                        SUM(ds.cantidad) AS cantidad,
+                        GROUP_CONCAT(DISTINCT c.nombre_categoria SEPARATOR ', ') AS categoria,
+                        COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                        CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                        COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
+                        FROM nota_de_salida ns
+                        INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                        INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                        LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
+                        LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                        LEFT JOIN persona per ON u.id_persona = per.id_persona
+                        LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                        LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                        WHERE ns.eliminado = 0 AND DATE(ns.fecha) = :fecha AND ns.id_usuario = :id_usuario
+                        GROUP BY ns.id_nota_salida, ns.fecha
+                        ORDER BY ns.fecha DESC";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':fecha' => $fecha, ':id_usuario' => $id_usuario]);
+                $movimientos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $fechaArchivo = $fecha;
+            }
+
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="Cierre_Caja_' . $fechaArchivo . '.csv"');
+            
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF"); 
+
+            fputcsv($output, ['ID Nota', 'Fecha/Hora', 'Cliente', 'Tipo Cliente', 'Productos (Cantidad)', 'Categorías', 'Unidades', 'Encargado']);
+            $totalUnidades = 0;
+            foreach ($movimientos as $m) {
+                $totalUnidades += (int)$m['cantidad'];
+                fputcsv($output, [
+                    '#' . $m['id_documento'],
+                    $m['fecha_movimiento'],
+                    $m['nombre_cliente'],
+                    $m['tipo_cliente'],
+                    $m['nombre_producto'],
+                    $m['categoria'],
+                    $m['cantidad'],
+                    $m['usuario_activo']
+                ]);
+            }
+            fputcsv($output, ['', '', '', '', '', 'TOTALES', $totalUnidades, '']);
+            fclose($output);
+            exit();
+
+        } catch (Exception $e) {
+            die("Error al generar el CSV: " . $e->getMessage());
+        }
+    }
 }
 ?>

@@ -47,11 +47,11 @@ class ReportesController {
         $paginaActual = $pagina;
         $porPaginaActual = $porPagina;
         
-        // 🔥 VARIABLES PARA LAS TARJETAS DE ESTADÍSTICAS
+        // VARIABLES PARA LAS TARJETAS DE ESTADÍSTICAS
         $totalEntradas = $totalesGlobales['total_entradas'] ?? 0;
         $totalSalidas = $totalesGlobales['total_salidas'] ?? 0;
         $totalAnuladas = $totalesGlobales['total_anuladas'] ?? 0;
-        $totalCierres = $totalesGlobales['total_cierres'] ?? 0; // 🔥 NUEVA LÍNEA
+        $totalCierres = $totalesGlobales['total_cierres'] ?? 0;
         $totalNotas = $totalesGlobales['total_notas'] ?? 0;
 
         $db = $this->db;
@@ -285,8 +285,82 @@ class ReportesController {
         }
     }
 
+    // 🔥 FUNCIÓN IMPLEMENTADA PARA EL EXCEL/CSV DE MOVIMIENTOS
     public function exportarCSV() {
-        // ... (tu código de exportarCSV se queda igual)
+        try {
+            // Capturamos los filtros
+            $fecha_inicio = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? trim($_GET['fecha_inicio']) : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? trim($_GET['fecha']) : null);
+            $fecha_fin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? trim($_GET['fecha_fin']) : null;
+            $busqueda = isset($_GET['busqueda']) && $_GET['busqueda'] !== '' ? trim($_GET['busqueda']) : null;
+            $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] !== '' ? (int)$_GET['id_categoria'] : null;
+            $tipo_movimiento = isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] !== '' ? trim($_GET['tipo_movimiento']) : null;
+
+            // Traemos los movimientos
+            $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
+
+            // Configuramos las cabeceras
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="Reporte_Movimientos_' . date('Ymd_His') . '.csv"');
+            
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF"); 
+
+            // Escribimos los encabezados
+            fputcsv($output, ['N° NOTA', 'FECHA', 'CLIENTE / PROVEEDOR', 'TIPO', 'PRODUCTOS', 'CATEGORÍAS', 'UNIDADES', 'ENCARGADO']);
+
+            $totalEntradas = 0; $totalSalidas = 0; $totalAnuladas = 0; $totalCierres = 0;
+            $cierresVistos = [];
+
+            // Recorremos y escribimos
+            foreach ($movimientos as $m) {
+                $t = $m['tipo_movimiento'] ?? '';
+                $esAnulacion = (strpos($t, 'Anulación') === 0 || stripos($t, 'anulad') !== false);
+                $esCierre = ($t === 'Cierre de Caja' || ($m['tipo_origen'] ?? '') === 'cierre');
+
+                if ($esCierre) {
+                    if (!in_array($m['id_documento'], $cierresVistos)) {
+                        $cierresVistos[] = $m['id_documento'];
+                        $totalCierres++;
+                        
+                        fputcsv($output, [
+                            '#' . $m['id_documento'],
+                            isset($m['fecha_movimiento']) ? date('d/m/Y', strtotime($m['fecha_movimiento'])) : '',
+                            'Cierre Global de Turno',
+                            'Cierre de Caja',
+                            'Global',
+                            'Global',
+                            (int)($m['total_unidades'] ?? 0),
+                            $m['usuario_activo'] ?? 'N/A'
+                        ]);
+                    }
+                } else {
+                    if ($esAnulacion) $totalAnuladas++;
+                    elseif (stripos($t, 'Entrada') !== false) $totalEntradas++;
+                    elseif (stripos($t, 'Salida') !== false) $totalSalidas++;
+
+                    fputcsv($output, [
+                        '#' . $m['id_documento'],
+                        isset($m['fecha_movimiento']) ? date('d/m/Y', strtotime($m['fecha_movimiento'])) : '',
+                        $m['nombre_cliente'] ?? 'N/A',
+                        $t,
+                        (int)($m['total_productos'] ?? 0) . ' Prod.',
+                        (int)($m['total_categorias'] ?? 0) . ' Cat.',
+                        (int)($m['total_unidades'] ?? 0),
+                        $m['usuario_activo'] ?? 'N/A'
+                    ]);
+                }
+            }
+
+            // Fila de resumen al final
+            fputcsv($output, ['', '', '', '', '', '', '', '']);
+            fputcsv($output, ['RESUMEN', 'Entradas:', $totalEntradas, 'Salidas:', $totalSalidas, 'Anuladas:', $totalAnuladas, 'Cierres: ' . $totalCierres]);
+
+            fclose($output);
+            exit();
+
+        } catch (Exception $e) {
+            die("Error al generar el CSV: " . $e->getMessage());
+        }
     }
 }
 ?>
