@@ -89,7 +89,7 @@ $(document).ready(function() {
         });
     };
 
-    function cambiarEstadoProveedor(id, accion, $button, cerrarModal) {
+    function cambiarEstadoProveedor(id, accion, $button, cerrarModalId) {
         var originalHtml = $button.length ? $button.html() : '';
         if ($button.length) $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
 
@@ -104,8 +104,8 @@ $(document).ready(function() {
                     mostrarError(response.error || 'No se pudo cambiar el estado del proveedor.');
                     return;
                 }
-                if (cerrarModal) {
-                    var element = $('#modalEliminarProveedor').get(0);
+                if (cerrarModalId) {
+                    var element = $(cerrarModalId).get(0);
                     if (element && bootstrap.Modal.getInstance(element)) {
                         bootstrap.Modal.getInstance(element).hide();
                     }
@@ -121,8 +121,9 @@ $(document).ready(function() {
     }
 
     window.reactivarProveedor = function(id, button) {
-        if (!window.confirm('¿Deseas reactivar este proveedor?')) return;
-        cambiarEstadoProveedor(id, 'reactivar', $(button), false);
+        $('#reactivar-proveedor-id').val(id);
+        $('#reactivar-proveedor-nombre').text($(button).attr('data-proveedor-nombre') || 'Proveedor #' + id);
+        modal('#modalReactivarProveedor');
     };
 
     $(document).on('click', '[data-proveedor-action]', function() {
@@ -235,18 +236,28 @@ $(document).ready(function() {
         enviar();
     }
 
-    $('#formRegistrarProveedor, #formEditarProveedor').on('submit', function(event) {
+    $(document).on('submit', '#formRegistrarProveedor, #formEditarProveedor', function(event) {
         event.preventDefault();
         enviarProveedor($(this), this.id === 'formRegistrarProveedor' ? 'store' : 'update');
     });
 
-    $('#formEliminarProveedor').on('submit', function(event) {
+    $(document).on('submit', '#formEliminarProveedor', function(event) {
         event.preventDefault();
         cambiarEstadoProveedor(
             $('#eliminar-proveedor-id').val(),
             'inactivar',
             $(this).find('[type="submit"]'),
-            true
+            '#modalEliminarProveedor'
+        );
+    });
+
+    $(document).on('submit', '#formReactivarProveedor', function(event) {
+        event.preventDefault();
+        cambiarEstadoProveedor(
+            $('#reactivar-proveedor-id').val(),
+            'reactivar',
+            $(this).find('[type="submit"]'),
+            '#modalReactivarProveedor'
         );
     });
 });

@@ -162,7 +162,7 @@ if ($type === 'estado_ajax') {
 
         if (($_POST['accion'] ?? '') === 'inactivar') {
             $modelo->eliminarProveedor((int) $id);
-            $mensaje = 'Proveedor inactivado.';
+            $mensaje = 'Proveedor eliminado.';
         } elseif (($_POST['accion'] ?? '') === 'reactivar') {
             $modelo->reactivarProveedor((int) $id);
             $mensaje = 'Proveedor reactivado.';

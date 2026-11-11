@@ -168,6 +168,14 @@ if ($type === 'estado_ajax') {
 }
 
 // 3. PROCESAMIENTO POST
+if (in_array($type, ['edit', 'update'], true)) {
+    http_response_code(403);
+    $_SESSION['mensaje'] = 'Las notas de entrada no se pueden editar.';
+    $_SESSION['tipo_mensaje'] = 'danger';
+    header('Location: ?url=notaentrada&type=list');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($type === 'update') {

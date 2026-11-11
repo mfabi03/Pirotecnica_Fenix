@@ -47,7 +47,7 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
                     <?= $esVistaEliminados ? 'Notas de Salida Anuladas' : 'Lista de Notas de Salida' ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    <?= $esVistaEliminados ? 'Notas inactivas o anuladas permanentemente' : 'Gestiona las notas de salida de productos' ?>
+                    <?= $esVistaEliminados ? 'Notas anuladas permanentemente' : 'Gestiona las notas de salida de productos' ?>
                 </small>
             </div>
             <div class="col-auto">
@@ -106,7 +106,7 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
                 <button type="submit" class="btn btn-gold flex-fill">
                     <i class="fas fa-search me-1"></i> Buscar
                 </button>
-                <a href="?url=notasalida&amp;type=list" class="btn btn-secondary flex-fill">
+                <a href="?url=notasalida&amp;type=list" class="btn btn-secondary flex-fill js-filtro-listado-ajax">
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
                 <?php if ($esVistaEliminados): ?>
@@ -114,7 +114,7 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
                         <i class="fas fa-check-circle me-1"></i> Ver Activas
                     </a>
                 <?php else: ?>
-                    <a href="?url=notasalida&amp;type=list&amp;ver_anuladas=1" class="btn btn-danger flex-fill">
+                    <a href="?url=notasalida&amp;type=list&amp;ver_anuladas=1" class="btn btn-danger flex-fill js-filtro-listado-ajax">
                         <i class="fas fa-ban me-1"></i> Ver Anuladas
                     </a>
                 <?php endif; ?>
@@ -267,15 +267,9 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
                                     <div class="d-flex justify-content-center gap-2">
                                         <!-- Botón ver detalle -->
                                         <?php if ($anulada): ?>
-                                            <button type="button" class="btn-action-circle btn-view" title="Ver Motivo de Anulación"
-                                                    data-documento="#<?= $n['id_nota_salida'] ?>"
-                                                    data-producto="<?= htmlspecialchars(($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')) ?>"
-                                                    data-motivo="<?= htmlspecialchars($n['motivo_anulacion'] ?? 'No se registró un motivo.', ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-usuario="<?= htmlspecialchars(($n['usuario_nombre'] ?? 'N/A') . ' ' . ($n['usuario_apellido'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-fecha="<?= !empty($n['fecha_anulacion']) ? date('d/m/Y h:i A', strtotime($n['fecha_anulacion'])) : 'N/A' ?>"
-                                                    data-cantidad="<?= (int)($n['total_unidades'] ?? 0) ?>"
-                                                    onclick="verMotivoAnulacion(this)">
-                                                <i class="fas fa-eye"></i>
+                                            <button type="button" class="btn-action-circle btn-view" title="Ver Motivo"
+                                                    data-ver-motivo="<?= htmlspecialchars($n['motivo_anulacion'] ?? 'No se registró un motivo.', ENT_QUOTES, 'UTF-8') ?>">
+                                                <i class="fas fa-info-circle"></i>
                                             </button>
                                         <?php else: ?>
                                             <button type="button" class="btn-action-circle btn-view" title="Ver Detalle" onclick="verDetalleNota(<?= (int) $n['id_nota_salida'] ?>)">
@@ -306,44 +300,18 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
     </div>
 </div>
 
-<!-- 1. MODAL PARA VER MOTIVO DE ANULACIÓN -->
+<!-- Modal para ver únicamente el motivo de anulación -->
 <div class="modal fade" id="modalMotivoAnulacion" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Detalle de Anulación
+                    <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Motivo de Anulación
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
-
-            <div class="modal-body" style="padding: 24px;">
-                <div class="mb-3">
-                    <span class="text-muted small fw-bold text-uppercase">Documento:</span>
-                    <div class="fs-5 fw-bold text-dark" id="modal-motivo-doc"></div>
-                </div>
-                <div class="mb-3">
-                    <span class="text-muted small fw-bold text-uppercase">Cliente:</span>
-                    <div class="fs-6 text-dark" id="modal-motivo-prod"></div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-6">
-                        <span class="text-muted small fw-bold text-uppercase">Anulada por:</span>
-                        <div class="fs-6 text-dark fw-semibold" id="modal-motivo-usuario"></div>
-                    </div>
-                    <div class="col-6">
-                        <span class="text-muted small fw-bold text-uppercase">Cant. Productos:</span>
-                        <div class="fs-6 text-danger fw-bold" id="modal-motivo-cantidad"></div>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <span class="text-muted small fw-bold text-uppercase">Fecha y Hora de Anulación:</span>
-                    <div class="fs-6 text-dark" id="modal-motivo-fecha"></div>
-                </div>
-                <div class="mb-0">
-                    <span class="text-muted small fw-bold text-uppercase">Motivo Registrado:</span>
-                    <div class="p-3 mt-1 rounded" style="background: #f8f9fa; border-left: 4px solid #dc3545; color: #333; font-style: italic;" id="modal-motivo-texto"></div>
-                </div>
+            <div class="modal-body p-4">
+                <div class="p-3 rounded" style="background: #f8f9fa; border-left: 4px solid #dc3545; color: #333;" data-motivo-texto></div>
             </div>
 
             <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
@@ -417,18 +385,22 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
                             <table class="table table-hover align-middle m-0" style="table-layout: fixed; width: 100%;">
                                 <thead>
                                     <tr style="background: #f8f9fa;">
-                                        <th class="ps-4 py-3 text-center" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 8%;">#</th>
-                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 52%;">PRODUCTO</th>
-                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 25%;">CATEGORÍA</th>
-                                        <th class="pe-4 text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase; width: 15%;">CANTIDAD</th>
+                                        <th class="ps-3 py-3 text-center" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">#</th>
+                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">PRODUCTO</th>
+                                        <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">CATEGORÍA</th>
+                                        <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">CANT.</th>
+                                        <th class="text-end text-nowrap py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">COSTO</th>
+                                        <th class="pe-3 text-end text-nowrap py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">SUBTOTAL</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ver-nota-productos-tbody">
                                 </tbody>
                                 <tfoot>
                                     <tr style="border-top: 2px solid rgba(243,156,18,0.2); background: #f8f9fa;">
-                                        <th colspan="3" class="ps-4 py-3 text-end" style="color: #495057; font-size: 0.85rem;">Total Unidades:</th>
+                                        <th colspan="3" class="ps-4 py-3 text-end" style="color: #495057; font-size: 0.85rem;">TOTALES:</th>
                                         <th class="pe-4 text-center py-3" id="ver-nota-total-unidades" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">0</th>
+                                        <th class="text-end text-nowrap py-3"></th>
+                                        <th class="pe-3 text-end text-nowrap py-3" id="ver-nota-total-costo" style="color: #28a745; font-size: 1.1rem; font-weight: 700;">Total: $0.00</th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -459,7 +431,7 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
-            <form method="POST" action="?url=notasalida&type=eliminar">
+            <form method="POST" action="?url=notasalida&amp;type=estado_ajax" id="formAnularNota">
                 <input type="hidden" name="id_nota_salida" id="anular-nota-id">
                 <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
                     <p style="margin-bottom: 16px; font-weight: 500;">¿Estás seguro de anular esta nota de salida?</p>
@@ -524,21 +496,38 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('anular-nota-cliente').textContent = cliente || 'Nota #' + id;
         new bootstrap.Modal(document.getElementById('modalAnularNota')).show();
     };
+
+    $(document).on('submit', '#formAnularNota', function(event) {
+        event.preventDefault();
+        const form = this;
+        const submit = form.querySelector('[type="submit"]');
+        const submitOriginal = submit.innerHTML;
+        submit.disabled = true;
+        submit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Anulando...';
+
+        $.ajax({
+            url: '?url=notasalida&type=estado_ajax',
+            method: 'POST',
+            data: $(form).serialize(),
+            dataType: 'json'
+        }).done(function(response) {
+            if (!response.success) {
+                window.alert(response.error || 'No se pudo anular la nota.');
+                return;
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAnularNota')).hide();
+            window.location.href = '?url=notasalida&type=list&ver_anuladas=1';
+        }).fail(function(xhr, status, error) {
+            const response = xhr.responseJSON;
+            window.alert((response && response.error) || error || 'No se pudo anular la nota.');
+        }).always(function() {
+            submit.disabled = false;
+            submit.innerHTML = submitOriginal;
+        });
+    });
 });
 
-// 1. Función para abrir el modal de motivo de anulación
-function verMotivoAnulacion(btn) {
-    document.getElementById('modal-motivo-doc').textContent = btn.getAttribute('data-documento');
-    document.getElementById('modal-motivo-prod').textContent = btn.getAttribute('data-producto');
-    document.getElementById('modal-motivo-usuario').textContent = btn.getAttribute('data-usuario');
-    document.getElementById('modal-motivo-fecha').textContent = btn.getAttribute('data-fecha');
-    document.getElementById('modal-motivo-cantidad').textContent = btn.getAttribute('data-cantidad') + ' unidades';
-    document.getElementById('modal-motivo-texto').textContent = btn.getAttribute('data-motivo');
-    
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMotivoAnulacion')).show();
-}
-
-// 2. Función para abrir el modal de ver detalle (notas activas)
+// Abrir el detalle de una nota activa
 window.verDetalleNota = function(id) {
     document.getElementById('ver-nota-cargando').style.display = 'block';
     document.getElementById('ver-nota-error').style.display = 'none';
@@ -569,11 +558,15 @@ window.verDetalleNota = function(id) {
             const tbody = document.getElementById('ver-nota-productos-tbody');
             tbody.innerHTML = '';
             let totalUnidades = 0;
+            let totalCosto = 0;
 
             if (nota.detalles && nota.detalles.length > 0) {
                 nota.detalles.forEach(function(d, index) {
                     let cantidad = parseInt(d.cantidad) || 0;
+                    let costo = parseFloat(d.costo_unitario) || 0;
+                    let subtotal = cantidad * costo;
                     totalUnidades += cantidad;
+                    totalCosto += subtotal;
 
                     const tr = document.createElement('tr');
                     
@@ -593,23 +586,34 @@ window.verDetalleNota = function(id) {
                     tdCat.textContent = d.nombre_categoria || 'Sin categoría';
 
                     const tdCant = document.createElement('td');
-                    tdCant.className = 'pe-4 text-center fw-bold';
+                    tdCant.className = 'text-center fw-bold';
                     tdCant.style.color = '#f39c12';
                     tdCant.style.fontSize = '1.1rem';
                     tdCant.textContent = cantidad;
+
+                    const tdCosto = document.createElement('td');
+                    tdCosto.className = 'text-end text-nowrap';
+                    tdCosto.textContent = '$' + costo.toFixed(2);
+
+                    const tdSubtotal = document.createElement('td');
+                    tdSubtotal.className = 'pe-3 text-end text-nowrap fw-semibold';
+                    tdSubtotal.textContent = '$' + subtotal.toFixed(2);
 
                     tr.appendChild(tdNum);
                     tr.appendChild(tdProd);
                     tr.appendChild(tdCat);
                     tr.appendChild(tdCant);
+                    tr.appendChild(tdCosto);
+                    tr.appendChild(tdSubtotal);
                     
                     tbody.appendChild(tr);
                 });
             } else {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-3" style="color: #6c757d;"><i class="fas fa-box-open me-2"></i> No hay productos en esta nota</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3" style="color: #6c757d;"><i class="fas fa-box-open me-2"></i> No hay productos en esta nota</td></tr>`;
             }
             
             document.getElementById('ver-nota-total-unidades').textContent = totalUnidades;
+            document.getElementById('ver-nota-total-costo').textContent = 'Total: $' + totalCosto.toFixed(2);
         })
         .catch(err => {
             document.getElementById('ver-nota-cargando').style.display = 'none';

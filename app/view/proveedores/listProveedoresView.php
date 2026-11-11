@@ -155,14 +155,14 @@ $verEliminados = !empty($_GET['ver_eliminados']);
                                 <th class="py-3">Contacto</th>
                                 <th class="py-3">Dirección</th>
                                 <th class="py-3">Correo</th>
-                                <th class="py-3">Estado</th>
+                                <th class="py-3">STATUS</th>
                                 <th class="pe-4 py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (isset($proveedores) && is_array($proveedores) && count($proveedores) > 0): ?>
                                 <?php foreach ($proveedores as $p): ?>
-                                    <?php $proveedorInactivo = (int) ($p['eliminado'] ?? 0) === 1; ?>
+                                    <?php $proveedorEliminado = (int) ($p['eliminado'] ?? 0) === 1; ?>
                                     <tr>
                                         <td><?= htmlspecialchars($p['rif'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($p['razon_social'] ?? '') ?></td>
@@ -170,14 +170,13 @@ $verEliminados = !empty($_GET['ver_eliminados']);
                                         <td><?= htmlspecialchars($p['direccion'] ?? 'N/A') ?></td>
                                         <td><?= htmlspecialchars($p['correo_electronico'] ?? 'N/A') ?></td>
                                         <td>
-                                            <?php $estadoProveedor = $proveedorInactivo ? 'Inactivo' : 'Activo'; ?>
-                                            <span class="badge rounded-pill <?= $estadoProveedor === 'Activo' ? 'bg-success' : 'bg-secondary' ?>">
-                                                <?= htmlspecialchars($estadoProveedor) ?>
+                                            <span class="badge rounded-pill <?= $proveedorEliminado ? 'bg-danger' : 'bg-success' ?>">
+                                                <?= $proveedorEliminado ? 'Eliminado' : 'Activo' ?>
                                             </span>
                                         </td>
                                         <td class="pe-4 text-center">
                                             <div class="d-flex justify-content-center gap-2">
-                                                <?php if (!$proveedorInactivo): ?>
+                                                <?php if (!$proveedorEliminado): ?>
                                                     <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
                                                             data-proveedor-action="view" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
                                                         <i class="fas fa-eye"></i>
@@ -190,8 +189,8 @@ $verEliminados = !empty($_GET['ver_eliminados']);
                                                     <?php endif; ?>
                                                     <?php if ($puede_eliminar_proveedor): ?>
                                                         <button type="button" class="btn-action-circle btn-delete"
-                                                                title="Inactivar" data-proveedor-action="inactivate" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
-                                                            <i class="fas fa-ban"></i>
+                                                                title="Eliminar" data-proveedor-action="inactivate" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
+                                                            <i class="fas fa-trash-alt"></i>
                                                         </button>
                                                     <?php endif; ?>
                                                 <?php else: ?>
@@ -201,7 +200,8 @@ $verEliminados = !empty($_GET['ver_eliminados']);
                                                     </button>
                                                     <?php if ($puede_eliminar_proveedor): ?>
                                                     <button type="button" class="btn-action-circle btn-reactivate"
-                                                            title="Reactivar" data-proveedor-action="reactivate" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
+                                                            title="Reactivar" data-proveedor-action="reactivate" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>"
+                                                            data-proveedor-nombre="<?= htmlspecialchars($p['razon_social'] ?? $p['rif'] ?? 'Proveedor', ENT_QUOTES, 'UTF-8') ?>">
                                                         <i class="fas fa-undo-alt"></i>
                                                     </button>
                                                     <?php endif; ?>
@@ -241,6 +241,7 @@ require_once __DIR__ . '/partials/modal_registrar_proveedor.php';
 require_once __DIR__ . '/partials/modal_ver_proveedor.php';
 require_once __DIR__ . '/partials/modal_editar_proveedor.php';
 require_once __DIR__ . '/partials/modal_inactivar_proveedor.php';
+require_once __DIR__ . '/partials/modal_reactivar_proveedor.php';
 ?>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

@@ -339,6 +339,7 @@ class notasalidaModel {
                             ds.id_detalle_salida,
                             ds.id_producto,
                             ds.cantidad,
+                            p.costo_unitario AS costo_unitario,
                             p.descripcion AS nombre_producto,
                             c.nombre_categoria
                         FROM detalle_salida ds

@@ -92,16 +92,18 @@ $(document).ready(function() {
                         var costo = parseFloat(detalle.costo_unitario) || 0;
                         totalUnidades += cantidad;
                         totalCosto += cantidad * costo;
+                        var subtotal = cantidad * costo;
                         tbodyHtml += '<tr>' +
                             '<td class="ps-3 fw-bold text-start">' + (index + 1) + '</td>' +
                             '<td class="fw-semibold text-start">' + escaparHtml(detalle.nombre_producto || 'Producto') + '</td>' +
                             '<td class="text-secondary text-start">' + escaparHtml(detalle.nombre_categoria || 'Sin categoría') + '</td>' +
                             '<td class="text-center fw-bold">' + cantidad + '</td>' +
                             '<td class="pe-3 text-end text-nowrap">$' + costo.toFixed(2) + '</td>' +
+                            '<td class="pe-3 text-end text-nowrap">$' + subtotal.toFixed(2) + '</td>' +
                             '</tr>';
                     });
                 } else {
-                    tbodyHtml = '<tr><td colspan="5" class="text-center text-muted py-3">No hay productos en esta nota.</td></tr>';
+                    tbodyHtml = '<tr><td colspan="6" class="text-center text-muted py-3">No hay productos en esta nota.</td></tr>';
                 }
 
                 $('#ver-nota-productos-tbody').html(tbodyHtml);
@@ -164,7 +166,7 @@ $(document).ready(function() {
         $(this).closest('form').trigger('submit');
     });
 
-    $('#formAnularNota').on('submit', function(event) {
+    $(document).on('submit', '#formAnularNota', function(event) {
         event.preventDefault();
         var $form = $(this);
         var motivo = $.trim($form.find('[name="motivo_anulacion"]').val());

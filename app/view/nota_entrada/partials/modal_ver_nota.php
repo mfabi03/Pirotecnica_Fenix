@@ -82,6 +82,7 @@
                                         <th class="py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">CATEGORÍA</th>
                                         <th class="text-center py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">CANT.</th>
                                         <th class="text-end text-nowrap py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">COSTO</th>
+                                        <th class="text-end text-nowrap py-3" style="color: #495057; font-size: 0.75rem; text-transform: uppercase;">SUBTOTAL</th>
                                     </tr>
                                 </thead>
                                 <tbody id="ver-nota-productos-tbody"></tbody>
@@ -89,6 +90,7 @@
                                     <tr style="border-top: 2px solid rgba(243,156,18,0.2); background: #f8f9fa;">
                                         <th colspan="3" class="ps-4 py-3 text-end" style="color: #495057; font-size: 0.85rem;">TOTALES:</th>
                                         <th class="text-center py-3" id="ver-nota-total-unidades" style="color: #f39c12; font-size: 1.1rem; font-weight: 700;">0</th>
+                                        <th class="text-end text-nowrap py-3"></th>
                                         <th class="pe-3 text-end text-nowrap py-3" id="ver-nota-total-costo" style="color: #28a745; font-size: 1.1rem; font-weight: 700;">Total: $0.00</th>
                                     </tr>
                                 </tfoot>

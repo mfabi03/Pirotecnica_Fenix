@@ -57,7 +57,7 @@ function obtenerIdUsuarioValido($db) {
     return (int) $idUsuario;
 }
 
-$type = $_GET['type'] ?? 'list';
+$type = $_GET['type'] ?? $_POST['type'] ?? 'list';
 $id = $_GET['id'] ?? null;
 $error = null;
 $success = null;
@@ -70,6 +70,14 @@ $tipo_mensaje = '';
 
 $esAdmin = (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 1) || (strtolower($_SESSION['nombre_rol'] ?? '') === 'administrador');
 $id_usuario_filtro = $esAdmin ? null : (int)($_SESSION['id_usuario'] ?? 0);
+
+if (in_array($type, ['edit', 'update'], true)) {
+    http_response_code(403);
+    $_SESSION['mensaje'] = 'Las notas de salida no se pueden editar.';
+    $_SESSION['tipo_mensaje'] = 'danger';
+    header('Location: ?url=notasalida&type=list');
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store') {
     $fecha_hoy = date('Y-m-d');
@@ -87,11 +95,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store') {
     }
 }
 
-if ($type === 'detalle_json' && $id) {
+if (in_array($type, ['detalle_json', 'detalle_ajax'], true)) {
     header('Content-Type: application/json; charset=utf-8');
+    if (!$id || !ctype_digit((string) $id) || (int) $id < 1) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'ID de nota no válido.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     try {
         $nota = $modelo->obtenerNotaPorId($id);
         if (!$nota) { 
+            http_response_code(404);
             echo json_encode(['success' => false, 'error' => 'Nota no encontrada']); 
             exit; 
         }
@@ -110,8 +125,41 @@ if ($type === 'detalle_json' && $id) {
         }
 
         echo json_encode(['success' => true, 'nota' => $nota], JSON_UNESCAPED_UNICODE);
-    } catch (Exception $e) { 
+    } catch (Exception $e) {
+        http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]); 
+    }
+    exit;
+}
+
+if ($type === 'estado_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Notas de Salida', 'eliminar')) {
+            http_response_code(403);
+            throw new Exception('No tienes permiso para anular notas de salida.');
+        }
+
+        $idNota = $_POST['id_nota_salida'] ?? '';
+        $motivo = trim((string) ($_POST['motivo_eliminacion'] ?? ''));
+        if (!ctype_digit((string) $idNota) || (int) $idNota < 1) {
+            http_response_code(400);
+            throw new Exception('ID de nota no válido.');
+        }
+        if ($motivo === '') {
+            http_response_code(400);
+            throw new Exception('Debe indicar el motivo de anulación.');
+        }
+
+        $modelo->eliminarNota((int) $idNota, $motivo);
+        $_SESSION['mensaje'] = 'Nota de salida anulada exitosamente.';
+        $_SESSION['tipo_mensaje'] = 'warning';
+        echo json_encode(['success' => true, 'message' => 'Nota anulada.'], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        if (http_response_code() < 400) {
+            http_response_code(500);
+        }
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     }
     exit;
 }
