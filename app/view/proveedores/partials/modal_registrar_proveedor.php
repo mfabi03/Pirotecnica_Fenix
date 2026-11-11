@@ -19,7 +19,9 @@
                         </div>
                         <div class="col-md-6">
                             <label for="registrar-proveedor-telefono" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Número de Contacto *</label>
-                            <input type="tel" id="registrar-proveedor-telefono" name="numero_contacto" class="form-control proveedor-telefono" placeholder="0412-1234567" required>
+                            <input type="tel" id="registrar-proveedor-telefono" name="numero_contacto" class="form-control proveedor-telefono" placeholder="0412-1234567" maxlength="12" required
+                                   data-validate="telefono_proveedor" data-unico-endpoint="?url=proveedores&amp;action=check_unique" data-unico-campo="telefono_proveedor">
+                            <small class="feedback-validacion info" id="registrar-proveedor-telefono-feedback"></small>
                         </div>
                         <div class="col-12">
                             <label for="registrar-proveedor-razon" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Razón Social *</label>
@@ -27,7 +29,8 @@
                         </div>
                         <div class="col-md-6">
                             <label for="registrar-proveedor-correo" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Correo Electrónico</label>
-                            <input type="email" id="registrar-proveedor-correo" name="correo_electronico" class="form-control" placeholder="correo@empresa.com">
+                            <input type="email" id="registrar-proveedor-correo" name="correo_electronico" class="form-control" placeholder="correo@empresa.com" data-validate="correo">
+                            <small class="feedback-validacion info" id="registrar-proveedor-correo-feedback"></small>
                         </div>
                         <div class="col-md-6">
                             <label for="registrar-proveedor-direccion" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Dirección *</label>

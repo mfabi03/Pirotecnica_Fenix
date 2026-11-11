@@ -154,9 +154,6 @@ if ($type === 'estado_ajax') {
             }
             $modelo->anularNotaEntrada($id, $motivo, obtenerIdUsuarioValido($db));
             echo json_encode(['success' => true, 'message' => 'Nota anulada y stock revertido.'], JSON_UNESCAPED_UNICODE);
-        } elseif ($accion === 'reactivar') {
-            $modelo->reactivarNotaEntrada($id);
-            echo json_encode(['success' => true, 'message' => 'Nota reactivada y stock restaurado.'], JSON_UNESCAPED_UNICODE);
         } else {
             http_response_code(400);
             throw new Exception('Acción de estado no válida.');
@@ -560,7 +557,7 @@ if ($type === 'show' && $id) {
 // LISTAR
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
-    $estado_nota = $_GET['estado_nota'] ?? 'todos';
+    $estado_nota = !empty($_GET['ver_anuladas']) ? 'inactivos' : 'activos';
     $notas_full = !empty($buscar)
         ? $modelo->buscarNotasEntrada($buscar, $estado_nota)
         : $modelo->obtenerNotasEntrada($estado_nota);

@@ -74,6 +74,7 @@ $(document).ready(function() {
             $('#editar-proveedor-correo').val(proveedor.correo_electronico || '');
             $('#editar-proveedor-direccion').val(proveedor.direccion || '');
             $('#editar-proveedor-eliminado').val(String(proveedor.eliminado || 0));
+            $('#editar-proveedor-telefono').data('excluir-id', proveedor.id_proveedor);
             $('#editar-proveedor-razon-header').text(proveedor.razon_social || '—');
             if (typeof Validador !== 'undefined') Validador.init($('#modalEditarProveedor').get(0));
             modal('#modalEditarProveedor');
@@ -170,8 +171,6 @@ $(document).ready(function() {
         var $submit = $form.find('[type="submit"]');
         var originalHtml = $submit.html();
         var url = tipo === 'store' ? '?url=proveedores&type=store_ajax' : '?url=proveedores&type=update_ajax';
-        var $rif = $form.find('[name="rif"][data-unico-endpoint]');
-
         function enviar() {
             $submit.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
             $.ajax({
@@ -196,11 +195,40 @@ $(document).ready(function() {
         }
 
         if (!validarFormulario($form)) return;
-        if (tipo === 'store' && $rif.length && typeof Validador !== 'undefined') {
-            var rifValue = $rif.val();
-            Validador.validarUnico($rif.get(0)).then(function(disponible) {
-                if ($rif.val() !== rifValue) return;
-                if (disponible) enviar();
+        var $camposUnicos = $form.find('[data-unico-endpoint]');
+        if ($camposUnicos.length && typeof Validador !== 'undefined') {
+            if ($form.data('verificandoUnicidad')) return;
+            $form.data('verificandoUnicidad', true);
+            $submit.prop('disabled', true);
+            var valoresOriginales = [];
+            var verificaciones = $camposUnicos.map(function() {
+                valoresOriginales.push($(this).val());
+                return Validador.validarUnico(this).then(function(disponible) {
+                    return disponible;
+                }, function() {
+                    return false;
+                });
+            }).get();
+            Promise.all(verificaciones).then(function(resultados) {
+                var sinCambios = true;
+                $camposUnicos.each(function(index) {
+                    if ($(this).val() !== valoresOriginales[index]) sinCambios = false;
+                });
+                $form.data('verificandoUnicidad', false);
+                if (sinCambios && resultados.every(Boolean)) {
+                    enviar();
+                    return;
+                }
+                $submit.prop('disabled', false);
+                if ($camposUnicos.filter(function() {
+                    return !['ok', 'duplicado'].includes($(this).data('unicoEstado'));
+                }).length) {
+                    mostrarError('No se pudo verificar la disponibilidad del teléfono.');
+                }
+            }).catch(function() {
+                $form.data('verificandoUnicidad', false);
+                $submit.prop('disabled', false);
+                mostrarError('No se pudo verificar la disponibilidad del teléfono.');
             });
             return;
         }

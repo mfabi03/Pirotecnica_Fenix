@@ -93,10 +93,49 @@ class ProveedoresModel {
         }
     }
 
+    private function normalizarNumeroContacto($numero) {
+        return preg_replace('/\D+/', '', (string) $numero);
+    }
+
+    public function existeNumeroContacto($numero, $excluirId = null) {
+        try {
+            $numeroNormalizado = $this->normalizarNumeroContacto($numero);
+            $sql = "SELECT COUNT(*) FROM proveedor
+                    WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(numero_contacto, '-', ''), ' ', ''), '+', ''), '(', ''), ')', '') = :numero";
+            $parametros = [':numero' => $numeroNormalizado];
+            if ($excluirId !== null) {
+                $sql .= " AND id_proveedor != :excluir_id";
+                $parametros[':excluir_id'] = (int) $excluirId;
+            }
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($parametros);
+            return (int) $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            throw new Exception("Error al verificar el número de contacto: " . $e->getMessage());
+        }
+    }
+
+    private function validarDatosContacto(array $datos, $excluirId = null) {
+        $numero = trim((string) ($datos['numero_contacto'] ?? ''));
+        if (!preg_match('/^\d{4}-?\d{7}$/', $numero)) {
+            throw new Exception('El teléfono debe tener exactamente 11 dígitos (ejemplo: 0412-1234567).');
+        }
+
+        $correo = trim((string) ($datos['correo_electronico'] ?? ''));
+        if ($correo !== '' && filter_var($correo, FILTER_VALIDATE_EMAIL) === false) {
+            throw new Exception('El correo electrónico no es válido.');
+        }
+
+        if ($this->existeNumeroContacto($numero, $excluirId)) {
+            throw new Exception('Este número de teléfono ya está registrado en otro proveedor.');
+        }
+    }
+
     // REGISTRAR PROVEEDOR
     public function registrarProveedor(array $datos) {
         $this->db->beginTransaction();
         try {
+            $this->validarDatosContacto($datos);
             $checkSql = "SELECT COUNT(*) FROM proveedor WHERE rif = :rif AND eliminado = 0";
             $checkStmt = $this->db->prepare($checkSql);
             $checkStmt->execute(['rif' => $datos['rif']]);
@@ -147,6 +186,7 @@ class ProveedoresModel {
             if (!$proveedor) {
                 throw new Exception("El proveedor con ID {$id} no existe.");
             }
+            $this->validarDatosContacto($datos, (int) $id);
             if (!in_array((string) ($datos['eliminado'] ?? ''), ['0', '1'], true)) {
                 throw new Exception("El estado del proveedor no es válido.");
             }

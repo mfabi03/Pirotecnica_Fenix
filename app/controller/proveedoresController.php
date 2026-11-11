@@ -11,7 +11,7 @@ $type = $_POST['type'] ?? $_GET['type'] ?? 'list';
 $action = $_GET['action'] ?? '';
 $esSolicitudAjax = in_array($type, ['listar_ajax', 'detalle_ajax', 'estado_ajax'], true)
     || in_array($type, ['store_ajax', 'update_ajax'], true)
-    || $action === 'check_rif';
+    || in_array($action, ['check_rif', 'check_unique'], true);
 
 error_reporting(E_ALL);
 ini_set('display_errors', $esSolicitudAjax ? '0' : '1');
@@ -52,6 +52,37 @@ $error = null;
 $success = null;
 $proveedor = null;
 $proveedores = [];
+
+if ($action === 'check_unique') {
+    header('Content-Type: application/json; charset=utf-8');
+    $campo = $_GET['campo'] ?? '';
+    $valor = trim($_GET['valor'] ?? '');
+    $excluirId = $_GET['excluir_id'] ?? '';
+    if ($valor === '' || ($excluirId !== '' && (!ctype_digit((string) $excluirId) || (int) $excluirId < 1))) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Datos de validación no válidos.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    try {
+        if ($campo !== 'telefono_proveedor') {
+            http_response_code(400);
+            throw new Exception('Campo de validación no válido.');
+        }
+        echo json_encode([
+            'existe' => $modelo->existeNumeroContacto($valor, $excluirId === '' ? null : (int) $excluirId),
+            'campo' => $campo,
+            'valor' => $valor
+        ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    } catch (Exception $e) {
+        error_log('Error al verificar el teléfono del proveedor: ' . $e->getMessage());
+        if (http_response_code() < 400) {
+            http_response_code(500);
+        }
+        echo json_encode(['error' => 'No se pudo verificar el número de contacto.'], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
 
 if ($action === 'check_rif') {
     header('Content-Type: application/json; charset=utf-8');
@@ -446,12 +477,16 @@ if ($type === 'show') {
 
 try {
     $buscar = trim($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
+    $verEliminados = !empty($_GET['ver_eliminados']);
     
     if (!empty($buscar)) {
         $proveedores_full = $modelo->buscarProveedores($buscar, true);
     } else {
         $proveedores_full = $modelo->obtenerProveedores(true);
     }
+    $proveedores_full = array_values(array_filter($proveedores_full, function ($proveedor) use ($verEliminados) {
+        return (int) ($proveedor['eliminado'] ?? 0) === ($verEliminados ? 1 : 0);
+    }));
 
     $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));

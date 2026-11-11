@@ -68,6 +68,13 @@ var Validador = (function ($) {
             if (!regex.test(valor)) return { estado: 'invalido', mensaje: 'Formato inválido. Ejemplo: 0412-1234567' };
             return { estado: 'valido', mensaje: 'Teléfono válido' };
         },
+        telefono_proveedor: function (valor) {
+            if (!valor) return { estado: 'vacio', mensaje: 'Formato: 0412-1234567' };
+            if (!/^\d{4}-?\d{7}$/.test(valor)) {
+                return { estado: 'invalido', mensaje: 'Debe tener exactamente 11 dígitos. Ejemplo: 0412-1234567' };
+            }
+            return { estado: 'valido', mensaje: 'Teléfono válido' };
+        },
         nombre: function (valor) {
             if (!valor) return { estado: 'vacio', mensaje: 'Mínimo 2 caracteres' };
             if ($.trim(valor).length < 2) return { estado: 'invalido', mensaje: 'Debe tener al menos 2 caracteres' };
@@ -83,7 +90,8 @@ var Validador = (function ($) {
         },
         correo: function (valor) {
             if (!valor) return { estado: 'vacio', mensaje: 'Formato: usuario@dominio.com' };
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(valor)) return { estado: 'invalido', mensaje: 'Correo electrónico inválido' };
+            var regex = /^[A-Z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\.[A-Z0-9!#$%&'*+\/=?^_`{|}~-]+)*@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)*\.[A-Z]{2,}$/i;
+            if (!regex.test(valor)) return { estado: 'invalido', mensaje: 'Correo electrónico inválido' };
             return { estado: 'valido', mensaje: 'Correo válido' };
         },
         fecha: function (valor) {
@@ -218,6 +226,7 @@ var Validador = (function ($) {
 
         var etiqueta = (campo === 'cedula') ? 'cédula'
                      : (campo === 'rif')    ? 'RIF'
+                     : (campo === 'telefono_proveedor') ? 'teléfono'
                      : campo;
 
         $input.data('unicoEstado', 'checking');
@@ -339,7 +348,7 @@ var Validador = (function ($) {
                 else if (/^[VEJPG]\d+$/.test(v)) this.value = v.charAt(0) + '-' + v.substring(1);
                 else this.value = v;
             });
-        } else if (tipo === 'telefono') {
+        } else if (tipo === 'telefono' || tipo === 'telefono_proveedor') {
             $input.on('input', function () {
                 this.value = this.value.replace(/[^0-9\-\s+]/g, '');
             });

@@ -33,10 +33,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         <div class="row align-items-center">
             <div class="col">
                 <h3 class="m-0 dark-title">
-                    <i class="fas fa-sign-in-alt text-gold me-2"></i> Lista de Notas de Entrada
+                    <i class="fas fa-sign-in-alt text-gold me-2"></i> <?= !empty($_GET['ver_anuladas']) ? 'Notas de Entrada Anuladas' : 'Lista de Notas de Entrada' ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    Gestiona las notas de entrada de productos
+                    <?= !empty($_GET['ver_anuladas']) ? 'Consulta el motivo de anulación de las notas' : 'Gestiona las notas de entrada de productos' ?>
                 </small>
             </div>
             <div class="col-auto">
@@ -54,6 +54,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
         <form method="GET" action="" class="row g-2 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="notaentrada">
             <input type="hidden" name="type" value="list">
+            <?php if (!empty($_GET['ver_anuladas'])): ?><input type="hidden" name="ver_anuladas" value="1"><?php endif; ?>
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
@@ -64,16 +65,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </select>
             </div>
 
-            <div class="col-md-2">
-                <label class="form-label fw-bold small text-dark mb-0">Estado</label>
-                <select name="estado_nota" class="form-select form-select-sm" data-no-search="true" data-auto-submit>
-                    <option value="todos" <?= (($estado_nota ?? 'todos') === 'todos') ? 'selected' : '' ?>>Todos</option>
-                    <option value="activos" <?= (($estado_nota ?? 'todos') === 'activos') ? 'selected' : '' ?>>Activos</option>
-                    <option value="inactivos" <?= (($estado_nota ?? 'todos') === 'inactivos') ? 'selected' : '' ?>>Anuladas</option>
-                </select>
-            </div>
-
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <input type="text" name="busqueda" class="form-control form-control-sm"
                        list="listaNotasEntrada"
                        placeholder="Buscar por proveedor, encargado o ID..."
@@ -97,16 +89,22 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                 </datalist>
             </div>
             
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-gold w-100">
+            <div class="col-md-7 d-flex flex-column flex-sm-row gap-2">
+                <button type="submit" class="btn btn-gold flex-fill">
                     <i class="fas fa-search me-1"></i> Buscar
                 </button>
-            </div>
-            
-            <div class="col-md-2">
-                <a href="?url=notaentrada&type=list" class="btn btn-secondary w-100">
+                <a href="?url=notaentrada&amp;type=list" class="btn btn-secondary flex-fill">
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
+                <?php if (!empty($_GET['ver_anuladas'])): ?>
+                    <a href="?url=notaentrada&amp;type=list" class="btn btn-secondary flex-fill js-filtro-listado-ajax">
+                        <i class="fas fa-check-circle me-1"></i> Ver Activas
+                    </a>
+                <?php else: ?>
+                    <a href="?url=notaentrada&amp;type=list&amp;ver_anuladas=1" class="btn btn-danger flex-fill js-filtro-listado-ajax">
+                        <i class="fas fa-ban me-1"></i> Ver Anuladas
+                    </a>
+                <?php endif; ?>
             </div>
         </form>
     </div>
@@ -185,7 +183,7 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
-                <i class="fas fa-list me-2"></i> Notas Registradas
+                <i class="fas fa-list me-2"></i> <?= !empty($_GET['ver_anuladas']) ? 'Notas Anuladas' : 'Notas Registradas' ?>
             </h5>
         </div>
         
@@ -208,8 +206,8 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                             <td colspan="7" class="text-center py-5 dark-empty">
                                 <div class="py-4">
                                     <i class="fas fa-inbox fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                    <p class="mb-0">No hay notas de entrada registradas</p>
-                                    <small>Comienza registrando una nueva nota</small>
+                                    <p class="mb-0"><?= !empty($_GET['ver_anuladas']) ? 'No hay notas anuladas' : 'No hay notas de entrada registradas' ?></p>
+                                    <small><?= !empty($_GET['ver_anuladas']) ? 'Las notas activas están en la lista principal' : 'Comienza registrando una nueva nota' ?></small>
                                 </div>
                             </td>
                         </tr>
@@ -271,10 +269,10 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                                     <i class="fas fa-ban"></i>
                                                 </button>
                                             <?php endif; ?>
-                                        <?php elseif ($puede_anular_nota): ?>
-                                            <button type="button" class="btn-action-circle btn-reactivate" title="Reactivar"
-                                                    data-nota-action="reactivate" data-nota-id="<?= (int) $n['id_nota_entrada'] ?>">
-                                                <i class="fas fa-undo-alt"></i>
+                                        <?php else: ?>
+                                            <button type="button" class="btn-action-circle btn-view" title="Ver Motivo"
+                                                    data-ver-motivo="<?= htmlspecialchars($n['motivo_anulacion'] ?? 'No se registró un motivo.', ENT_QUOTES, 'UTF-8') ?>">
+                                                <i class="fas fa-info-circle"></i>
                                             </button>
                                         <?php endif; ?>
                                     </div>
@@ -303,18 +301,20 @@ require_once __DIR__ . '/partials/modal_ver_nota.php';
 require_once __DIR__ . '/partials/modal_anular_nota.php';
 ?>
 
-<style>
-    .btn-action-circle.btn-reactivate {
-        background: #28a745 !important;
-        color: #fff !important;
-    }
-    .btn-action-circle.btn-reactivate:hover {
-        background: #218838 !important;
-        box-shadow: 0 6px 20px rgba(40, 167, 69, .4);
-    }
-</style>
+<div class="modal fade" id="modalMotivoAnulacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i> Motivo de anulación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" data-motivo-texto></div>
+        </div>
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="/pirotecnica_fenix/assets/js/filtro_listado_ajax.js"></script>
 <script src="/pirotecnica_fenix/assets/js/nota_entrada.js"></script>
 
 

@@ -25,7 +25,7 @@ $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($notas) ? co
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
-$esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
+$esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
 ?>
 
 <style>
@@ -57,11 +57,7 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                 </small>
             </div>
             <div class="col-auto">
-                <?php if ($esVistaEliminados): ?>
-                    <a href="?url=notasalida&type=list" class="btn btn-secondary" style="border-radius: 50px; padding: 8px 22px; font-weight: 600;">
-                        <i class="fas fa-arrow-left me-1"></i> Volver a Notas Activas
-                    </a>
-                <?php else: ?>
+                <?php if (!$esVistaEliminados): ?>
                     <?php if ($puede_crear_nota && !$caja_cerrada): ?>
                     <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                         <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
@@ -80,7 +76,7 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
         <form id="formFiltroNotasSalida" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="notasalida">
             <input type="hidden" name="type" value="list">
-            <input type="hidden" name="estado_nota" value="<?= $esVistaEliminados ? 'inactivos' : 'activos' ?>">
+            <?php if ($esVistaEliminados): ?><input type="hidden" name="ver_anuladas" value="1"><?php endif; ?>
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
@@ -91,7 +87,7 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                 </select>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
                 <input type="text" name="busqueda" class="form-control form-control-sm" 
                        list="listaNotasSalida"
@@ -112,29 +108,24 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                 </datalist>
             </div>
             
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-gold w-100">
+            <div class="col-md-7 d-flex flex-column flex-sm-row gap-2">
+                <button type="submit" class="btn btn-gold flex-fill">
                     <i class="fas fa-search me-1"></i> Buscar
                 </button>
-            </div>
-            
-            <div class="col-md-2">
-                <a href="?url=notasalida&type=list" class="btn btn-secondary w-100">
+                <a href="?url=notasalida&amp;type=list" class="btn btn-secondary flex-fill">
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
-            </div>
-
-            <div class="col-md-2">
                 <?php if ($esVistaEliminados): ?>
-                    <a href="?url=notasalida&type=list" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
-                        <i class="fas fa-undo-alt me-1"></i> Ver Activos
+                    <a href="?url=notasalida&amp;type=list" class="btn btn-secondary flex-fill js-filtro-listado-ajax">
+                        <i class="fas fa-check-circle me-1"></i> Ver Activas
                     </a>
                 <?php else: ?>
-                    <a href="?url=notasalida&type=list&estado_nota=inactivos" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
-                        <i class="fas fa-trash-alt me-1"></i> Ver Anuladas
+                    <a href="?url=notasalida&amp;type=list&amp;ver_anuladas=1" class="btn btn-danger flex-fill js-filtro-listado-ajax">
+                        <i class="fas fa-ban me-1"></i> Ver Anuladas
                     </a>
                 <?php endif; ?>
             </div>
+
         </form>
     </div>
 
@@ -281,9 +272,16 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <!-- Botón ver detalle -->
-                                        <button type="button" class="btn-action-circle btn-view" title="Ver Detalle" onclick="verDetalleNota(<?= (int) $n['id_nota_salida'] ?>)">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
+                                        <?php if ($anulada): ?>
+                                            <button type="button" class="btn-action-circle btn-view" title="Ver Motivo"
+                                                    data-ver-motivo="<?= htmlspecialchars($n['motivo_anulacion'] ?? 'No se registró un motivo.', ENT_QUOTES, 'UTF-8') ?>">
+                                                <i class="fas fa-info-circle"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <button type="button" class="btn-action-circle btn-view" title="Ver Detalle" onclick="verDetalleNota(<?= (int) $n['id_nota_salida'] ?>)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        <?php endif; ?>
                                         
                                         <?php if (!$anulada && $puede_anular_nota): ?>
                                             <!-- Botón anular (solo si está activa) -->
@@ -305,6 +303,18 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                 Total: <?= $totalRegistros ?> notas
             </span>
             <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalMotivoAnulacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i> Motivo de anulación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" data-motivo-texto></div>
         </div>
     </div>
 </div>
@@ -449,6 +459,8 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
 </div>
 <?php endif; ?>
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="/pirotecnica_fenix/assets/js/filtro_listado_ajax.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';

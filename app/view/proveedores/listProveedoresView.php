@@ -19,6 +19,7 @@ $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'crear') : false;
 $puede_editar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'actualizar') : false;
 $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'eliminar') : false;
+$verEliminados = !empty($_GET['ver_eliminados']);
 ?>
 
 <div class="col-md-8 col-lg-12">
@@ -28,7 +29,7 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                 <div class="row align-items-center">
                     <div class="col">
                         <h3 class="m-0 dark-title">
-                            <i class="fas fa-truck text-gold me-2"></i> Lista de Proveedores
+                            <i class="fas fa-truck text-gold me-2"></i> <?= $verEliminados ? 'Proveedores Eliminados' : 'Lista de Proveedores' ?>
                         </h3>
                         <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
                             Gestiona los proveedores registrados en el sistema
@@ -49,6 +50,7 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                 <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
                     <input type="hidden" name="url" value="proveedores">
                     <input type="hidden" name="type" value="list">
+                    <?php if ($verEliminados): ?><input type="hidden" name="ver_eliminados" value="1"><?php endif; ?>
                     
                     <!-- ✅ SELECT "MOSTRAR" ARRIBA -->
                     <div class="col-md-2">
@@ -60,7 +62,7 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                         </select>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <input type="text" name="busqueda" class="form-control" 
                                list="listaProveedores"
                                placeholder="Buscar por RIF, razón social, contacto o dirección..."
@@ -85,16 +87,22 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                         </datalist>
                     </div>
                     
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-gold w-100">
+                    <div class="col-md-7 d-flex flex-column flex-sm-row gap-2">
+                        <button type="submit" class="btn btn-gold flex-fill">
                             <i class="fas fa-search me-1"></i> Buscar
                         </button>
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <a href="?url=proveedores&type=list" class="btn btn-secondary w-100">
+                        <a href="?url=proveedores&amp;type=list" class="btn btn-secondary flex-fill">
                             <i class="fas fa-times me-1"></i> Limpiar
                         </a>
+                        <?php if ($verEliminados): ?>
+                            <a href="?url=proveedores&amp;type=list" class="btn btn-secondary flex-fill js-filtro-listado-ajax">
+                                <i class="fas fa-check-circle me-1"></i> Ver Activos
+                            </a>
+                        <?php else: ?>
+                            <a href="?url=proveedores&amp;type=list&amp;ver_eliminados=1" class="btn btn-danger flex-fill js-filtro-listado-ajax">
+                                <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
@@ -134,7 +142,7 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
             <div class="dark-card card shadow-sm dark-table-header">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h5 class="m-0">
-                        <i class="fas fa-truck me-2"></i> Proveedores Registrados
+                        <i class="fas fa-truck me-2"></i> <?= $verEliminados ? 'Proveedores Eliminados' : 'Proveedores Registrados' ?>
                     </h5>
                 </div>
                 
@@ -186,11 +194,17 @@ $puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actua
                                                             <i class="fas fa-ban"></i>
                                                         </button>
                                                     <?php endif; ?>
-                                                <?php elseif ($puede_eliminar_proveedor): ?>
+                                                <?php else: ?>
+                                                    <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
+                                                            data-proveedor-action="view" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <?php if ($puede_eliminar_proveedor): ?>
                                                     <button type="button" class="btn-action-circle btn-reactivate"
                                                             title="Reactivar" data-proveedor-action="reactivate" data-proveedor-id="<?= (int) $p['id_proveedor'] ?>">
                                                         <i class="fas fa-undo-alt"></i>
                                                     </button>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -230,6 +244,7 @@ require_once __DIR__ . '/partials/modal_inactivar_proveedor.php';
 ?>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="/pirotecnica_fenix/assets/js/filtro_listado_ajax.js"></script>
 <style>
     .btn-action-circle.btn-reactivate {
         background: #28a745 !important;

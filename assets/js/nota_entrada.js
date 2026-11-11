@@ -152,18 +152,12 @@ $(document).ready(function() {
             });
     }
 
-    window.reactivarNotaEntrada = function(id, button) {
-        if (!window.confirm('¿Deseas reactivar esta nota y restaurar las cantidades al inventario?')) return;
-        cambiarEstadoNota(id, 'reactivar', '', $(button), false);
-    };
-
     $(document).on('click', '[data-nota-action]', function() {
         var $button = $(this);
         var id = parseInt($button.attr('data-nota-id'), 10);
         var accion = $button.attr('data-nota-action');
         if (accion === 'view') window.verDetalleNotaEntrada(id, this);
         if (accion === 'cancel') window.prepararAnulacionNotaEntrada(id, $button.attr('data-proveedor'));
-        if (accion === 'reactivate') window.reactivarNotaEntrada(id, this);
     });
 
     $(document).on('change', '[data-auto-submit]', function() {

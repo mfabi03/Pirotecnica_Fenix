@@ -412,66 +412,6 @@ class NotaentradaModel {
         }
     }
 
-    public function reactivarNotaEntrada($id) {
-        $this->db->beginTransaction();
-        try {
-            $stmtNota = $this->db->prepare("
-                SELECT id_nota_entrada
-                FROM nota_de_entrada
-                WHERE id_nota_entrada = :id AND eliminado = 1
-                FOR UPDATE
-            ");
-            $stmtNota->execute([':id' => $id]);
-            if (!$stmtNota->fetch(PDO::FETCH_ASSOC)) {
-                throw new Exception("La nota no existe o ya está activa.");
-            }
-
-            $stmtDetalles = $this->db->prepare("
-                SELECT id_producto, cantidad
-                FROM detalle_entrada
-                WHERE id_nota_entrada = :id
-            ");
-            $stmtDetalles->execute([':id' => $id]);
-            $detalles = $stmtDetalles->fetchAll(PDO::FETCH_ASSOC);
-            if (empty($detalles)) {
-                throw new Exception("La nota no tiene productos asociados.");
-            }
-
-            $stmtStock = $this->db->prepare("
-                UPDATE producto
-                SET cantidad = cantidad + :cantidad
-                WHERE id_producto = :id_producto
-            ");
-            foreach ($detalles as $detalle) {
-                $stmtStock->execute([
-                    ':cantidad' => (int) $detalle['cantidad'],
-                    ':id_producto' => (int) $detalle['id_producto']
-                ]);
-                if ($stmtStock->rowCount() !== 1) {
-                    throw new Exception("No se pudo restaurar el inventario de un producto de la nota.");
-                }
-            }
-
-            $stmtActivar = $this->db->prepare("
-                UPDATE nota_de_entrada
-                SET eliminado = 0
-                WHERE id_nota_entrada = :id AND eliminado = 1
-            ");
-            $stmtActivar->execute([':id' => $id]);
-            if ($stmtActivar->rowCount() !== 1) {
-                throw new Exception("No se pudo reactivar la nota de entrada.");
-            }
-
-            $this->db->commit();
-            return true;
-        } catch (Exception $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            throw new Exception("Error al reactivar nota de entrada: " . $e->getMessage());
-        }
-    }
-
     // OBTENER RESUMEN
     public function getResumen() {
         try {

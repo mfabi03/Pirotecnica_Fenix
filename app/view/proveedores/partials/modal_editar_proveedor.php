@@ -17,7 +17,8 @@
                         </div>
                         <div class="col-md-6">
                             <label for="editar-proveedor-telefono" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Número de Contacto *</label>
-                            <input type="tel" id="editar-proveedor-telefono" name="numero_contacto" class="form-control proveedor-telefono" required data-validate="telefono">
+                            <input type="tel" id="editar-proveedor-telefono" name="numero_contacto" class="form-control proveedor-telefono" maxlength="12" required
+                                   data-validate="telefono_proveedor" data-unico-endpoint="?url=proveedores&amp;action=check_unique" data-unico-campo="telefono_proveedor">
                             <small class="feedback-validacion info" id="editar-proveedor-telefono-feedback"></small>
                         </div>
                         <div class="col-12">

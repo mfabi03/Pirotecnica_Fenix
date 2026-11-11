@@ -211,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($resultado) {
                 $_SESSION['mensaje'] = 'Nota de Salida anulada exitosamente.'; 
                 $_SESSION['tipo_mensaje'] = 'warning';
-                header("Location: ?url=notasalida&type=list&estado_nota=inactivos"); 
+                header("Location: ?url=notasalida&type=list&ver_anuladas=1");
                 exit();
             } else { 
                 throw new Exception("No se pudo anular la nota."); 
@@ -264,10 +264,7 @@ if ($type === 'show' && $id) {
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 
-    $estado_nota = strtolower(trim((string) ($_REQUEST['estado_nota'] ?? 'activos')));
-    if (!in_array($estado_nota, ['todos', 'activos', 'inactivos'], true)) {
-        $estado_nota = 'activos';
-    }
+    $estado_nota = !empty($_REQUEST['ver_anuladas']) ? 'inactivos' : 'activos';
 
     $notas_full = !empty($buscar) 
         ? $modelo->buscarNotasSalida($buscar, $id_usuario_filtro) 
@@ -277,7 +274,7 @@ try {
         $notas_full = array_values(array_filter($notas_full, function ($n) {
             return ((int) ($n['eliminado'] ?? 0)) === 0;
         }));
-    } elseif ($estado_nota === 'inactivos') {
+    } else {
         $notas_full = array_values(array_filter($notas_full, function ($n) {
             return ((int) ($n['eliminado'] ?? 0)) === 1;
         }));
