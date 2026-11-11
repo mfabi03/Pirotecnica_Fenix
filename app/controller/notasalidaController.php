@@ -1,6 +1,7 @@
 <?php
 namespace App\Pirotecnicafenix\Controller;
 
+use PDO; // 🔥 ESTA ERA LA LÍNEA QUE FALTABA
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\notasalidaModel;
 use App\Pirotecnicafenix\Model\ProductoModel;
@@ -46,7 +47,7 @@ try {
     die("ERROR de conexión: " . $e->getMessage());
 }
 
-// Helper local para validar que el usuario en sesión siga activo en la BD
+// Valida que el usuario tenga una sesión activa y siga existiendo en la base de datos
 function obtenerIdUsuarioValido($db) {
     $idUsuario = $_SESSION['id_usuario'] ?? $_SESSION['usuario_id'] ?? null;
     if (!$idUsuario) throw new Exception("No hay usuario en sesión.");
@@ -69,11 +70,9 @@ $clientes = [];
 $resumen = [];
 $tipo_mensaje = '';
 
-// Filtro de visibilidad: el admin ve todo, los demás solo ven sus propias notas
 $esAdmin = (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] == 1) || (strtolower($_SESSION['nombre_rol'] ?? '') === 'administrador');
 $id_usuario_filtro = $esAdmin ? null : (int)($_SESSION['id_usuario'] ?? 0);
 
-// Validar que no se registren salidas si la caja del día ya fue cerrada
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store') {
     $fecha_hoy = date('Y-m-d');
     $id_usuario_real = (int)($_SESSION['id_usuario'] ?? 0);
@@ -90,12 +89,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store') {
     }
 }
 
-// Endpoint AJAX para cargar el detalle de la nota en el modal
 if ($type === 'detalle_json' && $id) {
     header('Content-Type: application/json; charset=utf-8');
     try {
         $nota = $modelo->obtenerNotaPorId($id);
-        if (!$nota) { echo json_encode(['success' => false, 'error' => 'Nota no encontrada']); exit; }
+        if (!$nota) { 
+            echo json_encode(['success' => false, 'error' => 'Nota no encontrada']); 
+            exit; 
+        }
         echo json_encode(['success' => true, 'nota' => $nota], JSON_UNESCAPED_UNICODE);
     } catch (Exception $e) { 
         echo json_encode(['success' => false, 'error' => $e->getMessage()]); 
@@ -103,7 +104,6 @@ if ($type === 'detalle_json' && $id) {
     exit;
 }
 
-// Endpoint para registro rápido de cliente desde el formulario de salida
 if ($type === 'store_rapido_cliente_ajax') {
     header('Content-Type: application/json; charset=utf-8');
     try {
@@ -132,12 +132,11 @@ if ($type === 'store_rapido_cliente_ajax') {
     exit;
 }
 
-// Exportación a CSV
 if ($type === 'exportar_csv') {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="notas_salida_' . date('Y-m-d') . '.csv"');
     $output = fopen('php://output', 'w');
-    fwrite($output, "\xEF\xBB\xBF"); // BOM para que Excel reconozca UTF-8
+    fwrite($output, "\xEF\xBB\xBF");
     fputcsv($output, ['ID', 'Fecha', 'Cliente', 'Documento', 'Productos', 'Categorías', 'Total Unidades', 'Encargado']);
     
     $notas_export = $modelo->listarNotasSalida($id_usuario_filtro);
@@ -154,7 +153,6 @@ if ($type === 'exportar_csv') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Guardar nueva nota de salida
     if ($type === 'store') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'crear', '?url=notasalida&type=list');
         try {
@@ -165,7 +163,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             for ($i = 0; $i < count($productos_ids); $i++) {
                 if (!empty($productos_ids[$i]) && !empty($cantidades[$i])) {
-                    $detalles[] = ['id_producto' => intval($productos_ids[$i]), 'cantidad' => intval($cantidades[$i])];
+                    $idProducto = intval($productos_ids[$i]);
+                    
+                    $stmtValidar = $db->prepare("SELECT eliminado, descripcion FROM producto WHERE id_producto = ?");
+                    $stmtValidar->execute([$idProducto]);
+                    $productoBD = $stmtValidar->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$productoBD) {
+                        throw new Exception("El producto con ID " . $idProducto . " no existe.");
+                    }
+                    if ($productoBD['eliminado'] == 1) {
+                        throw new Exception("El producto '" . htmlspecialchars($productoBD['descripcion']) . "' está eliminado y no se puede vender.");
+                    }
+
+                    $detalles[] = ['id_producto' => $idProducto, 'cantidad' => intval($cantidades[$i])];
                 }
             }
             
@@ -187,7 +198,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Anular nota (eliminado lógico)
     if ($type === 'eliminar') {
         CheckPermiso::verificar($db, 'Notas de Salida', 'eliminar', '?url=notasalida&type=list');
         try {
@@ -201,7 +211,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($resultado) {
                 $_SESSION['mensaje'] = 'Nota de Salida anulada exitosamente.'; 
                 $_SESSION['tipo_mensaje'] = 'warning';
-                // Redirige a inactivos tras eliminar
                 header("Location: ?url=notasalida&type=list&estado_nota=inactivos"); 
                 exit();
             } else { 
@@ -211,33 +220,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = $e->getMessage(); 
         }
     }
-
-    // Reactivar nota (quitar eliminado lógico)
-    if ($type === 'reactivar') {
-        CheckPermiso::verificar($db, 'Notas de Salida', 'actualizar', '?url=notasalida&type=list');
-        try {
-            $idNota = $_POST['id_nota_salida'] ?? 0;
-            if (!$idNota || $idNota <= 0) throw new Exception("ID inválido");
-            
-            $modelo->reactivarNota($idNota);
-            $_SESSION['mensaje'] = 'Nota de Salida reactivada exitosamente.'; 
-            $_SESSION['tipo_mensaje'] = 'success';
-            
-            // Redirige a activos tras reactivar
-            header("Location: ?url=notasalida&type=list&estado_nota=activos"); 
-            exit();
-        } catch (Exception $e) {
-            $_SESSION['mensaje'] = "Error al reactivar: " . $e->getMessage(); 
-            $_SESSION['tipo_mensaje'] = 'danger';
-            header("Location: ?url=notasalida&type=list&estado_nota=inactivos"); 
-            exit();
-        }
-    }
 }
 
 $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'nota_salida';
 
-// Generar PDF
 if ($type === 'generar_pdf' && $id) {
     $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf.php';
     if (file_exists($archivoPdf)) { 
@@ -248,7 +234,6 @@ if ($type === 'generar_pdf' && $id) {
     }
 }
 
-// Formulario de creación
 if ($type === 'create') {
     try {
         $productos = $modelo->obtenerProductosConCategoria();
@@ -263,7 +248,6 @@ if ($type === 'create') {
     exit();
 }
 
-// Detalle individual
 if ($type === 'show' && $id) {
     try {
         $nota = $modelo->obtenerNotaPorId($id);
@@ -277,11 +261,9 @@ if ($type === 'show' && $id) {
     exit();
 }
 
-// Listado principal con filtros y paginación
 try {
     $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
 
-    // Por defecto muestra solo las activas
     $estado_nota = strtolower(trim((string) ($_REQUEST['estado_nota'] ?? 'activos')));
     if (!in_array($estado_nota, ['todos', 'activos', 'inactivos'], true)) {
         $estado_nota = 'activos';
@@ -291,7 +273,6 @@ try {
         ? $modelo->buscarNotasSalida($buscar, $id_usuario_filtro) 
         : $modelo->listarNotasSalida($id_usuario_filtro);
     
-    // Filtro en PHP porque el modelo ya trae todo (evita otra consulta)
     if ($estado_nota === 'activos') {
         $notas_full = array_values(array_filter($notas_full, function ($n) {
             return ((int) ($n['eliminado'] ?? 0)) === 0;

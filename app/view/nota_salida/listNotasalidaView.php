@@ -4,7 +4,6 @@ require_once __DIR__ . '/../header.php';
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-// Verificar conexión a BD si no viene desde el controlador
 if (!isset($db) || $db === null) {
     try { $db = (new ConnectDB())->getConnection(); } catch (Exception $e) { $db = null; }
 }
@@ -12,9 +11,7 @@ if (!isset($db) || $db === null) {
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $puede_crear_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'crear') : false;
 $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'eliminar') : false;
-$puede_reactivar_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Notas de Salida', 'actualizar') : false;
 
-// Validar si el cajero ya cerró la caja hoy
 $id_usuario_actual = (int)($_SESSION['id_usuario'] ?? 0);
 $caja_cerrada = false;
 if ($db) {
@@ -23,18 +20,15 @@ if ($db) {
     $caja_cerrada = (bool)$stmtCheck->fetchColumn();
 }
 
-// Variables de paginación
 $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($notas) ? count($notas) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 
-// Bandera para saber si estamos en la vista de eliminados
 $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
 ?>
 
 <style>
-/* Botones circulares */
 .btn-action-circle {
     width: 36px; height: 36px; border-radius: 50%; border: none;
     display: inline-flex; align-items: center; justify-content: center;
@@ -47,8 +41,6 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
 .btn-action-circle.btn-view:hover { background: #0d6efd; color: #fff; }
 .btn-action-circle.btn-delete { background: rgba(220,53,69,0.15); color: #dc3545; }
 .btn-action-circle.btn-delete:hover { background: #dc3545; color: #fff; }
-.btn-action-circle.btn-reactivate { background: #28a745; color: #fff; }
-.btn-action-circle.btn-reactivate:hover { background: #218838; box-shadow: 0 6px 20px rgba(40, 167, 69, .4); }
 </style>
 
 <div class="col-md-8 col-lg-12">
@@ -58,10 +50,10 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
             <div class="col">
                 <h3 class="m-0 dark-title">
                     <i class="fas fa-sign-out-alt text-gold me-2"></i> 
-                    <?= $esVistaEliminados ? 'Notas de Salida Eliminadas' : 'Lista de Notas de Salida' ?>
+                    <?= $esVistaEliminados ? 'Notas de Salida Anuladas' : 'Lista de Notas de Salida' ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    <?= $esVistaEliminados ? 'Notas inactivas o anuladas' : 'Gestiona las notas de salida de productos' ?>
+                    <?= $esVistaEliminados ? 'Notas inactivas o anuladas permanentemente' : 'Gestiona las notas de salida de productos' ?>
                 </small>
             </div>
             <div class="col-auto">
@@ -139,7 +131,7 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                     </a>
                 <?php else: ?>
                     <a href="?url=notasalida&type=list&estado_nota=inactivos" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
-                        <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
+                        <i class="fas fa-trash-alt me-1"></i> Ver Anuladas
                     </a>
                 <?php endif; ?>
             </div>
@@ -147,7 +139,6 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
     </div>
 
     <?php
-    // Mapeo de estilos para las alertas flash
     $mapaTipos = [
         'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
         'danger'  => ['clase' => 'dark-alert-danger',  'icono' => 'fa-exclamation-circle'],
@@ -208,7 +199,7 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
                 <i class="fas fa-list me-2"></i> 
-                <?= $esVistaEliminados ? 'Notas Inactivas' : 'Notas Registradas' ?>
+                <?= $esVistaEliminados ? 'Notas Anuladas' : 'Notas Registradas' ?>
             </h5>
         </div>
         
@@ -234,7 +225,7 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                                 <div class="py-4">
                                     <i class="fas fa-inbox fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">
-                                        <?= $esVistaEliminados ? 'No hay notas eliminadas' : 'No hay notas de salida registradas' ?>
+                                        <?= $esVistaEliminados ? 'No hay notas anuladas' : 'No hay notas de salida registradas' ?>
                                     </p>
                                     <small><?= $esVistaEliminados ? 'Las notas activas están en la lista principal' : 'Comienza registrando una nueva nota' ?></small>
                                 </div>
@@ -294,20 +285,11 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
-                                        <?php if (!$anulada): ?>
-                                            <!-- Botón anular (solo si está activa y tiene permiso) -->
-                                            <?php if ($puede_anular_nota): ?>
+                                        <?php if (!$anulada && $puede_anular_nota): ?>
+                                            <!-- Botón anular (solo si está activa) -->
                                             <button type="button" class="btn-action-circle btn-delete" title="Anular Nota" onclick="confirmarAnularNota(<?= (int) $n['id_nota_salida'] ?>, '<?= htmlspecialchars(addslashes(!empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : (($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')))) ?>')">
                                                 <i class="fas fa-ban"></i>
                                             </button>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <!-- Botón reactivar (solo si está anulada y tiene permiso) -->
-                                            <?php if ($puede_reactivar_nota): ?>
-                                            <button type="button" class="btn-action-circle btn-reactivate" title="Reactivar Nota" onclick="confirmarReactivarNota(<?= (int) $n['id_nota_salida'] ?>, '<?= htmlspecialchars(addslashes(!empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : (($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')))) ?>')">
-                                                <i class="fas fa-undo-alt"></i>
-                                            </button>
-                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -348,6 +330,14 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                     <p id="ver-nota-error-msg" style="color: #6c757d;">Error al cargar la nota</p>
                 </div>
                 <div id="ver-nota-contenido" style="display: none;">
+                    
+                    <!-- ALERTA DE ANULACIÓN (NUEVO) -->
+                    <div id="ver-nota-alerta-anulada" class="alert" style="display: none; background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                        <h6 class="fw-bold mb-2"><i class="fas fa-ban me-2"></i> Nota Anulada</h6>
+                        <p class="mb-1"><strong>Motivo de anulación:</strong></p>
+                        <p class="mb-0" id="ver-nota-motivo" style="font-style: italic;">—</p>
+                    </div>
+
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
@@ -442,7 +432,7 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
                         <span id="anular-nota-cliente" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
                     </div>
                     <div class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;">
-                        <i class="fas fa-info-circle me-2"></i> Al anular, el stock de los productos se <strong>revertirá automáticamente</strong>.
+                        <i class="fas fa-info-circle me-2"></i> Al anular, el stock de los productos se <strong>revertirá automáticamente</strong> y la nota no se podrá reactivar.
                     </div>
                     <div class="mb-0">
                         <label class="form-label fw-bold" style="color: #1a1a2e; font-size: 0.85rem;">Motivo de Anulación <span class="text-danger">*</span></label>
@@ -459,44 +449,11 @@ $esVistaEliminados = (($estado_nota ?? 'activos') === 'inactivos');
 </div>
 <?php endif; ?>
 
-<!-- Modal: Reactivar nota -->
-<?php if ($puede_reactivar_nota): ?>
-<div class="modal fade" id="modalReactivarNota" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(40,167,69,0.3); padding: 16px 24px;">
-                <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-undo-alt me-2" style="color: #28a745;"></i> Reactivar Nota de Salida
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
-            </div>
-            <form method="POST" action="?url=notasalida&type=reactivar">
-                <input type="hidden" name="id_nota_salida" id="reactivar-nota-id">
-                <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
-                    <p style="margin-bottom: 16px; font-weight: 500;">¿Deseas reactivar esta nota de salida?</p>
-                    <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 8px;">
-                        <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Cliente de la nota</strong>
-                        <span id="reactivar-nota-cliente" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
-                    </div>
-                    <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
-                        <i class="fas fa-info-circle me-2"></i> Al reactivar, el stock de los productos se <strong>descontará nuevamente</strong>.
-                    </div>
-                </div>
-                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">Cancelar</button>
-                    <button type="submit" class="btn" style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">Sí, reactivar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
-    // Filtro AJAX para no recargar la página
+    // Filtro AJAX
     const formNotasSalida = document.getElementById('formFiltroNotasSalida');
     if (formNotasSalida) {
         const enviarFiltroNotas = function () {
@@ -557,6 +514,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nota = data.nota;
                 document.getElementById('ver-nota-contenido').style.display = 'block';
 
+                // Lógica para mostrar la alerta si está anulada
+                const alertaAnulada = document.getElementById('ver-nota-alerta-anulada');
+                if (nota.eliminado == 1) {
+                    alertaAnulada.style.display = 'block';
+                    document.getElementById('ver-nota-motivo').textContent = nota.motivo_anulacion || 'No se registró un motivo.';
+                } else {
+                    alertaAnulada.style.display = 'none';
+                }
+
                 document.getElementById('ver-nota-fecha').textContent = Validador.formatearFecha(nota.fecha);
                 document.getElementById('ver-nota-encargado').textContent = nota.usuario_responsable || 'N/A';
                 document.getElementById('ver-nota-cliente').textContent = nota.cliente || 'N/A';
@@ -573,7 +539,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         const tr = document.createElement('tr');
                         
-                        // Columna de enumeración (1, 2, 3...)
                         const tdNum = document.createElement('td');
                         tdNum.className = 'ps-4 text-center';
                         tdNum.style.color = '#6c757d';
@@ -615,7 +580,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     };
 
-    // Imprimir PDF
     window.imprimirNotaPDF = function() {
         var textoId = document.getElementById('ver-nota-id').textContent;
         var idNota = textoId.replace('#', '').trim();
@@ -627,17 +591,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Modales de confirmación
     window.confirmarAnularNota = function(id, cliente) {
         document.getElementById('anular-nota-id').value = id;
         document.getElementById('anular-nota-cliente').textContent = cliente || 'Nota #' + id;
         new bootstrap.Modal(document.getElementById('modalAnularNota')).show();
-    };
-
-    window.confirmarReactivarNota = function(id, cliente) {
-        document.getElementById('reactivar-nota-id').value = id;
-        document.getElementById('reactivar-nota-cliente').textContent = cliente || 'Nota #' + id;
-        new bootstrap.Modal(document.getElementById('modalReactivarNota')).show();
     };
 });
 </script>
