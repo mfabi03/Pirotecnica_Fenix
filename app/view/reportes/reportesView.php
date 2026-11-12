@@ -17,8 +17,18 @@ try {
     $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC); 
 } catch (Exception $e) {}
 
-$fecha_inicio = $_GET['fecha_inicio'] ?? $_GET['fecha'] ?? '';
-$fecha_fin = $_GET['fecha_fin'] ?? '';
+// ============================================================
+// 🔥 FIX: Leer filtros desde POST (AJAX) o GET (carga normal)
+// ============================================================
+$esAjax  = !empty($_POST['ajax']);
+$filtros = $esAjax ? $_POST : $_GET;
+
+$fecha_inicio    = $filtros['fecha_inicio'] ?? $filtros['fecha'] ?? '';
+$fecha_fin       = $filtros['fecha_fin'] ?? '';
+$tipo_movimiento = $filtros['tipo_movimiento'] ?? '';
+$id_categoria    = $filtros['id_categoria'] ?? '';
+$busqueda        = $filtros['busqueda'] ?? '';
+$porPaginaActual = (int) ($filtros['por_pagina'] ?? $porPaginaActual ?? 10);
 
 $paramsExport = http_build_query([
     'fecha_inicio' => $fecha_inicio, 
@@ -66,7 +76,7 @@ tr.fila-anulada .badge { color: #000000 !important; opacity: 1 !important; }
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
+                <select name="por_pagina" class="form-select form-select-sm">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
                         <option value="<?= $o ?>" <?= ($porPaginaActual == $o) ? 'selected' : '' ?>><?= $o ?></option>
                     <?php endforeach; ?>
@@ -299,7 +309,8 @@ tr.fila-anulada .badge { color: #000000 !important; opacity: 1 !important; }
                                             </button>
                                         <?php else: ?>
                                             <button type="button" class="btn-action-circle btn-view btn-ver-detalle" title="Ver Detalle"
-                                                    onclick="verDetalleNota(<?= $m['id_documento'] ?>, '<?= htmlspecialchars($tipoBase) ?>')">
+                                                    data-id="<?= $m['id_documento'] ?>"
+                                                    data-tipo="<?= htmlspecialchars($tipoBase) ?>">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                         <?php endif; ?>

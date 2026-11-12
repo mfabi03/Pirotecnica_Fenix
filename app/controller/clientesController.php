@@ -1,7 +1,6 @@
 <?php
 namespace App\Pirotecnicafenix\Controller;
 
-// ⚠️ En producción: desactivar display_errors. Solo activar en dev.
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -47,7 +46,6 @@ unset($_SESSION['tipo_mensaje']);
 $busqueda = trim((string) ($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? ''));
 $tipo = trim((string) ($_REQUEST['tipo'] ?? 'todos'));
 
-// 🔥 CAMBIO CLAVE: Por defecto solo muestra ACTIVOS. Los inactivos/eliminados solo si se pide explícitamente.
 $estado_cliente = strtolower(trim((string) ($_REQUEST['estado_cliente'] ?? 'activos')));
 if (!in_array($estado_cliente, ['todos', 'activos', 'inactivos'], true)) {
     $estado_cliente = 'activos';
@@ -94,11 +92,19 @@ function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null)
     return false;
 }
 
-/* ============================================================
- *  ENDPOINT AJAX: check_duplicado
- * ============================================================ */
 if ($type === 'check_duplicado') {
     header('Content-Type: application/json; charset=utf-8');
+
+    // Capa 1: validar permiso 'leer' sobre Clientes
+    $idRolActual = (int) ($_SESSION['id_rol'] ?? 0);
+    if (!PermisoHelper::tienePermiso($db, $idRolActual, 'Clientes', 'leer')) {
+        http_response_code(403);
+        echo json_encode(
+            ['error' => 'No tienes permiso para consultar clientes.'],
+            JSON_UNESCAPED_UNICODE
+        );
+        exit;
+    }
 
     $campo = strtolower(trim($_GET['campo'] ?? ''));
     $valor = trim($_GET['valor'] ?? '');
@@ -138,6 +144,7 @@ if ($type === 'check_duplicado') {
 }
 
 // ELIMINAR (ELIMINACIÓN LÓGICA)
+// 🔒 CheckPermiso::verificar redirige si el rol no tiene 'eliminar' sobre Clientes
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
     CheckPermiso::verificar($db, 'Clientes', 'eliminar', '?url=clientes&type=list');
     try {
@@ -146,7 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
             throw new Exception("ID de cliente inválido");
         }
         $resultado = $modelo->eliminarCliente($id);
-        // 🔥 MENSAJE CAMBIADO A "ELIMINADO"
         $_SESSION['mensaje'] = $resultado ? "✅ Cliente eliminado exitosamente" : "No se pudo eliminar el cliente";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
     } catch (Exception $e) {
@@ -159,7 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
             $_SESSION['tipo_mensaje'] = "danger";
         }
     }
-    // 🔥 DESPUÉS DE ELIMINAR, REGRESAMOS A LA LISTA DE ELIMINADOS
     header("Location: ?url=clientes&type=list&estado_cliente=inactivos");
     exit();
 }
@@ -202,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             'direccion' => trim($_POST['direccion']),
             'fecha_de_nacimiento' => $_POST['fecha_de_nacimiento']
         ];
-        
+
         $resultado = $modelo->registrarClienteNatural($datos);
         $_SESSION['mensaje'] = $resultado ? "✅ Cliente Natural registrado exitosamente" : "Error al registrar";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
@@ -224,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// REGISTRO RÁPIDO CLIENTE 
+// REGISTRO RÁPIDO CLIENTE
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
     CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
     try {
@@ -243,13 +248,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
         ];
 
         $id = $modelo->registrarClienteNatural($datosCliente);
-        
+
         if ($id) {
             $_SESSION['nuevo_cliente_id'] = $id;
             $_SESSION['nuevo_cliente_nombre'] = $datosCliente['nombre'] . ' ' . $datosCliente['apellido'];
             $_SESSION['mensaje_rapido'] = "✅ Cliente registrado exitosamente";
             $_SESSION['tipo_rapido'] = 'success';
-            
+
             $return = $_REQUEST['return'] ?? null;
             if ($return) {
                 header("Location: ?url=" . urlencode($return) . "&type=create&id_cliente=" . $id);
@@ -276,7 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
 
         $_SESSION['mensaje_rapido'] = "❌ " . $msg;
         $_SESSION['tipo_rapido'] = 'danger';
-        
+
         $return = $_REQUEST['return'] ?? null;
         if ($return) {
             header("Location: ?url=" . urlencode($return) . "&type=create");
@@ -305,7 +310,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
             'correo_electronico' => trim($_POST['correo_electronico']),
             'direccion' => trim($_POST['direccion'])
         ];
-        
+
         $resultado = $modelo->registrarClienteJuridico($datos);
         $_SESSION['mensaje'] = $resultado ? "✅ Cliente Jurídico registrado exitosamente" : "Error al registrar";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
@@ -392,8 +397,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 $basePath = __DIR__ . "/../view/clientes/";
 
 // OBTENER CLIENTE PARA DETALLE O EDICIÓN
-if (in_array($type, ['view', 'edit', 'edit_juridico']) && $id) {
-    $cliente = $modelo->obtenerClientePorId($id);
+// 🔒 Validamos que $id sea numérico antes de tocar la BD.
+//    Evita que un ?id=ABC o ?id= pase al modelo y genere un SQL inválido.
+if (in_array($type, ['view', 'edit', 'edit_juridico'], true) && $id) {
+    if (!is_numeric($id) || (int) $id <= 0) {
+        $_SESSION['mensaje'] = "ID de cliente inválido";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=clientes&type=list");
+        exit();
+    }
+
+    $cliente = $modelo->obtenerClientePorId((int) $id);
     if (!$cliente) {
         $_SESSION['mensaje'] = "Cliente no encontrado";
         $_SESSION['tipo_mensaje'] = "danger";
@@ -428,10 +442,10 @@ if ($type === 'list' || $type === '') {
     $por_pagina    = (int) ($_REQUEST['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_REQUEST['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
-    
+
     $totalRegistros = is_array($clientes_full) ? count($clientes_full) : 0;
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-    
+
     if ($por_pagina > 0) {
         $clientes = array_slice($clientes_full, $offset, $por_pagina);
     } else {

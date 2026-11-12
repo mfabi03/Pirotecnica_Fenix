@@ -54,7 +54,7 @@ class clientesModel {
             throw new \Exception($validacionEdad['mensaje']);
         }
 
-        // ✅ Duplicado detectado ANTES de abrir la transacción
+        //  Duplicado detectado ANTES de abrir la transacción
         if ($this->existeCedula($datos['cedula'])) {
             throw new \Exception("DUPLICADO_CEDULA:" . $datos['cedula']);
         }
@@ -309,7 +309,6 @@ class clientesModel {
         }
     }
 
-    // BUSCAR CLIENTES CON FILTRO
     // BUSCAR CLIENTES CON FILTRO
     public function buscarClientesFiltrados($termino = null, $tipo = 'todos', $soloActivos = false) {
         try {
