@@ -110,6 +110,3 @@
         </div>
     </div>
 </div>
-
-<!-- ❌ ELIMINADO: <script> con window.verDetalleNota y escapeHtml -->
-<!-- Ahora vive en assets/js/verDetalleNota.jquery.js -->

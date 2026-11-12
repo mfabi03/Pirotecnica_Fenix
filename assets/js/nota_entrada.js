@@ -121,11 +121,53 @@ $(document).ready(function() {
             });
     };
 
-    window.prepararAnulacionNotaEntrada = function(id, proveedor) {
+    window.verMotivoAnulacion = function(id, button) {
+        var $button = $(button);
+        var originalHtml = $button.html();
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+        var modalElement = document.getElementById('modalMotivoAnulacion');
+        if (!modalElement || !window.bootstrap || !window.bootstrap.Modal) {
+            mostrarError('No se pudo abrir el modal del motivo de anulación.');
+            $button.prop('disabled', false).html(originalHtml);
+            return;
+        }
+
+        $('#motivo-doc').text('#' + id);
+        $('#motivo-proveedor').text($button.attr('data-proveedor') || 'N/A');
+        $('#motivo-texto').text($button.attr('data-motivo-anulacion') || 'No se registró un motivo.');
+        window.bootstrap.Modal.getOrCreateInstance(modalElement).show();
+
+        $.ajax({
+            url: '?url=notaentrada',
+            type: 'POST',
+            dataType: 'json',
+            data: { type: 'show_json', id: id }
+        })
+            .done(function(response) {
+                if (!response || !response.success || !response.nota) {
+                    mostrarError((response && response.error) || 'No se pudo cargar el motivo de anulación.');
+                    return;
+                }
+
+                var nota = response.nota;
+                $('#motivo-doc').text('#' + nota.id_nota_entrada);
+                $('#motivo-proveedor').text(nota.razon_social || 'N/A');
+                $('#motivo-texto').text(nota.motivo_anulacion || 'No se registró un motivo.');
+            })
+            .fail(function(xhr, status, error) {
+                mostrarError(mensajeError(xhr, status, error));
+            })
+            .always(function() {
+                $button.prop('disabled', false).html(originalHtml);
+            });
+    };
+
+    window.prepararAnulacionNotaEntrada = function(id, proveedor, mostrarModal) {
         $('#modalIdNota').val(id);
         $('#modalProveedor').text(proveedor || 'N/A');
         $('#formAnularNota').find('[name="motivo_anulacion"]').val('');
-        modal('#anularModal', 'show');
+        if (mostrarModal !== false) modal('#anularModal', 'show');
     };
 
     function cambiarEstadoNota(id, accion, motivo, $button, cerrarModal) {
@@ -159,7 +201,7 @@ $(document).ready(function() {
         var id = parseInt($button.attr('data-nota-id'), 10);
         var accion = $button.attr('data-nota-action');
         if (accion === 'view') window.verDetalleNotaEntrada(id, this);
-        if (accion === 'cancel') window.prepararAnulacionNotaEntrada(id, $button.attr('data-proveedor'));
+        if (accion === 'reason') window.verMotivoAnulacion(id, this);
     });
 
     $(document).on('change', '[data-auto-submit]', function() {

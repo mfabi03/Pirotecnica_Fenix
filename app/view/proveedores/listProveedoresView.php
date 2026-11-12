@@ -244,8 +244,6 @@ require_once __DIR__ . '/partials/modal_inactivar_proveedor.php';
 require_once __DIR__ . '/partials/modal_reactivar_proveedor.php';
 ?>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="/pirotecnica_fenix/assets/js/filtro_listado_ajax.js"></script>
 <style>
     .btn-action-circle.btn-reactivate {
         background: #28a745 !important;
@@ -256,6 +254,5 @@ require_once __DIR__ . '/partials/modal_reactivar_proveedor.php';
         box-shadow: 0 6px 20px rgba(40, 167, 69, .4);
     }
 </style>
-<script src="/pirotecnica_fenix/assets/js/proveedores.js"></script>
-
+<?php $scriptsModulo = array_merge($scriptsModulo ?? [], ['filtro_listado_ajax.js', 'proveedores.js']); ?>
 <?php require_once __DIR__ . '/../footer.php'; ?>

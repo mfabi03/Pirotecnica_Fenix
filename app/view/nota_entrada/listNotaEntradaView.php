@@ -256,24 +256,28 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
                                 </td>
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <?php if (!$anulada): ?>
+                                        <?php if ($anulada): ?>
+                                            <button type="button" class="btn-action-circle btn-view" title="Ver Motivo"
+                                                    data-nota-action="reason"
+                                                    data-nota-id="<?= (int) $n['id_nota_entrada'] ?>"
+                                                    data-proveedor="<?= htmlspecialchars($n['razon_social'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-motivo-anulacion="<?= htmlspecialchars($n['motivo_anulacion'] ?? 'No se registró un motivo.', ENT_QUOTES, 'UTF-8') ?>">
+                                                <i class="fas fa-info-circle"></i>
+                                            </button>
+                                        <?php else: ?>
                                             <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
                                                     data-nota-action="view" data-nota-id="<?= (int) $n['id_nota_entrada'] ?>">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                             <?php if ($puede_anular_nota): ?>
                                                 <button type="button" class="btn-action-circle btn-delete"
-                                                        data-nota-action="cancel" data-nota-id="<?= (int) $n['id_nota_entrada'] ?>"
+                                                        data-bs-toggle="modal" data-bs-target="#anularModal"
                                                         data-proveedor="<?= htmlspecialchars($n['razon_social'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?>"
+                                                        onclick="prepararAnulacionNotaEntrada(<?= (int) $n['id_nota_entrada'] ?>, this.getAttribute('data-proveedor'), false)"
                                                         title="Anular">
                                                     <i class="fas fa-ban"></i>
                                                 </button>
                                             <?php endif; ?>
-                                        <?php else: ?>
-                                            <button type="button" class="btn-action-circle btn-view" title="Ver Motivo"
-                                                    data-ver-motivo="<?= htmlspecialchars($n['motivo_anulacion'] ?? 'No se registró un motivo.', ENT_QUOTES, 'UTF-8') ?>">
-                                                <i class="fas fa-info-circle"></i>
-                                            </button>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -299,24 +303,9 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 <?php
 require_once __DIR__ . '/partials/modal_ver_nota.php';
 require_once __DIR__ . '/partials/modal_anular_nota.php';
+require_once __DIR__ . '/partials/modal_motivo_anulacion.php';
 ?>
 
-<div class="modal fade" id="modalMotivoAnulacion" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i> Motivo de anulación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body" data-motivo-texto></div>
-        </div>
-    </div>
-</div>
-
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="/pirotecnica_fenix/assets/js/filtro_listado_ajax.js"></script>
-<script src="/pirotecnica_fenix/assets/js/nota_entrada.js"></script>
-
-
+<?php $scriptsModulo = array_merge($scriptsModulo ?? [], ['filtro_listado_ajax.js', 'nota_entrada.js']); ?>
 
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

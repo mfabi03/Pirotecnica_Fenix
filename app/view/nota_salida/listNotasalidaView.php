@@ -268,7 +268,7 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
                                         <!-- Botón ver detalle -->
                                         <?php if ($anulada): ?>
                                             <button type="button" class="btn-action-circle btn-view" title="Ver Motivo"
-                                                    data-ver-motivo="<?= htmlspecialchars($n['motivo_anulacion'] ?? 'No se registró un motivo.', ENT_QUOTES, 'UTF-8') ?>">
+                                                    onclick="verMotivoAnulacion(<?= (int) $n['id_nota_salida'] ?>, this)">
                                                 <i class="fas fa-info-circle"></i>
                                             </button>
                                         <?php else: ?>
@@ -302,7 +302,7 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
 
 <!-- Modal para ver únicamente el motivo de anulación -->
 <div class="modal fade" id="modalMotivoAnulacion" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
@@ -311,7 +311,18 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="p-3 rounded" style="background: #f8f9fa; border-left: 4px solid #dc3545; color: #333;" data-motivo-texto></div>
+                <div class="mb-3">
+                    <span class="text-muted small fw-bold text-uppercase">Documento:</span>
+                    <div class="fs-5 fw-bold text-dark" id="motivo-doc">—</div>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted small fw-bold text-uppercase">Cliente:</span>
+                    <div class="fs-6 fw-bold text-dark" id="motivo-cliente">—</div>
+                </div>
+                <div>
+                    <span class="text-muted small fw-bold text-uppercase">Motivo Registrado:</span>
+                    <div class="p-3 mt-1 rounded" style="background: #f8f9fa; border-left: 4px solid #dc3545; color: #333;" id="motivo-texto"></div>
+                </div>
             </div>
 
             <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
@@ -457,181 +468,5 @@ $esVistaEliminados = !empty($_REQUEST['ver_anuladas']);
 </div>
 <?php endif; ?>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    'use strict';
-
-    // Filtro AJAX
-    const formNotasSalida = document.getElementById('formFiltroNotasSalida');
-    if (formNotasSalida) {
-        const enviarFiltroNotas = function () {
-            const formData = new FormData(formNotasSalida);
-            formData.set('ajax', '1');
-
-            fetch('?url=notasalida&type=list', { method: 'POST', body: formData })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success || !data.html) return;
-                const wrap = document.createElement('div');
-                wrap.innerHTML = data.html;
-                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12');
-                if (!nuevaVista) return;
-                const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
-                if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
-            })
-            .catch(() => formNotasSalida.submit());
-        };
-
-        formNotasSalida.addEventListener('submit', function (e) {
-            e.preventDefault();
-            enviarFiltroNotas();
-        });
-        formNotasSalida.querySelectorAll('select').forEach(function (selectEl) {
-            selectEl.addEventListener('change', function () { enviarFiltroNotas(); });
-        });
-    }
-
-    window.confirmarAnularNota = function(id, cliente) {
-        document.getElementById('anular-nota-id').value = id;
-        document.getElementById('anular-nota-cliente').textContent = cliente || 'Nota #' + id;
-        new bootstrap.Modal(document.getElementById('modalAnularNota')).show();
-    };
-
-    $(document).on('submit', '#formAnularNota', function(event) {
-        event.preventDefault();
-        const form = this;
-        const submit = form.querySelector('[type="submit"]');
-        const submitOriginal = submit.innerHTML;
-        submit.disabled = true;
-        submit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Anulando...';
-
-        $.ajax({
-            url: '?url=notasalida&type=estado_ajax',
-            method: 'POST',
-            data: $(form).serialize(),
-            dataType: 'json'
-        }).done(function(response) {
-            if (!response.success) {
-                window.alert(response.error || 'No se pudo anular la nota.');
-                return;
-            }
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAnularNota')).hide();
-            window.location.href = '?url=notasalida&type=list&ver_anuladas=1';
-        }).fail(function(xhr, status, error) {
-            const response = xhr.responseJSON;
-            window.alert((response && response.error) || error || 'No se pudo anular la nota.');
-        }).always(function() {
-            submit.disabled = false;
-            submit.innerHTML = submitOriginal;
-        });
-    });
-});
-
-// Abrir el detalle de una nota activa
-window.verDetalleNota = function(id) {
-    document.getElementById('ver-nota-cargando').style.display = 'block';
-    document.getElementById('ver-nota-error').style.display = 'none';
-    document.getElementById('ver-nota-contenido').style.display = 'none';
-    document.getElementById('ver-nota-id').textContent = '#' + id;
-
-    new bootstrap.Modal(document.getElementById('modalVerNota')).show();
-
-    fetch('?url=notasalida&type=detalle_json&id=' + id)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('ver-nota-cargando').style.display = 'none';
-            
-            if (!data.success) {
-                document.getElementById('ver-nota-error').style.display = 'block';
-                document.getElementById('ver-nota-error-msg').textContent = data.error || 'Error al cargar la nota';
-                return;
-            }
-
-            const nota = data.nota;
-            document.getElementById('ver-nota-contenido').style.display = 'block';
-
-            document.getElementById('ver-nota-fecha').textContent = Validador.formatearFecha(nota.fecha);
-            document.getElementById('ver-nota-encargado').textContent = nota.usuario_responsable || 'N/A';
-            document.getElementById('ver-nota-cliente').textContent = nota.cliente || 'N/A';
-            document.getElementById('ver-nota-documento').textContent = nota.documento || 'N/A';
-
-            const tbody = document.getElementById('ver-nota-productos-tbody');
-            tbody.innerHTML = '';
-            let totalUnidades = 0;
-            let totalCosto = 0;
-
-            if (nota.detalles && nota.detalles.length > 0) {
-                nota.detalles.forEach(function(d, index) {
-                    let cantidad = parseInt(d.cantidad) || 0;
-                    let costo = parseFloat(d.costo_unitario) || 0;
-                    let subtotal = cantidad * costo;
-                    totalUnidades += cantidad;
-                    totalCosto += subtotal;
-
-                    const tr = document.createElement('tr');
-                    
-                    const tdNum = document.createElement('td');
-                    tdNum.className = 'ps-4 text-center';
-                    tdNum.style.color = '#6c757d';
-                    tdNum.style.fontWeight = '600';
-                    tdNum.textContent = (index + 1);
-
-                    const tdProd = document.createElement('td');
-                    tdProd.style.color = '#1a1a2e';
-                    tdProd.style.fontWeight = '600';
-                    tdProd.textContent = d.nombre_producto;
-
-                    const tdCat = document.createElement('td');
-                    tdCat.style.color = '#6c757d';
-                    tdCat.textContent = d.nombre_categoria || 'Sin categoría';
-
-                    const tdCant = document.createElement('td');
-                    tdCant.className = 'text-center fw-bold';
-                    tdCant.style.color = '#f39c12';
-                    tdCant.style.fontSize = '1.1rem';
-                    tdCant.textContent = cantidad;
-
-                    const tdCosto = document.createElement('td');
-                    tdCosto.className = 'text-end text-nowrap';
-                    tdCosto.textContent = '$' + costo.toFixed(2);
-
-                    const tdSubtotal = document.createElement('td');
-                    tdSubtotal.className = 'pe-3 text-end text-nowrap fw-semibold';
-                    tdSubtotal.textContent = '$' + subtotal.toFixed(2);
-
-                    tr.appendChild(tdNum);
-                    tr.appendChild(tdProd);
-                    tr.appendChild(tdCat);
-                    tr.appendChild(tdCant);
-                    tr.appendChild(tdCosto);
-                    tr.appendChild(tdSubtotal);
-                    
-                    tbody.appendChild(tr);
-                });
-            } else {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3" style="color: #6c757d;"><i class="fas fa-box-open me-2"></i> No hay productos en esta nota</td></tr>`;
-            }
-            
-            document.getElementById('ver-nota-total-unidades').textContent = totalUnidades;
-            document.getElementById('ver-nota-total-costo').textContent = 'Total: $' + totalCosto.toFixed(2);
-        })
-        .catch(err => {
-            document.getElementById('ver-nota-cargando').style.display = 'none';
-            document.getElementById('ver-nota-error').style.display = 'block';
-            document.getElementById('ver-nota-error-msg').textContent = 'Error de conexión: ' + err.message;
-        });
-};
-
-window.imprimirNotaPDF = function() {
-    var textoId = document.getElementById('ver-nota-id').textContent;
-    var idNota = textoId.replace('#', '').trim();
-
-    if (idNota) {
-        window.open('?url=notasalida&type=generar_pdf&id=' + idNota, '_blank');
-    } else {
-        alert("Error: No se pudo identificar la nota.");
-    }
-};
-</script>
-
+<?php $scriptsModulo = array_merge($scriptsModulo ?? [], ['nota_salida.js']); ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

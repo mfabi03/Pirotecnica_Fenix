@@ -405,7 +405,5 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 <!-- ============================================================ -->
 <!-- SCRIPTS                                                       -->
 <!-- ============================================================ -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="/pirotecnica_fenix/assets/js/nota_entrada.js"></script>
-
+<?php $scriptsModulo = array_merge($scriptsModulo ?? [], ['nota_entrada.js']); ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

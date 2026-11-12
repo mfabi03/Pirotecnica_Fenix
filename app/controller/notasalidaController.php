@@ -11,11 +11,15 @@ use App\Pirotecnicafenix\Helpers\CheckPermiso;
 use Exception;
 
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+$type = $_GET['type'] ?? $_POST['type'] ?? 'list';
+$id = $_POST['id'] ?? $_GET['id'] ?? null;
+$esSolicitudJson = in_array($type, ['show_json', 'detalle_json', 'detalle_ajax', 'estado_ajax'], true);
+ini_set('display_errors', $esSolicitudJson ? '0' : '1');
 
 $rutaRaiz = dirname(__DIR__, 2);
 
@@ -33,9 +37,38 @@ if (!file_exists($pathClienteModel)) {
     $pathClienteModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'clientesModel.php';
 }
 
-if (file_exists($pathNotaModel)) { require_once $pathNotaModel; } else { die("ERROR: No se encuentra notasalidaModel.php"); }
-if (file_exists($pathProductoModel)) { require_once $pathProductoModel; } else { die("ERROR: No se encuentra ProductoModel.php"); }
-if (file_exists($pathClienteModel)) { require_once $pathClienteModel; } else { die("ERROR: No se encuentra clientesModel.php"); }
+if (file_exists($pathNotaModel)) {
+    require_once $pathNotaModel;
+} elseif ($esSolicitudJson) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'error' => 'No se pudo cargar el modelo de notas de salida.'], JSON_UNESCAPED_UNICODE);
+    exit;
+} else {
+    die("ERROR: No se encuentra notasalidaModel.php");
+}
+
+if (file_exists($pathProductoModel)) {
+    require_once $pathProductoModel;
+} elseif ($esSolicitudJson) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'error' => 'No se pudo cargar el modelo de productos.'], JSON_UNESCAPED_UNICODE);
+    exit;
+} else {
+    die("ERROR: No se encuentra ProductoModel.php");
+}
+
+if (file_exists($pathClienteModel)) {
+    require_once $pathClienteModel;
+} elseif ($esSolicitudJson) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'error' => 'No se pudo cargar el modelo de clientes.'], JSON_UNESCAPED_UNICODE);
+    exit;
+} else {
+    die("ERROR: No se encuentra clientesModel.php");
+}
 
 try {
     $db = (new ConnectDB())->getConnection();
@@ -43,6 +76,12 @@ try {
     $productoModel = new \App\Pirotecnicafenix\Model\ProductoModel($db);
     $clienteModel = new \App\Pirotecnicafenix\Model\clientesModel($db);
 } catch (Exception $e) {
+    if ($esSolicitudJson) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'error' => 'No se pudo establecer conexión con la base de datos.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     die("ERROR de conexión: " . $e->getMessage());
 }
 
@@ -57,8 +96,6 @@ function obtenerIdUsuarioValido($db) {
     return (int) $idUsuario;
 }
 
-$type = $_GET['type'] ?? $_POST['type'] ?? 'list';
-$id = $_GET['id'] ?? null;
 $error = null;
 $success = null;
 $nota = null;
@@ -95,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store') {
     }
 }
 
-if (in_array($type, ['detalle_json', 'detalle_ajax'], true)) {
+if (in_array($type, ['show_json', 'detalle_json', 'detalle_ajax'], true)) {
     header('Content-Type: application/json; charset=utf-8');
     if (!$id || !ctype_digit((string) $id) || (int) $id < 1) {
         http_response_code(400);
