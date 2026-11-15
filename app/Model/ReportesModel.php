@@ -2,17 +2,17 @@
 namespace App\Pirotecnicafenix\Model;
 
 use PDO;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-class ReportesModel {
-    private $db;
+class ReportesModel extends ConnectDB {
+    
+    private $conex;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct() {
+        parent::__construct();
+        $this->conex = $this->getConnection();
     }
 
-    // ============================================================
-    // OBTENER MOVIMIENTOS AGRUPADOS POR NOTA (Entradas, Salidas y Cierres)
-    // ============================================================
     public function obtenerMovimientosDiarios($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $limit = 10, $offset = 0) {
         $whereEntrada = [];
         $whereSalida = [];
@@ -46,15 +46,9 @@ class ReportesModel {
         }
         
         if (!empty($busqueda)) {
-            // 🔥 ENTRADAS: Producto, Categoría, Proveedor (Razón Social o RIF)
             $whereEntrada[] = "(prod.descripcion LIKE :busqueda OR c.nombre_categoria LIKE :busqueda OR pr.razon_social LIKE :busqueda OR pr.rif LIKE :busqueda)";
-            
-            // 🔥 SALIDAS: Producto, Categoría, Cliente (Nombre, Apellido, Cédula, Razón Social o RIF)
             $whereSalida[] = "(prod.descripcion LIKE :busqueda OR c.nombre_categoria LIKE :busqueda OR p_cliente.nombre LIKE :busqueda OR p_cliente.apellido LIKE :busqueda OR p_cliente.cedula LIKE :busqueda OR cj.razon_social LIKE :busqueda OR cj.rif LIKE :busqueda)";
-            
-            // 🔥 CIERRES: Nombre del cajero
             $whereCierre[] = "CONCAT(p.nombre, ' ', p.apellido) LIKE :busqueda";
-            
             $params[':busqueda'] = '%' . $busqueda . '%';
         }
 
@@ -62,7 +56,6 @@ class ReportesModel {
         $whereClauseSalida = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
         $whereClauseCierre = !empty($whereCierre) ? ' WHERE ' . implode(' AND ', $whereCierre) : '';
 
-        // 1. ENTRADAS (0 AS id_usuario_cierre para igualar columnas en el UNION)
         $sqlEntrada = "SELECT 
             ne.id_nota_entrada AS id_documento,
             0 AS id_usuario_cierre,
@@ -89,7 +82,6 @@ class ReportesModel {
         {$whereClauseEntrada}
         GROUP BY ne.id_nota_entrada, ne.fecha_ingreso, ne.eliminado, ne.motivo_anulacion, pr.razon_social, pr.rif, per_u.nombre, per_u.apellido";
 
-        // 2. SALIDAS (0 AS id_usuario_cierre para igualar columnas en el UNION)
         $sqlSalida = "SELECT 
             ns.id_nota_salida AS id_documento,
             0 AS id_usuario_cierre,
@@ -120,7 +112,6 @@ class ReportesModel {
         {$whereClauseSalida}
         GROUP BY ns.id_nota_salida, ns.fecha, ns.eliminado, ns.motivo_anulacion, cj.id_cliente_juridico, cj.razon_social, cj.rif, p_cliente.nombre, p_cliente.apellido, p_cliente.cedula, per_u.nombre, per_u.apellido";
 
-        // 3. CIERRES DE CAJA (Se agrega id_usuario y se igualan las columnas)
         $sqlCierre = "SELECT 
             c.id_cierre AS id_documento,
             c.id_usuario AS id_usuario_cierre,
@@ -172,7 +163,7 @@ class ReportesModel {
 
         $sql .= " ORDER BY fecha_movimiento DESC, id_documento DESC LIMIT :limit OFFSET :offset";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         foreach ($params as $key => $val) {
             $stmt->bindValue($key, $val);
         }
@@ -187,9 +178,6 @@ class ReportesModel {
         return count($movimientos);
     }
 
-    // ============================================================
-    // OBTENER TOTALES (Para las tarjetas de estadísticas)
-    // ============================================================
     public function obtenerTotalesReporte($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null) {
         $where = [];
         $params = [];
@@ -266,7 +254,7 @@ class ReportesModel {
             FROM cierre_caja
         ) resumen{$whereSql}";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }
@@ -286,4 +274,3 @@ class ReportesModel {
         return $this->obtenerTotalesReporte();
     }
 }
-?>

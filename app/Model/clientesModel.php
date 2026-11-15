@@ -5,11 +5,13 @@ use PDO;
 use Exception;
 use PDOException;
 
-class clientesModel {
-    private $db;
+class clientesModel extends ConnectDB{
+    private $conex;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct() {
+        parent::__construct();
+
+        $this->conex = $this->getConnection();
     }
 
     // VALIDAR EDAD
@@ -41,7 +43,7 @@ class clientesModel {
 
     // REGISTRAR CLIENTE NATURAL
     public function registrarClienteNatural($datos) {
-        if (!$this->db) {
+        if (!$this->conex) {
             throw new \Exception("No hay conexión a la base de datos");
         }
 
@@ -59,11 +61,11 @@ class clientesModel {
             throw new \Exception("DUPLICADO_CEDULA:" . $datos['cedula']);
         }
 
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, eliminado) 
                     VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 0)";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
                 ':nombre' => $datos['nombre'],
@@ -77,11 +79,11 @@ class clientesModel {
                 throw new \Exception("Error al insertar en la tabla persona");
             }
 
-            $idPersona = $this->db->lastInsertId();
+            $idPersona = $this->conex->lastInsertId();
 
             $sql2 = "INSERT INTO cliente_natural (id_persona, fecha_de_nacimiento, eliminado) 
                      VALUES (:id_persona, :fecha_de_nacimiento, 0)";
-            $stmt2 = $this->db->prepare($sql2);
+            $stmt2 = $this->conex->prepare($sql2);
             $resultado2 = $stmt2->execute([
                 ':id_persona' => $idPersona,
                 ':fecha_de_nacimiento' => $datos['fecha_de_nacimiento']
@@ -91,22 +93,22 @@ class clientesModel {
                 throw new \Exception("Error al insertar en la tabla cliente_natural");
             }
 
-            $this->db->commit();
+            $this->conex->commit();
             return $idPersona;
 
         } catch (\PDOException $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             error_log("Error PDO en registrarClienteNatural: " . $e->getMessage());
             throw new \Exception("No se pudo completar el registro. Intente nuevamente.");
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             throw $e; // errores de negocio se propagan tal cual
         }
     }
 
     // REGISTRAR CLIENTE JURIDICO
     public function registrarClienteJuridico($datos) {
-        if (!$this->db) {
+        if (!$this->conex) {
             throw new \Exception("No hay conexión a la base de datos");
         }
 
@@ -119,11 +121,11 @@ class clientesModel {
             throw new \Exception("DUPLICADO_RIF:" . $datos['rif']);
         }
 
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $sql = "INSERT INTO persona (cedula, nombre, apellido, telefono, correo_electronico, direccion, eliminado) 
                     VALUES (:cedula, :nombre, :apellido, :telefono, :correo_electronico, :direccion, 0)";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
                 ':nombre' => $datos['razon_social'],
@@ -137,11 +139,11 @@ class clientesModel {
                 throw new \Exception("Error al insertar en la tabla persona");
             }
 
-            $idPersona = $this->db->lastInsertId();
+            $idPersona = $this->conex->lastInsertId();
 
             $sql2 = "INSERT INTO cliente_juridico (id_persona, rif, razon_social, eliminado) 
                      VALUES (:id_persona, :rif, :razon_social, 0)";
-            $stmt2 = $this->db->prepare($sql2);
+            $stmt2 = $this->conex->prepare($sql2);
             $resultado2 = $stmt2->execute([
                 ':id_persona' => $idPersona,
                 ':rif' => $datos['rif'],
@@ -152,15 +154,15 @@ class clientesModel {
                 throw new \Exception("Error al insertar en la tabla cliente_juridico");
             }
 
-            $this->db->commit();
+            $this->conex->commit();
             return $idPersona;
 
         } catch (\PDOException $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             error_log("Error PDO en registrarClienteJuridico: " . $e->getMessage());
             throw new \Exception("No se pudo completar el registro. Intente nuevamente.");
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             throw $e;
         }
     }
@@ -193,7 +195,7 @@ class clientesModel {
                         correo_electronico = :correo_electronico,
                         direccion = :direccion
                     WHERE id_persona = :id AND eliminado = 0";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
                 ':nombre' => $datos['nombre'],
@@ -210,7 +212,7 @@ class clientesModel {
 
             $sql2 = "UPDATE cliente_natural SET fecha_de_nacimiento = :fecha_de_nacimiento 
                      WHERE id_persona = :id AND eliminado = 0";
-            $stmt2 = $this->db->prepare($sql2);
+            $stmt2 = $this->conex->prepare($sql2);
             return $stmt2->execute([
                 ':fecha_de_nacimiento' => $datos['fecha_de_nacimiento'],
                 ':id' => $id
@@ -241,7 +243,7 @@ class clientesModel {
                         correo_electronico = :correo_electronico,
                         direccion = :direccion
                     WHERE id_persona = :id AND eliminado = 0";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $resultado = $stmt->execute([
                 ':cedula' => $datos['cedula'],
                 ':nombre' => $datos['razon_social'],
@@ -259,7 +261,7 @@ class clientesModel {
                         rif = :rif,
                         razon_social = :razon_social
                     WHERE id_persona = :id AND eliminado = 0";
-            $stmt2 = $this->db->prepare($sql2);
+            $stmt2 = $this->conex->prepare($sql2);
             return $stmt2->execute([
                 ':rif' => $datos['rif'],
                 ':razon_social' => $datos['razon_social'],
@@ -300,7 +302,7 @@ class clientesModel {
                     ORDER BY nombre_cliente ASC
                     LIMIT 10";
 
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute(['termino' => "%$termino%"]);
             return $stmt->fetchAll(\PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
@@ -369,7 +371,7 @@ class clientesModel {
 
             $sql .= ' ORDER BY p.eliminado ASC, p.id_persona DESC, p.nombre ASC';
 
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -417,7 +419,7 @@ class clientesModel {
                 $sql .= ' AND ' . implode(' AND ', $where);
             }
 
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute($params);
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -458,7 +460,7 @@ class clientesModel {
                 WHERE " . implode(' AND ', $where) . "
                 ORDER BY p.eliminado ASC, p.id_persona DESC, p.nombre ASC";
 
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -497,7 +499,7 @@ class clientesModel {
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
                     WHERE p.id_persona = :id";
 
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute([':id' => $id]);
             return $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -513,10 +515,10 @@ class clientesModel {
             throw new \Exception("ID de cliente inválido para eliminar");
         }
 
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $sqlCheck = "SELECT id_persona, eliminado FROM persona WHERE id_persona = :id";
-            $stmtCheck = $this->db->prepare($sqlCheck);
+            $stmtCheck = $this->conex->prepare($sqlCheck);
             $stmtCheck->execute([':id' => $id]);
             $clienteCheck = $stmtCheck->fetch(\PDO::FETCH_ASSOC);
 
@@ -530,7 +532,7 @@ class clientesModel {
 
             // 1. Verificar si tiene notas de salida asociadas
             $sqlNotaSalida = "SELECT 1 FROM nota_de_salida WHERE id_persona = :id AND eliminado = 0 LIMIT 1";
-            $stmtNotaSalida = $this->db->prepare($sqlNotaSalida);
+            $stmtNotaSalida = $this->conex->prepare($sqlNotaSalida);
             $stmtNotaSalida->execute([':id' => $id]);
 
             if ($stmtNotaSalida->rowCount() > 0) {
@@ -541,7 +543,7 @@ class clientesModel {
             $sqlNotaEntrada = "SELECT 1 FROM nota_de_entrada ne 
                                INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor 
                                WHERE prov.id_persona = :id AND ne.eliminado = 0 LIMIT 1";
-            $stmtNotaEntrada = $this->db->prepare($sqlNotaEntrada);
+            $stmtNotaEntrada = $this->conex->prepare($sqlNotaEntrada);
             $stmtNotaEntrada->execute([':id' => $id]);
 
             if ($stmtNotaEntrada->rowCount() > 0) {
@@ -554,36 +556,36 @@ class clientesModel {
                                 WHEN EXISTS (SELECT 1 FROM cliente_juridico WHERE id_persona = :id) THEN 'Jurídico'
                                 ELSE 'Desconocido'
                             END AS tipo";
-            $stmtTipo = $this->db->prepare($sqlTipo);
+            $stmtTipo = $this->conex->prepare($sqlTipo);
             $stmtTipo->execute([':id' => $id]);
             $tipoCliente = $stmtTipo->fetchColumn();
 
             if ($tipoCliente === 'Natural' || $tipoCliente === 'Desconocido') {
                 $sql1 = "UPDATE cliente_natural SET eliminado = 1 WHERE id_persona = :id";
-                $stmt1 = $this->db->prepare($sql1);
+                $stmt1 = $this->conex->prepare($sql1);
                 $stmt1->execute([':id' => $id]);
             }
 
             if ($tipoCliente === 'Jurídico' || $tipoCliente === 'Desconocido') {
                 $sql2 = "UPDATE cliente_juridico SET eliminado = 1 WHERE id_persona = :id";
-                $stmt2 = $this->db->prepare($sql2);
+                $stmt2 = $this->conex->prepare($sql2);
                 $stmt2->execute([':id' => $id]);
             }
 
             // Eliminación lógica: marcado como eliminado
             $sql3 = "UPDATE persona SET eliminado = 1 WHERE id_persona = :id";
-            $stmt3 = $this->db->prepare($sql3);
+            $stmt3 = $this->conex->prepare($sql3);
             $resultado = $stmt3->execute([':id' => $id]);
 
             if (!$resultado || $stmt3->rowCount() === 0) {
                 throw new \Exception("No se pudo inactivar el registro principal");
             }
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             error_log("ERROR en eliminarCliente: " . $e->getMessage());
             throw $e;
         }
@@ -595,24 +597,24 @@ class clientesModel {
             throw new \Exception("ID de cliente inválido");
         }
 
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $sqlCheck = "SELECT id_persona FROM persona WHERE id_persona = :id";
-            $stmtCheck = $this->db->prepare($sqlCheck);
+            $stmtCheck = $this->conex->prepare($sqlCheck);
             $stmtCheck->execute([':id' => $id]);
 
             if ($stmtCheck->rowCount() === 0) {
                 throw new \Exception("El cliente no existe en la base de datos");
             }
 
-            $this->db->prepare("UPDATE persona SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
-            $this->db->prepare("UPDATE cliente_natural SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
-            $this->db->prepare("UPDATE cliente_juridico SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
+            $this->conex->prepare("UPDATE persona SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
+            $this->conex->prepare("UPDATE cliente_natural SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
+            $this->conex->prepare("UPDATE cliente_juridico SET eliminado = 0 WHERE id_persona = :id")->execute([':id' => $id]);
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             error_log("ERROR en reactivarCliente: " . $e->getMessage());
             throw $e;
         }
@@ -629,11 +631,11 @@ class clientesModel {
             if ($excluirId !== null) {
                 $sql = "SELECT COUNT(*) FROM persona 
                         WHERE cedula = :cedula AND eliminado = 0 AND id_persona <> :excluir";
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->conex->prepare($sql);
                 $stmt->execute([':cedula' => $cedula, ':excluir' => $excluirId]);
             } else {
                 $sql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula AND eliminado = 0";
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->conex->prepare($sql);
                 $stmt->execute([':cedula' => $cedula]);
             }
             return $stmt->fetchColumn() > 0;
@@ -653,11 +655,11 @@ class clientesModel {
             if ($excluirId !== null) {
                 $sql = "SELECT COUNT(*) FROM cliente_juridico 
                         WHERE rif = :rif AND eliminado = 0 AND id_persona <> :excluir";
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->conex->prepare($sql);
                 $stmt->execute([':rif' => $rif, ':excluir' => $excluirId]);
             } else {
                 $sql = "SELECT COUNT(*) FROM cliente_juridico WHERE rif = :rif AND eliminado = 0";
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->conex->prepare($sql);
                 $stmt->execute([':rif' => $rif]);
             }
             return $stmt->fetchColumn() > 0;

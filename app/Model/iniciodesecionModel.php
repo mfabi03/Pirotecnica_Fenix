@@ -1,11 +1,14 @@
 <?php
 namespace App\Pirotecnicafenix\Model;
 
-class iniciodesecionModel {
-    private $db;
+class iniciodesecionModel extends ConnectDB {
+    private $conex;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct() {
+        
+    parent::__construct();
+
+    $this->conex = $this->getConnection();
     }
 
     public function verificarUsuario($usuario, $password) {
@@ -13,7 +16,7 @@ class iniciodesecionModel {
                 FROM usuarios u 
                 INNER JOIN persona p ON u.id_usuario = p.id_usuario 
                 WHERE p.correo_electronico = :usuario OR p.cedula = :usuario";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         $stmt->execute(['usuario' => $usuario]);
         $user = $stmt->fetch();
 

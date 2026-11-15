@@ -1,29 +1,14 @@
-/**
- * ============================================================
- * VALIDADOR GLOBAL (versión jQuery)
- * ------------------------------------------------------------
- * Reglas de formato:      data-validate="cedula|rif|..."
- * Reglas de unicidad:     data-unico-endpoint="?url=..."
- *                         data-unico-campo="cedula|rif|..."
- *                         data-excluir-id="5"  (opcional, edición)
- * ============================================================
- */
 
 var Validador = (function ($) {
     'use strict';
 
-    // ---------------------------------------------------------
-    // CONFIG
-    // ---------------------------------------------------------
     var DEBOUNCE_MS = 400;
 
     // Estado interno para la validación asíncrona
     var timersUnico = {};
     var requestIdUnico = {};
 
-    // ---------------------------------------------------------
-    // HELPERS
-    // ---------------------------------------------------------
+   
     function calcularEdad(fechaNacimiento) {
         if (!fechaNacimiento) return null;
         var hoy = new Date();
@@ -42,9 +27,9 @@ var Validador = (function ($) {
         return partes[2] + '/' + partes[1] + '/' + partes[0];
     }
 
-    // ---------------------------------------------------------
+    
     // VALIDADORES SÍNCRONOS (formato)
-    // ---------------------------------------------------------
+
     var validadores = {
         cedula: function (valor) {
             if (!valor) return { estado: 'vacio', mensaje: 'Formato: V-12345678' };

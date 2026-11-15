@@ -5,20 +5,22 @@ namespace App\Pirotecnicafenix\Model;
 use PDO;
 use PDOException;
 use Exception;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-class UsuarioModel {
-    private $db;
+class UsuarioModel extends ConnectDB {
+    
+    private $conex;
     private $lastError = null;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct() {
+        parent::__construct();
+        $this->conex = $this->getConnection();
     }
 
     // ==========================================
     // LECTURA
     // ==========================================
 
-    // Obtener todos los usuarios con su persona y rol (incluye inactivos)
     public function obtenerUsuariosConPersona() {
         try {
             $sql = "SELECT 
@@ -39,7 +41,7 @@ class UsuarioModel {
                     LEFT JOIN rol r ON u.id_rol = r.id_rol
                     ORDER BY u.eliminado ASC, u.id_usuario DESC";
             
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -48,7 +50,6 @@ class UsuarioModel {
         }
     }
 
-    // Contar usuarios
     public function contarUsuarios($busqueda = null) {
         try {
             $busqueda = trim((string) $busqueda);
@@ -61,11 +62,11 @@ class UsuarioModel {
                            OR p.nombre LIKE :busqueda 
                            OR p.apellido LIKE :busqueda
                            OR p.cedula LIKE :busqueda)";
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->conex->prepare($sql);
                 $stmt->execute([':busqueda' => '%' . $busqueda . '%']);
             } else {
                 $sql = "SELECT COUNT(*) FROM usuario";
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->conex->prepare($sql);
                 $stmt->execute();
             }
             
@@ -76,7 +77,6 @@ class UsuarioModel {
         }
     }
 
-    // Obtener un usuario con su persona asociada por ID
     public function obtenerUsuarioPorId($id) {
         try {
             $sql = "SELECT 
@@ -98,7 +98,7 @@ class UsuarioModel {
                     WHERE u.id_usuario = :id
                     LIMIT 1";
             
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute([':id' => $id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -107,7 +107,6 @@ class UsuarioModel {
         }
     }
 
-    // Buscar usuarios (incluye inactivos)
     public function buscarUsuarios($busqueda) {
         try {
             $sql = "SELECT 
@@ -132,7 +131,7 @@ class UsuarioModel {
                        OR p.cedula LIKE :busqueda)
                     ORDER BY u.eliminado ASC, u.id_usuario DESC";
             
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute([':busqueda' => '%' . $busqueda . '%']);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -140,10 +139,6 @@ class UsuarioModel {
             return [];
         }
     }
-
-    // ==========================================
-    // VALIDACIONES ÚNICAS (para AJAX)
-    // ==========================================
 
     public function existeUsuario($usuario, $idExcluir = null) {
         try {
@@ -158,7 +153,7 @@ class UsuarioModel {
                 $params[':id'] = $idExcluir;
             }
             
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchColumn() > 0;
         } catch (PDOException $e) {
@@ -180,7 +175,7 @@ class UsuarioModel {
                 $params[':id'] = $idPersonaExcluir;
             }
             
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchColumn() > 0;
         } catch (PDOException $e) {
@@ -194,17 +189,17 @@ class UsuarioModel {
     // ==========================================
 
     public function registrarUsuarioCompleto($datosPersona, $datosUsuario) {
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $checkUserSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario AND eliminado = 0";
-            $checkUserStmt = $this->db->prepare($checkUserSql);
+            $checkUserStmt = $this->conex->prepare($checkUserSql);
             $checkUserStmt->execute([':usuario' => $datosUsuario['usuario']]);
             if ($checkUserStmt->fetchColumn() > 0) {
                 throw new Exception("El nombre de usuario '{$datosUsuario['usuario']}' ya está registrado.");
             }
 
             $checkCedulaSql = "SELECT COUNT(*) FROM persona WHERE cedula = :cedula AND eliminado = 0";
-            $checkCedulaStmt = $this->db->prepare($checkCedulaSql);
+            $checkCedulaStmt = $this->conex->prepare($checkCedulaSql);
             $checkCedulaStmt->execute([':cedula' => $datosPersona['cedula']]);
             if ($checkCedulaStmt->fetchColumn() > 0) {
                 throw new Exception("La cédula '{$datosPersona['cedula']}' ya está registrada.");
@@ -215,7 +210,7 @@ class UsuarioModel {
                             VALUES 
                                 (:nombre, :apellido, :direccion, :cedula, :telefono, :correo_electronico, 0)";
             
-            $stmtPersona = $this->db->prepare($sqlPersona);
+            $stmtPersona = $this->conex->prepare($sqlPersona);
             $stmtPersona->execute([
                 ':nombre' => $datosPersona['nombre'],
                 ':apellido' => $datosPersona['apellido'] ?? '',
@@ -225,7 +220,7 @@ class UsuarioModel {
                 ':correo_electronico' => $datosPersona['correo'] ?? null
             ]);
 
-            $idPersona = $this->db->lastInsertId();
+            $idPersona = $this->conex->lastInsertId();
             if ($idPersona <= 0) {
                 throw new Exception("No se pudo insertar la persona.");
             }
@@ -235,7 +230,7 @@ class UsuarioModel {
                             VALUES 
                                 (:id_persona, :usuario, :id_rol, :clave, 0)";
             
-            $stmtUsuario = $this->db->prepare($sqlUsuario);
+            $stmtUsuario = $this->conex->prepare($sqlUsuario);
             $stmtUsuario->execute([
                 ':id_persona' => $idPersona,
                 ':usuario' => $datosUsuario['usuario'],
@@ -243,11 +238,11 @@ class UsuarioModel {
                 ':clave' => $datosUsuario['clave']
             ]);
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             $this->lastError = $e->getMessage();
             error_log("Error en registrarUsuarioCompleto: " . $e->getMessage());
             return false;
@@ -255,10 +250,10 @@ class UsuarioModel {
     }
 
     public function actualizarUsuario($id, array $datos) {
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $checkSql = "SELECT id_persona FROM usuario WHERE id_usuario = :id AND eliminado = 0";
-            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt = $this->conex->prepare($checkSql);
             $checkStmt->execute([':id' => $id]);
             $usuario = $checkStmt->fetch(PDO::FETCH_ASSOC);
             if (!$usuario) {
@@ -266,7 +261,7 @@ class UsuarioModel {
             }
 
             $checkUserSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario AND id_usuario != :id AND eliminado = 0";
-            $checkUserStmt = $this->db->prepare($checkUserSql);
+            $checkUserStmt = $this->conex->prepare($checkUserSql);
             $checkUserStmt->execute([
                 ':usuario' => $datos['usuario'],
                 ':id' => $id
@@ -284,7 +279,7 @@ class UsuarioModel {
                                 correo_electronico = :correo_electronico
                             WHERE id_persona = :id_persona";
             
-            $stmtPersona = $this->db->prepare($sqlPersona);
+            $stmtPersona = $this->conex->prepare($sqlPersona);
             $stmtPersona->execute([
                 ':nombre' => $datos['nombre'] ?? 'Usuario',
                 ':apellido' => $datos['apellido'] ?? '',
@@ -315,26 +310,25 @@ class UsuarioModel {
                 $params[':clave'] = password_hash($datos['clave'], PASSWORD_DEFAULT);
             }
             
-            $stmtUsuario = $this->db->prepare($sqlUsuario);
+            $stmtUsuario = $this->conex->prepare($sqlUsuario);
             $stmtUsuario->execute($params);
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             $this->lastError = $e->getMessage();
             error_log("Error en actualizarUsuario: " . $e->getMessage());
             return false;
         }
     }
 
-    // Eliminar usuario (borrado lógico)
     public function eliminarUsuario($id) {
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $checkSql = "SELECT id_persona FROM usuario WHERE id_usuario = :id AND eliminado = 0";
-            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt = $this->conex->prepare($checkSql);
             $checkStmt->execute([':id' => $id]);
             $usuario = $checkStmt->fetch(PDO::FETCH_ASSOC);
             if (!$usuario) {
@@ -344,30 +338,29 @@ class UsuarioModel {
             $idPersona = $usuario['id_persona'];
 
             $sqlUsuario = "UPDATE usuario SET eliminado = 1 WHERE id_usuario = :id";
-            $stmtUsuario = $this->db->prepare($sqlUsuario);
+            $stmtUsuario = $this->conex->prepare($sqlUsuario);
             $stmtUsuario->execute([':id' => $id]);
 
             $sqlPersona = "UPDATE persona SET eliminado = 1 WHERE id_persona = :id_persona";
-            $stmtPersona = $this->db->prepare($sqlPersona);
+            $stmtPersona = $this->conex->prepare($sqlPersona);
             $stmtPersona->execute([':id_persona' => $idPersona]);
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             $this->lastError = $e->getMessage();
             error_log("Error en eliminarUsuario: " . $e->getMessage());
             return false;
         }
     }
 
-    // Reactivar usuario (borrado lógico inverso)
     public function reactivarUsuario($id) {
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $checkSql = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
-            $checkStmt = $this->db->prepare($checkSql);
+            $checkStmt = $this->conex->prepare($checkSql);
             $checkStmt->execute([':id' => $id]);
             $usuario = $checkStmt->fetch(PDO::FETCH_ASSOC);
             if (!$usuario) {
@@ -377,18 +370,18 @@ class UsuarioModel {
             $idPersona = $usuario['id_persona'];
 
             $sqlUsuario = "UPDATE usuario SET eliminado = 0 WHERE id_usuario = :id";
-            $stmtUsuario = $this->db->prepare($sqlUsuario);
+            $stmtUsuario = $this->conex->prepare($sqlUsuario);
             $stmtUsuario->execute([':id' => $id]);
 
             $sqlPersona = "UPDATE persona SET eliminado = 0 WHERE id_persona = :id_persona";
-            $stmtPersona = $this->db->prepare($sqlPersona);
+            $stmtPersona = $this->conex->prepare($sqlPersona);
             $stmtPersona->execute([':id_persona' => $idPersona]);
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             $this->lastError = $e->getMessage();
             error_log("Error en reactivarUsuario: " . $e->getMessage());
             return false;

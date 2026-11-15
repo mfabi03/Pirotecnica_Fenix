@@ -1,18 +1,3 @@
-/**
- * ============================================================
- * MÓDULO REPORTES DE MOVIMIENTO - Versión jQuery
- * ------------------------------------------------------------
- * Requiere:
- *   - jQuery 3.7.1 (cargado globalmente en footer.php)
- *   - Bootstrap 5 (cargado globalmente en footer.php)
- *   - verDetalleNota.jquery.js (para el modal de detalle)
- * ------------------------------------------------------------
- * Cubre:
- *   1. Filtro AJAX del formulario #formFiltros
- *   2. Ver motivo de anulación (delegado)
- * ============================================================
- */
-
 (function ($) {
     'use strict';
 

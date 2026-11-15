@@ -2,23 +2,9 @@
 // app/view/configuracion/listCategoriaView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-use App\Pirotecnicafenix\Helpers\PermisoHelper;
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
-
-// Crear conexión si no existe
-if (!isset($db) || $db === null) {
-    try {
-        $db = (new ConnectDB())->getConnection();
-    } catch (Exception $e) {
-        $db = null;
-    }
-}
-
-// Obtener permisos del usuario actual
-$id_rol_actual = $_SESSION['id_rol'] ?? 0;
-$puede_crear_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'crear') : false;
-$puede_editar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'actualizar') : false;
-$puede_eliminar_categoria = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Categorias', 'eliminar') : false;
+// 🔥 LA VISTA YA NO INSTANCIA PERMISOHELPER NI CONNECTDB
+// Las variables $puede_crear, $puede_editar y $puede_eliminar
+// ya vienen calculadas desde el controlador.
 
 // Paginación
 $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
@@ -70,7 +56,8 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                         <i class="fas fa-arrow-left me-1"></i> Volver a Categorías Activas
                     </a>
                 <?php else: ?>
-                    <?php if ($puede_crear_categoria): ?>
+                    <!-- 🔥 USAMOS LA VARIABLE $puede_crear -->
+                    <?php if ($puede_crear): ?>
                     <button type="button" class="btn btn-dark-gold" 
                             data-bs-toggle="modal" data-bs-target="#modalRegistrarCategoria"
                             style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
@@ -134,7 +121,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                 </a>
             </div>
 
-            <!-- 🔥 BOTÓN VER ELIMINADOS EN LOS FILTROS -->
+            <!-- BOTÓN VER ELIMINADOS EN LOS FILTROS -->
             <div class="col-md-2">
                 <?php if ($esVistaEliminados): ?>
                     <a href="?url=categorias&action=lista" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
@@ -231,7 +218,8 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                         
                                         <?php if (!$estaActiva): ?>
                                             <!-- INACTIVA: SOLO REACTIVAR -->
-                                            <?php if ($puede_editar_categoria): ?>
+                                            <!-- 🔥 USAMOS LA VARIABLE $puede_editar -->
+                                            <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-reactivar" title="Reactivar Categoría"
                                                     onclick="confirmarReactivarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
                                                 <i class="fas fa-undo-alt"></i>
@@ -239,14 +227,16 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <!-- ACTIVA: EDITAR Y ELIMINAR -->
-                                            <?php if ($puede_editar_categoria): ?>
+                                            <!-- 🔥 USAMOS LA VARIABLE $puede_editar -->
+                                            <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-edit" title="Editar"
                                                     onclick="editarCategoria(<?= (int) $cat['id_categoria'] ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <?php endif; ?>
                                             
-                                            <?php if ($puede_eliminar_categoria): ?>
+                                            <!-- 🔥 USAMOS LA VARIABLE $puede_eliminar -->
+                                            <?php if ($puede_eliminar): ?>
                                             <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
                                                     onclick="confirmarEliminarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
                                                 <i class="fas fa-trash-alt"></i>
@@ -279,7 +269,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_eliminar_categoria.php'; ?>
 
 <!-- MODAL REACTIVAR -->
-<?php if ($puede_editar_categoria): ?>
+<?php if ($puede_editar): ?>
 <div class="modal fade" id="modalReactivarCategoria" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
@@ -337,7 +327,6 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
-    // 🔥 AJAX para el filtro (Igual que en Clientes/Productos)
     const formCategorias = document.getElementById('formFiltroCategorias');
     if (formCategorias) {
         const enviarFiltroCategorias = function () {
@@ -375,14 +364,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Lógica de los modales
     const categoriasData = JSON.parse(document.getElementById('categoriasData').textContent);
     const categoriasPorId = {};
     categoriasData.forEach(function(c) {
         categoriasPorId[parseInt(c.id_categoria)] = c;
     });
 
-    // VER DETALLE
     window.verDetalleCategoria = function(id) {
         const c = categoriasPorId[id];
         if (!c) return;
@@ -408,7 +395,6 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Modal(document.getElementById('modalVerCategoria')).show();
     };
 
-    // EDITAR
     window.editarCategoria = function(id) {
         const c = categoriasPorId[id];
         if (!c) return;
@@ -421,14 +407,12 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Modal(document.getElementById('modalEditarCategoria')).show();
     };
 
-    // ELIMINAR
     window.confirmarEliminarCategoria = function(id, nombre) {
         document.getElementById('eliminar-categoria-id').value = id;
         document.getElementById('eliminar-categoria-nombre').textContent = nombre || 'Categoría #' + id;
         new bootstrap.Modal(document.getElementById('modalEliminarCategoria')).show();
     };
 
-    // REACTIVAR
     window.confirmarReactivarCategoria = function(id, nombre) {
         document.getElementById('reactivar-categoria-id').value = id;
         document.getElementById('reactivar-categoria-nombre').textContent = nombre || 'Categoría #' + id;
@@ -438,7 +422,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-// Auto-cierre de alertas
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
         var ms = parseInt(el.dataset.autoDismiss, 10) || 5000;

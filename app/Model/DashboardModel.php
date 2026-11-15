@@ -2,12 +2,17 @@
 namespace App\Pirotecnicafenix\Model;
 
 use PDO;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-class DashboardModel {
-    private $db;
+class DashboardModel extends ConnectDB {
+    
+    private $conex;
 
-    public function __construct(PDO $db) {
-        $this->db = $db;
+    public function __construct() {
+        // Llamamos al constructor del padre
+        parent::__construct();
+        // Obtenemos la conexión
+        $this->conex = $this->getConnection();
     }
 
     /**
@@ -17,24 +22,24 @@ class DashboardModel {
         $stats = [];
 
         $sql = "SELECT COUNT(*) FROM producto WHERE eliminado = 0";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         $stmt->execute();
         $stats['total_productos'] = (int) $stmt->fetchColumn();
 
         $sql = "SELECT COUNT(*) FROM cliente_natural WHERE eliminado = 0";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         $stmt->execute();
         $totalNaturales = (int) $stmt->fetchColumn();
 
         $sql = "SELECT COUNT(*) FROM cliente_juridico WHERE eliminado = 0";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         $stmt->execute();
         $totalJuridicos = (int) $stmt->fetchColumn();
         $stats['total_clientes'] = $totalNaturales + $totalJuridicos;
 
         if ($idUsuario !== null) {
             $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0 AND id_usuario = :id_usuario";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute([':id_usuario' => $idUsuario]);
             $stats['total_nota_salida'] = (int) $stmt->fetchColumn();
             return $stats;
@@ -42,24 +47,24 @@ class DashboardModel {
 
         if ($incluirUsuarios) {
             $sql = "SELECT COUNT(*) FROM usuario WHERE eliminado = 0";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             $stats['total_usuarios'] = (int) $stmt->fetchColumn();
         }
 
         $sql = "SELECT COUNT(*) FROM nota_de_salida WHERE eliminado = 0";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         $stmt->execute();
         $stats['total_nota_salida'] = (int) $stmt->fetchColumn();
 
         $sql = "SELECT COUNT(*) FROM nota_de_entrada WHERE eliminado = 0";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         $stmt->execute();
         $stats['total_nota_entrada'] = (int) $stmt->fetchColumn();
 
         $sql = "SELECT COUNT(*) FROM producto
                 WHERE cantidad <= stock_minimo AND eliminado = 0";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         $stmt->execute();
         $stats['productos_criticos'] = (int) $stmt->fetchColumn();
 
@@ -82,7 +87,7 @@ class DashboardModel {
                     WHERE p.cantidad <= p.stock_minimo
                       AND p.eliminado = 0
                     ORDER BY p.cantidad ASC, p.descripcion ASC";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Exception $e) {
@@ -100,7 +105,7 @@ class DashboardModel {
                     LEFT JOIN rol r ON r.id_rol = u.id_rol
                     WHERE u.eliminado = 0 AND p.eliminado = 0
                     ORDER BY u.id_usuario DESC";
-            return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+            return $this->conex->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Exception $e) {
             error_log("Error en getUsuariosResumen: " . $e->getMessage());
             return [];
@@ -122,7 +127,7 @@ class DashboardModel {
                     INNER JOIN persona p ON p.id_persona = cj.id_persona
                     WHERE cj.eliminado = 0 AND p.eliminado = 0
                     ORDER BY nombre ASC";
-            return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+            return $this->conex->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Exception $e) {
             error_log("Error en getClientesResumen: " . $e->getMessage());
             return [];
@@ -138,7 +143,7 @@ class DashboardModel {
                 WHERE n.eliminado = 0
                 ORDER BY n.id_nota_entrada DESC
                 LIMIT 5";
-        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        return $this->conex->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getNotasSalidaRecientes($idUsuario = null) {
@@ -161,7 +166,7 @@ class DashboardModel {
         }
 
         $sql .= " ORDER BY ns.id_nota_salida DESC LIMIT 5";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
 
         if ($idUsuario !== null) {
             $stmt->bindValue(':id_usuario', (int) $idUsuario, PDO::PARAM_INT);
@@ -179,7 +184,7 @@ class DashboardModel {
                     LEFT JOIN categoria c ON c.id_categoria = p.id_categoria
                     WHERE p.eliminado = 0
                     ORDER BY p.descripcion ASC";
-            return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+            return $this->conex->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Exception $e) {
             error_log("Error en getProductosInventario: " . $e->getMessage());
             return [];

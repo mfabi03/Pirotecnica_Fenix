@@ -5,11 +5,14 @@ use PDO;
 use Exception;
 use PDOException;
 
-class NotaentradaModel {
-    private $db;
+class NotaentradaModel extends ConnectDB {
+    private $conex;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct() {
+        
+    parent::__construct();
+
+    $this->conex = $this->getConnection();
     }
 
     // OBTENER PRODUCTOS
@@ -17,7 +20,7 @@ class NotaentradaModel {
         try {
             $sql = "SELECT id_producto, descripcion, costo_unitario, cantidad 
                     FROM producto WHERE eliminado = 0 ORDER BY descripcion ASC";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -33,7 +36,7 @@ class NotaentradaModel {
                     INNER JOIN persona pe ON p.id_persona = pe.id_persona
                     WHERE p.eliminado = 0 AND pe.eliminado = 0
                     ORDER BY p.razon_social ASC";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -59,7 +62,7 @@ class NotaentradaModel {
                     WHERE {$condicionEstado}
                     GROUP BY n.id_nota_entrada, n.fecha_ingreso, n.descripcion, n.costo_total, n.eliminado, n.motivo_anulacion, p.razon_social, p.rif, pe.nombre, pe.apellido
                     ORDER BY n.id_nota_entrada DESC";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -70,7 +73,7 @@ class NotaentradaModel {
     // CONTAR NOTAS DE ENTRADA
     public function contarNotasEntrada() {
         try {
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM nota_de_entrada WHERE eliminado = 0");
+            $stmt = $this->conex->prepare("SELECT COUNT(*) FROM nota_de_entrada WHERE eliminado = 0");
             $stmt->execute();
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -100,7 +103,7 @@ class NotaentradaModel {
                            OR CONCAT_WS(' ', pe.nombre, pe.apellido) LIKE :termino OR prod.descripcion LIKE :termino OR n.descripcion LIKE :termino)
                     GROUP BY n.id_nota_entrada, n.fecha_ingreso, n.descripcion, n.costo_total, n.eliminado, n.motivo_anulacion, p.razon_social, p.rif, pe.nombre, pe.apellido
                     ORDER BY n.id_nota_entrada DESC";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute([':termino' => "%$termino%"]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -111,7 +114,7 @@ class NotaentradaModel {
     // OBTENER NOTA POR ID (CORREGIDO)
     public function obtenerNotaEntradaPorId($id) {
         try {
-            $stmt = $this->db->prepare("
+            $stmt = $this->conex->prepare("
                 SELECT 
                     n.id_nota_entrada, 
                     n.fecha_ingreso, 
@@ -133,7 +136,7 @@ class NotaentradaModel {
             $nota = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($nota) {
-                $stmtDet = $this->db->prepare("
+                $stmtDet = $this->conex->prepare("
                     SELECT 
                         d.id_detalle_entrada,
                         d.id_producto,
@@ -157,14 +160,14 @@ class NotaentradaModel {
 
     // GUARDAR NOTA COMPLETA
     public function guardarNotaEntradaCompleta(array $datos, array $detalles, $idUsuario) {
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
             $costoTotal = 0;
             foreach ($detalles as $d) {
                 $costoTotal += $d['cantidad'] * $d['costo_unitario'];
             }
 
-            $stmt = $this->db->prepare("
+            $stmt = $this->conex->prepare("
                 INSERT INTO nota_de_entrada (fecha_ingreso, id_proveedor, id_usuario, descripcion, costo_total, eliminado) 
                 VALUES (:fecha_ingreso, :id_proveedor, :id_usuario, :descripcion, :costo_total, 0)
             ");
@@ -175,14 +178,14 @@ class NotaentradaModel {
                 ':descripcion' => $datos['descripcion'] ?? '',
                 ':costo_total' => $costoTotal
             ]);
-            $idNota = (int) $this->db->lastInsertId();
+            $idNota = (int) $this->conex->lastInsertId();
 
-            $stmtDet = $this->db->prepare("
+            $stmtDet = $this->conex->prepare("
                 INSERT INTO detalle_entrada (id_nota_entrada, id_producto, cantidad, costo_unitario) 
                 VALUES (:id_nota_entrada, :id_producto, :cantidad, :costo_unitario)
             ");
             
-            $stmtStock = $this->db->prepare("
+            $stmtStock = $this->conex->prepare("
                 UPDATE producto SET cantidad = cantidad + :cantidad, costo_unitario = :costo_unitario 
                 WHERE id_producto = :id_producto
             ");
@@ -202,10 +205,10 @@ class NotaentradaModel {
                 ]);
             }
 
-            $this->db->commit();
+            $this->conex->commit();
             return $idNota;
         } catch (Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             throw new Exception("Error al guardar nota de entrada: " . $e->getMessage());
         }
     }
@@ -215,9 +218,9 @@ class NotaentradaModel {
             throw new Exception("Debe agregar al menos un producto.");
         }
 
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
-            $stmtNota = $this->db->prepare("
+            $stmtNota = $this->conex->prepare("
                 SELECT id_nota_entrada
                 FROM nota_de_entrada
                 WHERE id_nota_entrada = :id AND eliminado = 0
@@ -228,7 +231,7 @@ class NotaentradaModel {
                 throw new Exception("La nota no existe o ya fue anulada.");
             }
 
-            $stmtProveedor = $this->db->prepare("
+            $stmtProveedor = $this->conex->prepare("
                 SELECT id_proveedor
                 FROM proveedor
                 WHERE id_proveedor = :id AND eliminado = 0
@@ -239,7 +242,7 @@ class NotaentradaModel {
                 throw new Exception("El proveedor seleccionado no existe o está inactivo.");
             }
 
-            $stmtDetallesActuales = $this->db->prepare("
+            $stmtDetallesActuales = $this->conex->prepare("
                 SELECT id_producto, cantidad
                 FROM detalle_entrada
                 WHERE id_nota_entrada = :id
@@ -279,18 +282,18 @@ class NotaentradaModel {
             )));
             sort($idsProductos, SORT_NUMERIC);
 
-            $stmtProducto = $this->db->prepare("
+            $stmtProducto = $this->conex->prepare("
                 SELECT cantidad, eliminado
                 FROM producto
                 WHERE id_producto = :id
                 FOR UPDATE
             ");
-            $stmtActualizarStock = $this->db->prepare("
+            $stmtActualizarStock = $this->conex->prepare("
                 UPDATE producto
                 SET cantidad = :cantidad
                 WHERE id_producto = :id
             ");
-            $stmtActualizarCosto = $this->db->prepare("
+            $stmtActualizarCosto = $this->conex->prepare("
                 UPDATE producto
                 SET costo_unitario = :costo
                 WHERE id_producto = :id
@@ -328,13 +331,13 @@ class NotaentradaModel {
                 }
             }
 
-            $stmtEliminarDetalles = $this->db->prepare("
+            $stmtEliminarDetalles = $this->conex->prepare("
                 DELETE FROM detalle_entrada
                 WHERE id_nota_entrada = :id
             ");
             $stmtEliminarDetalles->execute([':id' => $id]);
 
-            $stmtInsertarDetalle = $this->db->prepare("
+            $stmtInsertarDetalle = $this->conex->prepare("
                 INSERT INTO detalle_entrada (id_nota_entrada, id_producto, cantidad, costo_unitario)
                 VALUES (:id_nota, :id_producto, :cantidad, :costo)
             ");
@@ -347,7 +350,7 @@ class NotaentradaModel {
                 ]);
             }
 
-            $stmtActualizarNota = $this->db->prepare("
+            $stmtActualizarNota = $this->conex->prepare("
                 UPDATE nota_de_entrada
                 SET fecha_ingreso = :fecha,
                     id_proveedor = :proveedor,
@@ -363,11 +366,11 @@ class NotaentradaModel {
                 ':id' => $id
             ]);
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
         } catch (Exception $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
+            if ($this->conex->inTransaction()) {
+                $this->conex->rollBack();
             }
             throw new Exception("Error al actualizar nota de entrada: " . $e->getMessage());
         }
@@ -375,9 +378,9 @@ class NotaentradaModel {
 
     // ANULAR NOTA DE ENTRADA
     public function anularNotaEntrada($id, $motivo, $idUsuario) {
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
-            $stmtCheck = $this->db->prepare("
+            $stmtCheck = $this->conex->prepare("
                 SELECT id_nota_entrada
                 FROM nota_de_entrada
                 WHERE id_nota_entrada = :id AND eliminado = 0
@@ -386,36 +389,36 @@ class NotaentradaModel {
             $stmtCheck->execute([':id' => $id]);
             if ($stmtCheck->rowCount() === 0) throw new Exception("La nota no existe o ya fue anulada");
 
-            $stmtDet = $this->db->prepare("SELECT id_producto, cantidad FROM detalle_entrada WHERE id_nota_entrada = :id");
+            $stmtDet = $this->conex->prepare("SELECT id_producto, cantidad FROM detalle_entrada WHERE id_nota_entrada = :id");
             $stmtDet->execute([':id' => $id]);
             $detalles = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
 
             if (empty($detalles)) throw new Exception("La nota no tiene productos asociados");
 
-            $stmtStock = $this->db->prepare("UPDATE producto SET cantidad = cantidad - :cantidad WHERE id_producto = :id_producto");
+            $stmtStock = $this->conex->prepare("UPDATE producto SET cantidad = cantidad - :cantidad WHERE id_producto = :id_producto");
             foreach ($detalles as $d) {
                 $stmtStock->execute([':cantidad' => $d['cantidad'], ':id_producto' => $d['id_producto']]);
             }
 
-            $stmtDel = $this->db->prepare("
+            $stmtDel = $this->conex->prepare("
                 UPDATE nota_de_entrada
                 SET eliminado = 1, motivo_anulacion = :motivo
                 WHERE id_nota_entrada = :id
             ");
             $stmtDel->execute([':motivo' => $motivo, ':id' => $id]);
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
         } catch (Exception $e) {
-            $this->db->rollBack();
+            $this->conex->rollBack();
             throw new Exception("Error al anular nota de entrada: " . $e->getMessage());
         }
     }
 
     public function reactivarNotaEntrada($id) {
-        $this->db->beginTransaction();
+        $this->conex->beginTransaction();
         try {
-            $stmtNota = $this->db->prepare("
+            $stmtNota = $this->conex->prepare("
                 SELECT id_nota_entrada
                 FROM nota_de_entrada
                 WHERE id_nota_entrada = :id AND eliminado = 1
@@ -426,7 +429,7 @@ class NotaentradaModel {
                 throw new Exception("La nota no existe o ya está activa.");
             }
 
-            $stmtDetalles = $this->db->prepare("
+            $stmtDetalles = $this->conex->prepare("
                 SELECT id_producto, cantidad
                 FROM detalle_entrada
                 WHERE id_nota_entrada = :id
@@ -437,7 +440,7 @@ class NotaentradaModel {
                 throw new Exception("La nota no tiene productos asociados.");
             }
 
-            $stmtStock = $this->db->prepare("
+            $stmtStock = $this->conex->prepare("
                 UPDATE producto
                 SET cantidad = cantidad + :cantidad
                 WHERE id_producto = :id_producto
@@ -452,7 +455,7 @@ class NotaentradaModel {
                 }
             }
 
-            $stmtActivar = $this->db->prepare("
+            $stmtActivar = $this->conex->prepare("
                 UPDATE nota_de_entrada
                 SET eliminado = 0
                 WHERE id_nota_entrada = :id AND eliminado = 1
@@ -462,11 +465,11 @@ class NotaentradaModel {
                 throw new Exception("No se pudo reactivar la nota de entrada.");
             }
 
-            $this->db->commit();
+            $this->conex->commit();
             return true;
         } catch (Exception $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
+            if ($this->conex->inTransaction()) {
+                $this->conex->rollBack();
             }
             throw new Exception("Error al reactivar nota de entrada: " . $e->getMessage());
         }
@@ -480,7 +483,7 @@ class NotaentradaModel {
                         SUM(CASE WHEN eliminado = 1 THEN 1 ELSE 0 END) AS total_anuladas,
                         COALESCE(SUM(CASE WHEN eliminado = 0 THEN costo_total ELSE 0 END), 0) AS total_compras
                     FROM nota_de_entrada";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
