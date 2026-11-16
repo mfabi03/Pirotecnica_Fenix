@@ -1,60 +1,52 @@
 <?php
+// app/Controller/clientesController.php
 namespace App\Pirotecnicafenix\Controller;
+
+use App\Pirotecnicafenix\Model\clientesModel;
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\Validador;
+use Exception;
 
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
-use App\Pirotecnicafenix\Model\clientesModel;
-use App\Pirotecnicafenix\Helpers\PermisoHelper;
-use App\Pirotecnicafenix\Helpers\CheckPermiso;
-use Exception;
-
-// Iniciar sesión
+// 1. Sesión
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 1. CARGA DEL MODELO
-$rutaRaiz = dirname(__DIR__, 2);
-$pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . 'clientesModel.php';
+// 2. Modelo (hereda conexión)
+$modelo = new clientesModel();
 
-if (file_exists($pathModel)) {
-    require_once $pathModel;
-} else {
-    die("ERROR CRÍTICO: No se encuentra el archivo: " . $pathModel);
-}
+// 3. Permisos (una sola vez)
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$permisoHelper = new PermisoHelper();
 
-// 2. INICIALIZACIÓN DE CONEXIÓN Y MODELO
-try {
-    $db = (new ConnectDB())->getConnection();
-    $modelo = new \App\Pirotecnicafenix\Model\clientesModel($db);
-} catch (Exception $e) {
-    die("Error de conexión: " . $e->getMessage());
-}
+$puede_crear    = $permisoHelper->tienePermiso($id_rol_actual, 'Clientes', 'crear');
+$puede_editar   = $permisoHelper->tienePermiso($id_rol_actual, 'Clientes', 'actualizar');
+$puede_eliminar = $permisoHelper->tienePermiso($id_rol_actual, 'Clientes', 'eliminar');
 
-$type = $_GET['type'] ?? 'list';
-$id = $_GET['id'] ?? null;
-$mensaje = $_SESSION['mensaje'] ?? null;
+// 4. Entrada
+$type     = $_GET['type'] ?? 'list';
+$id       = $_GET['id'] ?? null;
+$mensaje  = $_SESSION['mensaje'] ?? null;
 $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? null;
+unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
 
-unset($_SESSION['mensaje']);
-unset($_SESSION['tipo_mensaje']);
+$busqueda = Validador::limpiar($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? '');
+$tipo     = Validador::limpiar($_REQUEST['tipo'] ?? 'todos');
 
-// Parámetros de búsqueda
-$busqueda = trim((string) ($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? ''));
-$tipo = trim((string) ($_REQUEST['tipo'] ?? 'todos'));
-
-$estado_cliente = strtolower(trim((string) ($_REQUEST['estado_cliente'] ?? 'activos')));
+$estado_cliente = strtolower(Validador::limpiar($_REQUEST['estado_cliente'] ?? 'activos'));
 if (!in_array($estado_cliente, ['todos', 'activos', 'inactivos'], true)) {
     $estado_cliente = 'activos';
 }
 
 /* ============================================================
- *  HELPER: URL de redirección tras un POST
+ *  HELPERS INTERNOS DEL CONTROLADOR
  * ============================================================ */
-function _clientesRedirPost($return, $idCliente = null) {
+function _clientesRedirPost($return, $idCliente = null)
+{
     if ($return) {
         $param = $idCliente ? "&id_cliente=" . $idCliente : "";
         return "?url=" . urlencode($return) . "&type=create" . $param;
@@ -62,11 +54,8 @@ function _clientesRedirPost($return, $idCliente = null) {
     return "?url=clientes&type=list";
 }
 
-/**
- * Detecta si el mensaje de excepción es un duplicado y guarda el error
- * INLINE (para repintarlo en el campo) + los datos del formulario.
- */
-function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null) {
+function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null)
+{
     $map = [
         'DUPLICADO_CEDULA:' => ['campo' => 'cedula', 'etiqueta' => 'cédula'],
         'DUPLICADO_RIF:'    => ['campo' => 'rif',    'etiqueta' => 'RIF'],
@@ -92,66 +81,63 @@ function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null)
     return false;
 }
 
+// ==========================================
+// ENDPOINT: CHECK DUPLICADO (AJAX)
+// ==========================================
 if ($type === 'check_duplicado') {
     header('Content-Type: application/json; charset=utf-8');
 
-    // Capa 1: validar permiso 'leer' sobre Clientes
-    $idRolActual = (int) ($_SESSION['id_rol'] ?? 0);
-    if (!PermisoHelper::tienePermiso($db, $idRolActual, 'Clientes', 'leer')) {
+    if (!$permisoHelper->tienePermiso($id_rol_actual, 'Clientes', 'leer')) {
         http_response_code(403);
-        echo json_encode(
-            ['error' => 'No tienes permiso para consultar clientes.'],
-            JSON_UNESCAPED_UNICODE
-        );
-        exit;
-    }
-
-    $campo = strtolower(trim($_GET['campo'] ?? ''));
-    $valor = trim($_GET['valor'] ?? '');
-    $excluirId = isset($_GET['excluir_id']) && is_numeric($_GET['excluir_id'])
-        ? (int) $_GET['excluir_id']
-        : null;
-
-    if (!in_array($campo, ['cedula', 'rif'], true)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Campo inválido']);
-        exit;
-    }
-
-    if ($valor === '') {
-        http_response_code(400);
-        echo json_encode(['error' => 'Valor vacío']);
+        echo json_encode(['error' => 'No tienes permiso para consultar clientes.'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     try {
+        $campo     = strtolower(Validador::limpiar($_GET['campo'] ?? ''));
+        $valor     = Validador::limpiar($_GET['valor'] ?? '');
+        $excluirId = isset($_GET['excluir_id']) && is_numeric($_GET['excluir_id'])
+            ? (int) $_GET['excluir_id']
+            : null;
+
+        if (!in_array($campo, ['cedula', 'rif'], true)) {
+            throw new Exception('Campo inválido');
+        }
+        if ($valor === '') {
+            throw new Exception('Valor vacío');
+        }
+
         if ($campo === 'cedula') {
             $existe = $modelo->existeCedula($valor, $excluirId);
         } else {
             $existe = $modelo->existeRif($valor, $excluirId);
         }
+
         echo json_encode([
             'existe' => $existe,
             'campo'  => $campo,
             'valor'  => $valor
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
     } catch (Exception $e) {
         error_log("Error en check_duplicado: " . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['error' => 'No se pudo verificar']);
+        echo json_encode(['error' => 'No se pudo verificar'], JSON_UNESCAPED_UNICODE);
     }
     exit;
 }
 
-// ELIMINAR (ELIMINACIÓN LÓGICA)
-// 🔒 CheckPermiso::verificar redirige si el rol no tiene 'eliminar' sobre Clientes
+// ==========================================
+// POST: ELIMINAR (lógico)
+// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
-    CheckPermiso::verificar($db, 'Clientes', 'eliminar', '?url=clientes&type=list');
+    if (!$puede_eliminar) {
+        $_SESSION['mensaje'] = "No tienes permiso para eliminar clientes.";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=clientes&type=list");
+        exit();
+    }
     try {
-        $id = $_POST['id_cliente'] ?? null;
-        if (!$id || !is_numeric($id) || $id <= 0) {
-            throw new Exception("ID de cliente inválido");
-        }
+        $id = Validador::validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
         $resultado = $modelo->eliminarCliente($id);
         $_SESSION['mensaje'] = $resultado ? "✅ Cliente eliminado exitosamente" : "No se pudo eliminar el cliente";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
@@ -169,43 +155,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
     exit();
 }
 
-// REACTIVAR CLIENTE
+// ==========================================
+// POST: REACTIVAR
+// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'reactivar' || (isset($_POST['accion']) && $_POST['accion'] === 'reactivar'))) {
-    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
+    if (!$puede_editar) {
+        $_SESSION['mensaje'] = "No tienes permiso para reactivar clientes.";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=clientes&type=list");
+        exit();
+    }
     try {
-        $id = $_POST['id_cliente'] ?? null;
-        if (!$id || !is_numeric($id) || $id <= 0) {
-            throw new Exception("ID de cliente inválido");
-        }
-        $resultado = $modelo->reactivarCliente($id);
+        $id = Validador::validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
+        $modelo->reactivarCliente($id);
         $_SESSION['mensaje'] = "✅ Cliente reactivado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
     } catch (Exception $e) {
         $_SESSION['mensaje'] = $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
     }
-    // Después de reactivar, regresamos a la lista de activos
     header("Location: ?url=clientes&type=list&estado_cliente=activos");
     exit();
 }
 
-// REGISTRO NATURAL
+// ==========================================
+// POST: REGISTRO NATURAL
+// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_natural') {
-    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
+    if (!$puede_crear) {
+        $_SESSION['mensaje'] = "No tienes permiso para registrar clientes.";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=clientes&type=list");
+        exit();
+    }
     $resultado = null;
     try {
-        if (empty(trim($_POST['cedula']))) {
-            throw new Exception("La cédula es obligatoria.");
+        $cedula = Validador::requerido($_POST['cedula'] ?? '', 'cédula');
+        if (!Validador::validarCedula($cedula)) {
+            throw new Exception("El formato de la cédula no es válido (ej: V-12345678).");
+        }
+
+        $fechaNac = Validador::validarFecha($_POST['fecha_de_nacimiento'] ?? '', 'fecha de nacimiento');
+        if (!Validador::validarEdad($fechaNac, 18)) {
+            throw new Exception("El cliente debe ser mayor de edad (mínimo 18 años).");
         }
 
         $datos = [
-            'cedula' => trim($_POST['cedula']),
-            'nombre' => trim($_POST['nombre']),
-            'apellido' => trim($_POST['apellido']),
-            'telefono' => trim($_POST['telefono']),
-            'correo_electronico' => trim($_POST['correo_electronico']),
-            'direccion' => trim($_POST['direccion']),
-            'fecha_de_nacimiento' => $_POST['fecha_de_nacimiento']
+            'cedula'              => $cedula,
+            'nombre'              => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'            => Validador::requerido($_POST['apellido'] ?? '', 'apellido'),
+            'telefono'            => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico'  => Validador::limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'           => Validador::limpiar($_POST['direccion'] ?? ''),
+            'fecha_de_nacimiento' => $fechaNac
         ];
 
         $resultado = $modelo->registrarClienteNatural($datos);
@@ -229,22 +231,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// REGISTRO RÁPIDO CLIENTE
+// ==========================================
+// POST: REGISTRO RÁPIDO CLIENTE
+// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
-    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
+    if (!$puede_crear) {
+        $_SESSION['mensaje_rapido'] = "❌ No tienes permiso para registrar clientes.";
+        $_SESSION['tipo_rapido'] = "danger";
+        header("Location: ?url=clientes&type=list");
+        exit();
+    }
     try {
-        if (empty($_POST['cedula']) || empty($_POST['nombre']) || empty($_POST['apellido'])) {
-            throw new Exception("La cédula, nombre y apellido son obligatorios.");
+        $cedula = Validador::requerido($_POST['cedula'] ?? '', 'cédula');
+        if (!Validador::validarCedula($cedula)) {
+            throw new Exception("El formato de la cédula no es válido.");
+        }
+
+        $fechaNac = $_POST['fecha_de_nacimiento'] ?? date('Y-m-d', strtotime('-18 years'));
+        if (!Validador::validarEdad($fechaNac, 18)) {
+            throw new Exception("El cliente debe ser mayor de edad.");
         }
 
         $datosCliente = [
-            'cedula' => trim($_POST['cedula']),
-            'nombre' => trim($_POST['nombre']),
-            'apellido' => trim($_POST['apellido']),
-            'telefono' => trim($_POST['telefono'] ?? ''),
-            'correo_electronico' => trim($_POST['correo_electronico'] ?? ''),
-            'direccion' => trim($_POST['direccion'] ?? ''),
-            'fecha_de_nacimiento' => $_POST['fecha_de_nacimiento'] ?? date('Y-m-d', strtotime('-18 years'))
+            'cedula'              => $cedula,
+            'nombre'              => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'            => Validador::requerido($_POST['apellido'] ?? '', 'apellido'),
+            'telefono'            => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico'  => Validador::limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'           => Validador::limpiar($_POST['direccion'] ?? ''),
+            'fecha_de_nacimiento' => $fechaNac
         ];
 
         $id = $modelo->registrarClienteNatural($datosCliente);
@@ -260,12 +275,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
                 header("Location: ?url=" . urlencode($return) . "&type=create&id_cliente=" . $id);
                 exit;
             }
-
             header("Location: ?url=clientes&type=list");
             exit;
-        } else {
-            throw new Exception("No se pudo registrar el cliente.");
         }
+        throw new Exception("No se pudo registrar el cliente.");
     } catch (Exception $e) {
         $msg = $e->getMessage();
 
@@ -287,28 +300,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
             header("Location: ?url=" . urlencode($return) . "&type=create");
             exit;
         }
-
         header("Location: ?url=clientes&type=list");
         exit;
     }
 }
 
-// REGISTRO JURIDICO
+// ==========================================
+// POST: REGISTRO JURÍDICO
+// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'register_juridico') {
-    CheckPermiso::verificar($db, 'Clientes', 'crear', '?url=clientes&type=list');
+    if (!$puede_crear) {
+        $_SESSION['mensaje'] = "No tienes permiso para registrar clientes.";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=clientes&type=list");
+        exit();
+    }
     $resultado = null;
     try {
-        if (empty(trim($_POST['rif']))) {
-            throw new Exception("El RIF es obligatorio.");
+        $rif = Validador::requerido($_POST['rif'] ?? '', 'RIF');
+        if (!Validador::validarRIF($rif)) {
+            throw new Exception("El formato del RIF no es válido (ej: J-12345678-9).");
         }
 
         $datos = [
-            'cedula' => trim($_POST['rif']),
-            'rif' => trim($_POST['rif']),
-            'razon_social' => trim($_POST['razon_social']),
-            'telefono' => trim($_POST['telefono']),
-            'correo_electronico' => trim($_POST['correo_electronico']),
-            'direccion' => trim($_POST['direccion'])
+            'cedula'             => $rif,
+            'rif'                => $rif,
+            'razon_social'       => Validador::requerido($_POST['razon_social'] ?? '', 'razón social'),
+            'telefono'           => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'          => Validador::limpiar($_POST['direccion'] ?? '')
         ];
 
         $resultado = $modelo->registrarClienteJuridico($datos);
@@ -332,21 +352,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// EDITAR NATURAL
+// ==========================================
+// POST: EDITAR NATURAL
+// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_natural') {
-    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
+    if (!$puede_editar) {
+        $_SESSION['mensaje'] = "No tienes permiso para editar clientes.";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=clientes&type=list");
+        exit();
+    }
     try {
-        $id = $_POST['id_cliente'] ?? null;
-        if (!$id) throw new Exception("ID de cliente no proporcionado");
+        $id = Validador::validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
+
+        $cedula = Validador::requerido($_POST['cedula'] ?? '', 'cédula');
+        if (!Validador::validarCedula($cedula)) {
+            throw new Exception("El formato de la cédula no es válido.");
+        }
+
+        $fechaNac = $_POST['fecha_de_nacimiento'] ?? '';
+        if ($fechaNac !== '' && !Validador::validarEdad($fechaNac, 18)) {
+            throw new Exception("El cliente debe ser mayor de edad.");
+        }
 
         $datos = [
-            'cedula' => trim($_POST['cedula']),
-            'nombre' => trim($_POST['nombre']),
-            'apellido' => trim($_POST['apellido']),
-            'telefono' => trim($_POST['telefono']),
-            'correo_electronico' => trim($_POST['correo_electronico']),
-            'direccion' => trim($_POST['direccion']),
-            'fecha_de_nacimiento' => $_POST['fecha_de_nacimiento']
+            'cedula'              => $cedula,
+            'nombre'              => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'            => Validador::requerido($_POST['apellido'] ?? '', 'apellido'),
+            'telefono'            => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico'  => Validador::limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'           => Validador::limpiar($_POST['direccion'] ?? ''),
+            'fecha_de_nacimiento' => $fechaNac
         ];
 
         $modelo->actualizarClienteNatural($id, $datos);
@@ -363,20 +399,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// EDITAR JURIDICO
+// ==========================================
+// POST: EDITAR JURÍDICO
+// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'edit_juridico') {
-    CheckPermiso::verificar($db, 'Clientes', 'actualizar', '?url=clientes&type=list');
+    if (!$puede_editar) {
+        $_SESSION['mensaje'] = "No tienes permiso para editar clientes.";
+        $_SESSION['tipo_mensaje'] = "danger";
+        header("Location: ?url=clientes&type=list");
+        exit();
+    }
     try {
-        $id = $_POST['id_cliente'] ?? null;
-        if (!$id) throw new Exception("ID de cliente no proporcionado");
+        $id = Validador::validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
+
+        $rif = Validador::requerido($_POST['rif'] ?? '', 'RIF');
+        if (!Validador::validarRIF($rif)) {
+            throw new Exception("El formato del RIF no es válido.");
+        }
 
         $datos = [
-            'cedula' => trim($_POST['rif']),
-            'rif' => trim($_POST['rif']),
-            'razon_social' => trim($_POST['razon_social']),
-            'telefono' => trim($_POST['telefono']),
-            'correo_electronico' => trim($_POST['correo_electronico']),
-            'direccion' => trim($_POST['direccion'])
+            'cedula'             => $rif,
+            'rif'                => $rif,
+            'razon_social'       => Validador::requerido($_POST['razon_social'] ?? '', 'razón social'),
+            'telefono'           => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'          => Validador::limpiar($_POST['direccion'] ?? '')
         ];
 
         $modelo->actualizarClienteJuridico($id, $datos);
@@ -393,21 +440,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     exit();
 }
 
-// 4. CARGAR VISTAS
+// ==========================================
+// VISTAS
+// ==========================================
 $basePath = __DIR__ . "/../view/clientes/";
 
-// OBTENER CLIENTE PARA DETALLE O EDICIÓN
-// 🔒 Validamos que $id sea numérico antes de tocar la BD.
-//    Evita que un ?id=ABC o ?id= pase al modelo y genere un SQL inválido.
+// OBTENER CLIENTE PARA DETALLE/EDICIÓN
 if (in_array($type, ['view', 'edit', 'edit_juridico'], true) && $id) {
-    if (!is_numeric($id) || (int) $id <= 0) {
+    try {
+        $id = Validador::validarId($id, 'ID de cliente');
+    } catch (Exception $e) {
         $_SESSION['mensaje'] = "ID de cliente inválido";
         $_SESSION['tipo_mensaje'] = "danger";
         header("Location: ?url=clientes&type=list");
         exit();
     }
 
-    $cliente = $modelo->obtenerClientePorId((int) $id);
+    $cliente = $modelo->obtenerClientePorId($id);
     if (!$cliente) {
         $_SESSION['mensaje'] = "Cliente no encontrado";
         $_SESSION['tipo_mensaje'] = "danger";
@@ -419,38 +468,26 @@ if (in_array($type, ['view', 'edit', 'edit_juridico'], true) && $id) {
 // LISTA
 if ($type === 'list' || $type === '') {
     $ajax = (!empty($_GET['ajax']) || !empty($_POST['ajax']));
-    $busqueda_trim = is_string($busqueda) ? trim($busqueda) : '';
-    $tipo_param = $tipo ?? 'todos';
 
-    if ($busqueda_trim === '' && ($tipo_param === 'todos' || $tipo_param === '')) {
+    if ($busqueda === '' && ($tipo === 'todos' || $tipo === '')) {
         $clientes_full = $modelo->obtenerClientes();
     } else {
-        $clientes_full = $modelo->buscarClientesFiltrados($busqueda_trim, $tipo_param);
+        $clientes_full = $modelo->buscarClientesFiltrados($busqueda, $tipo);
     }
 
-    // 🔥 FILTRO DE ESTADO: Solo activos si no se especifica lo contrario
     if ($estado_cliente === 'activos') {
-        $clientes_full = array_values(array_filter($clientes_full, function ($cliente) {
-            return ((int) ($cliente['eliminado'] ?? 0)) === 0;
-        }));
+        $clientes_full = array_values(array_filter($clientes_full, fn($c) => ((int)($c['eliminado'] ?? 0)) === 0));
     } elseif ($estado_cliente === 'inactivos') {
-        $clientes_full = array_values(array_filter($clientes_full, function ($cliente) {
-            return ((int) ($cliente['eliminado'] ?? 0)) === 1;
-        }));
+        $clientes_full = array_values(array_filter($clientes_full, fn($c) => ((int)($c['eliminado'] ?? 0)) === 1));
     }
 
     $por_pagina    = (int) ($_REQUEST['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int) ($_REQUEST['pagina'] ?? 1));
     $offset        = ($pagina_actual - 1) * $por_pagina;
 
-    $totalRegistros = is_array($clientes_full) ? count($clientes_full) : 0;
-    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-
-    if ($por_pagina > 0) {
-        $clientes = array_slice($clientes_full, $offset, $por_pagina);
-    } else {
-        $clientes = $clientes_full;
-    }
+    $totalRegistros = count($clientes_full);
+    $totalPaginas   = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    $clientes       = $por_pagina > 0 ? array_slice($clientes_full, $offset, $por_pagina) : $clientes_full;
 
     if ($ajax) {
         ob_start();
@@ -477,4 +514,3 @@ if ($type === 'list' || $type === '') {
             break;
     }
 }
-?>

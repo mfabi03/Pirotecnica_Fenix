@@ -1,13 +1,12 @@
 <?php
+// app/Controller/productosController.php
 namespace App\Pirotecnicafenix\Controller;
 
-use PDO;
-use Exception;
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\ProductoModel;
-use App\Pirotecnicafenix\Model\proveedoresModel;
+use App\Pirotecnicafenix\Model\ProveedoresModel;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
-use App\Pirotecnicafenix\Helpers\CheckPermiso;
+use App\Pirotecnicafenix\Helpers\Validador;
+use Exception;
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -18,24 +17,17 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $rutaRaiz = dirname(__DIR__, 2);
 
-function cargarModelo($nombre, $rutaRaiz) {
-    $path = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR . $nombre . '.php';
-    if (!file_exists($path)) {
-        die("ERROR: No se encuentra {$nombre}.php en: " . $path);
-    }
-    require_once $path;
-}
+// 1. MODELOS (heredan conexión)
+$modelo         = new ProductoModel();
+$proveedorModel = new ProveedoresModel();
 
-cargarModelo('ProductoModel', $rutaRaiz);
-cargarModelo('proveedoresModel', $rutaRaiz);
+// 2. PERMISOS
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$permisoHelper = new PermisoHelper();
 
-try {
-    $db = (new ConnectDB())->getConnection();
-    $modelo = new ProductoModel($db);
-    $proveedorModel = new proveedoresModel($db);
-} catch (Exception $e) {
-    die("ERROR de conexión: " . $e->getMessage());
-}
+$puede_crear    = $permisoHelper->tienePermiso($id_rol_actual, 'Productos', 'crear');
+$puede_editar   = $permisoHelper->tienePermiso($id_rol_actual, 'Productos', 'actualizar');
+$puede_eliminar = $permisoHelper->tienePermiso($id_rol_actual, 'Productos', 'eliminar');
 
 $type = $_GET['type'] ?? 'list';
 $error = null;
@@ -45,105 +37,87 @@ $productos = [];
 $categorias = [];
 $proveedores = [];
 
-// 🔥 CAMBIO CLAVE: Por defecto solo muestra ACTIVOS. Los inactivos solo si se pide explícitamente.
-$estado_producto = strtolower(trim((string) ($_REQUEST['estado_producto'] ?? 'activos')));
+$estado_producto = strtolower(Validador::limpiar($_REQUEST['estado_producto'] ?? 'activos'));
 if (!in_array($estado_producto, ['todos', 'activos', 'inactivos'], true)) {
     $estado_producto = 'activos';
 }
 
-class ProveedorProcessor {
-    private $db;
-    public function __construct($db) { $this->db = $db; }
-    public function obtenerProveedores() {
-        $sql = "SELECT id_proveedor, razon_social, rif, numero_contacto FROM proveedor WHERE eliminado = 0 ORDER BY razon_social ASC";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-}
-$proveedorProcessor = new ProveedorProcessor($db);
-
-class ProductoValidator {
-    public static function validarDatos($datos, $requireCantidad = true) {
-        $errores = [];
-        if (empty($datos['descripcion'])) $errores[] = "La descripción del producto es obligatoria.";
-        if (!isset($datos['costo_unitario']) || $datos['costo_unitario'] < 0) {
-            $errores[] = "El costo unitario debe ser mayor o igual a 0.";
-        }
-        if (empty($datos['id_categoria']) || $datos['id_categoria'] <= 0) {
-            $errores[] = "Debe seleccionar una categoría válida.";
-        }
-        return $errores;
-    }
-}
-
-// ENDPOINTS AJAX
+// ==========================================
+// AJAX: HISTORIAL
+// ==========================================
 if ($type === 'historial' && isset($_GET['id'])) {
     header('Content-Type: application/json; charset=utf-8');
-    $proveedores = $modelo->obtenerHistorialProveedores((int)$_GET['id']);
-    echo json_encode(['success' => true, 'proveedores' => $proveedores]);
+    try {
+        $id = Validador::validarId($_GET['id'], 'ID de producto');
+        $proveedores = $modelo->obtenerHistorialProveedores($id);
+        echo json_encode(['success' => true, 'proveedores' => $proveedores], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    }
     exit;
 }
 
+// ==========================================
+// AJAX: DETALLE
+// ==========================================
 if ($type === 'detalle_ajax' && isset($_GET['id'])) {
     header('Content-Type: application/json; charset=utf-8');
     try {
-        $p = $modelo->obtenerProductoPorId((int)$_GET['id']);
+        $id = Validador::validarId($_GET['id'], 'ID de producto');
+        $p = $modelo->obtenerProductoPorId($id);
         if (!$p) throw new Exception("Producto no encontrado");
-        
+
         $p['estatus_texto'] = ($p['eliminado'] == 1) ? 'Inactivo' : 'Activo';
         $p['estatus_color'] = ($p['eliminado'] == 1) ? '#dc3545' : '#28a745';
         $p['estatus_bg']    = ($p['eliminado'] == 1) ? 'rgba(220,53,69,0.15)' : 'rgba(40,167,69,0.15)';
 
-        echo json_encode(['success' => true, 'producto' => $p]);
+        echo json_encode(['success' => true, 'producto' => $p], JSON_UNESCAPED_UNICODE);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
     }
     exit;
 }
 
+// ==========================================
+// AJAX: REGISTRO RÁPIDO
+// ==========================================
 if ($type === 'store_rapido_ajax') {
     header('Content-Type: application/json; charset=utf-8');
     try {
-        if (!PermisoHelper::tienePermiso($db, $_SESSION['id_rol'] ?? 0, 'Productos', 'crear')) {
+        if (!$puede_crear) {
             throw new Exception("No tienes permiso para registrar productos.");
         }
-        if (empty($_POST['descripcion']) || empty($_POST['id_categoria'])) {
-            throw new Exception("Descripción y Categoría son obligatorios.");
-        }
-        $idProveedor = intval($_POST['id_proveedor'] ?? 0);
-        if (!$proveedorModel->proveedorActivoExiste($idProveedor)) {
+
+        $datosProducto = [
+            'descripcion'      => Validador::requerido($_POST['descripcion'] ?? '', 'descripción'),
+            'cantidad'         => 0,
+            'stock_minimo'     => (int)($_POST['stock_minimo'] ?? 10),
+            'costo_unitario'   => Validador::numeroPositivo($_POST['costo_unitario'] ?? 0, 'costo unitario', 0),
+            'id_categoria'     => Validador::validarId($_POST['id_categoria'] ?? null, 'categoría'),
+            'especificaciones' => Validador::limpiar($_POST['especificaciones'] ?? ''),
+            'id_proveedor'     => (int)($_POST['id_proveedor'] ?? 0)
+        ];
+
+        if (!$proveedorModel->proveedorActivoExiste($datosProducto['id_proveedor'])) {
             throw new Exception("El proveedor seleccionado no existe o está inactivo.");
         }
-        $datosProducto = [
-            'descripcion' => trim($_POST['descripcion']),
-            'cantidad' => 0,
-            'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
-            'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
-            'id_categoria' => intval($_POST['id_categoria']),
-            'especificaciones' => trim($_POST['especificaciones'] ?? ''),
-            'id_proveedor' => $idProveedor
-        ];
+
         $resultado = $modelo->registrarProducto($datosProducto);
         if ($resultado === false || intval($resultado) <= 0) {
             throw new Exception('No se pudo registrar el producto.');
         }
+
         $id_producto = intval($resultado);
-        
-        $sqlCat = "SELECT nombre_categoria FROM categoria WHERE id_categoria = ?";
-        $stmtCat = $db->prepare($sqlCat);
-        $stmtCat->execute([$datosProducto['id_categoria']]);
-        $cat = $stmtCat->fetch(PDO::FETCH_ASSOC);
-        $nombreCategoria = $cat['nombre_categoria'] ?? 'Sin categoría';
-        
+        $nombreCategoria = $modelo->obtenerNombreCategoria($datosProducto['id_categoria']);
+
         echo json_encode([
-            'success' => true,
-            'id_producto' => $id_producto,
-            'descripcion' => $datosProducto['descripcion'],
-            'costo_unitario' => $datosProducto['costo_unitario'],
-            'stock' => 0,
+            'success'          => true,
+            'id_producto'      => $id_producto,
+            'descripcion'      => $datosProducto['descripcion'],
+            'costo_unitario'   => $datosProducto['costo_unitario'],
+            'stock'            => 0,
             'nombre_categoria' => $nombreCategoria,
-            'id_categoria' => $datosProducto['id_categoria']
+            'id_categoria'     => $datosProducto['id_categoria']
         ], JSON_UNESCAPED_UNICODE);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
@@ -151,111 +125,139 @@ if ($type === 'store_rapido_ajax') {
     exit;
 }
 
-// PROCESAR POST
+// ==========================================
+// POST
+// ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
+
+    // STORE
     if ($type === 'store') {
-        CheckPermiso::verificar($db, 'Productos', 'crear', '?url=productos');
+        if (!$puede_crear) {
+            $_SESSION['mensaje'] = 'No tienes permiso para registrar productos.';
+            $_SESSION['tipo_mensaje'] = 'danger';
+            header("Location: ?url=productos&type=list");
+            exit();
+        }
         try {
             $datos = [
-                'descripcion' => trim($_POST['descripcion'] ?? ''),
-                'cantidad' => intval($_POST['cantidad'] ?? 0),
-                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
-                'costo_unitario' => floatval($_POST['costo_unitario'] ?? 0),
-                'id_categoria' => intval($_POST['id_categoria'] ?? 0),
-                'especificaciones' => trim($_POST['especificaciones'] ?? ''),
-                'id_proveedor' => intval($_POST['id_proveedor'] ?? 0)
+                'descripcion'      => Validador::requerido($_POST['descripcion'] ?? '', 'descripción'),
+                'cantidad'         => (int)($_POST['cantidad'] ?? 0),
+                'stock_minimo'     => (int)($_POST['stock_minimo'] ?? 10),
+                'costo_unitario'   => Validador::numeroPositivo($_POST['costo_unitario'] ?? 0, 'costo unitario', 0),
+                'id_categoria'     => Validador::validarId($_POST['id_categoria'] ?? null, 'categoría'),
+                'especificaciones' => Validador::limpiar($_POST['especificaciones'] ?? ''),
+                'id_proveedor'     => (int)($_POST['id_proveedor'] ?? 0)
             ];
-            $errores = ProductoValidator::validarDatos($datos);
-            if (!empty($errores)) throw new Exception(implode(' ', $errores));
+
             if (!$proveedorModel->proveedorActivoExiste($datos['id_proveedor'])) {
                 throw new Exception("El proveedor seleccionado no existe o está inactivo.");
             }
-            
+
             $resultado = $modelo->registrarProducto($datos);
             if ($resultado === false || intval($resultado) <= 0) {
                 throw new Exception("No se pudo registrar el producto.");
             }
+
             $_SESSION['mensaje'] = 'Producto registrado exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
             header("Location: ?url=productos&type=list");
             exit();
         } catch (Exception $e) {
-            $error = $e->getMessage();
-            $_SESSION['mensaje'] = $error;
+            $_SESSION['mensaje'] = $e->getMessage();
             $_SESSION['tipo_mensaje'] = 'danger';
+            header("Location: ?url=productos&type=list");
+            exit();
         }
     }
-    
+
+    // UPDATE
     if ($type === 'update') {
-        CheckPermiso::verificar($db, 'Productos', 'actualizar', '?url=productos');
+        if (!$puede_editar) {
+            $_SESSION['mensaje'] = 'No tienes permiso para actualizar productos.';
+            $_SESSION['tipo_mensaje'] = 'danger';
+            header("Location: ?url=productos&type=list");
+            exit();
+        }
         try {
-            $id_producto = intval($_POST['id_producto'] ?? 0);
+            $id_producto = Validador::validarId($_POST['id_producto'] ?? null, 'ID de producto');
             $datos = [
-                'descripcion' => trim($_POST['descripcion'] ?? ''),
-                'stock_minimo' => intval($_POST['stock_minimo'] ?? 10),
-                'especificaciones' => trim($_POST['especificaciones'] ?? ''),
-                'id_proveedor' => intval($_POST['id_proveedor'] ?? 0)
+                'descripcion'      => Validador::requerido($_POST['descripcion'] ?? '', 'descripción'),
+                'stock_minimo'     => (int)($_POST['stock_minimo'] ?? 10),
+                'especificaciones' => Validador::limpiar($_POST['especificaciones'] ?? ''),
+                'id_proveedor'     => (int)($_POST['id_proveedor'] ?? 0)
             ];
+
             if (!$proveedorModel->proveedorActivoExiste($datos['id_proveedor'])) {
                 throw new Exception("El proveedor seleccionado no existe o está inactivo.");
             }
+
             $resultado = $modelo->actualizarProducto($id_producto, $datos);
             if (!$resultado) throw new Exception("No se pudo actualizar el producto.");
-            
+
             $_SESSION['mensaje'] = 'Producto actualizado exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
             header("Location: ?url=productos&type=list");
             exit();
         } catch (Exception $e) {
-            $error = $e->getMessage();
-            $_SESSION['mensaje'] = $error;
+            $_SESSION['mensaje'] = $e->getMessage();
             $_SESSION['tipo_mensaje'] = 'danger';
+            header("Location: ?url=productos&type=list");
+            exit();
         }
     }
-    
+
+    // DELETE
     if ($type === 'delete') {
-        CheckPermiso::verificar($db, 'Productos', 'eliminar', '?url=productos');
+        if (!$puede_eliminar) {
+            $_SESSION['mensaje'] = 'No tienes permiso para eliminar productos.';
+            $_SESSION['tipo_mensaje'] = 'danger';
+            header("Location: ?url=productos&type=list");
+            exit();
+        }
         try {
-            $id_producto = intval($_POST['id_producto'] ?? 0);
-            if (!$id_producto || $id_producto <= 0) throw new Exception("ID de producto inválido.");
-            
+            $id_producto = Validador::validarId($_POST['id_producto'] ?? null, 'ID de producto');
             $resultado = $modelo->eliminarProducto($id_producto);
             if (!$resultado) throw new Exception("No se pudo eliminar el producto.");
-            
+
             $_SESSION['mensaje'] = 'Producto eliminado exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
         } catch (Exception $e) {
             $_SESSION['mensaje'] = $e->getMessage();
             $_SESSION['tipo_mensaje'] = 'danger';
         }
-        header("Location: ?url=productos&type=list&estado_producto=activos"); // Redirige a activos
+        header("Location: ?url=productos&type=list&estado_producto=activos");
         exit();
     }
 
+    // REACTIVAR
     if ($type === 'reactivar') {
-        CheckPermiso::verificar($db, 'Productos', 'actualizar', '?url=productos');
+        if (!$puede_editar) {
+            $_SESSION['mensaje'] = 'No tienes permiso para reactivar productos.';
+            $_SESSION['tipo_mensaje'] = 'danger';
+            header("Location: ?url=productos&type=list&estado_producto=inactivos");
+            exit();
+        }
         try {
-            $id_producto = intval($_POST['id_producto'] ?? 0);
-            if (!$id_producto || $id_producto <= 0) throw new Exception("ID de producto inválido.");
-            
+            $id_producto = Validador::validarId($_POST['id_producto'] ?? null, 'ID de producto');
             $modelo->reactivarProducto($id_producto);
-            
+
             $_SESSION['mensaje'] = 'Producto reactivado exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
         } catch (Exception $e) {
             $_SESSION['mensaje'] = "Error al reactivar: " . $e->getMessage();
             $_SESSION['tipo_mensaje'] = 'danger';
         }
-        header("Location: ?url=productos&type=list&estado_producto=inactivos"); // Redirige a inactivos
+        header("Location: ?url=productos&type=list&estado_producto=inactivos");
         exit();
     }
 }
 
+// ==========================================
 // VISTA DE LISTA
+// ==========================================
 try {
-    $buscar = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
-    
+    $buscar = Validador::limpiar($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
+
     if (!empty($buscar)) {
         $productos_full = $modelo->buscarProductos($buscar);
     } else {
@@ -265,40 +267,39 @@ try {
     // FILTRADO POR ESTADO
     if ($estado_producto === 'activos') {
         $productos_full = array_values(array_filter($productos_full, function ($p) {
-            return ((int) ($p['eliminado'] ?? 0)) === 0;
+            return ((int)($p['eliminado'] ?? 0)) === 0;
         }));
     } elseif ($estado_producto === 'inactivos') {
         $productos_full = array_values(array_filter($productos_full, function ($p) {
-            return ((int) ($p['eliminado'] ?? 0)) === 1;
+            return ((int)($p['eliminado'] ?? 0)) === 1;
         }));
     }
-    
-    $resumen = $modelo->getResumen();
-    $categorias = $modelo->obtenerCategorias();
-    $proveedores = $proveedorProcessor->obtenerProveedores();
 
-    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+    $resumen     = $modelo->getResumen();
+    $categorias  = $modelo->obtenerCategorias();
+    $proveedores = $proveedorModel->obtenerProveedoresParaSelect();
+
+    $por_pagina = (int)($_GET['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int)($_GET['pagina'] ?? 1));
     $offset = ($pagina_actual - 1) * $por_pagina;
-    
+
     $totalRegistros = count($productos_full);
     $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-    
+
     if ($por_pagina > 0) {
         $productos = array_slice($productos_full, $offset, $por_pagina);
     } else {
         $productos = $productos_full;
     }
-    
+
     if (isset($_SESSION['mensaje'])) {
         $mensaje = $_SESSION['mensaje'];
         $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? 'info';
         unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
     }
-    
+
 } catch (Exception $e) {
     die("ERROR al listar productos: " . $e->getMessage());
 }
 
 require_once $rutaRaiz . '/app/view/productos/listProductsView.php';
-?>

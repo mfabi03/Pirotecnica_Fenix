@@ -1,21 +1,60 @@
 <?php
+// app/Model/ProductoModel.php
 namespace App\Pirotecnicafenix\Model;
 
 use PDO;
 use Exception;
 use PDOException;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+use App\Pirotecnicafenix\Interfaces\InterfacesCrudModel;
 
-class ProductoModel {
-    private $db;
+class ProductoModel extends ConnectDB implements InterfacesCrudModel
+{
+    private $conex;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->conex = $this->getConnection();
     }
 
-    // OBTENER TODOS LOS PRODUCTOS (Activos e Inactivos)
-    public function obtenerProductos() {
+    /* ============================================================
+     *  MÉTODOS DE LA INTERFAZ (puente)
+     * ============================================================ */
+
+    public function obtenerTodos()
+    {
+        return $this->obtenerProductos();
+    }
+
+    public function obtenerPorId($id)
+    {
+        return $this->obtenerProductoPorId($id);
+    }
+
+    public function crear($datos)
+    {
+        return $this->registrarProducto($datos);
+    }
+
+    public function actualizar($id, $datos)
+    {
+        return $this->actualizarProducto($id, $datos);
+    }
+
+    public function eliminar($id)
+    {
+        return $this->eliminarProducto($id);
+    }
+
+    /* ============================================================
+     *  MÉTODOS ORIGINALES
+     * ============================================================ */
+
+    public function obtenerProductos()
+    {
         try {
-            $sql = "SELECT 
+            $sql = "SELECT
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
@@ -27,19 +66,19 @@ class ProductoModel {
                         p.eliminado,
                         c.nombre_categoria,
                         COALESCE(
-                            (SELECT prov.razon_social 
-                             FROM detalle_entrada de 
-                             INNER JOIN nota_de_entrada ne ON de.id_nota_entrada = ne.id_nota_entrada 
-                             INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor 
-                             WHERE de.id_producto = p.id_producto AND ne.eliminado = 0 
+                            (SELECT prov.razon_social
+                             FROM detalle_entrada de
+                             INNER JOIN nota_de_entrada ne ON de.id_nota_entrada = ne.id_nota_entrada
+                             INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor
+                             WHERE de.id_producto = p.id_producto AND ne.eliminado = 0
                              ORDER BY ne.fecha_ingreso DESC LIMIT 1),
                             (SELECT prov2.razon_social FROM proveedor prov2 WHERE prov2.id_proveedor = p.id_proveedor)
                         ) AS nombre_proveedor
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
                     ORDER BY p.eliminado ASC, p.id_producto DESC";
-            
-            $stmt = $this->db->prepare($sql);
+
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -48,25 +87,25 @@ class ProductoModel {
         }
     }
 
-    // CONTAR PRODUCTOS
-    public function contarProductos($termino = null) {
+    public function contarProductos($termino = null)
+    {
         try {
             $termino = trim((string) $termino);
-            
+
             if ($termino !== '') {
-                $sql = "SELECT COUNT(*) 
+                $sql = "SELECT COUNT(*)
                         FROM producto p
                         LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
                         WHERE p.eliminado = 0
                         AND (p.descripcion LIKE :termino OR c.nombre_categoria LIKE :termino)";
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->conex->prepare($sql);
                 $stmt->execute(['termino' => "%{$termino}%"]);
             } else {
                 $sql = "SELECT COUNT(*) FROM producto WHERE eliminado = 0";
-                $stmt = $this->db->prepare($sql);
+                $stmt = $this->conex->prepare($sql);
                 $stmt->execute();
             }
-            
+
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
             error_log("Error en contarProductos: " . $e->getMessage());
@@ -74,10 +113,10 @@ class ProductoModel {
         }
     }
 
-    // OBTENER PRODUCTO POR ID (Sin importar el estado)
-    public function obtenerProductoPorId($id) {
+    public function obtenerProductoPorId($id)
+    {
         try {
-            $sql = "SELECT 
+            $sql = "SELECT
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
@@ -89,19 +128,19 @@ class ProductoModel {
                         p.eliminado,
                         c.nombre_categoria,
                         COALESCE(
-                            (SELECT prov.razon_social 
-                             FROM detalle_entrada de 
-                             INNER JOIN nota_de_entrada ne ON de.id_nota_entrada = ne.id_nota_entrada 
-                             INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor 
-                             WHERE de.id_producto = p.id_producto AND ne.eliminado = 0 
+                            (SELECT prov.razon_social
+                             FROM detalle_entrada de
+                             INNER JOIN nota_de_entrada ne ON de.id_nota_entrada = ne.id_nota_entrada
+                             INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor
+                             WHERE de.id_producto = p.id_producto AND ne.eliminado = 0
                              ORDER BY ne.fecha_ingreso DESC LIMIT 1),
                             (SELECT prov2.razon_social FROM proveedor prov2 WHERE prov2.id_proveedor = p.id_proveedor)
                         ) AS nombre_proveedor
                     FROM producto p
                     LEFT JOIN categoria c ON p.id_categoria = c.id_categoria
                     WHERE p.id_producto = ?";
-            
-            $stmt = $this->db->prepare($sql);
+
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute([$id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -110,14 +149,14 @@ class ProductoModel {
         }
     }
 
-    // OBTENER CATEGORÍAS
-    public function obtenerCategorias() {
+    public function obtenerCategorias()
+    {
         try {
-            $sql = "SELECT id_categoria, nombre_categoria 
-                    FROM categoria 
+            $sql = "SELECT id_categoria, nombre_categoria
+                    FROM categoria
                     WHERE eliminado = 0
                     ORDER BY nombre_categoria ASC";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -126,8 +165,21 @@ class ProductoModel {
         }
     }
 
-    // REGISTRAR PRODUCTO
-    public function registrarProducto($datos) {
+    public function obtenerNombreCategoria($idCategoria)
+    {
+        try {
+            $stmt = $this->conex->prepare("SELECT nombre_categoria FROM categoria WHERE id_categoria = ?");
+            $stmt->execute([$idCategoria]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row['nombre_categoria'] ?? 'Sin categoría';
+        } catch (PDOException $e) {
+            error_log("Error en obtenerNombreCategoria: " . $e->getMessage());
+            return 'Sin categoría';
+        }
+    }
+
+    public function registrarProducto($datos)
+    {
         try {
             $sql = "INSERT INTO producto (
                         descripcion,
@@ -148,8 +200,8 @@ class ProductoModel {
                         :id_proveedor,
                         0
                     )";
-            
-            $stmt = $this->db->prepare($sql);
+
+            $stmt = $this->conex->prepare($sql);
             $success = $stmt->execute([
                 ':descripcion' => $datos['descripcion'],
                 ':cantidad' => $datos['cantidad'] ?? 0,
@@ -161,7 +213,7 @@ class ProductoModel {
             ]);
 
             if ($success) {
-                return intval($this->db->lastInsertId());
+                return intval($this->conex->lastInsertId());
             }
             return false;
         } catch (PDOException $e) {
@@ -170,17 +222,17 @@ class ProductoModel {
         }
     }
 
-    // ACTUALIZAR PRODUCTO
-    public function actualizarProducto($id, $datos) {
+    public function actualizarProducto($id, $datos)
+    {
         try {
-            $sql = "UPDATE producto SET 
+            $sql = "UPDATE producto SET
                         descripcion = :descripcion,
                         stock_minimo = :stock_minimo,
                         especificaciones = :especificaciones,
                         id_proveedor = :id_proveedor
                     WHERE id_producto = :id";
-            
-            $stmt = $this->db->prepare($sql);
+
+            $stmt = $this->conex->prepare($sql);
             return $stmt->execute([
                 ':descripcion' => $datos['descripcion'],
                 ':stock_minimo' => $datos['stock_minimo'] ?? 10,
@@ -194,24 +246,24 @@ class ProductoModel {
         }
     }
 
-    // VERIFICAR ASOCIACIONES
-    public function verificarAsociaciones($id) {
+    public function verificarAsociaciones($id)
+    {
         try {
-            $stmtEntrada = $this->db->prepare("
-                SELECT COUNT(*) 
+            $stmtEntrada = $this->conex->prepare("
+                SELECT COUNT(*)
                 FROM detalle_entrada d
                 INNER JOIN nota_de_entrada n ON d.id_nota_entrada = n.id_nota_entrada
-                WHERE d.id_producto = ? 
+                WHERE d.id_producto = ?
                 AND n.eliminado = 0
             ");
             $stmtEntrada->execute([$id]);
             $entradas = (int) $stmtEntrada->fetchColumn();
 
-            $stmtSalida = $this->db->prepare("
-                SELECT COUNT(*) 
+            $stmtSalida = $this->conex->prepare("
+                SELECT COUNT(*)
                 FROM detalle_salida d
                 INNER JOIN nota_de_salida n ON d.id_nota_salida = n.id_nota_salida
-                WHERE d.id_producto = ? 
+                WHERE d.id_producto = ?
                 AND n.eliminado = 0
             ");
             $stmtSalida->execute([$id]);
@@ -228,8 +280,8 @@ class ProductoModel {
         }
     }
 
-    // ELIMINAR PRODUCTO
-    public function eliminarProducto($id) {
+    public function eliminarProducto($id)
+    {
         try {
             $asociaciones = $this->verificarAsociaciones($id);
             if ($asociaciones['tiene_asociaciones']) {
@@ -237,7 +289,7 @@ class ProductoModel {
             }
 
             $sql = "UPDATE producto SET eliminado = 1 WHERE id_producto = ?";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute([$id]);
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
@@ -248,27 +300,27 @@ class ProductoModel {
         }
     }
 
-    // REACTIVAR PRODUCTO
-    public function reactivarProducto($id) {
+    public function reactivarProducto($id)
+    {
         try {
-            $stmtCheck = $this->db->prepare("SELECT id_producto FROM producto WHERE id_producto = :id AND eliminado = 1 LIMIT 1");
+            $stmtCheck = $this->conex->prepare("SELECT id_producto FROM producto WHERE id_producto = :id AND eliminado = 1 LIMIT 1");
             $stmtCheck->execute([':id' => $id]);
             if (!$stmtCheck->fetch()) {
                 throw new Exception("El producto no existe o ya está activo.");
             }
 
-            $stmt = $this->db->prepare("UPDATE producto SET eliminado = 0 WHERE id_producto = :id");
+            $stmt = $this->conex->prepare("UPDATE producto SET eliminado = 0 WHERE id_producto = :id");
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
             throw new Exception("Error en la base de datos: " . $e->getMessage());
         }
     }
 
-    // BUSCAR PRODUCTOS
-    public function buscarProductos($termino) {
+    public function buscarProductos($termino)
+    {
         try {
             $termino = trim((string) $termino);
-            $sql = "SELECT 
+            $sql = "SELECT
                         p.id_producto,
                         p.descripcion,
                         p.cantidad AS stock,
@@ -280,11 +332,11 @@ class ProductoModel {
                         p.eliminado,
                         c.nombre_categoria,
                         COALESCE(
-                            (SELECT prov.razon_social 
-                             FROM detalle_entrada de 
-                             INNER JOIN nota_de_entrada ne ON de.id_nota_entrada = ne.id_nota_entrada 
-                             INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor 
-                             WHERE de.id_producto = p.id_producto AND ne.eliminado = 0 
+                            (SELECT prov.razon_social
+                             FROM detalle_entrada de
+                             INNER JOIN nota_de_entrada ne ON de.id_nota_entrada = ne.id_nota_entrada
+                             INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor
+                             WHERE de.id_producto = p.id_producto AND ne.eliminado = 0
                              ORDER BY ne.fecha_ingreso DESC LIMIT 1),
                             (SELECT prov2.razon_social FROM proveedor prov2 WHERE prov2.id_proveedor = p.id_proveedor)
                         ) AS nombre_proveedor
@@ -294,8 +346,8 @@ class ProductoModel {
                     OR c.nombre_categoria LIKE :termino
                     OR CAST(p.id_producto AS CHAR) LIKE :termino)
                     ORDER BY p.eliminado ASC, p.descripcion ASC";
-            
-            $stmt = $this->db->prepare($sql);
+
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute(['termino' => "%$termino%"]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -304,12 +356,13 @@ class ProductoModel {
         }
     }
 
-    // OBTENER HISTORIAL DE PROVEEDORES
-    public function obtenerHistorialProveedores($id_producto) {
+    // 🔥 COMPLETADO: estaba cortado
+    public function obtenerHistorialProveedores($id_producto)
+    {
         try {
-            $sql = "SELECT DISTINCT 
-                        prov.razon_social, 
-                        prov.rif, 
+            $sql = "SELECT DISTINCT
+                        prov.razon_social,
+                        prov.rif,
                         ne.fecha_ingreso,
                         de.cantidad,
                         de.costo_unitario
@@ -319,7 +372,7 @@ class ProductoModel {
                     INNER JOIN proveedor prov ON ne.id_proveedor = prov.id_proveedor
                     WHERE prod.id_producto = :id_producto AND ne.eliminado = 0
                     ORDER BY ne.fecha_ingreso DESC";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute([':id_producto' => $id_producto]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -328,17 +381,18 @@ class ProductoModel {
         }
     }
 
-    // OBTENER RESUMEN
-    public function getResumen() {
+    // 🔥 COMPLETADO: estaba cortado
+    public function getResumen()
+    {
         try {
-            $sql = "SELECT 
+            $sql = "SELECT
                         COUNT(*) AS total_productos,
                         SUM(cantidad) AS total_stock,
                         COUNT(DISTINCT id_categoria) AS total_categorias
                     FROM producto
                     WHERE eliminado = 0";
-            
-            $stmt = $this->db->prepare($sql);
+
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -351,4 +405,3 @@ class ProductoModel {
         }
     }
 }
-?>

@@ -1,17 +1,27 @@
 <?php
+// app/Model/ReporteCajaModel.php
 namespace App\Pirotecnicafenix\Model;
 
 use PDO;
 use Exception;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-class ReporteCajaModel {
-    private $db;
+class ReporteCajaModel extends ConnectDB
+{
+    private $conex;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->conex = $this->getConnection();
     }
 
-    private function asegurarTablaCierreCaja() {
+    /* ============================================================
+     *  MÉTODOS EXISTENTES
+     * ============================================================ */
+
+    private function asegurarTablaCierreCaja()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS cierre_caja (
                     id_cierre INT AUTO_INCREMENT PRIMARY KEY,
                     fecha_cierre DATE NOT NULL,
@@ -26,7 +36,7 @@ class ReporteCajaModel {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE KEY uniq_cierre_usuario_fecha (fecha_cierre, id_usuario)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-        try { $this->db->exec($sql); } catch (Exception $e) {}
+        try { $this->conex->exec($sql); } catch (Exception $e) {}
 
         $columnas = [
             'hora_apertura' => "TIME NULL AFTER fecha_cierre",
@@ -36,51 +46,55 @@ class ReporteCajaModel {
 
         foreach ($columnas as $col => $definicion) {
             try {
-                $stmt = $this->db->query("SHOW COLUMNS FROM cierre_caja LIKE '$col'");
+                $stmt = $this->conex->query("SHOW COLUMNS FROM cierre_caja LIKE '$col'");
                 if ($stmt && $stmt->rowCount() === 0) {
-                    $this->db->exec("ALTER TABLE cierre_caja ADD COLUMN $col $definicion");
+                    $this->conex->exec("ALTER TABLE cierre_caja ADD COLUMN $col $definicion");
                 }
             } catch (Exception $e) {}
         }
     }
 
-    public function obtenerUltimoIdNotaSalidaPorUsuarioFecha($fecha, $id_usuario = null) {
+    public function obtenerUltimoIdNotaSalidaPorUsuarioFecha($fecha, $id_usuario = null)
+    {
         if (empty($fecha)) return null;
         $sql = "SELECT MAX(ns.id_nota_salida) AS ultimo_id FROM nota_de_salida ns WHERE DATE(ns.fecha) = :fecha AND ns.eliminado = 0";
         $params = [':fecha' => $fecha];
         if ($id_usuario !== null && $id_usuario !== '') { $sql .= " AND ns.id_usuario = :id_usuario"; $params[':id_usuario'] = (int)$id_usuario; }
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         foreach ($params as $key => $value) { $stmt->bindValue($key, $value); }
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return isset($row['ultimo_id']) && $row['ultimo_id'] !== null ? (int)$row['ultimo_id'] : null;
     }
 
-    public function obtenerUltimoCierreCaja($fecha, $id_usuario = null) {
+    public function obtenerUltimoCierreCaja($fecha, $id_usuario = null)
+    {
         if (empty($fecha)) return null;
         $this->asegurarTablaCierreCaja();
         $sql = "SELECT * FROM cierre_caja WHERE fecha_cierre = :fecha_cierre";
         $params = [':fecha_cierre' => $fecha];
         if ($id_usuario !== null && $id_usuario !== '') { $sql .= " AND id_usuario = :id_usuario"; $params[':id_usuario'] = (int)$id_usuario; }
         $sql .= " ORDER BY created_at DESC LIMIT 1";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         foreach ($params as $key => $value) $stmt->bindValue($key, $value);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function actualizarUltimoIdCierreCaja($fecha, $id_usuario = null, $ultimo_id_nota_salida = null) {
+    public function actualizarUltimoIdCierreCaja($fecha, $id_usuario = null, $ultimo_id_nota_salida = null)
+    {
         if (empty($fecha)) return false;
         $this->asegurarTablaCierreCaja();
         $sql = "UPDATE cierre_caja SET ultimo_id_nota_salida = :ultimo_id_nota_salida WHERE fecha_cierre = :fecha_cierre AND id_usuario <=> :id_usuario";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         $stmt->bindValue(':fecha_cierre', $fecha);
         $stmt->bindValue(':id_usuario', $id_usuario !== null && $id_usuario !== '' ? (int)$id_usuario : null, PDO::PARAM_INT);
         $stmt->bindValue(':ultimo_id_nota_salida', $ultimo_id_nota_salida !== null ? (int)$ultimo_id_nota_salida : null, PDO::PARAM_INT);
         try { $stmt->execute(); return $stmt->rowCount() > 0; } catch (Exception $e) { return false; }
     }
 
-    public function guardarCierreCaja($fecha, $id_usuario = null, $total_documentos = 0, $total_unidades = 0, $total_categorias = 0, $hora_apertura = null, $total_productos = 0, $total_clientes = 0) {
+    public function guardarCierreCaja($fecha, $id_usuario = null, $total_documentos = 0, $total_unidades = 0, $total_categorias = 0, $hora_apertura = null, $total_productos = 0, $total_clientes = 0)
+    {
         if (empty($fecha)) return false;
         $this->asegurarTablaCierreCaja();
         $ultimoIdNota = $this->obtenerUltimoIdNotaSalidaPorUsuarioFecha($fecha, $id_usuario);
@@ -89,14 +103,14 @@ class ReporteCajaModel {
         try {
             $sql = "INSERT INTO cierre_caja (fecha_cierre, hora_apertura, id_usuario, ultimo_id_nota_salida, total_documentos, total_productos_distintos, total_categorias, total_clientes, total_unidades, total_lineas)
                     VALUES (:fecha_cierre, :hora_apertura, :id_usuario, :ultimo_id_nota_salida, :total_documentos, :total_productos, :total_categorias, :total_clientes, :total_unidades, :total_lineas)";
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->bindValue(':fecha_cierre', $fecha);
             $stmt->bindValue(':hora_apertura', $hora_apertura);
             $stmt->bindValue(':id_usuario', $id_usuario !== null && $id_usuario !== '' ? (int)$id_usuario : null, PDO::PARAM_INT);
             $stmt->bindValue(':ultimo_id_nota_salida', $ultimoIdNota !== null ? (int)$ultimoIdNota : null, PDO::PARAM_INT);
             $stmt->bindValue(':total_documentos', (int)$total_documentos, PDO::PARAM_INT);
             $stmt->bindValue(':total_productos', (int)$total_productos, PDO::PARAM_INT);
-            $stmt->bindValue(':total_categorias', (int)$total_categorias, PDO::PARAM_INT); 
+            $stmt->bindValue(':total_categorias', (int)$total_categorias, PDO::PARAM_INT);
             $stmt->bindValue(':total_clientes', (int)$total_clientes, PDO::PARAM_INT);
             $stmt->bindValue(':total_unidades', (int)$total_unidades, PDO::PARAM_INT);
             $stmt->bindValue(':total_lineas', 0, PDO::PARAM_INT);
@@ -108,19 +122,21 @@ class ReporteCajaModel {
         }
     }
 
-    public function existeCierreCaja($fecha, $id_usuario = null) {
+    public function existeCierreCaja($fecha, $id_usuario = null)
+    {
         $this->asegurarTablaCierreCaja();
         $sql = "SELECT 1 FROM cierre_caja WHERE fecha_cierre = :fecha_cierre";
         $params = [':fecha_cierre' => $fecha];
         if ($id_usuario !== null && $id_usuario !== '') { $sql .= " AND id_usuario = :id_usuario"; $params[':id_usuario'] = (int)$id_usuario; } else { $sql .= " AND id_usuario IS NULL"; }
         $sql .= " LIMIT 1";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         foreach ($params as $k => $v) $stmt->bindValue($k, $v);
         $stmt->execute();
         return (bool)$stmt->fetchColumn();
     }
 
-    public function obtenerSalidasCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null, $limit = 10, $offset = 0) {
+    public function obtenerSalidasCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null, $limit = 10, $offset = 0)
+    {
         $where = ["ns.eliminado = 0"];
         $params = [];
 
@@ -149,7 +165,7 @@ class ReporteCajaModel {
 
         $whereSql = ' WHERE ' . implode(' AND ', $where);
 
-        $sql = "SELECT 
+        $sql = "SELECT
                     ns.id_nota_salida AS id_documento,
                     DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
                     GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') ORDER BY prod.descripcion SEPARATOR ', ') AS nombre_producto,
@@ -174,7 +190,7 @@ class ReporteCajaModel {
                 LIMIT :limit OFFSET :offset";
 
         try {
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             foreach ($params as $k => $v) $stmt->bindValue($k, $v);
             $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
@@ -186,11 +202,13 @@ class ReporteCajaModel {
         }
     }
 
-    public function contarSalidasCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null) {
+    public function contarSalidasCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null)
+    {
         return count($this->obtenerSalidasCajero($id_usuario, $fecha, $busqueda, $id_categoria, 99999, 0));
     }
 
-    public function obtenerResumenCierreCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null) {
+    public function obtenerResumenCierreCajero($id_usuario, $fecha, $busqueda = null, $id_categoria = null)
+    {
         $movs = $this->obtenerSalidasCajero($id_usuario, $fecha, $busqueda, $id_categoria, 99999, 0);
         return [
             'total_documentos' => count(array_unique(array_column($movs, 'id_documento'))),
@@ -199,14 +217,14 @@ class ReporteCajaModel {
         ];
     }
 
-    // 🔥 NUEVA FUNCIÓN PARA EL MODAL (NO FILTRA POR ULTIMO ID)
-    public function obtenerSalidasParaCierre($id_usuario, $fecha) {
+    public function obtenerSalidasParaCierre($id_usuario, $fecha)
+    {
         $where = ["ns.eliminado = 0", "DATE(ns.fecha) = :fecha", "ns.id_usuario = :id_usuario"];
         $params = [':fecha' => $fecha, ':id_usuario' => $id_usuario];
 
         $whereSql = ' WHERE ' . implode(' AND ', $where);
 
-        $sql = "SELECT 
+        $sql = "SELECT
                     ns.id_nota_salida AS id_documento,
                     DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
                     GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') ORDER BY prod.descripcion SEPARATOR ', ') AS nombre_producto,
@@ -230,7 +248,7 @@ class ReporteCajaModel {
                 ORDER BY ns.fecha DESC, ns.id_nota_salida DESC";
 
         try {
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             foreach ($params as $k => $v) $stmt->bindValue($k, $v);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -239,5 +257,201 @@ class ReporteCajaModel {
             return [];
         }
     }
+
+    /* ============================================================
+     *  🔥 MÉTODOS NUEVOS (movidos del controlador)
+     * ============================================================ */
+
+    public function obtenerHistorialCierres()
+    {
+        try {
+            $sql = "SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) AS nombre_usuario, p.cedula AS cedula_usuario
+                    FROM cierre_caja c
+                    LEFT JOIN usuario u ON c.id_usuario = u.id_usuario
+                    LEFT JOIN persona p ON u.id_persona = p.id_persona
+                    ORDER BY c.fecha_cierre DESC, c.created_at DESC";
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en obtenerHistorialCierres: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerCierrePorId($idCierre)
+    {
+        try {
+            $sql = "SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) AS nombre_usuario
+                    FROM cierre_caja c
+                    LEFT JOIN usuario u ON c.id_usuario = u.id_usuario
+                    LEFT JOIN persona p ON u.id_persona = p.id_persona
+                    WHERE c.id_cierre = :id LIMIT 1";
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([':id' => $idCierre]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (Exception $e) {
+            error_log("Error en obtenerCierrePorId: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function obtenerDetalleCierrePorId($idCierre)
+    {
+        try {
+            $cierre = $this->obtenerCierrePorId($idCierre);
+            if (!$cierre) return [];
+
+            $sql = "SELECT ns.id_nota_salida AS id_documento, DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
+                              GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
+                              SUM(ds.cantidad) AS cantidad,
+                              COUNT(DISTINCT prod.id_producto) AS total_productos,
+                              COUNT(DISTINCT c.id_categoria) AS total_categorias,
+                              COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                              CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                              COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
+                       FROM nota_de_salida ns
+                       INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                       INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                       LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
+                       LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                       LEFT JOIN persona per ON u.id_persona = per.id_persona
+                       LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                       LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                       WHERE ns.id_nota_salida <= :ultimo_id
+                         AND ns.id_usuario = :id_usuario
+                         AND DATE(ns.fecha) = :fecha_cierre
+                         AND ns.eliminado = 0
+                       GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
+                       ORDER BY ns.fecha DESC";
+
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([
+                ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
+                ':id_usuario' => $cierre['id_usuario'],
+                ':fecha_cierre' => $cierre['fecha_cierre']
+            ]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en obtenerDetalleCierrePorId: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerDetalleCierrePorFecha($fecha, $idUsuario)
+    {
+        try {
+            $sql = "SELECT ns.id_nota_salida AS id_documento, DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
+                    GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
+                    SUM(ds.cantidad) AS cantidad,
+                    COUNT(DISTINCT prod.id_producto) AS total_productos,
+                    COUNT(DISTINCT c.id_categoria) AS total_categorias,
+                    COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                    CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                    COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
+                    FROM nota_de_salida ns
+                    INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                    INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                    LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
+                    LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                    LEFT JOIN persona per ON u.id_persona = per.id_persona
+                    LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                    LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                    WHERE ns.eliminado = 0 AND DATE(ns.fecha) = :fecha AND ns.id_usuario = :id_usuario
+                    GROUP BY ns.id_nota_salida, ns.fecha
+                    ORDER BY ns.fecha DESC";
+
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([':fecha' => $fecha, ':id_usuario' => $idUsuario]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en obtenerDetalleCierrePorFecha: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerDetalleCierreCSVPorId($idCierre)
+    {
+        try {
+            $cierre = $this->obtenerCierrePorId($idCierre);
+            if (!$cierre) return [];
+
+            $sql = "SELECT ns.id_nota_salida AS id_documento, DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
+                              GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
+                              SUM(ds.cantidad) AS cantidad,
+                              GROUP_CONCAT(DISTINCT c.nombre_categoria SEPARATOR ', ') AS categoria,
+                              COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                              CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                              COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
+                       FROM nota_de_salida ns
+                       INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                       INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                       LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
+                       LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                       LEFT JOIN persona per ON u.id_persona = per.id_persona
+                       LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                       LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                       WHERE ns.id_nota_salida <= :ultimo_id
+                         AND ns.id_usuario = :id_usuario
+                         AND DATE(ns.fecha) = :fecha_cierre
+                         AND ns.eliminado = 0
+                       GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
+                       ORDER BY ns.fecha DESC";
+
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([
+                ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
+                ':id_usuario' => $cierre['id_usuario'],
+                ':fecha_cierre' => $cierre['fecha_cierre']
+            ]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en obtenerDetalleCierreCSVPorId: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerDetalleCierreCSVPorFecha($fecha, $idUsuario)
+    {
+        try {
+            $sql = "SELECT ns.id_nota_salida AS id_documento, DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
+                    GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
+                    SUM(ds.cantidad) AS cantidad,
+                    GROUP_CONCAT(DISTINCT c.nombre_categoria SEPARATOR ', ') AS categoria,
+                    COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                    CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                    COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
+                    FROM nota_de_salida ns
+                    INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                    INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                    LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
+                    LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                    LEFT JOIN persona per ON u.id_persona = per.id_persona
+                    LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                    LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                    WHERE ns.eliminado = 0 AND DATE(ns.fecha) = :fecha AND ns.id_usuario = :id_usuario
+                    GROUP BY ns.id_nota_salida, ns.fecha
+                    ORDER BY ns.fecha DESC";
+
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([':fecha' => $fecha, ':id_usuario' => $idUsuario]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error en obtenerDetalleCierreCSVPorFecha: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerNombreUsuario($idUsuario)
+    {
+        try {
+            $stmt = $this->conex->prepare("SELECT p.nombre, p.apellido FROM usuario u INNER JOIN persona p ON u.id_persona = p.id_persona WHERE u.id_usuario = :id");
+            $stmt->execute([':id' => $idUsuario]);
+            $datos = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($datos) return trim($datos['nombre'] . ' ' . $datos['apellido']);
+        } catch (Exception $e) {
+            error_log("Error en obtenerNombreUsuario: " . $e->getMessage());
+        }
+        return 'Administrador';
+    }
 }
-?>

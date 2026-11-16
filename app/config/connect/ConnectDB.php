@@ -4,19 +4,28 @@ namespace App\Pirotecnicafenix\Config\Connect;
 use PDO;
 use PDOException;
 
-class ConnectDB {
+abstract class ConnectDB {
+    private $conex;
+    
+    public function __construct() {
+        $this->getConnection();
+    }
 
-    public function getConnection() {
+    public function getConnection(): PDO {
         try {
-            // Conectando a la base de datos
-            $dsn = "mysql:host=localhost;dbname=pirotecnica_fenix;charset=utf8mb4";
-            $pdo = new PDO($dsn, "root", "");
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            return $pdo;
+           
+            $this->conex = new PDO("mysql:host=localhost;dbname=pirotecnica_fenix;charset=utf8mb4", "root", "");
+            
+            $this->conex->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            
+            $this->conex->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            
         } catch (PDOException $e) {
-            // Lanzar excepción para que el llamador decida cómo mostrarla
-            throw new \Exception('ERROR DE CONEXIÓN');
+            
+            die('ERROR DE CONEXION: ' . $e->getMessage());
         }
+
+        return $this->conex;
     }
 }
-?>

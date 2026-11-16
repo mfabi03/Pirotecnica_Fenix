@@ -1,22 +1,10 @@
-/**
- * ============================================================
- * MÓDULO CLIENTES - Versión jQuery
- * ------------------------------------------------------------
- * Requiere:
- *   - jQuery 3.7.1 (cargado globalmente en footer.php)
- *   - Bootstrap 5 (cargado globalmente en footer.php)
- *   - Validador global (validaciones.jquery.js)
- * ============================================================
- */
-
 (function ($) {
     'use strict';
 
     $(function () {
 
-        // ---------------------------------------------------------
         // MAPA DE CLIENTES (id → datos)
-        // ---------------------------------------------------------
+      
         function inicializarMapaClientes() {
             var $scriptCliente = $('#clientesData');
             if (!$scriptCliente.length) {
@@ -37,9 +25,8 @@
             }
         }
 
-        // ---------------------------------------------------------
         // FILTRO AJAX DE CLIENTES
-        // ---------------------------------------------------------
+       
         var $formClientes = $('#formFiltroClientes');
         if ($formClientes.length) {
             var enviarFiltroClientes = function () {

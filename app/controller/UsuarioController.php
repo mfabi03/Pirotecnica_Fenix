@@ -6,9 +6,8 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-use PDO;
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\UsuarioModel;
+use App\Pirotecnicafenix\Helpers\Validador;
 use Exception;
 
 // ==========================================
@@ -27,56 +26,37 @@ if (!isset($_SESSION['id_usuario']) || empty($_SESSION['id_usuario'])) {
 }
 
 // ==========================================
-// 3. CARGAR MODELO
+// 3. MODELO (hereda conexión)
 // ==========================================
-$rutaRaiz = dirname(__DIR__, 2);
-$pathModel = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Model' . DIRECTORY_SEPARATOR . 'UsuarioModel.php';
-
-if (file_exists($pathModel)) {
-    require_once $pathModel;
-} else {
-    die("ERROR: No se encuentra UsuarioModel.php");
-}
+$modelo = new UsuarioModel();
 
 // ==========================================
-// 4. INICIALIZACIÓN
-// ==========================================
-try {
-    $db = (new ConnectDB())->getConnection();
-    $modelo = new UsuarioModel($db);
-} catch (Exception $e) {
-    die("Error de conexión: " . $e->getMessage());
-}
-
-// ==========================================
-// 5. PARÁMETROS
+// 4. PARÁMETROS
 // ==========================================
 $action = $_GET['action'] ?? 'lista';
 $id = $_GET['id'] ?? null;
 $mensaje = $_SESSION['mensaje'] ?? null;
 $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? null;
 
-unset($_SESSION['mensaje']);
-unset($_SESSION['tipo_mensaje']);
+unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
 
-$busqueda = trim((string) ($_GET['busqueda'] ?? $_GET['buscar'] ?? ''));
+$busqueda = Validador::limpiar($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
 
 // ==========================================
-// 6. ENDPOINTS AJAX
+// 5. ENDPOINTS AJAX
 // ==========================================
 
-// ===== AJAX 1: Validar usuario único =====
 if ($action === 'check_usuario') {
     header('Content-Type: application/json');
-    $usuario = trim($_GET['valor'] ?? '');
-    $idExcluir = isset($_GET['excluir_id']) ? (int) $_GET['excluir_id'] : null;
-    
-    if (empty($usuario)) {
-        echo json_encode(['existe' => false]);
-        exit;
-    }
-    
     try {
+        $usuario = Validador::limpiar($_GET['valor'] ?? '');
+        $idExcluir = isset($_GET['excluir_id']) ? (int)$_GET['excluir_id'] : null;
+
+        if ($usuario === '') {
+            echo json_encode(['existe' => false]);
+            exit;
+        }
+
         $existe = $modelo->existeUsuario($usuario, $idExcluir);
         echo json_encode(['existe' => $existe]);
     } catch (Exception $e) {
@@ -85,26 +65,22 @@ if ($action === 'check_usuario') {
     exit;
 }
 
-// ===== AJAX 2: Validar cédula única =====
 if ($action === 'check_cedula') {
     header('Content-Type: application/json');
-    $cedula = trim($_GET['valor'] ?? '');
-    $idExcluir = isset($_GET['excluir_id']) ? (int) $_GET['excluir_id'] : null;
-    
-    if (empty($cedula)) {
-        echo json_encode(['existe' => false]);
-        exit;
-    }
-    
     try {
+        $cedula = Validador::limpiar($_GET['valor'] ?? '');
+        $idExcluir = isset($_GET['excluir_id']) ? (int)$_GET['excluir_id'] : null;
+
+        if ($cedula === '') {
+            echo json_encode(['existe' => false]);
+            exit;
+        }
+
         $idPersonaExcluir = null;
         if ($idExcluir !== null) {
-            $sql = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
-            $stmt = $db->prepare($sql);
-            $stmt->execute([':id' => $idExcluir]);
-            $idPersonaExcluir = $stmt->fetchColumn() ?: null;
+            $idPersonaExcluir = $modelo->obtenerIdPersonaPorUsuario($idExcluir);
         }
-        
+
         $existe = $modelo->existeCedula($cedula, $idPersonaExcluir);
         echo json_encode(['existe' => $existe]);
     } catch (Exception $e) {
@@ -113,36 +89,29 @@ if ($action === 'check_cedula') {
     exit;
 }
 
-// ===== AJAX 3: Obtener detalle de un usuario =====
 if ($action === 'show_ajax') {
     header('Content-Type: application/json');
-    $id = (int) ($_GET['id'] ?? 0);
-    
-    if ($id <= 0) {
-        echo json_encode(['success' => false, 'mensaje' => 'ID inválido']);
-        exit;
-    }
-    
     try {
+        $id = Validador::validarId($_GET['id'] ?? null, 'ID de usuario');
         $usuario = $modelo->obtenerUsuarioPorId($id);
-        
+
         if (!$usuario) {
             throw new Exception("Usuario no encontrado");
         }
-        
+
         echo json_encode([
             'success' => true,
             'data' => [
-                'id_usuario' => (int) $usuario['id_usuario'],
-                'usuario' => $usuario['usuario'],
-                'nombre' => $usuario['nombre'],
-                'apellido' => $usuario['apellido'],
-                'cedula' => $usuario['cedula'],
-                'telefono' => $usuario['telefono'],
+                'id_usuario'         => (int)$usuario['id_usuario'],
+                'usuario'            => $usuario['usuario'],
+                'nombre'             => $usuario['nombre'],
+                'apellido'           => $usuario['apellido'],
+                'cedula'             => $usuario['cedula'],
+                'telefono'           => $usuario['telefono'],
                 'correo_electronico' => $usuario['correo_electronico'],
-                'direccion' => $usuario['direccion'],
-                'id_rol' => (int) $usuario['id_rol'],
-                'rol_nombre' => $usuario['rol_nombre']
+                'direccion'          => $usuario['direccion'],
+                'id_rol'             => (int)$usuario['id_rol'],
+                'rol_nombre'         => $usuario['rol_nombre']
             ]
         ]);
     } catch (Exception $e) {
@@ -151,34 +120,27 @@ if ($action === 'show_ajax') {
     exit;
 }
 
-// ===== AJAX 4: Guardar usuario =====
+// ===== AJAX: GUARDAR =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store_ajax') {
     header('Content-Type: application/json');
-    
     try {
-        if (empty(trim($_POST['usuario'] ?? ''))) throw new Exception("El nombre de usuario es obligatorio.");
-        if (empty(trim($_POST['clave'] ?? ''))) throw new Exception("La contraseña es obligatoria.");
-        if (empty(trim($_POST['id_rol'] ?? ''))) throw new Exception("El rol es obligatorio.");
-        if (empty(trim($_POST['nombre'] ?? ''))) throw new Exception("El nombre es obligatorio.");
-        if (empty(trim($_POST['cedula'] ?? ''))) throw new Exception("La cédula es obligatoria.");
-        
         $datosPersona = [
-            'nombre' => trim($_POST['nombre']),
-            'apellido' => trim($_POST['apellido'] ?? ''),
-            'cedula' => trim($_POST['cedula']),
-            'telefono' => trim($_POST['telefono'] ?? ''),
-            'correo' => trim($_POST['correo_electronico'] ?? ''),
-            'direccion' => trim($_POST['direccion'] ?? '')
+            'nombre'     => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'   => Validador::limpiar($_POST['apellido'] ?? ''),
+            'cedula'     => Validador::requerido($_POST['cedula'] ?? '', 'cédula'),
+            'telefono'   => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo'     => Validador::limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'  => Validador::limpiar($_POST['direccion'] ?? '')
         ];
 
         $datosUsuario = [
-            'usuario' => trim($_POST['usuario']),
-            'clave' => password_hash(trim($_POST['clave']), PASSWORD_DEFAULT),
-            'id_rol' => (int) $_POST['id_rol']
+            'usuario' => Validador::requerido($_POST['usuario'] ?? '', 'usuario'),
+            'clave'   => password_hash(Validador::requerido($_POST['clave'] ?? '', 'contraseña'), PASSWORD_DEFAULT),
+            'id_rol'  => Validador::validarId($_POST['id_rol'] ?? null, 'rol')
         ];
 
         $resultado = $modelo->registrarUsuarioCompleto($datosPersona, $datosUsuario);
-        
+
         if ($resultado) {
             echo json_encode(['success' => true, 'mensaje' => "Usuario '{$datosUsuario['usuario']}' registrado exitosamente"]);
         } else {
@@ -190,83 +152,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store
     exit;
 }
 
-// ===== AJAX 5: Actualizar usuario =====
+// ===== AJAX: ACTUALIZAR =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'update_ajax') {
     header('Content-Type: application/json');
-    
     try {
-        $id = (int) ($_POST['id_usuario'] ?? 0);
-        
-        if ($id <= 0) throw new Exception("ID de usuario inválido.");
-        if (empty(trim($_POST['usuario'] ?? ''))) throw new Exception("El nombre de usuario es obligatorio.");
-        if (empty(trim($_POST['nombre'] ?? ''))) throw new Exception("El nombre es obligatorio.");
-        if (empty(trim($_POST['cedula'] ?? ''))) throw new Exception("La cédula es obligatoria.");
-        
-        $sqlGet = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
-        $stmtGet = $db->prepare($sqlGet);
-        $stmtGet->execute([':id' => $id]);
-        $usuarioData = $stmtGet->fetch(PDO::FETCH_ASSOC);
-        if (!$usuarioData) {
-            throw new Exception("Usuario no encontrado");
-        }
+        $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
 
-        $idPersona = $usuarioData['id_persona'];
-        
-        $sqlPersona = "UPDATE persona SET 
-                            nombre = :nombre,
-                            apellido = :apellido,
-                            cedula = :cedula,
-                            telefono = :telefono,
-                            correo_electronico = :correo,
-                            direccion = :direccion
-                        WHERE id_persona = :id_persona";
-        $stmtP = $db->prepare($sqlPersona);
-        $stmtP->execute([
-            ':nombre' => trim($_POST['nombre']),
-            ':apellido' => trim($_POST['apellido'] ?? ''),
-            ':cedula' => trim($_POST['cedula']),
-            ':telefono' => trim($_POST['telefono'] ?? ''),
-            ':correo' => trim($_POST['correo_electronico'] ?? ''),
-            ':direccion' => trim($_POST['direccion'] ?? ''),
-            ':id_persona' => $idPersona
-        ]);
-        
-        $sqlUsuario = "UPDATE usuario SET usuario = :usuario, id_rol = :id_rol";
-        if (!empty(trim($_POST['clave'] ?? ''))) $sqlUsuario .= ", clave = :clave";
-        $sqlUsuario .= " WHERE id_usuario = :id";
-        
-        $params = [
-            ':usuario' => trim($_POST['usuario']),
-            ':id_rol' => (int) $_POST['id_rol'],
-            ':id' => $id
+        $datos = [
+            'usuario'            => Validador::requerido($_POST['usuario'] ?? '', 'usuario'),
+            'nombre'             => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'           => Validador::limpiar($_POST['apellido'] ?? ''),
+            'cedula'             => Validador::requerido($_POST['cedula'] ?? '', 'cédula'),
+            'telefono'           => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'          => Validador::limpiar($_POST['direccion'] ?? ''),
+            'id_rol'             => Validador::validarId($_POST['id_rol'] ?? null, 'rol'),
+            'clave'              => Validador::limpiar($_POST['clave'] ?? '')
         ];
-        
-        if (!empty(trim($_POST['clave'] ?? ''))) {
-            $params[':clave'] = password_hash(trim($_POST['clave']), PASSWORD_DEFAULT);
+
+        $resultado = $modelo->actualizarUsuario($id, $datos);
+
+        if ($resultado) {
+            echo json_encode(['success' => true, 'mensaje' => "Usuario actualizado exitosamente"]);
+        } else {
+            throw new Exception($modelo->getLastError() ?: "No se pudo actualizar el usuario.");
         }
-        
-        $stmtU = $db->prepare($sqlUsuario);
-        $stmtU->execute($params);
-        
-        echo json_encode(['success' => true, 'mensaje' => "Usuario actualizado exitosamente"]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
     }
     exit;
 }
 
-// ===== AJAX 6: Eliminar (inactivar) usuario =====
+// ===== AJAX: ELIMINAR =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delete_ajax') {
     header('Content-Type: application/json');
-    
     try {
-        $id = (int) ($_POST['id_usuario'] ?? 0);
-        
-        if ($id <= 0) throw new Exception("ID de usuario inválido.");
+        $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
+
         if ($id == $_SESSION['id_usuario']) throw new Exception("No puedes inactivar tu propio usuario.");
-        
+
         $resultado = $modelo->eliminarUsuario($id);
-        
+
         if ($resultado) {
             echo json_encode(['success' => true, 'mensaje' => "Usuario inactivado exitosamente"]);
         } else {
@@ -278,16 +204,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delet
     exit;
 }
 
-// ===== AJAX 7: Reactivar usuario =====
+// ===== AJAX: REACTIVAR =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'reactivar_ajax') {
     header('Content-Type: application/json');
-    
     try {
-        $id = (int) ($_POST['id_usuario'] ?? 0);
-        if ($id <= 0) throw new Exception("ID de usuario inválido.");
-        
+        $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
         $resultado = $modelo->reactivarUsuario($id);
-        
+
         if ($resultado) {
             echo json_encode(['success' => true, 'mensaje' => "Usuario reactivado exitosamente"]);
         } else {
@@ -300,38 +223,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'react
 }
 
 // ==========================================
-// 7. PROCESAR POST TRADICIONALES (legacy)
+// 6. PROCESAR POST TRADICIONALES (legacy)
 // ==========================================
-// (Mantenemos el código legacy por si acaso, igual que antes)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guardar') {
     try {
-        if (empty(trim($_POST['usuario']))) throw new Exception("El nombre de usuario es obligatorio.");
-        if (empty(trim($_POST['clave']))) throw new Exception("La contraseña es obligatoria.");
-        if (empty(trim($_POST['id_rol']))) throw new Exception("El rol es obligatorio.");
-
-        $checkSql = "SELECT COUNT(*) FROM usuario WHERE usuario = :usuario";
-        $checkStmt = $db->prepare($checkSql);
-        $checkStmt->execute(['usuario' => trim($_POST['usuario'])]);
-        if ($checkStmt->fetchColumn() > 0) {
-            throw new Exception("El usuario '" . trim($_POST['usuario']) . "' ya existe.");
-        }
-
         $datosPersona = [
-            'nombre' => trim($_POST['nombre']),
-            'apellido' => trim($_POST['apellido'] ?? ''),
-            'cedula' => trim($_POST['cedula']),
-            'telefono' => trim($_POST['telefono'] ?? ''),
-            'correo' => trim($_POST['correo_electronico'] ?? '')
+            'nombre'    => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'  => Validador::limpiar($_POST['apellido'] ?? ''),
+            'cedula'    => Validador::requerido($_POST['cedula'] ?? '', 'cédula'),
+            'telefono'  => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo'    => Validador::limpiar($_POST['correo_electronico'] ?? '')
         ];
 
         $datosUsuario = [
-            'usuario' => trim($_POST['usuario']),
-            'clave' => password_hash(trim($_POST['clave']), PASSWORD_DEFAULT),
-            'id_rol' => (int) $_POST['id_rol']
+            'usuario' => Validador::requerido($_POST['usuario'] ?? '', 'usuario'),
+            'clave'   => password_hash(Validador::requerido($_POST['clave'] ?? '', 'contraseña'), PASSWORD_DEFAULT),
+            'id_rol'  => Validador::validarId($_POST['id_rol'] ?? null, 'rol')
         ];
 
         $resultado = $modelo->registrarUsuarioCompleto($datosPersona, $datosUsuario);
-        
+
         $_SESSION['mensaje'] = $resultado ? "✅ Usuario registrado exitosamente" : "Error al registrar usuario";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
     } catch (Exception $e) {
@@ -344,49 +255,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'actualizar') {
     try {
-        $id = $_POST['id_usuario'] ?? null;
-        if (!$id) throw new Exception("ID de usuario no proporcionado");
+        $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
 
-        $sqlGet = "SELECT id_persona FROM usuario WHERE id_usuario = :id";
-        $stmtGet = $db->prepare($sqlGet);
-        $stmtGet->execute(['id' => $id]);
-        $usuarioData = $stmtGet->fetch(PDO::FETCH_ASSOC);
-        if (!$usuarioData) throw new Exception("Usuario no encontrado");
-
-        $idPersona = $usuarioData['id_persona'];
-
-        $sqlPersona = "UPDATE persona SET 
-                          nombre = :nombre, apellido = :apellido, cedula = :cedula,
-                          telefono = :telefono, correo_electronico = :correo
-                          WHERE id_persona = :id_persona";
-        $stmtP = $db->prepare($sqlPersona);
-        $stmtP->execute([
-            'nombre' => trim($_POST['nombre'] ?? ''),
-            'apellido' => trim($_POST['apellido'] ?? ''),
-            'cedula' => trim($_POST['cedula'] ?? ''),
-            'telefono' => trim($_POST['telefono'] ?? ''),
-            'correo' => trim($_POST['correo_electronico'] ?? ''),
-            'id_persona' => $idPersona
-        ]);
-
-        $sqlUsuario = "UPDATE usuario SET usuario = :usuario, id_rol = :id_rol";
-        if (!empty(trim($_POST['clave']))) $sqlUsuario .= ", clave = :clave";
-        $sqlUsuario .= " WHERE id_usuario = :id";
-        
-        $params = [
-            'usuario' => trim($_POST['usuario']),
-            'id_rol' => (int) $_POST['id_rol'],
-            'id' => $id
+        $datos = [
+            'usuario'            => Validador::requerido($_POST['usuario'] ?? '', 'usuario'),
+            'nombre'             => Validador::limpiar($_POST['nombre'] ?? ''),
+            'apellido'           => Validador::limpiar($_POST['apellido'] ?? ''),
+            'cedula'             => Validador::limpiar($_POST['cedula'] ?? ''),
+            'telefono'           => Validador::limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? ''),
+            'id_rol'             => Validador::validarId($_POST['id_rol'] ?? null, 'rol'),
+            'clave'              => Validador::limpiar($_POST['clave'] ?? '')
         ];
-        if (!empty(trim($_POST['clave']))) {
-            $params['clave'] = password_hash(trim($_POST['clave']), PASSWORD_DEFAULT);
-        }
-        
-        $stmtU = $db->prepare($sqlUsuario);
-        $stmtU->execute($params);
 
-        $_SESSION['mensaje'] = "✅ Usuario actualizado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
+        $resultado = $modelo->actualizarUsuario($id, $datos);
+
+        $_SESSION['mensaje'] = $resultado ? "✅ Usuario actualizado exitosamente" : "Error al actualizar usuario";
+        $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
     } catch (Exception $e) {
         $_SESSION['mensaje'] = "Error al actualizar: " . $e->getMessage();
         $_SESSION['tipo_mensaje'] = "danger";
@@ -397,10 +282,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
     try {
-        $id = $_POST['id_usuario'] ?? null;
-        if (!$id || !is_numeric($id) || $id <= 0) throw new Exception("ID de usuario inválido");
+        $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
+
         if ($id == $_SESSION['id_usuario']) throw new Exception("No puedes eliminar tu propio usuario");
-        
+
         $resultado = $modelo->eliminarUsuario($id);
         $_SESSION['mensaje'] = $resultado ? "✅ Usuario inactivado exitosamente" : "No se pudo inactivar el usuario";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
@@ -413,72 +298,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 }
 
 // ==========================================
-// 8. BLOQUEAR RUTAS LEGACY
+// 7. BLOQUEAR RUTAS LEGACY
 // ==========================================
-if (in_array($action, ['registrar', 'crear', 'editar', 'ver'])) {
+if (in_array($action, ['registrar', 'crear', 'editar', 'ver'], true)) {
     header("Location: ?url=usuarios&action=lista");
     exit();
 }
 
 // ==========================================
-// 9. CARGAR VISTAS
+// 8. CARGAR VISTAS
 // ==========================================
 $basePath = __DIR__ . "/../view/configuracion/";
 
-    // ===== LISTA DE USUARIOS =====
-    if ($action === 'lista' || $action === '') {
-        if (!empty($busqueda)) {
-            $usuarios_full = $modelo->buscarUsuarios($busqueda);
-        } else {
-            $usuarios_full = $modelo->obtenerUsuariosConPersona();
-        }
-        
-        if (!is_array($usuarios_full)) $usuarios_full = [];
-
-        // ⬇️ Lógica de la Papelera ⬇️
-        $ver_papelera = isset($_GET['papelera']) && $_GET['papelera'] == '1';
-        
-        $usuarios_full = array_values(array_filter($usuarios_full, function ($usuario) use ($ver_papelera) {
-            $esta_eliminado = ((int) ($usuario['eliminado'] ?? 0)) === 1;
-            return $ver_papelera ? $esta_eliminado : !$esta_eliminado;
-        }));
-        // ⬆️ FIN DE LA LÓGICA DE PAPELERA ⬆️
-
-        $por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
-        $pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
-        $offset        = ($pagina_actual - 1) * $por_pagina;
-        
-        $totalRegistros = count($usuarios_full);
-        $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-        
-        if ($por_pagina > 0) {
-            $usuarios = array_slice($usuarios_full, $offset, $por_pagina);
-        } else {
-            $usuarios = $usuarios_full;
-        }
-        
-        $roles = [];
-        try {
-            $sql = "SELECT id_rol, nombre_rol FROM rol WHERE eliminado = 0 ORDER BY id_rol ASC";
-            $stmt = $db->prepare($sql);
-            $stmt->execute();
-            $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
-            error_log("Error al obtener roles: " . $e->getMessage());
-        }
-        
-        $ver_papelera = $ver_papelera; 
-
-        require_once $basePath . "usuarioLista.php";
-        exit();
+// LISTA DE USUARIOS
+if ($action === 'lista' || $action === '') {
+    if (!empty($busqueda)) {
+        $usuarios_full = $modelo->buscarUsuarios($busqueda);
+    } else {
+        $usuarios_full = $modelo->obtenerUsuariosConPersona();
     }
 
-// ===== DEFAULT: LISTA =====
+    if (!is_array($usuarios_full)) $usuarios_full = [];
+
+    // FILTRO DE PAPELERA
+    $ver_papelera = isset($_GET['papelera']) && $_GET['papelera'] == '1';
+
+    $usuarios_full = array_values(array_filter($usuarios_full, function ($usuario) use ($ver_papelera) {
+        $esta_eliminado = ((int)($usuario['eliminado'] ?? 0)) === 1;
+        return $ver_papelera ? $esta_eliminado : !$esta_eliminado;
+    }));
+
+    $por_pagina    = (int)($_GET['por_pagina'] ?? 10);
+    $pagina_actual = max(1, (int)($_GET['pagina'] ?? 1));
+    $offset        = ($pagina_actual - 1) * $por_pagina;
+
+    $totalRegistros = count($usuarios_full);
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+
+    if ($por_pagina > 0) {
+        $usuarios = array_slice($usuarios_full, $offset, $por_pagina);
+    } else {
+        $usuarios = $usuarios_full;
+    }
+
+    $roles = $modelo->obtenerRoles();
+
+    require_once $basePath . "usuarioLista.php";
+    exit();
+}
+
+// DEFAULT: LISTA
 $usuarios_full = $modelo->obtenerUsuariosConPersona();
 if (!is_array($usuarios_full)) $usuarios_full = [];
 
-$por_pagina    = (int) ($_GET['por_pagina'] ?? 10);
-$pagina_actual = max(1, (int) ($_GET['pagina'] ?? 1));
+$por_pagina    = (int)($_GET['por_pagina'] ?? 10);
+$pagina_actual = max(1, (int)($_GET['pagina'] ?? 1));
 $offset        = ($pagina_actual - 1) * $por_pagina;
 
 $totalRegistros = count($usuarios_full);
@@ -490,15 +364,6 @@ if ($por_pagina > 0) {
     $usuarios = $usuarios_full;
 }
 
-$roles = [];
-try {
-    $sql = "SELECT id_rol, nombre_rol FROM rol WHERE eliminado = 0 ORDER BY id_rol ASC";
-    $stmt = $db->prepare($sql);
-    $stmt->execute();
-    $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    error_log("Error al obtener roles: " . $e->getMessage());
-}
+$roles = $modelo->obtenerRoles();
 
 require_once $basePath . "usuarioLista.php";
-?>

@@ -1,5 +1,4 @@
 <?php
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -7,10 +6,10 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 try {
-    $db_menu = (new ConnectDB())->getConnection();
     $id_rol_actual = (int) ($_SESSION['id_rol'] ?? 0);
+    $permisoHelperMenu = new PermisoHelper();
     $modulosVisibles = $id_rol_actual > 0
-        ? PermisoHelper::modulosVisibles($db_menu, $id_rol_actual)
+        ? $permisoHelperMenu->modulosVisibles($id_rol_actual)
         : [];
 } catch (Exception $e) {
     error_log('Error al cargar permisos del menú: ' . $e->getMessage());

@@ -2,23 +2,12 @@
 // app/view/proveedores/listProveedoresView.php
 require_once __DIR__ . '/../header.php';
 
-use App\Pirotecnicafenix\Helpers\PermisoHelper;
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
+// Ya NO conectamos a la BD aquí.
+// Los permisos vienen del controlador ($puede_crear, $puede_editar, $puede_eliminar).
+$puede_crear_proveedor    = $puede_crear    ?? false;
+$puede_editar_proveedor   = $puede_editar   ?? false;
+$puede_eliminar_proveedor = $puede_eliminar ?? false;
 
-// Crear conexión si no existe
-if (!isset($db) || $db === null) {
-    try {
-        $db = (new ConnectDB())->getConnection();
-    } catch (Exception $e) {
-        $db = null;
-    }
-}
-
-// Obtener permisos del usuario actual
-$id_rol_actual = $_SESSION['id_rol'] ?? 0;
-$puede_crear_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'crear') : false;
-$puede_editar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'actualizar') : false;
-$puede_eliminar_proveedor = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Proveedores', 'eliminar') : false;
 $verEliminados = !empty($_GET['ver_eliminados']);
 ?>
 

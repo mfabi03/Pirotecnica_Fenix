@@ -1,30 +1,30 @@
 <?php
+// app/Controller/ReportesController.php
 namespace App\Pirotecnicafenix\Controller;
 
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\ReportesModel;
+use App\Pirotecnicafenix\Helpers\Validador;
 use Exception;
-use PDO;
 
-class ReportesController {
-    private $db;
+class ReportesController
+{
     private $modelo;
 
-    public function __construct($db) {
+    public function __construct($db = null)
+    {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
-        $this->db = $db;
-        $this->modelo = new ReportesModel($this->db);
+        $this->modelo = new ReportesModel();
     }
 
-    public function index() {
+    public function index()
+    {
         $ajax = (!empty($_GET['ajax']) || !empty($_POST['ajax']));
-        
+
         $req = function($key) {
-            if (isset($_POST[$key]) && $_POST[$key] !== '') return trim($_POST[$key]);
-            if (isset($_GET[$key]) && $_GET[$key] !== '') return trim($_GET[$key]);
-            return null;
+            $val = $_POST[$key] ?? $_GET[$key] ?? null;
+            return $val !== null && $val !== '' ? Validador::limpiar($val) : null;
         };
 
         $fecha_inicio = $req('fecha_inicio') ?? $req('fecha');
@@ -32,7 +32,7 @@ class ReportesController {
         $busqueda = $req('busqueda');
         $id_categoria = $req('id_categoria') !== null ? (int)$req('id_categoria') : null;
         $tipo_movimiento = $req('tipo_movimiento');
-        
+
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $porPagina = isset($_GET['por_pagina']) ? (int)$_GET['por_pagina'] : 10;
         if (isset($_POST['por_pagina'])) $porPagina = (int)$_POST['por_pagina'];
@@ -46,15 +46,12 @@ class ReportesController {
         $totalPaginas = $porPagina > 0 ? (int)ceil($totalRegistros / $porPagina) : 1;
         $paginaActual = $pagina;
         $porPaginaActual = $porPagina;
-        
-        // VARIABLES PARA LAS TARJETAS DE ESTADÍSTICAS
+
         $totalEntradas = $totalesGlobales['total_entradas'] ?? 0;
         $totalSalidas = $totalesGlobales['total_salidas'] ?? 0;
         $totalAnuladas = $totalesGlobales['total_anuladas'] ?? 0;
         $totalCierres = $totalesGlobales['total_cierres'] ?? 0;
         $totalNotas = $totalesGlobales['total_notas'] ?? 0;
-
-        $db = $this->db;
 
         if ($ajax) {
             ob_start();
@@ -68,119 +65,43 @@ class ReportesController {
         require_once dirname(__DIR__) . '/view/reportes/reportesView.php';
     }
 
-    public function obtenerCierreAjax() {
+    public function obtenerCierreAjax()
+    {
         header('Content-Type: application/json; charset=utf-8');
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        
-        if ($id <= 0) {
-            echo json_encode(['success' => false, 'mensaje' => 'ID inválido']);
-            exit();
-        }
-
         try {
-            $sql = "SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) AS nombre_usuario
-                    FROM cierre_caja c
-                    LEFT JOIN usuario u ON c.id_usuario = u.id_usuario
-                    LEFT JOIN persona p ON u.id_persona = p.id_persona
-                    WHERE c.id_cierre = :id LIMIT 1";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':id' => $id]);
-            $cierre = $stmt->fetch(PDO::FETCH_ASSOC);
+            $id = Validador::validarId($_GET['id'] ?? null, 'ID de cierre');
+            $cierre = $this->modelo->obtenerCierrePorId($id);
 
             if (!$cierre) {
-                echo json_encode(['success' => false, 'mensaje' => 'Cierre no encontrado']);
+                echo json_encode(['success' => false, 'mensaje' => 'Cierre no encontrado'], JSON_UNESCAPED_UNICODE);
                 exit();
             }
 
-            $sqlDet = "SELECT ns.id_nota_salida AS id_documento, ns.fecha, 
-                              COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido)) AS nombre_cliente,
-                              CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
-                              GROUP_CONCAT(DISTINCT prod.descripcion SEPARATOR ', ') AS productos,
-                              GROUP_CONCAT(DISTINCT cat.nombre_categoria SEPARATOR ', ') AS categorias,
-                              SUM(ds.cantidad) AS total_unidades,
-                              COALESCE(CONCAT(per_u.nombre, ' ', per_u.apellido), 'N/A') AS usuario_activo
-                       FROM nota_de_salida ns
-                       INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
-                       INNER JOIN producto prod ON ds.id_producto = prod.id_producto
-                       LEFT JOIN categoria cat ON prod.id_categoria = cat.id_categoria
-                       LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
-                       LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
-                       LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
-                       LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
-                       WHERE ns.id_nota_salida <= :ultimo_id 
-                         AND ns.id_usuario = :id_usuario
-                         AND DATE(ns.fecha) = :fecha_cierre
-                         AND ns.eliminado = 0
-                       GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per_u.nombre, per_u.apellido
-                       ORDER BY ns.id_nota_salida DESC";
-
-            $stmtDet = $this->db->prepare($sqlDet);
-            $stmtDet->execute([
-                ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
-                ':id_usuario' => $cierre['id_usuario'],
-                ':fecha_cierre' => $cierre['fecha_cierre']
-            ]);
-            $detalles = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
+            $detalles = $this->modelo->obtenerDetalleCierre($id);
 
             echo json_encode([
                 'success' => true,
                 'cierre' => $cierre,
                 'detalles' => $detalles
-            ]);
+            ], JSON_UNESCAPED_UNICODE);
             exit();
-
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'mensaje' => $e->getMessage()]);
+            echo json_encode(['success' => false, 'mensaje' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
             exit();
         }
     }
 
-    public function exportarCierrePDF() {
-        $id_cierre = isset($_GET['id_cierre']) ? (int)$_GET['id_cierre'] : 0;
-        if ($id_cierre <= 0) { die("Error: ID de cierre inválido."); }
-
+    public function exportarCierrePDF()
+    {
         try {
-            $sql = "SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) AS nombre_usuario
-                    FROM cierre_caja c
-                    LEFT JOIN usuario u ON c.id_usuario = u.id_usuario
-                    LEFT JOIN persona p ON u.id_persona = p.id_persona
-                    WHERE c.id_cierre = :id LIMIT 1";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':id' => $id_cierre]);
-            $cierre = $stmt->fetch(PDO::FETCH_ASSOC);
+            $id_cierre = Validador::validarId($_GET['id_cierre'] ?? null, 'ID de cierre');
 
-            if (!$cierre) { die("Error: Cierre no encontrado."); }
+            $cierre = $this->modelo->obtenerCierrePorId($id_cierre);
+            if (!$cierre) {
+                die("Error: Cierre no encontrado.");
+            }
 
-            $sqlDet = "SELECT ns.id_nota_salida AS id_documento, DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
-                              GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
-                              SUM(ds.cantidad) AS cantidad,
-                              COUNT(DISTINCT prod.id_producto) AS total_productos,
-                              COUNT(DISTINCT c.id_categoria) AS total_categorias,
-                              COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
-                              CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
-                              COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
-                       FROM nota_de_salida ns
-                       INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
-                       INNER JOIN producto prod ON ds.id_producto = prod.id_producto
-                       LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
-                       LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
-                       LEFT JOIN persona per ON u.id_persona = per.id_persona
-                       LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
-                       LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
-                       WHERE ns.id_nota_salida <= :ultimo_id 
-                         AND ns.id_usuario = :id_usuario
-                         AND DATE(ns.fecha) = :fecha_cierre
-                         AND ns.eliminado = 0
-                       GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
-                       ORDER BY ns.fecha DESC";
-            
-            $stmtDet = $this->db->prepare($sqlDet);
-            $stmtDet->execute([
-                ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
-                ':id_usuario' => $cierre['id_usuario'],
-                ':fecha_cierre' => $cierre['fecha_cierre']
-            ]);
-            $movimientos = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
+            $movimientos = $this->modelo->obtenerDetalleCierrePDF($id_cierre);
 
             $datos_pdf = [
                 'fecha' => date('d/m/Y', strtotime($cierre['fecha_cierre'])),
@@ -205,7 +126,8 @@ class ReportesController {
         }
     }
 
-    public function exportarPDF() {
+    public function exportarPDF()
+    {
         try {
             $tipo = $_GET['tipo'] ?? 'reporte';
 
@@ -213,22 +135,26 @@ class ReportesController {
                 $archivoPdf = dirname(__DIR__) . '/view/reportes/generar_pdf_salida.php';
                 if (file_exists($archivoPdf)) { require_once $archivoPdf; exit(); }
             }
-            
+
             if ($tipo === 'entrada') {
                 $archivoPdf = dirname(__DIR__) . '/view/reportes/generar_pdf_entrada.php';
                 if (file_exists($archivoPdf)) { require_once $archivoPdf; exit(); }
             }
 
-            $fecha_inicio = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? trim($_GET['fecha_inicio']) : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? trim($_GET['fecha']) : null);
-            $fecha_fin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? trim($_GET['fecha_fin']) : null;
-            $busqueda = isset($_GET['busqueda']) && $_GET['busqueda'] !== '' ? trim($_GET['busqueda']) : null;
+            $fecha_inicio = Validador::limpiar($_GET['fecha_inicio'] ?? ($_GET['fecha'] ?? ''));
+            if ($fecha_inicio === '') $fecha_inicio = null;
+            $fecha_fin = Validador::limpiar($_GET['fecha_fin'] ?? '');
+            if ($fecha_fin === '') $fecha_fin = null;
+            $busqueda = Validador::limpiar($_GET['busqueda'] ?? '');
+            if ($busqueda === '') $busqueda = null;
             $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] !== '' ? (int)$_GET['id_categoria'] : null;
-            $tipo_movimiento = isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] !== '' ? trim($_GET['tipo_movimiento']) : null;
+            $tipo_movimiento = Validador::limpiar($_GET['tipo_movimiento'] ?? '');
+            if ($tipo_movimiento === '') $tipo_movimiento = null;
 
             $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
-            
+
             $totalEntradas = 0; $totalSalidas = 0; $totalAnuladas = 0; $totalCierres = 0;
-            
+
             $movimientosPDF = [];
             $cierresVistos = [];
 
@@ -241,20 +167,20 @@ class ReportesController {
                     if (!in_array($m['id_documento'], $cierresVistos)) {
                         $cierresVistos[] = $m['id_documento'];
                         $totalCierres++;
-                        
+
                         $m['nombre_cliente'] = 'Cierre Global de Turno';
                         $m['productos_lista'] = 'Global';
                         $m['total_productos'] = 'Global';
                         $m['total_categorias'] = 'Global';
-                        $m['total_unidades'] = (int)($m['total_unidades'] ?? 0); 
-                        
+                        $m['total_unidades'] = (int)($m['total_unidades'] ?? 0);
+
                         $movimientosPDF[] = $m;
                     }
                 } else {
                     if ($esAnulacion) $totalAnuladas++;
                     elseif (stripos($t, 'Entrada') !== false) $totalEntradas++;
                     elseif (stripos($t, 'Salida') !== false) $totalSalidas++;
-                    
+
                     $movimientosPDF[] = $m;
                 }
             }
@@ -262,7 +188,7 @@ class ReportesController {
             $filtrosStr = [];
             if (!empty($fecha_inicio)) $filtrosStr[] = "Desde: " . date('d/m/Y', strtotime($fecha_inicio));
             if (!empty($fecha_fin)) $filtrosStr[] = "Hasta: " . date('d/m/Y', strtotime($fecha_fin));
-            
+
             $datos_pdf = [
                 'fecha_reporte' => date('d/m/Y h:i A'),
                 'filtros' => empty($filtrosStr) ? 'Todos los movimientos' : implode(' | ', $filtrosStr),
@@ -285,33 +211,32 @@ class ReportesController {
         }
     }
 
-    // 🔥 FUNCIÓN IMPLEMENTADA PARA EL EXCEL/CSV DE MOVIMIENTOS
-    public function exportarCSV() {
+    public function exportarCSV()
+    {
         try {
-            // Capturamos los filtros
-            $fecha_inicio = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? trim($_GET['fecha_inicio']) : (isset($_GET['fecha']) && $_GET['fecha'] !== '' ? trim($_GET['fecha']) : null);
-            $fecha_fin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? trim($_GET['fecha_fin']) : null;
-            $busqueda = isset($_GET['busqueda']) && $_GET['busqueda'] !== '' ? trim($_GET['busqueda']) : null;
+            $fecha_inicio = Validador::limpiar($_GET['fecha_inicio'] ?? ($_GET['fecha'] ?? ''));
+            if ($fecha_inicio === '') $fecha_inicio = null;
+            $fecha_fin = Validador::limpiar($_GET['fecha_fin'] ?? '');
+            if ($fecha_fin === '') $fecha_fin = null;
+            $busqueda = Validador::limpiar($_GET['busqueda'] ?? '');
+            if ($busqueda === '') $busqueda = null;
             $id_categoria = isset($_GET['id_categoria']) && $_GET['id_categoria'] !== '' ? (int)$_GET['id_categoria'] : null;
-            $tipo_movimiento = isset($_GET['tipo_movimiento']) && $_GET['tipo_movimiento'] !== '' ? trim($_GET['tipo_movimiento']) : null;
+            $tipo_movimiento = Validador::limpiar($_GET['tipo_movimiento'] ?? '');
+            if ($tipo_movimiento === '') $tipo_movimiento = null;
 
-            // Traemos los movimientos
             $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
 
-            // Configuramos las cabeceras
             header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename="Reporte_Movimientos_' . date('Ymd_His') . '.csv"');
-            
-            $output = fopen('php://output', 'w');
-            fwrite($output, "\xEF\xBB\xBF"); 
 
-            // Escribimos los encabezados
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+
             fputcsv($output, ['N° NOTA', 'FECHA', 'CLIENTE / PROVEEDOR', 'TIPO', 'PRODUCTOS', 'CATEGORÍAS', 'UNIDADES', 'ENCARGADO']);
 
             $totalEntradas = 0; $totalSalidas = 0; $totalAnuladas = 0; $totalCierres = 0;
             $cierresVistos = [];
 
-            // Recorremos y escribimos
             foreach ($movimientos as $m) {
                 $t = $m['tipo_movimiento'] ?? '';
                 $esAnulacion = (strpos($t, 'Anulación') === 0 || stripos($t, 'anulad') !== false);
@@ -321,7 +246,7 @@ class ReportesController {
                     if (!in_array($m['id_documento'], $cierresVistos)) {
                         $cierresVistos[] = $m['id_documento'];
                         $totalCierres++;
-                        
+
                         fputcsv($output, [
                             '#' . $m['id_documento'],
                             isset($m['fecha_movimiento']) ? date('d/m/Y', strtotime($m['fecha_movimiento'])) : '',
@@ -351,16 +276,13 @@ class ReportesController {
                 }
             }
 
-            // Fila de resumen al final
             fputcsv($output, ['', '', '', '', '', '', '', '']);
             fputcsv($output, ['RESUMEN', 'Entradas:', $totalEntradas, 'Salidas:', $totalSalidas, 'Anuladas:', $totalAnuladas, 'Cierres: ' . $totalCierres]);
 
             fclose($output);
             exit();
-
         } catch (Exception $e) {
             die("Error al generar el CSV: " . $e->getMessage());
         }
     }
 }
-?>

@@ -1,101 +1,81 @@
 <?php
-// app/Helpers/PermisoHelper.php
 namespace App\Pirotecnicafenix\Helpers;
 
 use PDO;
 use Exception;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-class PermisoHelper {
+// 🔥 Ahora hereda de ConnectDB
+class PermisoHelper extends ConnectDB {
     
-    
-    public static function tienePermiso($db, $id_rol, $nombre_modulo, $accion) {
-   
+    private $conex;
 
-    if ((int)$id_rol === 1) {
-        return true;
+    public function __construct() {
+        parent::__construct();
+        $this->conex = $this->getConnection();
     }
-    
-    $accionesValidas = ['crear', 'leer', 'actualizar', 'eliminar'];
-    if (!in_array($accion, $accionesValidas)) {
-        error_log("Acción no válida: $accion");
-        return false;
-    }
-    
-    try {
-        $sql = "SELECT p.$accion 
-                FROM permisos p
-                JOIN modulo m ON p.id_modulo = m.id_modulo
-                WHERE p.id_rol = :id_rol 
-                  AND m.nombre_modulo = :modulo
-                LIMIT 1";
+
+    // 🔥 Quitamos el parámetro $db de los métodos, ahora usan $this->conex
+    public function tienePermiso($id_rol, $nombre_modulo, $accion) {
+        if ((int)$id_rol === 1) {
+            return true;
+        }
         
-        $stmt = $db->prepare($sql);
-        $stmt->execute([
-            'id_rol' => $id_rol,
-            'modulo' => $nombre_modulo
-        ]);
+        $accionesValidas = ['crear', 'leer', 'actualizar', 'eliminar'];
+        if (!in_array($accion, $accionesValidas)) {
+            error_log("Acción no válida: $accion");
+            return false;
+        }
         
-        $resultado = $stmt->fetchColumn();
-        return (bool) $resultado;
-        
-    } catch (Exception $e) {
-        error_log("Error en PermisoHelper::tienePermiso: " . $e->getMessage());
-        return false;
-    }
-}
-    
-   
-    
-    public static function obtenerPermisos($db, $id_rol) {
         try {
-            $sql = "SELECT 
-                        m.id_modulo,
-                        m.nombre_modulo,
-                        p.crear, p.leer, p.actualizar, p.eliminar
+            $sql = "SELECT p.$accion 
                     FROM permisos p
                     JOIN modulo m ON p.id_modulo = m.id_modulo
-                    WHERE p.id_rol = :id_rol
-                    ORDER BY m.id_modulo";
+                    WHERE p.id_rol = :id_rol 
+                      AND m.nombre_modulo = :modulo
+                    LIMIT 1";
             
-            $stmt = $db->prepare($sql);
-            $stmt->execute(['id_rol' => $id_rol]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([
+                'id_rol' => $id_rol,
+                'modulo' => $nombre_modulo
+            ]);
+            
+            $resultado = $stmt->fetchColumn();
+            return (bool) $resultado;
             
         } catch (Exception $e) {
-            error_log("Error en PermisoHelper::obtenerPermisos: " . $e->getMessage());
-            return [];
+            error_log("Error en PermisoHelper::tienePermiso: " . $e->getMessage());
+            return false;
         }
     }
     
-    
-    public static function modulosVisibles($db, $id_rol) {
-    
-    // ⭐ Admin ve TODOS los módulos
-    if ((int)$id_rol === 1) {
+    public function modulosVisibles($id_rol) {
+        if ((int)$id_rol === 1) {
+            try {
+                $sql = "SELECT nombre_modulo FROM modulo ORDER BY id_modulo";
+                $stmt = $this->conex->prepare($sql);
+                $stmt->execute();
+                return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'nombre_modulo');
+            } catch (Exception $e) {
+                error_log("Error en modulosVisibles (admin): " . $e->getMessage());
+                return [];
+            }
+        }
+        
         try {
-            $sql = "SELECT nombre_modulo FROM modulo ORDER BY id_modulo";
-            $stmt = $db->prepare($sql);
-            $stmt->execute();
+            $sql = "SELECT m.nombre_modulo
+                    FROM permisos p
+                    JOIN modulo m ON p.id_modulo = m.id_modulo
+                    WHERE p.id_rol = :id_rol 
+                      AND p.leer = 1
+                    ORDER BY m.id_modulo";
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute(['id_rol' => $id_rol]);
             return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'nombre_modulo');
         } catch (Exception $e) {
-            error_log("Error en modulosVisibles (admin): " . $e->getMessage());
+            error_log("Error en PermisoHelper::modulosVisibles: " . $e->getMessage());
             return [];
         }
     }
-    
-    try {
-        $sql = "SELECT m.nombre_modulo
-                FROM permisos p
-                JOIN modulo m ON p.id_modulo = m.id_modulo
-                WHERE p.id_rol = :id_rol 
-                  AND p.leer = 1
-                ORDER BY m.id_modulo";
-        $stmt = $db->prepare($sql);
-        $stmt->execute(['id_rol' => $id_rol]);
-        return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'nombre_modulo');
-    } catch (Exception $e) {
-        error_log("Error en PermisoHelper::modulosVisibles: " . $e->getMessage());
-        return [];
-    }
-}
 }

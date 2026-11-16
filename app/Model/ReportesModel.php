@@ -1,19 +1,22 @@
 <?php
+// app/Model/ReportesModel.php
 namespace App\Pirotecnicafenix\Model;
 
 use PDO;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-class ReportesModel {
-    private $db;
+class ReportesModel extends ConnectDB
+{
+    private $conex;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->conex = $this->getConnection();
     }
 
-    // ============================================================
-    // OBTENER MOVIMIENTOS AGRUPADOS POR NOTA (Entradas, Salidas y Cierres)
-    // ============================================================
-    public function obtenerMovimientosDiarios($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $limit = 10, $offset = 0) {
+    public function obtenerMovimientosDiarios($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null, $limit = 10, $offset = 0)
+    {
         $whereEntrada = [];
         $whereSalida = [];
         $whereCierre = [];
@@ -37,24 +40,18 @@ class ReportesModel {
                 $params[':fecha_inicio'] = $fecha_inicio;
             }
         }
-        
+
         if (!empty($id_categoria) && $id_categoria > 0) {
             $whereEntrada[] = "prod.id_categoria = :id_categoria";
             $whereSalida[] = "prod.id_categoria = :id_categoria";
-            $whereCierre[] = "1 = 0"; 
+            $whereCierre[] = "1 = 0";
             $params[':id_categoria'] = $id_categoria;
         }
-        
+
         if (!empty($busqueda)) {
-            // 🔥 ENTRADAS: Producto, Categoría, Proveedor (Razón Social o RIF)
             $whereEntrada[] = "(prod.descripcion LIKE :busqueda OR c.nombre_categoria LIKE :busqueda OR pr.razon_social LIKE :busqueda OR pr.rif LIKE :busqueda)";
-            
-            // 🔥 SALIDAS: Producto, Categoría, Cliente (Nombre, Apellido, Cédula, Razón Social o RIF)
             $whereSalida[] = "(prod.descripcion LIKE :busqueda OR c.nombre_categoria LIKE :busqueda OR p_cliente.nombre LIKE :busqueda OR p_cliente.apellido LIKE :busqueda OR p_cliente.cedula LIKE :busqueda OR cj.razon_social LIKE :busqueda OR cj.rif LIKE :busqueda)";
-            
-            // 🔥 CIERRES: Nombre del cajero
             $whereCierre[] = "CONCAT(p.nombre, ' ', p.apellido) LIKE :busqueda";
-            
             $params[':busqueda'] = '%' . $busqueda . '%';
         }
 
@@ -62,8 +59,7 @@ class ReportesModel {
         $whereClauseSalida = !empty($whereSalida) ? ' WHERE ' . implode(' AND ', $whereSalida) : '';
         $whereClauseCierre = !empty($whereCierre) ? ' WHERE ' . implode(' AND ', $whereCierre) : '';
 
-        // 1. ENTRADAS (0 AS id_usuario_cierre para igualar columnas en el UNION)
-        $sqlEntrada = "SELECT 
+        $sqlEntrada = "SELECT
             ne.id_nota_entrada AS id_documento,
             0 AS id_usuario_cierre,
             ne.fecha_ingreso AS fecha_movimiento,
@@ -89,14 +85,13 @@ class ReportesModel {
         {$whereClauseEntrada}
         GROUP BY ne.id_nota_entrada, ne.fecha_ingreso, ne.eliminado, ne.motivo_anulacion, pr.razon_social, pr.rif, per_u.nombre, per_u.apellido";
 
-        // 2. SALIDAS (0 AS id_usuario_cierre para igualar columnas en el UNION)
-        $sqlSalida = "SELECT 
+        $sqlSalida = "SELECT
             ns.id_nota_salida AS id_documento,
             0 AS id_usuario_cierre,
             ns.fecha AS fecha_movimiento,
             CASE WHEN ns.eliminado = 1 THEN 'Anulación Salida' ELSE 'Salida' END AS tipo_movimiento,
             'salida' AS tipo_origen,
-            CASE 
+            CASE
                 WHEN cj.id_cliente_juridico IS NOT NULL THEN cj.razon_social
                 ELSE CONCAT_WS(' ', p_cliente.nombre, p_cliente.apellido)
             END AS nombre_cliente,
@@ -120,8 +115,7 @@ class ReportesModel {
         {$whereClauseSalida}
         GROUP BY ns.id_nota_salida, ns.fecha, ns.eliminado, ns.motivo_anulacion, cj.id_cliente_juridico, cj.razon_social, cj.rif, p_cliente.nombre, p_cliente.apellido, p_cliente.cedula, per_u.nombre, per_u.apellido";
 
-        // 3. CIERRES DE CAJA (Se agrega id_usuario y se igualan las columnas)
-        $sqlCierre = "SELECT 
+        $sqlCierre = "SELECT
             c.id_cierre AS id_documento,
             c.id_usuario AS id_usuario_cierre,
             c.created_at AS fecha_movimiento,
@@ -162,7 +156,7 @@ class ReportesModel {
                     ) AS t";
         } else {
             $sql = "SELECT * FROM (
-                        SELECT * FROM ({$sqlEntrada}) AS t1 
+                        SELECT * FROM ({$sqlEntrada}) AS t1
                         UNION ALL
                         SELECT * FROM ({$sqlSalida}) AS t2
                         UNION ALL
@@ -172,7 +166,7 @@ class ReportesModel {
 
         $sql .= " ORDER BY fecha_movimiento DESC, id_documento DESC LIMIT :limit OFFSET :offset";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         foreach ($params as $key => $val) {
             $stmt->bindValue($key, $val);
         }
@@ -182,15 +176,14 @@ class ReportesModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function contarMovimientosDiarios($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null) {
+    public function contarMovimientosDiarios($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null)
+    {
         $movimientos = $this->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
         return count($movimientos);
     }
 
-    // ============================================================
-    // OBTENER TOTALES (Para las tarjetas de estadísticas)
-    // ============================================================
-    public function obtenerTotalesReporte($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null) {
+    public function obtenerTotalesReporte($fecha_inicio = null, $fecha_fin = null, $id_categoria = null, $busqueda = null, $tipo_movimiento = null)
+    {
         $where = [];
         $params = [];
 
@@ -207,7 +200,7 @@ class ReportesModel {
         }
         if (!empty($id_categoria) && $id_categoria > 0) { $where[] = "id_categoria = :id_categoria"; $params[':id_categoria'] = $id_categoria; }
         if (!empty($busqueda)) { $where[] = "nombre_producto LIKE :busqueda"; $params[':busqueda'] = '%' . $busqueda . '%'; }
-        
+
         if ($tipo_movimiento !== null && $tipo_movimiento !== '') {
             $tipoNormalizado = trim((string)$tipo_movimiento);
             if (in_array($tipoNormalizado, ['Anulación', 'Anulada', 'Anuladas'], true)) {
@@ -266,7 +259,7 @@ class ReportesModel {
             FROM cierre_caja
         ) resumen{$whereSql}";
 
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conex->prepare($sql);
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }
@@ -282,8 +275,115 @@ class ReportesModel {
         ];
     }
 
-    public function obtenerTotalesGlobales() {
+    public function obtenerTotalesGlobales()
+    {
         return $this->obtenerTotalesReporte();
     }
+
+    /* ============================================================
+     *  🔥 MÉTODOS NUEVOS (movidos del controlador)
+     * ============================================================ */
+
+    // CIERRE POR ID (movido de obtenerCierreAjax y exportarCierrePDF)
+    public function obtenerCierrePorId($idCierre)
+    {
+        try {
+            $sql = "SELECT c.*, CONCAT(p.nombre, ' ', p.apellido) AS nombre_usuario
+                    FROM cierre_caja c
+                    LEFT JOIN usuario u ON c.id_usuario = u.id_usuario
+                    LEFT JOIN persona p ON u.id_persona = p.id_persona
+                    WHERE c.id_cierre = :id LIMIT 1";
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([':id' => $idCierre]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (\Exception $e) {
+            error_log("Error en obtenerCierrePorId: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    // DETALLE DEL CIERRE (movido de obtenerCierreAjax)
+    public function obtenerDetalleCierre($idCierre)
+    {
+        try {
+            $cierre = $this->obtenerCierrePorId($idCierre);
+            if (!$cierre) return [];
+
+            $sql = "SELECT ns.id_nota_salida AS id_documento, ns.fecha,
+                              COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido)) AS nombre_cliente,
+                              CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                              GROUP_CONCAT(DISTINCT prod.descripcion SEPARATOR ', ') AS productos,
+                              GROUP_CONCAT(DISTINCT cat.nombre_categoria SEPARATOR ', ') AS categorias,
+                              SUM(ds.cantidad) AS total_unidades,
+                              COALESCE(CONCAT(per_u.nombre, ' ', per_u.apellido), 'N/A') AS usuario_activo
+                       FROM nota_de_salida ns
+                       INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                       INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                       LEFT JOIN categoria cat ON prod.id_categoria = cat.id_categoria
+                       LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                       LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                       LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                       LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
+                       WHERE ns.id_nota_salida <= :ultimo_id
+                         AND ns.id_usuario = :id_usuario
+                         AND DATE(ns.fecha) = :fecha_cierre
+                         AND ns.eliminado = 0
+                       GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per_u.nombre, per_u.apellido
+                       ORDER BY ns.id_nota_salida DESC";
+
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([
+                ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
+                ':id_usuario' => $cierre['id_usuario'],
+                ':fecha_cierre' => $cierre['fecha_cierre']
+            ]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            error_log("Error en obtenerDetalleCierre: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // DETALLE DEL CIERRE PARA PDF (movido de exportarCierrePDF)
+    public function obtenerDetalleCierrePDF($idCierre)
+    {
+        try {
+            $cierre = $this->obtenerCierrePorId($idCierre);
+            if (!$cierre) return [];
+
+            $sql = "SELECT ns.id_nota_salida AS id_documento, DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
+                              GROUP_CONCAT(DISTINCT CONCAT(prod.descripcion, ' (x', ds.cantidad, ')') SEPARATOR ', ') AS nombre_producto,
+                              SUM(ds.cantidad) AS cantidad,
+                              COUNT(DISTINCT prod.id_producto) AS total_productos,
+                              COUNT(DISTINCT c.id_categoria) AS total_categorias,
+                              COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido), 'Sin cliente') AS nombre_cliente,
+                              CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
+                              COALESCE(CONCAT(per.nombre, ' ', per.apellido), 'N/A') AS usuario_activo
+                       FROM nota_de_salida ns
+                       INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
+                       INNER JOIN producto prod ON ds.id_producto = prod.id_producto
+                       LEFT JOIN categoria c ON prod.id_categoria = c.id_categoria
+                       LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
+                       LEFT JOIN persona per ON u.id_persona = per.id_persona
+                       LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
+                       LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
+                       WHERE ns.id_nota_salida <= :ultimo_id
+                         AND ns.id_usuario = :id_usuario
+                         AND DATE(ns.fecha) = :fecha_cierre
+                         AND ns.eliminado = 0
+                       GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
+                       ORDER BY ns.fecha DESC";
+
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute([
+                ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
+                ':id_usuario' => $cierre['id_usuario'],
+                ':fecha_cierre' => $cierre['fecha_cierre']
+            ]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            error_log("Error en obtenerDetalleCierrePDF: " . $e->getMessage());
+            return [];
+        }
+    }
 }
-?>

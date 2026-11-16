@@ -4,17 +4,21 @@ namespace App\Pirotecnicafenix\Model;
 
 use PDO;
 use Exception;
+use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 
-class LoginModel {
-    private $db;
+class LoginModel extends ConnectDB
+{
+    private $conex;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->conex = $this->getConnection();
     }
 
-    public function autenticar($usuario, $clave) {
+    public function autenticar($usuario, $clave)
+    {
         try {
-            //CORREGIDO: usar id_persona para la relación
             $sql = "SELECT 
                         u.id_usuario,
                         u.usuario,
@@ -27,7 +31,7 @@ class LoginModel {
                     WHERE u.usuario = :usuario
                     LIMIT 1";
             
-            $stmt = $this->db->prepare($sql);
+            $stmt = $this->conex->prepare($sql);
             $stmt->execute(['usuario' => $usuario]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -51,4 +55,3 @@ class LoginModel {
         }
     }
 }
-?>
