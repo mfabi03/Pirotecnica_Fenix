@@ -20,6 +20,8 @@
                             <input type="text" name="nombre_categoria" id="reg-cat-nombre" class="form-control" required
                                    placeholder="Ej: Volcanes, Estrellitas..."
                                    data-validate="razon"
+                                   data-unico-endpoint="?url=categorias&action=check_duplicado"
+                                   data-unico-campo="nombre_categoria"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                             <small class="feedback-validacion info" id="reg-cat-nombre-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres

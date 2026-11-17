@@ -25,7 +25,7 @@ class FrontController {
     private function dispatch($url) {
         
         // --- RUTAS PÚBLICAS (No requieren sesión) ---
-        if (in_array($url, ['main', 'login', ''])) {
+        if (in_array($url, ['main', 'login', ''], true)) {
             
             // Si ya está logueado, lo mandamos al dashboard
             if ($url === 'login' && AuthMiddleware::isLoggedIn()) {
@@ -77,7 +77,7 @@ class FrontController {
             'reportes'    => ['archivo' => 'ReportesController.php', 'permiso' => ['Reportes', 'leer']],
             'reportecaja' => ['archivo' => 'ReporteCajaController.php', 'permiso' => ['ReporteCaja', 'leer']],
             
-            // Endpoints AJAX y Exportaciones (Validamos según lo que haga cada uno)
+            // Endpoints AJAX y Exportaciones
             'exportar_csv'         => ['archivo' => 'ReportesController.php', 'permiso' => ['Reportes', 'leer']],
             'exportar_pdf'         => ['archivo' => 'ReportesController.php', 'permiso' => ['Reportes', 'leer']],
             'obtener_cierre_ajax'  => ['archivo' => 'ReportesController.php', 'permiso' => null],
@@ -88,25 +88,81 @@ class FrontController {
             'confirmar_cierre_caja'=> ['archivo' => 'ReporteCajaController.php', 'permiso' => ['ReporteCaja', 'leer']],
             'detalle_caja_json'    => ['archivo' => 'ReporteCajaController.php', 'permiso' => ['ReporteCaja', 'leer']],
             'obtener_motivo_ajax'  => ['archivo' => 'ReportesController.php', 'permiso' => ['Reportes', 'leer']]
-            
         ];
 
         // Validar si la ruta existe
         if (isset($rutas[$url])) {
             $configRuta = $rutas[$url];
             
-            // 🔥 VALIDAR PERMISO (Si la ruta lo requiere)
+            // VALIDAR PERMISO (Si la ruta lo requiere)
             if ($configRuta['permiso'] !== null) {
                 AuthMiddleware::requirePermiso($configRuta['permiso'][0], $configRuta['permiso'][1]);
             }
 
             // Cargar el archivo del controlador
             $rutaArchivo = __DIR__ . '/' . $configRuta['archivo'];
-            if (file_exists($rutaArchivo)) {
-                require_once $rutaArchivo;
-            } else {
+            if (!file_exists($rutaArchivo)) {
                 $this->error404("Archivo de controlador no encontrado: " . $configRuta['archivo']);
+                return;
             }
+
+            //  DETECTAR SI EL CONTROLADOR ES UNA CLASE O ES PROCEDURAL
+            $controladoresPorClase = [
+                'dashboard'            => 'DashboardController',
+                'permisos'             => 'PermisosController',
+                'reportes'             => 'ReportesController',
+                'reportecaja'          => 'ReporteCajaController',
+                'roles'                => 'RolController',
+                'usuarios'             => 'UsuarioController',
+                'exportar_csv'         => 'ReportesController',
+                'exportar_pdf'         => 'ReportesController',
+                'obtener_cierre_ajax'  => 'ReportesController',
+                'exportar_cierre_pdf'  => 'ReportesController',
+                'exportar_caja_csv'    => 'ReporteCajaController',
+                'exportar_caja_pdf'    => 'ReporteCajaController',
+                'cierre_caja_ajax'     => 'ReporteCajaController',
+                'confirmar_cierre_caja'=> 'ReporteCajaController',
+                'detalle_caja_json'    => 'ReporteCajaController',
+                'obtener_motivo_ajax'  => 'ReportesController',
+            ];
+
+            if (isset($controladoresPorClase[$url])) {
+                // Controlador basado en clase → instanciar y llamar al método correcto
+                require_once $rutaArchivo;
+                $nombreClase = 'App\\Pirotecnicafenix\\Controller\\' . $controladoresPorClase[$url];
+
+                if (!class_exists($nombreClase)) {
+                    $this->error404("No se pudo cargar la clase {$nombreClase}.");
+                    return;
+                }
+
+                $controller = new $nombreClase();
+
+                // Determinar qué método llamar según la URL
+                $metodo = 'index';
+                if ($url === 'exportar_csv')          $metodo = 'exportarCSV';
+                if ($url === 'exportar_pdf')          $metodo = 'exportarPDF';
+                if ($url === 'obtener_cierre_ajax')   $metodo = 'obtenerCierreAjax';
+                if ($url === 'exportar_cierre_pdf')   $metodo = 'exportarCierrePDF';
+                if ($url === 'exportar_caja_csv')     $metodo = 'exportarCSV';
+                if ($url === 'exportar_caja_pdf')     $metodo = 'exportarPDF';
+                if ($url === 'cierre_caja_ajax')      $metodo = 'obtenerCierreDiaAjax';
+                if ($url === 'confirmar_cierre_caja') $metodo = 'confirmarCierreCajaAjax';
+                if ($url === 'detalle_caja_json')     $metodo = 'verDetalleAjax';
+                if ($url === 'obtener_motivo_ajax')   $metodo = 'obtenerCierreAjax';
+
+                if (!method_exists($controller, $metodo)) {
+                    $this->error404("El controlador {$nombreClase} no tiene método {$metodo}().");
+                    return;
+                }
+
+                $controller->$metodo();
+
+            } else {
+                // Controlador procedural → solo incluir (ejecuta su código al cargarse)
+                require_once $rutaArchivo;
+            }
+
         } else {
             $this->error404("La ruta '{$url}' no existe.");
         }
@@ -118,7 +174,7 @@ class FrontController {
         echo "<div class='container mt-5 text-center'>";
         echo "<h1 class='display-1 text-muted'>404</h1>";
         echo "<h2 class='text-muted'>Página no encontrada</h2>";
-        echo "<p class='text-muted'>{$mensaje}</p>";
+        echo "<p class='text-muted'>" . htmlspecialchars($mensaje, ENT_QUOTES, 'UTF-8') . "</p>";
         echo "<a href='?url=main' class='btn btn-primary mt-3'>Volver al inicio</a>";
         echo "</div>";
         require_once __DIR__ . '/../view/footer.php';

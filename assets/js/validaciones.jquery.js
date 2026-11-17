@@ -131,20 +131,20 @@ var Validador = (function ($) {
 
         if (estado === 'vacio') {
             $input.css({ borderColor: '', boxShadow: '' });
-            $feedbackEl.addClass('info').html('<i class="fas fa-info-circle me-1"></i> ' + mensaje);
+            $feedbackEl.addClass('info').html('<i class="fas fa-info-circle me-1"></i> ' + window.escapeHtml(mensaje));
         } else if (estado === 'valido') {
             $input.addClass('campo-valido');
-            $feedbackEl.addClass('success').html('<i class="fas fa-check-circle me-1"></i> ' + mensaje);
+            $feedbackEl.addClass('success').html('<i class="fas fa-check-circle me-1"></i> ' + window.escapeHtml(mensaje));
         } else {
             $input.addClass('campo-invalido');
-            $feedbackEl.addClass('error').html('<i class="fas fa-times-circle me-1"></i> ' + mensaje);
+            $feedbackEl.addClass('error').html('<i class="fas fa-times-circle me-1"></i> ' + window.escapeHtml(mensaje));
         }
     }
 
     function mostrarFeedbackChecking($input, $feedbackEl, mensaje) {
         $input.removeClass('campo-valido campo-invalido').addClass('campo-verificando');
         $feedbackEl.removeClass('info error success').addClass('checking')
-                    .html('<i class="fas fa-spinner me-1"></i> ' + mensaje);
+                    .html('<i class="fas fa-spinner me-1"></i> ' + window.escapeHtml(mensaje));
     }
 
     // ---------------------------------------------------------
@@ -187,6 +187,7 @@ var Validador = (function ($) {
     // Validación única
     // ---------------------------------------------------------
     function validarUnico(input) {
+        clearTimeout(timersUnico[input.id]);
         var $input   = $(input);
         var campo    = $input.data('unico-campo');
         var endpoint = $input.data('unico-endpoint');
@@ -212,6 +213,8 @@ var Validador = (function ($) {
         var etiqueta = (campo === 'cedula') ? 'cédula'
                      : (campo === 'rif')    ? 'RIF'
                      : (campo === 'telefono_proveedor') ? 'teléfono'
+                     : (campo === 'descripcion') ? 'nombre del producto'
+                     : (campo === 'nombre_categoria') ? 'nombre de categoría'
                      : campo;
 
         $input.data('unicoEstado', 'checking');
@@ -222,8 +225,17 @@ var Validador = (function ($) {
                 if (reqId !== requestIdUnico[input.id]) return true;
                 if (existe) {
                     $input.data('unicoEstado', 'duplicado');
+                    var mensajeDuplicado = campo === 'cedula'
+                        ? 'Esta cédula ya está registrada'
+                        : (campo === 'rif'
+                            ? 'Este RIF ya está registrado'
+                            : (campo === 'telefono_proveedor'
+                                ? 'Este teléfono ya está registrado'
+                                : (campo === 'usuario'
+                                    ? 'Este usuario ya está registrado'
+                                    : 'Este ' + etiqueta + ' ya está registrado')));
                     mostrarFeedback($input, $feedbackEl, 'invalido',
-                        'Esta ' + etiqueta + ' ya está registrada');
+                        mensajeDuplicado);
                     return false;
                 }
                 $input.data('unicoEstado', 'ok');

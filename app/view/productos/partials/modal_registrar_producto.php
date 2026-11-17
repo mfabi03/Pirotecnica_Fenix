@@ -24,6 +24,8 @@
                             <input type="text" name="descripcion" id="reg-prod-descripcion" class="form-control" required
                                    placeholder="Ej: Pólvora"
                                    data-validate="razon"
+                                   data-unico-endpoint="?url=productos&type=check_duplicado"
+                                   data-unico-campo="descripcion"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                             <small class="feedback-validacion info" id="reg-prod-descripcion-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
@@ -38,7 +40,7 @@
                                         style="border-radius: 12px 0 0 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
                                     <option value="">Seleccione una Categoría...</option>
                                     <?php foreach (($categorias ?? []) as $cat): ?>
-                                        <option value="<?= $cat['id_categoria'] ?>"><?= htmlspecialchars($cat['nombre_categoria']) ?></option>
+                                        <option value="<?= htmlspecialchars((string) ($cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($cat['nombre_categoria']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <button type="button" 
@@ -92,6 +94,7 @@
                                       style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);"
                                       placeholder="Ej: Peso: 2kg, Color: Rojo"></textarea>
                         </div>
+
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid #e9ecef;">

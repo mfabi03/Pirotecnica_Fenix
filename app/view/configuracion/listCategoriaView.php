@@ -11,30 +11,16 @@ $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($categorias) ? count($categorias) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
+$puede_crear_categoria = $puede_crear ?? false;
+$puede_editar_categoria = $puede_editar ?? false;
+$puede_eliminar_categoria = $puede_eliminar ?? false;
 
 // Saber si estamos en la vista de eliminados
 $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 ?>
 
 <!-- ESTILOS PARA LOS BOTONES DE ACCIÓN CIRCULARES -->
-<style>
-.btn-action-circle {
-    width: 36px; height: 36px; border-radius: 50%; border: none;
-    display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.2s ease;
-    padding: 0; font-size: 0.85rem; color: #ffffff;
-    text-decoration: none;
-}
-.btn-action-circle:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); filter: brightness(1.1); }
-.btn-action-circle.btn-view { background: rgba(13,110,253,0.15); color: #0d6efd; }
-.btn-action-circle.btn-view:hover { background: #0d6efd; color: #fff; }
-.btn-action-circle.btn-edit { background: rgba(243,156,18,0.15); color: #f39c12; }
-.btn-action-circle.btn-edit:hover { background: #f39c12; color: #fff; }
-.btn-action-circle.btn-delete { background: rgba(220,53,69,0.15); color: #dc3545; }
-.btn-action-circle.btn-delete:hover { background: #dc3545; color: #fff; }
-.btn-action-circle.btn-reactivar { background: rgba(40,167,69,0.15); color: #28a745; }
-.btn-action-circle.btn-reactivar:hover { background: #28a745; color: #fff; }
-</style>
+
 
 <div class="col-md-8 col-lg-12">
             
@@ -44,10 +30,10 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
             <div class="col">
                 <h3 class="m-0 dark-title">
                     <i class="fas fa-tags text-gold me-2"></i> 
-                    <?= $esVistaEliminados ? 'Categorías Eliminadas' : 'Lista de Categorías' ?>
+                    <?= htmlspecialchars((string) ($esVistaEliminados ? 'Categorías Eliminadas' : 'Lista de Categorías'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    <?= $esVistaEliminados ? 'Categorías inactivas en el sistema' : 'Gestiona las categorías de productos' ?>
+                    <?= htmlspecialchars((string) ($esVistaEliminados ? 'Categorías inactivas en el sistema' : 'Gestiona las categorías de productos'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                 </small>
             </div>
             <div class="col-auto">
@@ -74,13 +60,13 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
         <form id="formFiltroCategorias" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
             <input type="hidden" name="url" value="categorias">
             <input type="hidden" name="action" value="lista">
-            <input type="hidden" name="estado_categoria" value="<?= $esVistaEliminados ? 'inactivos' : 'activos' ?>">
+            <input type="hidden" name="estado_categoria" value="<?= htmlspecialchars((string) ($esVistaEliminados ? 'inactivos' : 'activos'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true">
+                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
-                        <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                        <option value="<?= htmlspecialchars((string) ($o), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= htmlspecialchars((string) (($por_pagina == $o) ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>><?= htmlspecialchars((string) ($o), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -148,9 +134,9 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
     $estiloMsg = $mapaTipos[$tipo_mensaje ?? 'info'] ?? $mapaTipos['info'];
     ?>
     <?php if (!empty($mensaje)): ?>
-        <div class="alert <?= $estiloMsg['clase'] ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
+        <div class="alert <?= htmlspecialchars((string) ($estiloMsg['clase']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
             <div class="d-flex align-items-center">
-                <i class="fas <?= $estiloMsg['icono'] ?> me-3"></i>
+                <i class="fas <?= htmlspecialchars((string) ($estiloMsg['icono']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> me-3"></i>
                 <span><?= htmlspecialchars($mensaje) ?></span>
                 <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
             </div>
@@ -162,7 +148,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
                 <i class="fas fa-tags me-2"></i> 
-                <?= $esVistaEliminados ? 'Categorías Inactivas' : 'Categorías Registradas' ?>
+                <?= htmlspecialchars((string) ($esVistaEliminados ? 'Categorías Inactivas' : 'Categorías Registradas'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
             </h5>
         </div>
         
@@ -183,9 +169,9 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                 <div class="py-4">
                                     <i class="fas fa-tags fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">
-                                        <?= $esVistaEliminados ? 'No hay categorías inactivas' : 'No hay categorías registradas' ?>
+                                        <?= htmlspecialchars((string) ($esVistaEliminados ? 'No hay categorías inactivas' : 'No hay categorías registradas'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                                     </p>
-                                    <small><?= $esVistaEliminados ? 'Las categorías activas están en la lista principal' : 'Comienza registrando una nueva categoría' ?></small>
+                                    <small><?= htmlspecialchars((string) ($esVistaEliminados ? 'Las categorías activas están en la lista principal' : 'Comienza registrando una nueva categoría'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></small>
                                 </div>
                             </td>
                         </tr>
@@ -212,7 +198,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                     <div class="d-flex justify-content-center gap-2">
                                         <!-- VER -->
                                         <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
-                                                onclick="verDetalleCategoria(<?= (int) $cat['id_categoria'] ?>)">
+                                                onclick="verDetalleCategoria(<?= htmlspecialchars((string) ((int) $cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
@@ -221,7 +207,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                             <!-- 🔥 USAMOS LA VARIABLE $puede_editar -->
                                             <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-reactivar" title="Reactivar Categoría"
-                                                    onclick="confirmarReactivarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
+                                                    onclick="confirmarReactivarCategoria(<?= htmlspecialchars((string) ((int) $cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
                                                 <i class="fas fa-undo-alt"></i>
                                             </button>
                                             <?php endif; ?>
@@ -230,7 +216,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                             <!-- 🔥 USAMOS LA VARIABLE $puede_editar -->
                                             <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-edit" title="Editar"
-                                                    onclick="editarCategoria(<?= (int) $cat['id_categoria'] ?>)">
+                                                    onclick="editarCategoria(<?= htmlspecialchars((string) ((int) $cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <?php endif; ?>
@@ -238,7 +224,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                             <!-- 🔥 USAMOS LA VARIABLE $puede_eliminar -->
                                             <?php if ($puede_eliminar): ?>
                                             <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
-                                                    onclick="confirmarEliminarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
+                                                    onclick="confirmarEliminarCategoria(<?= htmlspecialchars((string) ((int) $cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
                                             <?php endif; ?>
@@ -255,7 +241,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
         <div class="card-footer py-3 d-flex justify-content-between align-items-center">
             <span class="text-muted small">
                 <i class="fas fa-tags me-1"></i> 
-                Total: <?= $totalRegistros ?> categorías
+                Total: <?= htmlspecialchars((string) ($totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> categorías
             </span>
             <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
         </div>
@@ -323,117 +309,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 ) ?>
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    'use strict';
 
-    const formCategorias = document.getElementById('formFiltroCategorias');
-    if (formCategorias) {
-        const enviarFiltroCategorias = function () {
-            const formData = new FormData(formCategorias);
-            formData.set('ajax', '1');
 
-            fetch('?url=categorias&action=lista', {
-                method: 'POST',
-                body: formData
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success || !data.html) return;
-                const wrap = document.createElement('div');
-                wrap.innerHTML = data.html;
-                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12');
-                if (!nuevaVista) return;
-                const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
-                if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
-            })
-            .catch(() => {
-                formCategorias.submit();
-            });
-        };
-
-        formCategorias.addEventListener('submit', function (e) {
-            e.preventDefault();
-            enviarFiltroCategorias();
-        });
-
-        formCategorias.querySelectorAll('select').forEach(function (selectEl) {
-            selectEl.addEventListener('change', function () {
-                enviarFiltroCategorias();
-            });
-        });
-    }
-    
-    const categoriasData = JSON.parse(document.getElementById('categoriasData').textContent);
-    const categoriasPorId = {};
-    categoriasData.forEach(function(c) {
-        categoriasPorId[parseInt(c.id_categoria)] = c;
-    });
-
-    window.verDetalleCategoria = function(id) {
-        const c = categoriasPorId[id];
-        if (!c) return;
-
-        document.getElementById('ver-categoria-nombre').textContent = c.nombre_categoria || 'Sin nombre';
-        
-        var badgeEstatus = document.getElementById('ver-categoria-estatus');
-        if (badgeEstatus) {
-            if (c.eliminado == 1) {
-                badgeEstatus.textContent = 'Inactivo';
-                badgeEstatus.style.background = 'rgba(220,53,69,0.15)';
-                badgeEstatus.style.color = '#dc3545';
-            } else {
-                badgeEstatus.textContent = 'Activo';
-                badgeEstatus.style.background = 'rgba(40,167,69,0.15)';
-                badgeEstatus.style.color = '#28a745';
-            }
-        }
-
-        document.getElementById('ver-categoria-nombre-detalle').textContent = c.nombre_categoria || 'N/A';
-        document.getElementById('ver-categoria-descripcion').textContent = c.descripcion || 'Sin descripción';
-
-        new bootstrap.Modal(document.getElementById('modalVerCategoria')).show();
-    };
-
-    window.editarCategoria = function(id) {
-        const c = categoriasPorId[id];
-        if (!c) return;
-
-        document.getElementById('editar-categoria-nombre-header').textContent = c.nombre_categoria || 'Categoría';
-        document.getElementById('editar-categoria-id').value = c.id_categoria;
-        document.getElementById('editar-categoria-nombre').value = c.nombre_categoria || '';
-        document.getElementById('editar-categoria-descripcion').value = c.descripcion || '';
-
-        new bootstrap.Modal(document.getElementById('modalEditarCategoria')).show();
-    };
-
-    window.confirmarEliminarCategoria = function(id, nombre) {
-        document.getElementById('eliminar-categoria-id').value = id;
-        document.getElementById('eliminar-categoria-nombre').textContent = nombre || 'Categoría #' + id;
-        new bootstrap.Modal(document.getElementById('modalEliminarCategoria')).show();
-    };
-
-    window.confirmarReactivarCategoria = function(id, nombre) {
-        document.getElementById('reactivar-categoria-id').value = id;
-        document.getElementById('reactivar-categoria-nombre').textContent = nombre || 'Categoría #' + id;
-        new bootstrap.Modal(document.getElementById('modalReactivarCategoria')).show();
-    };
-});
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
-        var ms = parseInt(el.dataset.autoDismiss, 10) || 5000;
-        setTimeout(function () {
-            if (!el.parentNode) return;
-            el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(-8px)';
-            setTimeout(function () { el.remove(); }, 400);
-        }, ms);
-    });
-});
-</script>
-
+<?php $scriptsModulo = ['categorias.js']; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

@@ -347,7 +347,10 @@ $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 
 
 // PDF
 if ($type === 'generar_pdf' && $id) {
-    $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf_entrada.php';
+    $archivoPdf = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'reportes' . DIRECTORY_SEPARATOR . 'generar_pdf_entrada.php';
+    if (!file_exists($archivoPdf)) {
+        $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf_entrada.php';
+    }
     if (!file_exists($archivoPdf)) {
         $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf.php';
     }

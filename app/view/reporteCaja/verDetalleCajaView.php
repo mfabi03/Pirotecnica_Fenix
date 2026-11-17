@@ -15,7 +15,6 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
-
             <div class="modal-body" style="padding: 20px 24px;">
                 
                 <div id="ver-nota-cargando" class="text-center py-5">
@@ -103,99 +102,3 @@
         </div>
     </div>
 </div>
-
-<script>
-// Función para abrir el modal de detalle desde el botón de ojo
-window.verDetalleCaja = function(id) {
-    document.getElementById('ver-nota-cargando').style.display = 'block';
-    document.getElementById('ver-nota-error').style.display = 'none';
-    document.getElementById('ver-nota-contenido').style.display = 'none';
-    document.getElementById('ver-nota-id').textContent = '#' + id;
-
-    const modalEl = document.getElementById('modalVerNotaCaja');
-    let modal = bootstrap.Modal.getInstance(modalEl);
-    if (!modal) {
-        modal = new bootstrap.Modal(modalEl);
-    }
-    modal.show();
-
-    let url = '?url=detalle_caja_json&id=' + id;
-
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('ver-nota-cargando').style.display = 'none';
-            
-            if (!data.success || !data.nota) {
-                document.getElementById('ver-nota-error').style.display = 'block';
-                document.getElementById('ver-nota-error-msg').textContent = data.error || 'Error al cargar';
-                return;
-            }
-
-            const nota = data.nota;
-            document.getElementById('ver-nota-contenido').style.display = 'block';
-
-            // 🔥 SOLUCIÓN AL FORMATO RARO DE LA FECHA
-            const fechaOriginal = nota.fecha || nota.fecha_movimiento || '';
-            let fechaFormateada = 'N/A';
-
-            if (fechaOriginal) {
-                // Cortamos la hora si viene (ej: "2026-11-09 23:04:19" -> "2026-11-09")
-                const soloFecha = fechaOriginal.split(' ')[0]; 
-                
-                if (typeof Validador !== 'undefined') {
-                    fechaFormateada = Validador.formatearFecha(soloFecha);
-                } else {
-                    // Respaldo por si el Validador no está cargado
-                    const partes = soloFecha.split('-');
-                    if (partes.length === 3) {
-                        fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
-                    } else {
-                        fechaFormateada = soloFecha;
-                    }
-                }
-            }
-            document.getElementById('ver-nota-fecha').textContent = fechaFormateada;
-
-            // 🔥 SOLUCIÓN AL "UNDEFINED" EN RESPONSABLE
-            document.getElementById('ver-nota-encargado').textContent = nota.usuario_responsable || 'N/A';
-            document.getElementById('ver-nota-cliente').textContent = nota.cliente || 'N/A';
-            document.getElementById('ver-nota-documento').textContent = nota.cedula || nota.rif || 'N/A';
-
-            const tbody = document.getElementById('ver-nota-productos-tbody');
-            tbody.innerHTML = '';
-            let totalUnidades = 0;
-
-            if (nota.detalles && nota.detalles.length > 0) {
-                nota.detalles.forEach(function(d) {
-                    const cantidad = parseInt(d.cantidad) || 0;
-                    totalUnidades += cantidad;
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="ps-4" style="color: #1a1a2e;">${escapeHtml(d.nombre_producto || 'N/A')}</td>
-                            <td style="color: #6c757d;">${escapeHtml(d.nombre_categoria || 'Sin categoría')}</td>
-                            <td class="pe-4 text-center fw-bold" style="color: #1a1a2e;">${cantidad}</td>
-                        </tr>
-                    `;
-                });
-            } else {
-                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3" style="color: #6c757d;">No hay productos</td></tr>`;
-            }
-
-            document.getElementById('ver-nota-total-unidades').textContent = totalUnidades;
-        })
-        .catch(err => {
-            document.getElementById('ver-nota-cargando').style.display = 'none';
-            document.getElementById('ver-nota-error').style.display = 'block';
-            document.getElementById('ver-nota-error-msg').textContent = 'Error de conexión: ' + err.message;
-        });
-};
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, function(m) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-    });
-}
-</script>

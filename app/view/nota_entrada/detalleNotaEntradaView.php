@@ -77,8 +77,8 @@ foreach ($detalles as $d) {
                             </tr>
                             <tr>
                                 <th scope="row" class="fw-normal text-secondary">Estatus</th>
-                                <td class="<?= $anulada ? 'text-danger' : 'text-success' ?> fw-bold">
-                                    <?= $anulada ? 'ANULADA' : 'ACTIVA' ?>
+                                <td class="<?= htmlspecialchars((string) ($anulada ? 'text-danger' : 'text-success'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> fw-bold">
+                                    <?= htmlspecialchars((string) ($anulada ? 'ANULADA' : 'ACTIVA'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                                 </td>
                             </tr>
                         </tbody>
@@ -116,9 +116,9 @@ foreach ($detalles as $d) {
                                         <td><?= htmlspecialchars((string) ($d['id_producto'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                                         <td><?= htmlspecialchars($d['nombre_producto'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?></td>
                                         <td><?= htmlspecialchars($d['nombre_categoria'] ?? 'Sin categoría', ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td class="text-end"><?= number_format($cantidad) ?></td>
-                                        <td class="text-end">$<?= number_format($costo, 2) ?></td>
-                                        <td class="text-end">$<?= number_format($subtotal, 2) ?></td>
+                                        <td class="text-end"><?= htmlspecialchars((string) (number_format($cantidad)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                        <td class="text-end">$<?= htmlspecialchars((string) (number_format($costo, 2)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                        <td class="text-end">$<?= htmlspecialchars((string) (number_format($subtotal, 2)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -126,9 +126,9 @@ foreach ($detalles as $d) {
                         <tfoot>
                             <tr>
                                 <th colspan="3" class="text-end">TOTALES:</th>
-                                <td class="text-end fw-bold"><?= number_format($totalUnidades) ?></td>
+                                <td class="text-end fw-bold"><?= htmlspecialchars((string) (number_format($totalUnidades)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                                 <td></td>
-                                <td class="text-end fw-bold">$<?= number_format($totalDinero, 2) ?></td>
+                                <td class="text-end fw-bold">$<?= htmlspecialchars((string) (number_format($totalDinero, 2)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                             </tr>
                         </tfoot>
                     </table>

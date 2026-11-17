@@ -99,6 +99,9 @@
             </div>
 
             <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                <a href="#" id="btnImprimirNotaEntrada" target="_blank" rel="noopener" class="btn btn-danger" style="display: none; border-radius: 50px; padding: 10px 25px; font-weight: 600;">
+                    <i class="fas fa-file-pdf me-1"></i> Imprimir PDF
+                </a>
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
                     <i class="fas fa-times me-1"></i> Cerrar
                 </button>

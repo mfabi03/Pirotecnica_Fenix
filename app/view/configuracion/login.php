@@ -9,23 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../pirotecnica_fenix/assets/css/estiloInicio.css">
     <link rel="stylesheet" href="../../pirotecnica_fenix/assets/css/fuegos-artificiales.css?v=fullscreen-fireworks-2">
+    <link rel="stylesheet" href="../../pirotecnica_fenix/assets/css/login.css">
     
-    <style>
-        /* 🔥 REGLA DE ORO: Ignorar el CSS de la plantilla si está deshabilitado */
-        .form-control:disabled, .form-control[disabled] {
-            background-color: #2b2b36 !important;
-            color: #888 !important;
-            border-color: #444 !important;
-            cursor: not-allowed !important;
-            opacity: 0.7 !important;
-        }
-        .btn-login:disabled, .btn-login[disabled] {
-            background: #444 !important;
-            color: #888 !important;
-            cursor: not-allowed !important;
-            box-shadow: none !important;
-        }
-    </style>
 </head>
 <body>
     <img src="../../pirotecnica_fenix/assets/imagenes/fondo.jpg" 
@@ -33,7 +18,9 @@
          class="bg-image">
     <div class="overlay"></div>
     <div id="tsparticles" class="fireworks-overlay" aria-hidden="true"></div>
-    <div class="login-container" id="loginContainer">
+    <div class="login-container" id="loginContainer"
+         data-bloqueado="<?= htmlspecialchars((string) ((isset($bloqueado) && $bloqueado) ? 'true' : 'false'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+         data-segundos-restantes="<?= htmlspecialchars((string) (isset($segundos_restantes) ? (int) $segundos_restantes : 0), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
         <div class="login-card">
             <div class="login-header">
                 <span class="logo-icon"></span>
@@ -57,7 +44,7 @@
                            name="usuario" 
                            placeholder="Ingresa tu usuario"
                            value="<?= htmlspecialchars($_POST['usuario'] ?? '') ?>"
-                           <?= (isset($bloqueado) && $bloqueado) ? 'disabled' : 'required' ?>>
+                           <?= htmlspecialchars((string) ((isset($bloqueado) && $bloqueado) ? 'disabled' : 'required'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>
                     <span class="input-icon">
                         <i class="fas fa-user"></i>
                     </span>
@@ -67,16 +54,16 @@
                            id="clave" 
                            name="clave" 
                            placeholder="Ingresa tu contraseña"
-                           <?= (isset($bloqueado) && $bloqueado) ? 'disabled' : 'required' ?>>
+                           <?= htmlspecialchars((string) ((isset($bloqueado) && $bloqueado) ? 'disabled' : 'required'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>
                     <span class="input-icon">
                         <i class="fas fa-lock"></i>
                     </span>
                 </div>
                 
                 <button type="submit" class="btn-login" id="btnLogin"
-                        <?= (isset($bloqueado) && $bloqueado) ? 'disabled' : '' ?>>
+                        <?= htmlspecialchars((string) ((isset($bloqueado) && $bloqueado) ? 'disabled' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>
                     <i class="fas fa-sign-in-alt"></i> 
-                    <?= (isset($bloqueado) && $bloqueado) ? 'Bloqueado' : 'Iniciar Sesión' ?>
+                    <?= htmlspecialchars((string) ((isset($bloqueado) && $bloqueado) ? 'Bloqueado' : 'Iniciar Sesión'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                 </button>
             </form>
             
@@ -94,38 +81,6 @@
     <script src="../../pirotecnica_fenix/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tsparticles/preset-fireworks@4/tsparticles.preset.fireworks.bundle.min.js" defer></script>
     <script src="../../pirotecnica_fenix/assets/js/fuegos-artificiales.js?v=fullscreen-fireworks-2" defer></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const bloqueado = <?= (isset($bloqueado) && $bloqueado) ? 'true' : 'false' ?>;
-            const segundosRestantes = <?= isset($segundos_restantes) ? (int)$segundos_restantes : 0 ?>;
-
-            if (bloqueado && segundosRestantes > 0) {
-                // Bloquear el envío del formulario (incluso con Enter)
-                const form = document.getElementById('formLogin');
-                if (form) {
-                    form.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        return false;
-                    });
-                }
-
-                // Conteo regresivo
-                let tiempo = segundosRestantes;
-                const alerta = document.getElementById('alerta-error');
-                
-                const intervalo = setInterval(() => {
-                    tiempo--;
-                    if (alerta) {
-                        alerta.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i> Demasiados intentos fallidos. Intenta de nuevo en ${tiempo} segundos.`;
-                    }
-                    if (tiempo <= 0) {
-                        clearInterval(intervalo);
-                        window.location.reload();
-                    }
-                }, 1000);
-            }
-        });
-    </script>
+    <script src="../../pirotecnica_fenix/assets/js/login.js"></script>
 </body>
 </html>

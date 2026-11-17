@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__) . '/config/timezone.php';
+
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -79,12 +81,12 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
             <div class="w-100">
                 <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 text-decoration-none"
                    data-bs-toggle="collapse" href="#menuNotas<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
-                   role="button" aria-expanded="<?= $isNotasActive ? 'true' : 'false' ?>"
+                   role="button" aria-expanded="<?= htmlspecialchars((string) ($isNotasActive ? 'true' : 'false'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                    aria-controls="menuNotas<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
-                   style="background:<?= $isNotasActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;color:<?= $isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.72)' ?>">
+                   style="background:<?= htmlspecialchars((string) ($isNotasActive ? 'rgba(243,156,18,0.12)' : 'transparent'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>;color:<?= htmlspecialchars((string) ($isNotasActive ? '#f39c12' : 'rgba(255,255,255,0.72)'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                     <i class="fas fa-file-invoice" style="width:20px"></i><span class="flex-grow-1">Notas</span><i class="fas fa-chevron-down small"></i>
                 </a>
-                <div class="collapse <?= $isNotasActive ? 'show' : '' ?>" id="menuNotas<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
+                <div class="collapse <?= htmlspecialchars((string) ($isNotasActive ? 'show' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" id="menuNotas<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
                     <div class="d-flex flex-column ps-3 mt-1 rounded-3 p-2" style="background:#0D0D1A">
                         <?php if ($verNotaEntrada): ?>
                             <a class="dropdown-item py-2 px-2 rounded-2" href="?url=notaentrada" style="<?= htmlspecialchars($linkStyle('notaentrada'), ENT_QUOTES, 'UTF-8') ?>">
@@ -105,12 +107,12 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
             <div class="w-100">
                 <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 text-decoration-none"
                    data-bs-toggle="collapse" href="#menuConfiguracion<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
-                   role="button" aria-expanded="<?= $isConfigActive ? 'true' : 'false' ?>"
+                   role="button" aria-expanded="<?= htmlspecialchars((string) ($isConfigActive ? 'true' : 'false'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                    aria-controls="menuConfiguracion<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
-                   style="background:<?= $isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;color:<?= $isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.72)' ?>">
+                   style="background:<?= htmlspecialchars((string) ($isConfigActive ? 'rgba(243,156,18,0.12)' : 'transparent'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>;color:<?= htmlspecialchars((string) ($isConfigActive ? '#f39c12' : 'rgba(255,255,255,0.72)'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                     <i class="fas fa-cog" style="width:20px"></i><span class="flex-grow-1">Configuración</span><i class="fas fa-chevron-down small"></i>
                 </a>
-                <div class="collapse <?= $isConfigActive ? 'show' : '' ?>" id="menuConfiguracion<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
+                <div class="collapse <?= htmlspecialchars((string) ($isConfigActive ? 'show' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" id="menuConfiguracion<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
                     <div class="d-flex flex-column ps-3 mt-1 rounded-3 p-2" style="background:#0D0D1A">
                         <?php if ($verCategorias): ?>
                             <a class="dropdown-item py-2 px-2 rounded-2" href="?url=categorias" style="<?= htmlspecialchars($linkStyle('categorias'), ENT_QUOTES, 'UTF-8') ?>"><i class="fas fa-tags me-2"></i>Categorías</a>
@@ -130,12 +132,12 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
             <div class="w-100">
                 <a class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 text-decoration-none"
                    data-bs-toggle="collapse" href="#menuReportes<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
-                   role="button" aria-expanded="<?= $isReportesActive ? 'true' : 'false' ?>"
+                   role="button" aria-expanded="<?= htmlspecialchars((string) ($isReportesActive ? 'true' : 'false'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                    aria-controls="menuReportes<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>"
-                   style="background:<?= $isReportesActive ? 'rgba(243,156,18,0.12)' : 'transparent' ?>;color:<?= $isReportesActive ? '#f39c12' : 'rgba(255,255,255,0.72)' ?>">
+                   style="background:<?= htmlspecialchars((string) ($isReportesActive ? 'rgba(243,156,18,0.12)' : 'transparent'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>;color:<?= htmlspecialchars((string) ($isReportesActive ? '#f39c12' : 'rgba(255,255,255,0.72)'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                     <i class="fas fa-file-alt" style="width:20px"></i><span class="flex-grow-1">Reportes</span><i class="fas fa-chevron-down small"></i>
                 </a>
-                <div class="collapse <?= $isReportesActive ? 'show' : '' ?>" id="menuReportes<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
+                <div class="collapse <?= htmlspecialchars((string) ($isReportesActive ? 'show' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" id="menuReportes<?= htmlspecialchars($suffix, ENT_QUOTES, 'UTF-8') ?>">
                     <div class="d-flex flex-column ps-3 mt-1 rounded-3 p-2" style="background:#0D0D1A">
                         <?php if ($verReporteMovimiento): ?>
                             <a class="dropdown-item py-2 px-2 rounded-2" href="?url=reportes" style="<?= htmlspecialchars($linkStyle('reportes'), ENT_QUOTES, 'UTF-8') ?>"><i class="fas fa-boxes-stacked me-2"></i>Reporte de Movimiento</a>
@@ -163,44 +165,14 @@ $renderMenu = static function (string $suffix) use ($tieneModulo, $currentUrl): 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilo.css">
+    <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilo.css?v=<?= htmlspecialchars((string) (filemtime(dirname(__DIR__, 2) . '/assets/css/estilo.css')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
     <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/validaciones.css">
-    <style>
-        body { padding-top: 60px; background: #ffffff !important; }
-        .app-navbar { 
-            min-height: 60px; 
-            background: #1a1a2e; 
-            z-index: 1050; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .app-sidebar {
-            position: sticky;
-            top: 60px;
-            height: calc(100vh - 60px);
-            overflow-y: auto;
-            background: #1a1a2e;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .app-offcanvas { 
-            background: #1a1a2e; 
-            color: #fff; 
-            z-index: 1060; 
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .fenix-wordmark {
-            font-family: 'Cormorant Garamond', 'Times New Roman', serif;
-            font-weight: 500;
-            letter-spacing: .045em;
-        }
-        .navbar-brand .fenix-wordmark { font-size: 1.2em; }
-        .footer-fenix .fenix-wordmark {
-            font-size: .9rem;
-            letter-spacing: .14em;
-        }
-        @media (max-width: 991.98px) {
-            .content-wrapper { min-height: calc(100vh - 110px); }
-        }
-    </style>
+    <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/estilos_modulos.css?v=<?= htmlspecialchars((string) (filemtime(dirname(__DIR__, 2) . '/assets/css/estilos_modulos.css')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+    <?php if (!empty($estilosModulo) && is_array($estilosModulo)): ?>
+        <?php foreach ($estilosModulo as $estilo): ?>
+            <link rel="stylesheet" href="/pirotecnica_fenix/assets/css/<?= htmlspecialchars($estilo) ?>">
+        <?php endforeach; ?>
+    <?php endif; ?>
 </head>
 <body>
 <nav class="navbar navbar-dark fixed-top app-navbar shadow">

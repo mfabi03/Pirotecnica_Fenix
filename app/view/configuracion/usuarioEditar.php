@@ -27,7 +27,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
             <!-- Mensajes -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
-                <div class="alert alert-<?= $tipo_mensaje ?? 'info' ?> alert-dismissible fade show">
+                <div class="alert alert-<?= htmlspecialchars((string) ($tipo_mensaje ?? 'info'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> alert-dismissible fade show">
                     <?= htmlspecialchars($mensaje) ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
@@ -97,7 +97,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                         <?php if (!empty($roles)): ?>
                                             <?php foreach ($roles as $rol): ?>
                                                 <option value="<?= htmlspecialchars($rol['id_rol']) ?>"
-                                                    <?= ($rol['id_rol'] == ($usuario['id_rol'] ?? 0)) ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars((string) (($rol['id_rol'] == ($usuario['id_rol'] ?? 0)) ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>
                                                     <?= htmlspecialchars($rol['nombre_rol']) ?>
                                                 </option>
                                             <?php endforeach; ?>

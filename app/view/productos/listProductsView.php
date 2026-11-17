@@ -2,23 +2,9 @@
 // app/view/productos/listProductsView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-use App\Pirotecnicafenix\Helpers\PermisoHelper;
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
-
-// Crear conexión si no existe
-if (!isset($db) || $db === null) {
-    try {
-        $db = (new ConnectDB())->getConnection();
-    } catch (Exception $e) {
-        $db = null;
-    }
-}
-
-// Obtener permisos del usuario actual
-$id_rol_actual = $_SESSION['id_rol'] ?? 0;
-$puede_crear_producto = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Productos', 'crear') : false;
-$puede_editar_producto = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Productos', 'actualizar') : false;
-$puede_eliminar_producto = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Productos', 'eliminar') : false;
+$puede_crear_producto    = $puede_crear    ?? false;
+$puede_editar_producto   = $puede_editar   ?? false;
+$puede_eliminar_producto = $puede_eliminar ?? false;
 
 // Paginación
 $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
@@ -30,77 +16,48 @@ $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
 ?>
 
-<!-- ESTILOS PARA LOS BOTONES DE ACCIÓN CIRCULARES -->
-<style>
-.btn-action-circle {
-    width: 36px; height: 36px; border-radius: 50%; border: none;
-    display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.2s ease;
-    padding: 0; font-size: 0.85rem; color: #ffffff;
-    text-decoration: none;
-}
-.btn-action-circle:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); filter: brightness(1.1); }
-.btn-action-circle.btn-view { background: rgba(13,110,253,0.15); color: #0d6efd; }
-.btn-action-circle.btn-view:hover { background: #0d6efd; color: #fff; }
-.btn-action-circle.btn-edit { background: rgba(243,156,18,0.15); color: #f39c12; }
-.btn-action-circle.btn-edit:hover { background: #f39c12; color: #fff; }
-.btn-action-circle.btn-delete { background: rgba(220,53,69,0.15); color: #dc3545; }
-.btn-action-circle.btn-delete:hover { background: #dc3545; color: #fff; }
-.btn-action-circle.btn-reactivar { background: rgba(40,167,69,0.15); color: #28a745; }
-.btn-action-circle.btn-reactivar:hover { background: #28a745; color: #fff; }
-</style>
+
 
 <div class="col-md-8 col-lg-12">
-    
-    <!-- TARJETA DE TÍTULO -->
+
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center">
             <div class="col">
                 <h3 class="m-0 dark-title">
                     <i class="fas fa-cube text-gold me-2"></i> 
-                    <?= $esVistaEliminados ? 'Productos Eliminados' : 'Lista de Productos' ?>
+                    <?= htmlspecialchars((string) ($esVistaEliminados ? 'Productos Eliminados' : 'Lista de Productos'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                 </h3>
                 <small style="color: rgba(255, 255, 255, 0.6) !important; display: block; margin-top: 4px;">
-                    <?= $esVistaEliminados ? 'Productos inactivos en el sistema' : 'Gestiona los productos registrados en el sistema' ?>
+                    <?= htmlspecialchars((string) ($esVistaEliminados ? 'Productos inactivos en el sistema' : 'Gestiona los productos registrados en el sistema'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                 </small>
             </div>
-            <div class="col-auto">
-                <?php if ($esVistaEliminados): ?>
-                    <a href="?url=productos&type=list" class="btn btn-secondary" style="border-radius: 50px; padding: 8px 22px; font-weight: 600;">
-                        <i class="fas fa-arrow-left me-1"></i> Volver a Productos Activos
-                    </a>
-                <?php else: ?>
-                    <?php if ($puede_crear_producto): ?>
-                    <button type="button" class="btn btn-dark-gold" 
-                            data-bs-toggle="modal" data-bs-target="#modalRegistrarProducto"
-                            style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
-                        <i class="fas fa-plus me-1"></i> Registrar Producto
-                    </button>
-                    <?php endif; ?>
+            <div class="col-auto d-flex align-items-center">
+                <?php if ($puede_crear_producto && !$esVistaEliminados): ?>
+                <button type="button" class="btn btn-dark-gold" data-bs-toggle="modal" data-bs-target="#modalRegistrarProducto" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease;">
+                    <i class="fas fa-plus me-1"></i> Registrar Producto
+                </button>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <!-- FILTRO DE BÚSQUEDA -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
-        <form id="formFiltroProductos" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
+        <form method="GET" action="" class="row g-2 align-items-center" autocomplete="off">
             <input type="hidden" name="url" value="productos">
             <input type="hidden" name="type" value="list">
-            <input type="hidden" name="estado_producto" value="<?= $esVistaEliminados ? 'inactivos' : 'activos' ?>">
+            <input type="hidden" name="estado_producto" value="<?= htmlspecialchars((string) ($esVistaEliminados ? 'inactivos' : 'activos'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
             
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true">
+                <select name="por_pagina" class="form-select form-select-sm" data-auto-submit>
                     <?php foreach ([5, 10, 25, 50] as $o): ?>
-                        <option value="<?= $o ?>" <?= ($por_pagina == $o) ? 'selected' : '' ?>><?= $o ?></option>
+                        <option value="<?= htmlspecialchars((string) ($o), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= htmlspecialchars((string) (($por_pagina == $o) ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>><?= htmlspecialchars((string) ($o), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-4">
-                <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
-                <input type="text" name="busqueda" class="form-control form-control-sm" 
+            <div class="col-md-3">
+                <input type="text" name="busqueda" class="form-control"
                        list="listaProductos"
                        placeholder="Nombre, código o categoría..."
                        value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
@@ -124,26 +81,19 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                 </datalist>
             </div>
 
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-gold w-100">
+            <div class="col-md-7 d-flex flex-column flex-sm-row gap-2">
+                <button type="submit" class="btn btn-gold flex-fill">
                     <i class="fas fa-search me-1"></i> Buscar
                 </button>
-            </div>
-
-            <div class="col-md-2">
-                <a href="?url=productos&type=list" class="btn btn-secondary w-100">
+                <a href="?url=productos&amp;type=list" class="btn btn-secondary flex-fill">
                     <i class="fas fa-times me-1"></i> Limpiar
                 </a>
-            </div>
-
-            <!-- 🔥 BOTÓN VER ELIMINADOS EN LOS FILTROS -->
-            <div class="col-md-2">
                 <?php if ($esVistaEliminados): ?>
-                    <a href="?url=productos&type=list" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
+                    <a href="?url=productos&amp;type=list" class="btn btn-secondary flex-fill">
                         <i class="fas fa-undo-alt me-1"></i> Ver Activos
                     </a>
                 <?php else: ?>
-                    <a href="?url=productos&type=list&estado_producto=inactivos" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
+                    <a href="?url=productos&amp;type=list&amp;estado_producto=inactivos" class="btn btn-danger flex-fill">
                         <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
                     </a>
                 <?php endif; ?>
@@ -151,7 +101,6 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
         </form>
     </div>
 
-    <!-- MENSAJES -->
     <?php
     $mapaTipos = [
         'success' => ['clase' => 'dark-alert-success', 'icono' => 'fa-check-circle'],
@@ -165,70 +114,20 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
     ?>
     
     <?php if (!empty($mensaje)): ?>
-        <div class="alert <?= $estiloMsg['clase'] ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
+        <div class="alert <?= htmlspecialchars((string) ($estiloMsg['clase']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> alert-dismissible fade show border-0" role="alert" data-auto-dismiss="5000">
             <div class="d-flex align-items-center">
-                <i class="fas <?= $estiloMsg['icono'] ?> me-3"></i>
+                <i class="fas <?= htmlspecialchars((string) ($estiloMsg['icono']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> me-3"></i>
                 <span><?= htmlspecialchars($mensaje) ?></span>
                 <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Cerrar"></button>
             </div>
         </div>
     <?php endif; ?>
 
-    <!-- CUADROS DE RESUMEN -->
-    <div class="row mb-4 g-3">
-        <div class="col-md-4">
-            <div class="dark-card card shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
-                    <div>
-                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
-                            <i class="fas fa-cube me-1"></i> Total Productos
-                        </h6>
-                        <h2 style="color: #fdc304; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $resumen['total_productos'] ?? 0 ?></h2>
-                    </div>
-                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(243,156,18,0.12); display: flex; align-items: center; justify-content: center; color: #f39c12; font-size: 1.5rem;">
-                        <i class="fas fa-cube"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="dark-card card shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
-                    <div>
-                        <h6 class="card-title" style="color: rgb(0, 0, 0); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
-                            <i class="fas fa-boxes me-1"></i> Stock Total
-                        </h6>
-                        <h2 style="color: #0d6efd; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $resumen['total_stock'] ?? 0 ?></h2>
-                    </div>
-                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(13,110,253,0.12); display: flex; align-items: center; justify-content: center; color: #0d6efd; font-size: 1.5rem;">
-                        <i class="fas fa-boxes"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="dark-card card shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center" style="padding: 20px 24px;">
-                    <div>
-                        <h6 class="card-title" style="color: rgb(10, 1, 1); font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
-                            <i class="fas fa-tags me-1"></i> Categorías
-                        </h6>
-                        <h2 style="color: #fa0101; font-weight: 700; font-size: 2.2rem; margin: 0;"><?= $resumen['total_categorias'] ?? 0 ?></h2>
-                    </div>
-                    <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(220,53,69,0.12); display: flex; align-items: center; justify-content: center; color: #dc3545; font-size: 1.5rem;">
-                        <i class="fas fa-tags"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- TABLA DE PRODUCTOS -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
                 <i class="fas fa-cube me-2"></i> 
-                <?= $esVistaEliminados ? 'Productos Inactivos' : 'Productos Registrados' ?>
+                <?= htmlspecialchars((string) ($esVistaEliminados ? 'Productos Inactivos' : 'Productos Registrados'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
             </h5>
         </div>
         
@@ -264,7 +163,7 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                                     <?php if (!empty($p['especificaciones'])): ?>
                                         <span title="<?= htmlspecialchars($p['especificaciones']) ?>" style="cursor: help;">
                                             <?= htmlspecialchars(substr($p['especificaciones'], 0, 30)) ?>
-                                            <?= strlen($p['especificaciones']) > 30 ? '...' : '' ?>
+                                            <?= htmlspecialchars((string) (strlen($p['especificaciones']) > 30 ? '...' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                                         </span>
                                     <?php else: ?>
                                         <span class="text-muted">Sin especificaciones</span>
@@ -272,7 +171,7 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                                 </td>
                                 
                                 <td style="font-weight: 600;">
-                                    $<?= number_format($p['costo_unitario'] ?? 0, 2, ',', '.') ?>
+                                    $<?= htmlspecialchars((string) (number_format($p['costo_unitario'] ?? 0, 2, ',', '.')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                                 </td>
                                 
                                 <td>
@@ -282,11 +181,11 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                                         if ($stock <= $stockMin):
                                     ?>
                                         <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-exclamation-triangle me-1"></i> <?= $stock ?>
+                                            <i class="fas fa-exclamation-triangle me-1"></i> <?= htmlspecialchars((string) ($stock), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                                         </span>
                                     <?php else: ?>
                                         <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-check-circle me-1"></i> <?= $stock ?>
+                                            <i class="fas fa-check-circle me-1"></i> <?= htmlspecialchars((string) ($stock), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                                         </span>
                                     <?php endif; ?>
                                 </td>
@@ -307,28 +206,28 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                                 <td class="pe-4 text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <!-- VER -->
-                                        <button type="button" class="btn-action-circle btn-view" title="Ver Detalle" onclick="verDetalleProducto(<?= (int) $p['id_producto'] ?>)">
+                                        <button type="button" class="btn-action-circle btn-view" title="Ver Detalle" onclick="verDetalleProducto(<?= htmlspecialchars((string) ((int) $p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
                                         <?php if (!$estaActivo): ?>
                                             <!-- INACTIVO: SOLO REACTIVAR -->
                                             <?php if ($puede_editar_producto): ?>
-                                            <button type="button" class="btn-action-circle btn-reactivar" title="Reactivar Producto"
-                                                    onclick="confirmarReactivarProducto(<?= (int) $p['id_producto'] ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
+                                            <button type="button" class="btn-action-circle btn-reactivate" title="Reactivar Producto"
+                                                    onclick="confirmarReactivarProducto(<?= htmlspecialchars((string) ((int) $p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
                                                 <i class="fas fa-undo-alt"></i>
                                             </button>
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <!-- ACTIVO: EDITAR Y ELIMINAR -->
                                             <?php if ($puede_editar_producto): ?>
-                                            <button type="button" class="btn-action-circle btn-edit" title="Editar" onclick="editarProducto(<?= (int) $p['id_producto'] ?>)">
+                                            <button type="button" class="btn-action-circle btn-edit" title="Editar" onclick="editarProducto(<?= htmlspecialchars((string) ((int) $p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <?php endif; ?>
                                             
                                             <?php if ($puede_eliminar_producto): ?>
-                                            <button type="button" class="btn-action-circle btn-delete" title="Eliminar" onclick="confirmarEliminarProducto(<?= (int) $p['id_producto'] ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
+                                            <button type="button" class="btn-action-circle btn-delete" title="Eliminar" onclick="confirmarEliminarProducto(<?= htmlspecialchars((string) ((int) $p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
                                             <?php endif; ?>
@@ -343,9 +242,9 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                                 <div class="py-4">
                                     <i class="fas fa-cube fa-3x d-block mb-3" style="opacity: 0.3;"></i>
                                     <p class="mb-0">
-                                        <?= $esVistaEliminados ? 'No hay productos inactivos' : 'No hay productos registrados' ?>
+                                        <?= htmlspecialchars((string) ($esVistaEliminados ? 'No hay productos inactivos' : 'No hay productos registrados'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                                     </p>
-                                    <small><?= $esVistaEliminados ? 'Los productos activos están en la lista principal' : 'Comienza registrando un nuevo producto' ?></small>
+                                    <small><?= htmlspecialchars((string) ($esVistaEliminados ? 'Los productos activos están en la lista principal' : 'Comienza registrando un nuevo producto'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></small>
                                 </div>
                             </td>
                         </tr>
@@ -358,21 +257,19 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
         <div class="card-footer py-3 d-flex justify-content-between align-items-center">
             <span class="text-muted small">
                 <i class="fas fa-cube me-1"></i> 
-                Total: <?= $totalRegistros ?> productos
+                Total: <?= htmlspecialchars((string) ($totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> productos
             </span>
-            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
+            <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
         </div>
     </div>
 </div>
 
-<!-- MODALES -->
 <?php require_once __DIR__ . '/partials/modal_registrar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_ver_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_editar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_eliminar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_rapido_categoria.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_rapido_proveedor.php'; ?>
-<!-- NUEVO: MODAL REACTIVAR PRODUCTO -->
 <?php if ($puede_editar_producto): ?>
 <div class="modal fade" id="modalReactivarProducto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -418,61 +315,9 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
 </div>
 <?php endif; ?>
 
-<!-- SCRIPTS -->
 <?php require_once __DIR__ . '/partials/scripts_productos.php'; ?>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Auto-cierre de alertas
-    document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
-        var ms = parseInt(el.dataset.autoDismiss, 10) || 5000;
-        setTimeout(function () {
-            if (!el.parentNode) return;
-            el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(-8px)';
-            setTimeout(function () { el.remove(); }, 400);
-        }, ms);
-    });
 
-    // 🔥 AJAX para el filtro (Igual que en Clientes)
-    const formProductos = document.getElementById('formFiltroProductos');
-    if (formProductos) {
-        const enviarFiltroProductos = function () {
-            const formData = new FormData(formProductos);
-            formData.set('ajax', '1');
 
-            fetch('?url=productos&type=list', {
-                method: 'POST',
-                body: formData
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success || !data.html) return;
-                const wrap = document.createElement('div');
-                wrap.innerHTML = data.html;
-                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12');
-                if (!nuevaVista) return;
-                const contenedorActual = document.querySelector('.col-md-8.col-lg-12');
-                if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
-            })
-            .catch(() => {
-                formProductos.submit();
-            });
-        };
-
-        formProductos.addEventListener('submit', function (e) {
-            e.preventDefault();
-            enviarFiltroProductos();
-        });
-
-        formProductos.querySelectorAll('select').forEach(function (selectEl) {
-            selectEl.addEventListener('change', function () {
-                enviarFiltroProductos();
-            });
-        });
-    }
-});
-</script>
-
+<?php $scriptsModulo = ['productos.js']; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

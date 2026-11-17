@@ -7,6 +7,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 use App\Pirotecnicafenix\Model\UsuarioModel;
+use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Helpers\Validador;
 use Exception;
 
@@ -29,6 +30,12 @@ if (!isset($_SESSION['id_usuario']) || empty($_SESSION['id_usuario'])) {
 // 3. MODELO (hereda conexión)
 // ==========================================
 $modelo = new UsuarioModel();
+$id_rol_actual = $_SESSION['id_rol'] ?? 0;
+$permisoHelper = new PermisoHelper();
+
+$puede_crear    = $permisoHelper->tienePermiso($id_rol_actual, 'Usuarios', 'crear');
+$puede_editar   = $permisoHelper->tienePermiso($id_rol_actual, 'Usuarios', 'actualizar');
+$puede_eliminar = $permisoHelper->tienePermiso($id_rol_actual, 'Usuarios', 'eliminar');
 
 // ==========================================
 // 4. PARÁMETROS
@@ -124,6 +131,10 @@ if ($action === 'show_ajax') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store_ajax') {
     header('Content-Type: application/json');
     try {
+        if (!$puede_crear) {
+            throw new Exception('No tienes permiso para registrar usuarios.');
+        }
+
         $datosPersona = [
             'nombre'     => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
             'apellido'   => Validador::limpiar($_POST['apellido'] ?? ''),
@@ -156,6 +167,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'store
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'update_ajax') {
     header('Content-Type: application/json');
     try {
+        if (!$puede_editar) {
+            throw new Exception('No tienes permiso para actualizar usuarios.');
+        }
+
         $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
 
         $datos = [
@@ -187,6 +202,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'updat
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delete_ajax') {
     header('Content-Type: application/json');
     try {
+        if (!$puede_eliminar) {
+            throw new Exception('No tienes permiso para inactivar usuarios.');
+        }
+
         $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
 
         if ($id == $_SESSION['id_usuario']) throw new Exception("No puedes inactivar tu propio usuario.");
@@ -208,6 +227,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'delet
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'reactivar_ajax') {
     header('Content-Type: application/json');
     try {
+        if (!$puede_editar) {
+            throw new Exception('No tienes permiso para reactivar usuarios.');
+        }
+
         $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
         $resultado = $modelo->reactivarUsuario($id);
 
@@ -227,6 +250,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'react
 // ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guardar') {
     try {
+        if (!$puede_crear) {
+            throw new Exception('No tienes permiso para registrar usuarios.');
+        }
+
         $datosPersona = [
             'nombre'    => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
             'apellido'  => Validador::limpiar($_POST['apellido'] ?? ''),
@@ -255,6 +282,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'guard
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'actualizar') {
     try {
+        if (!$puede_editar) {
+            throw new Exception('No tienes permiso para actualizar usuarios.');
+        }
+
         $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
 
         $datos = [
@@ -282,6 +313,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['accion'] === 'eliminar') {
     try {
+        if (!$puede_eliminar) {
+            throw new Exception('No tienes permiso para inactivar usuarios.');
+        }
+
         $id = Validador::validarId($_POST['id_usuario'] ?? null, 'ID de usuario');
 
         if ($id == $_SESSION['id_usuario']) throw new Exception("No puedes eliminar tu propio usuario");

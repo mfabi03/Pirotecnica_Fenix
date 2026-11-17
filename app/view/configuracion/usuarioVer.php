@@ -65,14 +65,14 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                 <div class="mb-3">
                                     <label class="fw-bold">Rol:</label>
                                     <p>
-                                        <span class="badge <?= ($usuario['id_rol'] ?? 0) == 1 ? 'bg-danger' : 'bg-secondary' ?>">
+                                        <span class="badge <?= htmlspecialchars((string) (($usuario['id_rol'] ?? 0) == 1 ? 'bg-danger' : 'bg-secondary'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                             <?= htmlspecialchars($usuario['rol_nombre'] ?? 'Usuario') ?>
                                         </span>
                                     </p>
                                 </div>
                                 <div class="mb-3">
                                     <label class="fw-bold">Fecha de registro:</label>
-                                    <p><?= isset($usuario['fecha_registro']) ? date('d/m/Y H:i', strtotime($usuario['fecha_registro'])) : '—' ?></p>
+                                    <p><?= htmlspecialchars((string) (isset($usuario['fecha_registro']) ? date('d/m/Y H:i', strtotime($usuario['fecha_registro'])) : '—'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
                                 </div>
                             </div>
                         </div>

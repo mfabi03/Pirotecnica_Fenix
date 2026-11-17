@@ -178,7 +178,7 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
     public function listarNotasSalida($id_usuario = null)
     {
         try {
-            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado, motivo_anulacion
+            $sql = "SELECT id_nota_salida, fecha, fecha_anulacion, id_persona, id_usuario, eliminado, motivo_anulacion
                     FROM nota_de_salida";
 
             if ($id_usuario !== null) {
@@ -195,7 +195,7 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
             $notas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($notas as &$n) {
-                $stmtCliente = $this->conex->prepare("SELECT p.nombre, p.apellido, cj.razon_social,
+                $stmtCliente = $this->conex->prepare("SELECT p.nombre, p.apellido, p.cedula, cj.rif, cj.razon_social,
                                     CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente
                                 FROM persona p
                                 LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
@@ -206,11 +206,15 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
                 if ($cliente) {
                     $n['cliente_nombre'] = $cliente['nombre'] ?? '';
                     $n['cliente_apellido'] = $cliente['apellido'] ?? '';
+                    $n['cliente_cedula'] = $cliente['cedula'] ?? '';
+                    $n['cliente_rif'] = $cliente['rif'] ?? '';
                     $n['cliente_razon_social'] = $cliente['razon_social'] ?? '';
                     $n['tipo_cliente'] = $cliente['tipo_cliente'] ?? 'Natural';
                 } else {
                     $n['cliente_nombre'] = 'N/A';
                     $n['cliente_apellido'] = '';
+                    $n['cliente_cedula'] = '';
+                    $n['cliente_rif'] = '';
                     $n['cliente_razon_social'] = '';
                     $n['tipo_cliente'] = 'Natural';
                 }
@@ -267,7 +271,7 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
             $termino = trim((string) $termino);
             if ($termino === '') return $this->listarNotasSalida($id_usuario);
 
-            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.eliminado, ns.motivo_anulacion
+            $sql = "SELECT ns.id_nota_salida, ns.fecha, ns.fecha_anulacion, ns.id_persona, ns.id_usuario, ns.eliminado, ns.motivo_anulacion
                     FROM nota_de_salida ns
                     LEFT JOIN persona p ON ns.id_persona = p.id_persona
                     LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
@@ -281,7 +285,7 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
                 $sql .= " AND ns.id_usuario = :id_usuario";
             }
 
-            $sql .= " GROUP BY ns.id_nota_salida, ns.fecha, ns.id_persona, ns.id_usuario, ns.eliminado, ns.motivo_anulacion
+            $sql .= " GROUP BY ns.id_nota_salida, ns.fecha, ns.fecha_anulacion, ns.id_persona, ns.id_usuario, ns.eliminado, ns.motivo_anulacion
                     ORDER BY ns.id_nota_salida DESC";
 
             $stmt = $this->conex->prepare($sql);
@@ -293,7 +297,7 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
             $notas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($notas as &$n) {
-                $stmtCliente = $this->conex->prepare("SELECT p.nombre, p.apellido, cj.razon_social,
+                $stmtCliente = $this->conex->prepare("SELECT p.nombre, p.apellido, p.cedula, cj.rif, cj.razon_social,
                                     CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente
                                 FROM persona p
                                 LEFT JOIN cliente_juridico cj ON p.id_persona = cj.id_persona
@@ -304,11 +308,15 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
                 if ($cliente) {
                     $n['cliente_nombre'] = $cliente['nombre'] ?? '';
                     $n['cliente_apellido'] = $cliente['apellido'] ?? '';
+                    $n['cliente_cedula'] = $cliente['cedula'] ?? '';
+                    $n['cliente_rif'] = $cliente['rif'] ?? '';
                     $n['cliente_razon_social'] = $cliente['razon_social'] ?? '';
                     $n['tipo_cliente'] = $cliente['tipo_cliente'] ?? 'Natural';
                 } else {
                     $n['cliente_nombre'] = 'N/A';
                     $n['cliente_apellido'] = '';
+                    $n['cliente_cedula'] = '';
+                    $n['cliente_rif'] = '';
                     $n['cliente_razon_social'] = '';
                     $n['tipo_cliente'] = 'Natural';
                 }
@@ -363,7 +371,7 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
     public function obtenerNotaPorId($id)
     {
         try {
-            $sql = "SELECT id_nota_salida, fecha, id_persona, id_usuario, eliminado, motivo_anulacion
+            $sql = "SELECT id_nota_salida, fecha, fecha_anulacion, id_persona, id_usuario, eliminado, motivo_anulacion
                     FROM nota_de_salida
                     WHERE id_nota_salida = ?";
             $stmt = $this->conex->prepare($sql);
@@ -439,7 +447,7 @@ class notasalidaModel extends ConnectDB implements InterfacesCrudModel
                     $stmtRestaurar->execute([$d['cantidad'], $d['id_producto']]);
                 }
 
-                $stmtUpd = $this->conex->prepare("UPDATE nota_de_salida SET eliminado = 1, motivo_anulacion = :motivo WHERE id_nota_salida = :id");
+                $stmtUpd = $this->conex->prepare("UPDATE nota_de_salida SET eliminado = 1, motivo_anulacion = :motivo, fecha_anulacion = CURRENT_TIMESTAMP WHERE id_nota_salida = :id");
                 $stmtUpd->execute([':motivo' => $motivo, ':id' => $id]);
 
                 $this->conex->commit();

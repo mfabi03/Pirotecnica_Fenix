@@ -3,6 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+
 $idRol = isset($idRol) ? (int) $idRol : (int) ($_SESSION['id_rol'] ?? 0);
 $esCajero = isset($esCajero) ? (bool) $esCajero : $idRol === 3;
 $mostrarUsuarios = isset($mostrarUsuarios) ? (bool) $mostrarUsuarios : $idRol === 1;
@@ -13,7 +14,7 @@ $stats = isset($stats) && is_array($stats) ? $stats : [];
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
 $e = static function ($value): string {
-    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 };
 
 $tarjetas = [
@@ -168,7 +169,7 @@ if ($mostrarNotasEntrada) {
             </h3>
             <span class="badge dashboard-summary">
                 <i class="fas fa-database me-1"></i>
-                <?= $idRol === 1 ? 'Resumen General' : ($idRol === 2 ? 'Resumen de Almacén' : 'Resumen Personal') ?>
+                <?= htmlspecialchars((string) ($idRol === 1 ? 'Resumen General' : ($idRol === 2 ? 'Resumen de Almacén' : 'Resumen Personal')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
             </span>
         </div>
     </div>
@@ -184,7 +185,7 @@ if ($mostrarNotasEntrada) {
                     <div class="stat-card-icon"><i class="fas <?= $e($tarjeta['icono']) ?>"></i></div>
                     <div class="stat-card-content">
                         <span class="stat-card-label"><?= $e($tarjeta['label']) ?></span>
-                        <span class="stat-card-number" data-stat-key="<?= $e($tarjeta['key']) ?>"><?= number_format((int) ($stats[$tarjeta['key']] ?? 0)) ?></span>
+                        <span class="stat-card-number" data-stat-key="<?= $e($tarjeta['key']) ?>"><?= htmlspecialchars((string) (number_format((int) ($stats[$tarjeta['key']] ?? 0))), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span>
                     </div>
                     <div class="stat-card-footer">
                         <span class="stat-card-change"><?= $e($tarjeta['descripcion']) ?></span>
@@ -211,7 +212,7 @@ if ($mostrarNotasEntrada) {
                                             <td>#<?= $e($nota['id_nota_entrada'] ?? '') ?></td>
                                             <td><?= $e($nota['proveedor'] ?? 'Sin proveedor') ?></td>
                                             <td><?= $e($nota['fecha_ingreso'] ?? '') ?></td>
-                                            <td>$<?= number_format((float) ($nota['costo_total'] ?? 0), 2, ',', '.') ?></td>
+                                            <td>$<?= htmlspecialchars((string) (number_format((float) ($nota['costo_total'] ?? 0), 2, ',', '.')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                                             <td><span class="badge bg-success"><?= $e($nota['estado'] ?? 'Activa') ?></span></td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -225,10 +226,10 @@ if ($mostrarNotasEntrada) {
             </div>
         <?php endif; ?>
 
-        <div class="col-12 <?= $mostrarNotasEntrada ? 'col-xl-6' : '' ?>">
+        <div class="col-12 <?= htmlspecialchars((string) ($mostrarNotasEntrada ? 'col-xl-6' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
             <section class="dashboard-table-card h-100">
                 <div class="dashboard-table-heading">
-                    <h5><i class="fas fa-sign-out-alt me-2 text-gold"></i><?= $esCajero ? 'Mis Últimas Notas de Salida' : 'Últimas Notas de Salida' ?></h5>
+                    <h5><i class="fas fa-sign-out-alt me-2 text-gold"></i><?= htmlspecialchars((string) ($esCajero ? 'Mis Últimas Notas de Salida' : 'Últimas Notas de Salida'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h5>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-dark table-hover table-sm align-middle mb-0">
@@ -240,7 +241,7 @@ if ($mostrarNotasEntrada) {
                                         <td>#<?= $e($nota['id_nota_salida'] ?? '') ?></td>
                                         <td><?= $e($nota['cliente'] ?? 'Sin cliente') ?></td>
                                         <td><?= $e($nota['fecha'] ?? '') ?></td>
-                                        <td><?= number_format((int) ($nota['total'] ?? 0)) ?> unidades</td>
+                                        <td><?= htmlspecialchars((string) (number_format((int) ($nota['total'] ?? 0))), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> unidades</td>
                                         <td><span class="badge bg-success"><?= $e($nota['estado'] ?? 'Activa') ?></span></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -275,7 +276,7 @@ if ($mostrarNotasEntrada) {
                             </tr></thead>
                             <tbody
                                 <?php if (isset($modal['tipo_notas'])): ?>
-                                    id="<?= $modal['tipo_notas'] === 'entrada' ? 'modalEntradasBody' : 'modalSalidasBody' ?>"
+                                    id="<?= htmlspecialchars((string) ($modal['tipo_notas'] === 'entrada' ? 'modalEntradasBody' : 'modalSalidasBody'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                                     data-modal-notes="<?= $e($modal['tipo_notas']) ?>"
                                 <?php endif; ?>>
                                 <?php if (!empty($modal['filas'])): ?>
@@ -283,7 +284,7 @@ if ($mostrarNotasEntrada) {
                                         <tr><?php foreach ($fila as $valor): ?><td><?= $e($valor) ?></td><?php endforeach; ?></tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="<?= count($modal['columnas']) ?>" class="text-center text-secondary py-4">No hay registros para mostrar.</td></tr>
+                                    <tr><td colspan="<?= htmlspecialchars((string) (count($modal['columnas'])), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" class="text-center text-secondary py-4">No hay registros para mostrar.</td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -297,160 +298,15 @@ if ($mostrarNotasEntrada) {
     </div>
 <?php endforeach; ?>
 
-<style>
-.dashboard-home { padding-bottom: 1rem; }
-.dashboard-heading { padding: .8rem 1rem; }
-.dashboard-summary {
-    background: rgba(255,255,255,.08);
-    color: rgba(255,255,255,.72);
-    padding: .4rem .8rem;
-    border-radius: 50px;
-}
-.dashboard-stat-interactive {
-    min-height: 132px;
-    padding: .8rem !important;
-    cursor: pointer;
-    transition: transform .15s ease, box-shadow .15s ease;
-}
-.dashboard-stat-interactive:hover { transform: translateY(-2px); }
-.dashboard-stat-interactive:focus-visible { outline: 3px solid #f39c12; outline-offset: 2px; }
-.dashboard-stat-interactive .stat-card-icon { font-size: 1.25rem; margin-bottom: .35rem; }
-.dashboard-stat-interactive .stat-card-label { font-size: .82rem; }
-.dashboard-stat-interactive .stat-card-number { font-size: 1.55rem; }
-.dashboard-stat-interactive .stat-card-footer { margin-top: .35rem; font-size: .72rem; }
-.dashboard-table-card {
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 12px;
-    background: #151521;
-}
-.dashboard-table-heading { padding: .8rem 1rem; border-bottom: 1px solid rgba(255,255,255,.08); }
-.dashboard-table-heading h5 { margin: 0; color: #f1f1f5; font-size: .98rem; }
-.dashboard-table-card .table { --bs-table-bg: #151521; --bs-table-hover-bg: rgba(255,255,255,.05); font-size: .84rem; }
-.dashboard-table-card .table thead th { color: #d7bd6a; white-space: nowrap; }
-.dashboard-modal { color: #f1f1f5; background: #151521; border: 1px solid rgba(255,255,255,.1); }
-.dashboard-modal-header { background: #1a1a2e; border-bottom-color: rgba(255,255,255,.08); }
-.dashboard-modal .modal-footer { border-top-color: rgba(255,255,255,.08); }
-.dashboard-modal .table { --bs-table-bg: #151521; --bs-table-hover-bg: rgba(255,255,255,.05); }
-.dashboard-modal .table thead th { color: #d7bd6a; }
-@media (min-width: 1200px) {
-    .dashboard-stat-interactive { min-height: 125px; }
-}
-</style>
-
-<script>
-(function () {
-    const formatNumber = new Intl.NumberFormat('es-VE');
-    let lastNotaEntradaId = <?= (int) ($notasEntradaDetalle[0]['id_nota_entrada'] ?? 0) ?>;
-    let lastNotaSalidaId = <?= (int) ($notasSalidaDetalle[0]['id_nota_salida'] ?? 0) ?>;
-    const puedeVerEntradas = <?= $mostrarNotasEntrada ? 'true' : 'false' ?>;
-
-    document.querySelectorAll('.dashboard-stat-interactive').forEach(function (card) {
-        card.addEventListener('keydown', function (event) {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            const modalElement = document.querySelector(card.getAttribute('data-bs-target'));
-            if (modalElement) bootstrap.Modal.getOrCreateInstance(modalElement).show();
-        });
-    });
-
-    function renderNotas(tbody, notas, tipo) {
-        if (!tbody) return;
-        tbody.replaceChildren();
-
-        if (!Array.isArray(notas) || notas.length === 0) {
-            const row = document.createElement('tr');
-            const cell = document.createElement('td');
-            cell.colSpan = 5;
-            cell.className = 'text-center text-secondary py-3';
-            cell.textContent = tipo === 'entrada'
-                ? 'No hay notas de entrada recientes.'
-                : 'No hay notas de salida recientes.';
-            row.appendChild(cell);
-            tbody.appendChild(row);
-            return;
-        }
-
-        notas.forEach(function (nota) {
-            const row = document.createElement('tr');
-            const values = tipo === 'entrada'
-                ? [
-                    '#' + (nota.id_nota_entrada || ''),
-                    nota.proveedor || 'Sin proveedor',
-                    nota.fecha_ingreso || '',
-                    '$' + Number(nota.costo_total || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-                    nota.estado || 'Activa'
-                ]
-                : [
-                    '#' + (nota.id_nota_salida || ''),
-                    nota.cliente || 'Sin cliente',
-                    nota.fecha || '',
-                    formatNumber.format(Number(nota.total || 0)) + ' unidades',
-                    nota.estado || 'Activa'
-                ];
-
-            values.forEach(function (value, index) {
-                const cell = document.createElement('td');
-                if (index === 4) {
-                    const badge = document.createElement('span');
-                    badge.className = 'badge bg-success';
-                    badge.textContent = String(value);
-                    cell.appendChild(badge);
-                } else {
-                    cell.textContent = String(value);
-                }
-                row.appendChild(cell);
-            });
-            tbody.appendChild(row);
-        });
-    }
-
-    function actualizarDashboard() {
-        const url = new URL(window.location.href);
-        url.searchParams.set('url', 'dashboard');
-        url.searchParams.set('action', 'ajax_stats');
-
-        fetch(url.toString(), {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' }
-        })
-            .then(function (response) {
-                if (!response.ok) throw new Error('Respuesta HTTP ' + response.status);
-                return response.json();
-            })
-            .then(function (data) {
-                if (data.error) throw new Error(data.error);
-
-                Object.keys(data.stats || {}).forEach(function (key) {
-                    const element = document.querySelector('[data-stat-key="' + key + '"]');
-                    if (element) element.textContent = formatNumber.format(Number(data.stats[key] || 0));
-                });
-
-                if (puedeVerEntradas) {
-                    renderNotas(document.getElementById('notasEntradaBody'), data.notas_entrada, 'entrada');
-                    renderNotas(document.getElementById('modalEntradasBody'), data.notas_entrada, 'entrada');
-                }
-                renderNotas(document.getElementById('notasSalidaBody'), data.notas_salida, 'salida');
-                renderNotas(document.getElementById('modalSalidasBody'), data.notas_salida, 'salida');
-
-                const newEntradaId = Number(data.ultimo_id_nota_entrada || 0);
-                const newSalidaId = Number(data.ultimo_id_nota_salida || 0);
-                const hayNuevaNota = newEntradaId > lastNotaEntradaId || newSalidaId > lastNotaSalidaId;
-                lastNotaEntradaId = Math.max(lastNotaEntradaId, newEntradaId);
-                lastNotaSalidaId = Math.max(lastNotaSalidaId, newSalidaId);
-
-                if (hayNuevaNota && typeof window.mostrarToast === 'function') {
-                    window.mostrarToast('¡Nueva nota registrada!', 'success');
-                }
-            })
-            .catch(function (error) {
-                console.error('No se pudo actualizar el dashboard:', error);
-            });
-    }
-
-    window.setInterval(actualizarDashboard, 60000);
-})();
+<script id="dashboardConfig" type="application/json">
+<?= json_encode(
+    [
+        'lastNotaEntradaId' => (int) ($notasEntradaDetalle[0]['id_nota_entrada'] ?? 0),
+        'lastNotaSalidaId' => (int) ($notasSalidaDetalle[0]['id_nota_salida'] ?? 0),
+        'puedeVerEntradas' => (bool) $mostrarNotasEntrada,
+    ],
+    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+) ?>
 </script>
-
+<?php $scriptsModulo = ['dashboard.js']; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

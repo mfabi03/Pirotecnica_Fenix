@@ -8,15 +8,13 @@ while (ob_get_level() > 0) { ob_end_clean(); }
 require_once dirname(__DIR__, 3) . '/fpdf.php';
 require_once dirname(__DIR__, 3) . '/app/Config/Connect/ConnectDB.php';
 
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\notasalidaModel;
 
 if (!isset($_GET['id']) || empty($_GET['id'])) { die("ID de nota no proporcionado."); }
 $idNota = (int) $_GET['id'];
 
 try {
-    $db = (new ConnectDB())->getConnection();
-    $modelo = new notasalidaModel($db);
+    $modelo = new notasalidaModel();
     $nota = $modelo->obtenerNotaPorId($idNota);
     if (!$nota) die("Nota de salida no encontrada.");
 } catch (Exception $e) { die("Error: " . $e->getMessage()); }

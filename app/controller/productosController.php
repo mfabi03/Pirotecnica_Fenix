@@ -43,6 +43,39 @@ if (!in_array($estado_producto, ['todos', 'activos', 'inactivos'], true)) {
 }
 
 // ==========================================
+// AJAX: VERIFICAR NOMBRE DUPLICADO
+// ==========================================
+if ($type === 'check_duplicado') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        if (!$permisoHelper->tienePermiso($id_rol_actual, 'Productos', 'leer')) {
+            http_response_code(403);
+            throw new Exception('No tienes permiso para consultar productos.');
+        }
+
+        $campo = strtolower(Validador::limpiar($_GET['campo'] ?? ''));
+        $descripcion = trim(Validador::limpiar($_GET['valor'] ?? ''));
+        $excluirId = isset($_GET['excluir_id']) && is_numeric($_GET['excluir_id'])
+            ? (int)$_GET['excluir_id']
+            : null;
+
+        if ($campo !== 'descripcion' || $descripcion === '') {
+            throw new Exception('Datos de verificación inválidos.');
+        }
+
+        echo json_encode([
+            'existe' => $modelo->existeProductoDescripcion($descripcion, $excluirId),
+            'campo' => $campo,
+            'valor' => $descripcion
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        if (http_response_code() < 400) http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
+// ==========================================
 // AJAX: HISTORIAL
 // ==========================================
 if ($type === 'historial' && isset($_GET['id'])) {
@@ -183,13 +216,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $datos = [
                 'descripcion'      => Validador::requerido($_POST['descripcion'] ?? '', 'descripción'),
                 'stock_minimo'     => (int)($_POST['stock_minimo'] ?? 10),
-                'especificaciones' => Validador::limpiar($_POST['especificaciones'] ?? ''),
-                'id_proveedor'     => (int)($_POST['id_proveedor'] ?? 0)
+                'especificaciones' => Validador::limpiar($_POST['especificaciones'] ?? '')
             ];
-
-            if (!$proveedorModel->proveedorActivoExiste($datos['id_proveedor'])) {
-                throw new Exception("El proveedor seleccionado no existe o está inactivo.");
-            }
 
             $resultado = $modelo->actualizarProducto($id_producto, $datos);
             if (!$resultado) throw new Exception("No se pudo actualizar el producto.");

@@ -181,6 +181,11 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
     public function registrarProducto($datos)
     {
         try {
+            $descripcion = trim((string)($datos['descripcion'] ?? ''));
+            if ($this->existeProductoDescripcion($descripcion)) {
+                throw new Exception("Ya existe un producto activo con la descripción '{$descripcion}'.");
+            }
+
             $sql = "INSERT INTO producto (
                         descripcion,
                         cantidad,
@@ -203,7 +208,7 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
 
             $stmt = $this->conex->prepare($sql);
             $success = $stmt->execute([
-                ':descripcion' => $datos['descripcion'],
+                ':descripcion' => $descripcion,
                 ':cantidad' => $datos['cantidad'] ?? 0,
                 ':stock_minimo' => $datos['stock_minimo'] ?? 10,
                 ':costo_unitario' => $datos['costo_unitario'] ?? 0,
@@ -225,24 +230,49 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
     public function actualizarProducto($id, $datos)
     {
         try {
+            $descripcion = trim((string)($datos['descripcion'] ?? ''));
+            if ($this->existeProductoDescripcion($descripcion, $id)) {
+                throw new Exception("Ya existe otro producto activo con la descripción '{$descripcion}'.");
+            }
+
             $sql = "UPDATE producto SET
                         descripcion = :descripcion,
                         stock_minimo = :stock_minimo,
-                        especificaciones = :especificaciones,
-                        id_proveedor = :id_proveedor
+                        especificaciones = :especificaciones
                     WHERE id_producto = :id";
 
             $stmt = $this->conex->prepare($sql);
             return $stmt->execute([
-                ':descripcion' => $datos['descripcion'],
+                ':descripcion' => $descripcion,
                 ':stock_minimo' => $datos['stock_minimo'] ?? 10,
                 ':especificaciones' => $datos['especificaciones'] ?? null,
-                ':id_proveedor' => $datos['id_proveedor'],
                 ':id' => $id
             ]);
         } catch (PDOException $e) {
             error_log("Error en actualizarProducto: " . $e->getMessage());
             return false;
+        }
+    }
+
+    public function existeProductoDescripcion($descripcion, $excluirId = null)
+    {
+        try {
+            $sql = "SELECT COUNT(*) FROM producto
+                    WHERE LOWER(TRIM(descripcion)) = LOWER(TRIM(:descripcion))
+                      AND eliminado = 0";
+            $parametros = [':descripcion' => trim((string)$descripcion)];
+
+            if ($excluirId !== null) {
+                $sql .= " AND id_producto <> :excluir_id";
+                $parametros[':excluir_id'] = (int)$excluirId;
+            }
+
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute($parametros);
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            error_log("Error en existeProductoDescripcion: " . $e->getMessage());
+            throw new Exception("No se pudo verificar el nombre del producto.", 0, $e);
         }
     }
 
@@ -303,10 +333,14 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
     public function reactivarProducto($id)
     {
         try {
-            $stmtCheck = $this->conex->prepare("SELECT id_producto FROM producto WHERE id_producto = :id AND eliminado = 1 LIMIT 1");
+            $stmtCheck = $this->conex->prepare("SELECT id_producto, descripcion FROM producto WHERE id_producto = :id AND eliminado = 1 LIMIT 1");
             $stmtCheck->execute([':id' => $id]);
-            if (!$stmtCheck->fetch()) {
+            $producto = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            if (!$producto) {
                 throw new Exception("El producto no existe o ya está activo.");
+            }
+            if ($this->existeProductoDescripcion($producto['descripcion'], $id)) {
+                throw new Exception("No se puede reactivar el producto porque ya existe otro producto activo con ese nombre.");
             }
 
             $stmt = $this->conex->prepare("UPDATE producto SET eliminado = 0 WHERE id_producto = :id");

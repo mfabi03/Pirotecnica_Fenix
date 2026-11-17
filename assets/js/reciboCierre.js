@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 if (!data.success) {
-                    document.getElementById('hist-tabla-detalles').innerHTML = `<tr><td colspan="8" class="text-center py-3 text-danger">${data.mensaje}</td></tr>`;
+                    document.getElementById('hist-tabla-detalles').innerHTML = `<tr><td colspan="8" class="text-center py-3 text-danger">${window.escapeHtml(data.mensaje)}</td></tr>`;
                     return;
                 }
 
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const btnImprimir = document.getElementById('btnImprimirCierreHist');
                 if (btnImprimir) {
                     btnImprimir.onclick = function() {
-                        window.open(`?url=exportar_cierre_pdf&id_cierre=${c.id_cierre}`, '_blank');
+                        window.open(`?url=exportar_cierre_pdf&id_cierre=${encodeURIComponent(c.id_cierre)}`, '_blank');
                     };
                 }
 
@@ -47,14 +47,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         tbody.innerHTML += `
                             <tr>
-                                <td class="ps-4 fw-bold">#${det.id_documento}</td>
-                                <td>${hora}</td>
-                                <td>${det.nombre_cliente}</td>
-                                <td><span class="badge ${det.tipo_cliente === 'Jurídico' ? 'bg-info text-dark' : 'bg-success'}">${det.tipo_cliente}</span></td>
-                                <td class="text-center fw-bold">${prodArray.length}</td>
-                                <td class="text-center fw-bold">${catArray.length}</td>
-                                <td class="text-center fw-bold">${det.total_unidades}</td>
-                                <td class="pe-4">${det.usuario_activo}</td>
+                                <td class="ps-4 fw-bold">#${window.escapeHtml(det.id_documento)}</td>
+                                <td>${window.escapeHtml(hora)}</td>
+                                <td>${window.escapeHtml(det.nombre_cliente)}</td>
+                                <td><span class="badge ${det.tipo_cliente === 'Jurídico' ? 'bg-info text-dark' : 'bg-success'}">${window.escapeHtml(det.tipo_cliente)}</span></td>
+                                <td class="text-center fw-bold">${window.escapeHtml(prodArray.length)}</td>
+                                <td class="text-center fw-bold">${window.escapeHtml(catArray.length)}</td>
+                                <td class="text-center fw-bold">${window.escapeHtml(det.total_unidades)}</td>
+                                <td class="pe-4">${window.escapeHtml(det.usuario_activo)}</td>
                             </tr>
                         `;
                     });

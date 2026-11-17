@@ -19,7 +19,11 @@
                         <div class="col-md-12">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombre del Producto *</label>
                             <input type="text" name="descripcion" id="editar-producto-descripcion" class="form-control" required
+                                   data-validate="razon"
+                                   data-unico-endpoint="?url=productos&type=check_duplicado"
+                                   data-unico-campo="descripcion"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                            <small class="feedback-validacion info" id="editar-producto-descripcion-feedback">Mínimo 3 caracteres</small>
                         </div>
 
                         <div class="col-md-6">
@@ -30,22 +34,18 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="editar-producto-proveedor-id" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
-                            <select name="id_proveedor" id="editar-producto-proveedor-id" class="form-select" required data-searchable="true"
-                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
-                                <option value="">Seleccione un proveedor...</option>
-                                <?php foreach (($proveedores ?? []) as $prov): ?>
-                                    <option value="<?= htmlspecialchars($prov['id_proveedor']) ?>">
-                                        <?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="editar-producto-proveedor-texto" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor (No editable)</label>
+                            <input type="text" id="editar-producto-proveedor-texto" class="form-control" readonly
+                                   style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); background-color: #e9ecef; cursor: not-allowed;">
+                            <input type="hidden" name="id_proveedor" id="editar-producto-proveedor-id">
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo *</label>
                             <input type="number" name="stock_minimo" id="editar-producto-stock-minimo" class="form-control" min="1" required
+                                   data-validate="numero_positivo"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                            <small class="feedback-validacion info" id="editar-producto-stock-minimo-feedback">Debe ser mayor a 0</small>
                         </div>
 
                         <div class="col-md-6">
@@ -54,6 +54,7 @@
                                       style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08); resize: vertical;"
                                       placeholder="Ej: Peso: 2kg, Color: Rojo"></textarea>
                         </div>
+
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid #e9ecef;">

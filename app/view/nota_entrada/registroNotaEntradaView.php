@@ -28,9 +28,9 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
             <!-- MENSAJES -->
             <?php if (isset($_SESSION['mensaje_rapido'])): ?>
-                <div class="alert <?= ($_SESSION['tipo_rapido'] ?? 'success') === 'success' ? 'dark-alert-success' : 'dark-alert-danger' ?> alert-dismissible fade show shadow-sm border-0">
+                <div class="alert <?= htmlspecialchars((string) (($_SESSION['tipo_rapido'] ?? 'success') === 'success' ? 'dark-alert-success' : 'dark-alert-danger'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> alert-dismissible fade show shadow-sm border-0">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-<?= ($_SESSION['tipo_rapido'] ?? 'success') === 'success' ? 'check-circle' : 'exclamation-circle' ?> me-2"></i>
+                        <i class="fas fa-<?= htmlspecialchars((string) (($_SESSION['tipo_rapido'] ?? 'success') === 'success' ? 'check-circle' : 'exclamation-circle'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> me-2"></i>
                         <?= htmlspecialchars($_SESSION['mensaje_rapido']) ?>
                         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
                     </div>
@@ -73,7 +73,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                 <i class="fas fa-calendar-alt me-1"></i> Fecha de Ingreso <span class="text-danger">*</span>
                                             </label>
                                             <input type="datetime-local" name="fecha_ingreso" class="form-control"
-                                                   value="<?= date('Y-m-d\TH:i') ?>" required
+                                                   value="<?= htmlspecialchars((string) (date('Y-m-d\TH:i')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" required
                                                    style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
                                         </div>
                                         <div class="mb-3">
@@ -86,8 +86,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                     <option value="">Seleccione un proveedor...</option>
                                                     <?php if (!empty($proveedores)): ?>
                                                         <?php foreach ($proveedores as $prov): ?>
-                                                            <option value="<?= $prov['id_proveedor'] ?>"
-                                                                <?= ($idProveedorSeleccionado > 0 && $idProveedorSeleccionado == (int) $prov['id_proveedor']) ? 'selected' : '' ?>>
+                                                            <option value="<?= htmlspecialchars((string) ($prov['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                                                                <?= htmlspecialchars((string) (($idProveedorSeleccionado > 0 && $idProveedorSeleccionado == (int) $prov['id_proveedor']) ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>
                                                                 <?= htmlspecialchars($prov['razon_social'] . ' - ' . $prov['rif']) ?>
                                                             </option>
                                                         <?php endforeach; ?>
@@ -131,12 +131,12 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                                     <option value="">Seleccione un producto...</option>
                                                     <?php if (!empty($productos)): ?>
                                                         <?php foreach ($productos as $p): ?>
-                                                            <option value="<?= $p['id_producto'] ?>"
+                                                            <option value="<?= htmlspecialchars((string) ($p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                                                                     data-descripcion="<?= htmlspecialchars($p['descripcion']) ?>"
-                                                                    data-costo="<?= $p['costo_unitario'] ?>"
-                                                                    data-stock="<?= $p['cantidad'] ?>"
-                                                                <?= ($idProductoHeredado != '' && $idProductoHeredado == $p['id_producto']) ? 'selected' : '' ?>>
-                                                                <?= htmlspecialchars($p['descripcion']) ?> (Stock: <?= $p['cantidad'] ?>)
+                                                                    data-costo="<?= htmlspecialchars((string) ($p['costo_unitario']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                                                                    data-stock="<?= htmlspecialchars((string) ($p['cantidad']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                                                                <?= htmlspecialchars((string) (($idProductoHeredado != '' && $idProductoHeredado == $p['id_producto']) ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>
+                                                                <?= htmlspecialchars($p['descripcion']) ?> (Stock: <?= htmlspecialchars((string) ($p['cantidad']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)
                                                             </option>
                                                         <?php endforeach; ?>
                                                     <?php else: ?>
@@ -200,7 +200,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                             </tr>
                                         </thead>
                                         <tbody id="detallesBody">
-                                            <tr>
+                                            <tr id="filaVaciaDetalles">
                                                 <td colspan="6" class="text-center py-3" style="color: rgba(255,255,255,0.2);">
                                                     <i class="fas fa-box-open me-2"></i> No hay productos agregados
                                                 </td>
@@ -357,7 +357,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                     style="border-radius: 12px; padding: 10px 14px;">
                                 <option value="">Seleccione categoría...</option>
                                 <?php foreach (($categorias ?? []) as $c): ?>
-                                    <option value="<?= $c['id_categoria'] ?>"><?= htmlspecialchars($c['nombre_categoria']) ?></option>
+                                    <option value="<?= htmlspecialchars((string) ($c['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($c['nombre_categoria']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -367,7 +367,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                     style="border-radius: 12px; padding: 10px 14px;">
                                 <option value="">Seleccione proveedor...</option>
                                 <?php foreach (($proveedores ?? []) as $p): ?>
-                                    <option value="<?= $p['id_proveedor'] ?>"><?= htmlspecialchars($p['razon_social']) ?></option>
+                                    <option value="<?= htmlspecialchars((string) ($p['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($p['razon_social']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -405,7 +405,5 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 <!-- ============================================================ -->
 <!-- SCRIPTS                                                       -->
 <!-- ============================================================ -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="/pirotecnica_fenix/assets/js/nota_entrada.js"></script>
-
+<?php $scriptsModulo = ['nota_entrada.js?v=' . filemtime(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'nota_entrada.js')]; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

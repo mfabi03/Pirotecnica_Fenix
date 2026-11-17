@@ -72,7 +72,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                     <i class="fas fa-info-circle me-2" style="color: #f39c12;"></i> Datos de la Nota
                                 </h6>
                                 <div style="color: #212529;">
-                                    <p><strong style="color: #495057;">Fecha:</strong> <?= formatoFechaVenezuela($nota['fecha']) ?></p>
+                                    <p><strong style="color: #495057;">Fecha:</strong> <?= htmlspecialchars((string) (formatoFechaVenezuela($nota['fecha'])), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
                                     <p><strong style="color: #495057;">Encargado:</strong> <?= htmlspecialchars($nota['usuario_responsable'] ?? 'N/A') ?></p>
                                 </div>
                             </div>
@@ -131,12 +131,12 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                                 $totalCosto += $subtotal;
                                             ?>
                                                 <tr style="border-bottom: 1px solid #eee;">
-                                                    <td style="padding: 12px; color: #212529; font-weight: 600;"><?= $d['id_producto'] ?></td>
+                                                    <td style="padding: 12px; color: #212529; font-weight: 600;"><?= htmlspecialchars((string) ($d['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                                                     <td style="padding: 12px; color: #212529;"><?= htmlspecialchars($d['nombre_producto']) ?></td>
                                                     <td style="padding: 12px; color: #6c757d;"><?= htmlspecialchars($d['nombre_categoria'] ?? 'Sin categoría') ?></td>
-                                                    <td style="padding: 12px; color: #212529; text-align: center; font-weight: 600;"><?= $cantidad ?></td>
-                                                    <td style="padding: 12px; color: #212529; text-align: right;">$<?= number_format($costo, 2) ?></td>
-                                                    <td style="padding: 12px; color: #f39c12; text-align: right; font-weight: bold;">$<?= number_format($subtotal, 2) ?></td>
+                                                    <td style="padding: 12px; color: #212529; text-align: center; font-weight: 600;"><?= htmlspecialchars((string) ($cantidad), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                                    <td style="padding: 12px; color: #212529; text-align: right;">$<?= htmlspecialchars((string) (number_format($costo, 2)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                                    <td style="padding: 12px; color: #f39c12; text-align: right; font-weight: bold;">$<?= htmlspecialchars((string) (number_format($subtotal, 2)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
@@ -145,9 +145,9 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                                         <!-- TOTAL DE UNIDADES Y TOTAL DE COSTO -->
                                         <tr style="border-top: 2px solid rgba(243,156,18,0.4); background: #f8f9fa;">
                                             <td colspan="3" style="padding: 16px 12px; text-align: right; font-weight: bold; color: #495057;">TOTALES:</td>
-                                            <td style="padding: 16px 12px; text-align: center; font-weight: bold; color: #f39c12; font-size: 1.1rem;"><?= $totalUnidades ?? 0 ?></td>
+                                            <td style="padding: 16px 12px; text-align: center; font-weight: bold; color: #f39c12; font-size: 1.1rem;"><?= htmlspecialchars((string) ($totalUnidades ?? 0), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                                             <td style="padding: 16px 12px;"></td>
-                                            <td style="padding: 16px 12px; text-align: right; font-weight: bold; color: #28a745; font-size: 1.1rem;">$<?= number_format($totalCosto ?? 0, 2) ?></td>
+                                            <td style="padding: 16px 12px; text-align: right; font-weight: bold; color: #28a745; font-size: 1.1rem;">$<?= htmlspecialchars((string) (number_format($totalCosto ?? 0, 2)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -197,7 +197,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
                         <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Motivo <span class="text-danger">*</span></label>
                         <textarea name="motivo_eliminacion" class="form-control" rows="3" required style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 12px 16px;"></textarea>
                     </div>
-                    <input type="hidden" name="id_nota_salida" value="<?= $nota['id_nota_salida'] ?>">
+                    <input type="hidden" id="idNotaSalidaImprimir" name="id_nota_salida" value="<?= htmlspecialchars((string) ($nota['id_nota_salida']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.04);">
                     <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 8px 20px; font-weight: 600; transition: all 0.3s ease;">Cancelar</button>
@@ -210,15 +210,7 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
 <?php endif; ?>
 
 <!-- SCRIPT PARA IMPRIMIR EL PDF -->
-<script>
-    function imprimirNotaPDF() {
-        var idNota = <?= json_encode($nota['id_nota_salida'] ?? 0) ?>;
-        if (idNota > 0) {
-            window.open('?url=notasalida&type=generar_pdf&id=' + idNota, '_blank');
-        } else {
-            alert("Error: No se pudo identificar la nota.");
-        }
-    }
-</script>
 
+
+<?php $scriptsModulo = ['nota_salida_detalle.js']; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

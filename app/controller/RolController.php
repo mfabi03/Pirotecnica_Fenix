@@ -50,7 +50,7 @@ if ($action === 'check_nombre') {
     header('Content-Type: application/json');
     try {
         $nombre = Validador::limpiar($_GET['valor'] ?? '');
-        $idExcluir = isset($_GET['id_excluir']) ? (int)$_GET['id_excluir'] : null;
+        $idExcluir = isset($_GET['excluir_id']) ? (int)$_GET['excluir_id'] : null;
 
         if ($nombre === '') {
             echo json_encode(['existe' => false]);

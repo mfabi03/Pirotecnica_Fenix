@@ -1,4 +1,5 @@
 ﻿<?php
+// app/view/reporteCaja/reporteCajaView.php
 $movimientos     = $movimientos ?? [];
 $paginaActual    = $paginaActual ?? 1;
 $totalPaginas    = $totalPaginas ?? 1;
@@ -7,33 +8,22 @@ $porPaginaActual = $porPaginaActual ?? 10;
 $totalUnidades   = $totalUnidades ?? 0;
 $totalDocumentos = $totalDocumentos ?? 0;
 
-$categorias = [];
-try { $stmt = $db->prepare("SELECT id_categoria, nombre_categoria FROM categoria ORDER BY nombre_categoria ASC"); $stmt->execute(); $categorias = $stmt->fetchAll(PDO::FETCH_ASSOC); } catch (Exception $e) {}
-
-$fechaFiltro = $fechaFiltro ?? ''; 
-$cajaCerrada = $cajaCerrada ?? false;
+// ✅ Vienen del controlador (no consultes $db aquí)
+$categorias      = $categorias ?? [];
+$productosFiltro = $productosFiltro ?? [];
+$fechaFiltro     = $fechaFiltro ?? '';
+$cajaCerrada     = $cajaCerrada ?? false;
+$estilosModulo   = ['reporteCaja.css'];
 
 require_once dirname(__DIR__, 2) . "/view/header.php";
 ?>
 
-<style>
-@media print {
-    body * { visibility: hidden !important; }
-    #modalCierreCaja, #modalCierreCaja * { visibility: visible !important; }
-    #modalCierreCaja { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; display: block !important; background: #fff !important; margin: 0 !important; padding: 0 !important; }
-    #modalCierreCaja .modal-dialog { display: block !important; max-width: 100% !important; margin: 0 !important; }
-    #modalCierreCaja .modal-content { border: none !important; box-shadow: none !important; background: #fff !important; }
-    #modalCierreCaja .modal-header, #modalCierreCaja .modal-footer { display: none !important; }
-    .modal-backdrop { display: none !important; }
-    .table { border-collapse: collapse !important; width: 100% !important; }
-    .table th, .table td { border-bottom: 1px solid #ddd !important; padding: 8px !important; font-size: 12px !important; }
-}
-</style>
+
 
 <div class="col-md-8 col-lg-12">
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center g-3">
-            <div class="col-xl-8"><h3 class="m-0 dark-title"><i class="fas fa-cash-register text-gold me-2"></i> Reporte Diario de Caja</h3><small style="color: rgba(255, 255, 255, 0.6) !important;"><i class="fas fa-history me-2"></i> <?= $totalRegistros ?> movimientos registrados</small></div>
+            <div class="col-xl-8"><h3 class="m-0 dark-title"><i class="fas fa-cash-register text-gold me-2"></i> Reporte Diario de Caja</h3><small style="color: rgba(255, 255, 255, 0.6) !important;"><i class="fas fa-history me-2"></i> <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> movimientos registrados</small></div>
             <div class="col-xl-4 text-end">
                 <?php if (!$cajaCerrada): ?>
                     <button type="button" id="btnAbrirCierreCaja" class="btn btn-dark-gold" data-fecha="<?= htmlspecialchars($fechaFiltro) ?>" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;"><i class="fas fa-lock me-1"></i> Realizar Cierre</button>
@@ -44,7 +34,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     </div>
 
-    <!-- FILTRO GLOBAL (SIN FECHA) -->
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportecaja">
@@ -61,10 +50,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     foreach ($clientesUnicos as $cli): if(empty($cli)) continue; ?>
                         <option value="<?= htmlspecialchars($cli) ?>">
                     <?php endforeach; ?>
-                    <?php 
-                    $stmtProd = $db->prepare("SELECT descripcion FROM producto WHERE eliminado = 0 ORDER BY descripcion ASC");
-                    $stmtProd->execute();
-                    foreach ($stmtProd->fetchAll(PDO::FETCH_ASSOC) as $prod): ?>
+                    <?php foreach ($productosFiltro as $prod): ?>
                         <option value="<?= htmlspecialchars($prod['descripcion']) ?>">
                     <?php endforeach; ?>
                     <?php foreach ($categorias as $cat): ?>
@@ -90,8 +76,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         <div class="col-md-5">
             <div class="card card-total-notas border-left-danger text-center p-3 shadow-sm">
                 <h6 class="card-title text-muted text-uppercase fw-bold" style="letter-spacing: 0.5px;">Total de Notas de Salida</h6>
-                <h2 class="card-number text-danger mb-0"><?= (int)$totalDocumentos ?></h2>
-                <small class="text-muted mt-2 d-block" style="font-size: 0.8rem;"><?= (int)$totalUnidades ?> unidades en total</small>
+                <h2 class="card-number text-danger mb-0"><?= htmlspecialchars((string) ((int)$totalDocumentos), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h2>
+                <small class="text-muted mt-2 d-block" style="font-size: 0.8rem;"><?= htmlspecialchars((string) ((int)$totalUnidades), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> unidades en total</small>
             </div>
         </div>
     </div>
@@ -107,15 +93,15 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     <?php elseif (!empty($movimientos)): ?>
                         <?php foreach ($movimientos as $m): ?>
                             <tr>
-                                <td class="ps-4 fw-bold">#<?= (int)$m['id_documento'] ?></td>
-                                <td><?= date('h:i A', strtotime($m['fecha_movimiento'])) ?></td>
+                                <td class="ps-4 fw-bold">#<?= htmlspecialchars((string) ((int)$m['id_documento']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string) (date('h:i A', strtotime($m['fecha_movimiento']))), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($m['nombre_cliente'] ?? 'N/A') ?></td>
-                                <td><span class="badge" style="<?= ($m['tipo_cliente'] === 'Jurídico') ? 'background: #e0f2fe; color: #0369a1;' : 'background: #dcfce7; color: #15803d;' ?> padding: 4px 12px; border-radius: 50px; font-weight: 600;"><?= htmlspecialchars($m['tipo_cliente'] ?? 'Natural') ?></span></td>
-                                <td class="text-center fw-bold"><?= (int)($m['total_productos'] ?? 0) ?> Prod.</td>
-                                <td class="text-center fw-bold"><?= (int)($m['total_categorias'] ?? 0) ?> Cat.</td>
-                                <td class="text-center fw-bold"><?= (int)($m['cantidad'] ?? 0) ?> Und.</td>
+                                <td><span class="badge" style="<?= htmlspecialchars((string) (($m['tipo_cliente'] === 'Jurídico') ? 'background: #e0f2fe; color: #0369a1;' : 'background: #dcfce7; color: #15803d;'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> padding: 4px 12px; border-radius: 50px; font-weight: 600;"><?= htmlspecialchars($m['tipo_cliente'] ?? 'Natural') ?></span></td>
+                                <td class="text-center fw-bold"><?= htmlspecialchars((string) ((int)($m['total_productos'] ?? 0)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Prod.</td>
+                                <td class="text-center fw-bold"><?= htmlspecialchars((string) ((int)($m['total_categorias'] ?? 0)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Cat.</td>
+                                <td class="text-center fw-bold"><?= htmlspecialchars((string) ((int)($m['cantidad'] ?? 0)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Und.</td>
                                 <td><?= htmlspecialchars($m['usuario_activo'] ?? 'N/A') ?></td>
-                                <td class="pe-4 text-center"><button type="button" class="btn btn-sm btn-action-circle" style="background: #1a1a2e; color: #0d6efd; border: 1px solid #0d6efd; width: 32px; height: 32px; padding: 0; border-radius: 50%;" onclick="verDetalleCaja(<?= (int)$m['id_documento'] ?>)"><i class="fas fa-eye"></i></button></td>
+                                <td class="pe-4 text-center"><button type="button" class="btn btn-sm btn-action-circle" style="background: #1a1a2e; color: #0d6efd; border: 1px solid #0d6efd; width: 32px; height: 32px; padding: 0; border-radius: 50%;" onclick="verDetalleCaja(<?= htmlspecialchars((string) ((int)$m['id_documento']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)"><i class="fas fa-eye"></i></button></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
@@ -124,7 +110,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </tbody>
             </table>
         </div>
-        <div class="card-footer py-3 d-flex justify-content-between align-items-center"><span class="text-muted small"><i class="fas fa-history me-1"></i> Total: <?= $totalRegistros ?> movimientos</span><?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?></div>
+        <div class="card-footer py-3 d-flex justify-content-between align-items-center"><span class="text-muted small"><i class="fas fa-history me-1"></i> Total: <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> movimientos</span><?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?></div>
     </div>
 </div>
 
@@ -140,7 +126,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
             </div>
             <div class="modal-body" style="padding: 24px;">
-                
                 <div class="d-flex align-items-center justify-content-center mb-4 gap-3">
                     <img src="assets/imagenes/logo.png" alt="Logo" style="width: 60px; height: 60px; object-fit: contain;">
                     <div>
@@ -183,7 +168,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                 </div>
             </div>
             <div class="modal-footer" style="display: flex; justify-content: space-between;">
-                <!-- 🔥 NUEVOS BOTONES DE PDF Y EXCEL -->
                 <div>
                     <a href="#" id="btnReciboPdf" target="_blank" class="btn btn-outline-danger fw-bold me-2" style="border-radius: 50px; padding: 8px 20px;">
                         <i class="fas fa-file-pdf me-1"></i> PDF
@@ -198,180 +182,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('formFiltros');
-    if (form) {
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const formData = new FormData(form); formData.append('ajax', '1');
-            fetch('?url=reportecaja', { method: 'POST', body: formData }).then(r => r.json()).then(data => {
-                if (!data.success || !data.html) return;
-                const wrap = document.createElement('div'); wrap.innerHTML = data.html;
-                const nuevaVista = wrap.querySelector('.col-md-8.col-lg-12'); if (!nuevaVista) return;
-                const contenedorActual = document.querySelector('.col-md-8.col-lg-12'); if (contenedorActual) contenedorActual.replaceWith(nuevaVista);
-            }).catch(() => form.submit());
-        });
-    }
 
-    const btn = document.getElementById('btnAbrirCierreCaja');
-    if (!btn) return;
-
-    const modalEl = document.getElementById('modalCierreCaja');
-    const modal = new bootstrap.Modal(modalEl);
-    const contenedor = document.getElementById('contenidoCierreCaja');
-    
-    // 🔥 LA CLAVE: Leemos la fecha del botón, que viene del servidor
-    const fechaSeleccionada = btn.getAttribute('data-fecha') || new Date().toISOString().slice(0, 10);
-    
-    const btnCerrarCaja = document.getElementById('btnConfirmarCierreCaja');
-    const btnAceptarCierreExito = document.getElementById('btnAceptarCierreExito');
-
-    if (btnAceptarCierreExito) {
-        btnAceptarCierreExito.addEventListener('click', function () {
-            modal.hide();
-            window.location.href = `?url=reportecaja`;
-        });
-    }
-
-    if (btnCerrarCaja) {
-        btnCerrarCaja.addEventListener('click', async function () {
-            btnCerrarCaja.disabled = true;
-            btnCerrarCaja.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-
-            try {
-                const response = await fetch('?url=confirmar_cierre_caja', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, 
-                    body: new URLSearchParams({ fecha: fechaSeleccionada }) 
-                });
-                const result = await response.json();
-                
-                if (!result.success) {
-                    contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0"><i class="fas fa-exclamation-circle me-2"></i>${result.mensaje}</div>`;
-                    btnCerrarCaja.disabled = false;
-                    btnCerrarCaja.innerHTML = '<i class="fas fa-lock me-1"></i> Cierre de caja';
-                    return;
-                }
-
-                modal.hide();
-
-                // 🔥 ASIGNAR LAS URLS A LOS NUEVOS BOTONES DEL RECIBO
-                const urlPdf = `?url=exportar_caja_pdf&fecha=${fechaSeleccionada}`;
-                const urlCsv = `?url=exportar_caja_csv&fecha=${fechaSeleccionada}`;
-                document.getElementById('btnReciboPdf').href = urlPdf;
-                document.getElementById('btnReciboExcel').href = urlCsv;
-
-                // 🔥 LLENAR EL MODAL DE RECIBO
-                document.getElementById('recibo-fecha').textContent = result.data.fecha;
-                document.getElementById('recibo-hora-apertura').textContent = result.data.hora_apertura || '—';
-                document.getElementById('recibo-hora-cierre').textContent = new Date().toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
-                document.getElementById('recibo-encargado').textContent = result.data.encargado;
-                document.getElementById('recibo-total-notas').textContent = result.data.total_documentos;
-                document.getElementById('recibo-total-unidades').textContent = result.data.total_unidades;
-                document.getElementById('recibo-total-productos').textContent = result.data.total_productos;
-                document.getElementById('recibo-total-clientes').textContent = result.data.total_clientes;
-
-                const tbody = document.getElementById('recibo-tabla-detalles');
-                tbody.innerHTML = '';
-                
-                if (result.data.detalle && result.data.detalle.length > 0) {
-                    const notasAgrupadas = {};
-                    result.data.detalle.forEach(m => {
-                        const id = m.id_documento;
-                        if (!notasAgrupadas[id]) {
-                            notasAgrupadas[id] = { id_documento: id, fecha_movimiento: m.fecha_movimiento, nombre_cliente: m.nombre_cliente, tipo_cliente: m.tipo_cliente, usuario_activo: m.usuario_activo, productos: [], categorias: [], totalUnidades: 0 };
-                        }
-                        let prodLimpio = m.nombre_producto.split('(x')[0].trim();
-                        if (!notasAgrupadas[id].productos.includes(prodLimpio)) notasAgrupadas[id].productos.push(prodLimpio);
-                        if (m.categoria && !notasAgrupadas[id].categorias.includes(m.categoria)) notasAgrupadas[id].categorias.push(m.categoria);
-                        notasAgrupadas[id].totalUnidades += parseInt(m.cantidad) || 0;
-                    });
-
-                    Object.values(notasAgrupadas).forEach(nota => {
-                        let hora = nota.fecha_movimiento.split(' ')[1] || nota.fecha_movimiento;
-                        tbody.innerHTML += `
-                            <tr>
-                                <td class="ps-4 fw-bold">#${nota.id_documento}</td>
-                                <td>${hora}</td>
-                                <td>${nota.nombre_cliente}</td>
-                                <td><span class="badge ${nota.tipo_cliente === 'Jurídico' ? 'bg-info text-dark' : 'bg-success'}">${nota.tipo_cliente}</span></td>
-                                <td class="text-center fw-bold">${nota.productos.length}</td>
-                                <td class="text-center fw-bold">${nota.categorias.length}</td>
-                                <td class="text-center fw-bold">${nota.totalUnidades}</td>
-                                <td class="pe-4">${nota.usuario_activo || 'N/A'}</td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3">No hay movimientos</td></tr>`;
-                }
-
-                new bootstrap.Modal(document.getElementById('modalReciboCierre')).show();
-
-            } catch (error) {
-                contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0">Error de conexión.</div>`;
-                btnCerrarCaja.disabled = false;
-                btnCerrarCaja.innerHTML = '<i class="fas fa-lock me-1"></i> Cierre de caja';
-            }
-        });
-    }
-
-    btn.addEventListener('click', async function () {
-        btn.dataset.fecha = fechaSeleccionada;
-
-        contenedor.innerHTML = `<div class="text-center py-5"><div class="spinner-border text-warning" style="width: 3rem; height: 3rem;"></div><p class="mt-3 text-muted fw-bold">Calculando cierre...</p></div>`;
-        modal.show();
-
-        try {
-            // 🔥 ENVIAMOS LA FECHA POR POST A LA RUTA cierre_caja_ajax
-            const formData = new FormData();
-            formData.append('fecha', fechaSeleccionada);
-
-            const resp = await fetch('?url=cierre_caja_ajax', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await resp.json();
-            
-            if (!data.success) { 
-                contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0">${data.mensaje}</div>`; 
-                return; 
-            }
-
-            const r = data.data;
-            let filasDetalle = '';
-            
-            if (r.detalle && r.detalle.length > 0) {
-                const notasAgrupadas = {};
-                r.detalle.forEach(function(m) {
-                    const idNota = m.id_documento;
-                    if (!notasAgrupadas[idNota]) { notasAgrupadas[idNota] = { id_documento: idNota, fecha_movimiento: m.fecha_movimiento, usuario_activo: m.usuario_activo || 'Cajero', cliente: m.nombre_cliente || 'N/A', tipo_cliente: m.tipo_cliente || 'Natural', productos: [], categorias: [], totalUnidades: 0 }; }
-                    let nombreLimpio = m.nombre_producto || 'Sin producto'; if (nombreLimpio.includes('(x')) { nombreLimpio = nombreLimpio.split('(x')[0].trim(); }
-                    if (!notasAgrupadas[idNota].productos.includes(nombreLimpio)) { notasAgrupadas[idNota].productos.push(nombreLimpio); }
-                    if (m.categoria && !notasAgrupadas[idNota].categorias.includes(m.categoria)) { notasAgrupadas[idNota].categorias.push(m.categoria); }
-                    notasAgrupadas[idNota].totalUnidades += parseInt(m.cantidad) || 0;
-                });
-                const notasOrdenadas = Object.values(notasAgrupadas).sort((a, b) => Number(b.id_documento) - Number(a.id_documento));
-                notasOrdenadas.forEach(nota => {
-                    let fechaFmt = nota.fecha_movimiento;
-                    if (fechaFmt && fechaFmt.indexOf('-') > -1) { const soloFecha = fechaFmt.split(' ')[0]; const partes = soloFecha.split('-'); fechaFmt = `${partes[2]}/${partes[1]}/${partes[0]}`; }
-                    const badgeColor = (nota.tipo_cliente === 'Jurídico') ? 'background: #e0f2fe; color: #0369a1;' : 'background: #dcfce7; color: #15803d;';
-                    filasDetalle += `<tr><td class="fw-bold text-dark">#${nota.id_documento}</td><td>${fechaFmt}</td><td>${nota.cliente}</td><td><span class="badge" style="${badgeColor} padding: 4px 12px; border-radius: 50px; font-weight: 600;">${nota.tipo_cliente}</span></td><td style="max-width: 250px; white-space: normal;">${nota.productos.join(', ')}</td><td style="max-width: 200px; white-space: normal;">${nota.categorias.join(', ')}</td><td class="text-center fw-bold">${nota.totalUnidades}</td><td>${nota.usuario_activo}</td></tr>`;
-                });
-            } else { filasDetalle = `<tr><td colspan="8" class="text-center text-muted py-4">No hay notas pendientes por cerrar</td></tr>`; }
-
-            contenedor.innerHTML = `
-                <div class="dark-card card shadow-sm dark-table-header border-0">
-                    <div class="card-header py-3 d-flex justify-content-between align-items-center"><h5 class="m-0"><i class="fas fa-history me-2"></i> Movimientos del Día</h5></div>
-                    <div class="table-responsive"><table class="table table-hover align-middle m-0"><thead><tr><th class="ps-4 py-3">NOTA #</th><th class="py-3">FECHA</th><th class="py-3">CLIENTE</th><th class="py-3">TIPO</th><th class="py-3">PRODUCTOS</th><th class="py-3">CATEGORÍAS</th><th class="py-3 text-center">UNIDADES</th><th class="py-3">ENCARGADO</th></tr></thead><tbody>${filasDetalle}</tbody></table></div>
-                    <div class="card-footer py-3 d-flex justify-content-between align-items-center"><span class="text-muted small fw-bold"><i class="fas fa-file-invoice me-1"></i> Total de notas: <span class="text-danger ms-1">${r.total_documentos}</span></span><span class="text-muted small fw-bold">Total unidades: <span class="text-dark ms-1">${r.total_unidades}</span></span></div>
-                </div>
-            `;
-        } catch (e) { contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0">Error de conexión.</div>`; }
-    });
-});
-</script>
-
+<?php $scriptsModulo = ['reporteCaja.js']; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

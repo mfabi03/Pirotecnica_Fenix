@@ -25,18 +25,18 @@ function build_page_url($overrides = []) {
             $prevPage = max(1, $pagina_actual - 1);
             $nextPage = min($totalPaginas, $pagina_actual + 1);
             ?>
-            <li class="page-item <?= $prevDisabled ?>">
-                <a class="page-link" href="<?= build_page_url(['pagina' => $prevPage, 'por_pagina' => $por_pagina]) ?>" aria-label="Anterior">
+            <li class="page-item <?= htmlspecialchars((string) ($prevDisabled), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+                <a class="page-link" href="<?= htmlspecialchars((string) (build_page_url(['pagina' => $prevPage, 'por_pagina' => $por_pagina])), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" aria-label="Anterior">
                     <i class="fas fa-chevron-left"></i>
                 </a>
             </li>
             <li class="page-item disabled">
                 <span class="page-link bg-white text-dark border-0">
-                    <?= $pagina_actual ?> / <?= $totalPaginas ?>
+                    <?= htmlspecialchars((string) ($pagina_actual), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> / <?= htmlspecialchars((string) ($totalPaginas), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
                 </span>
             </li>
-            <li class="page-item <?= $nextDisabled ?>">
-                <a class="page-link" href="<?= build_page_url(['pagina' => $nextPage, 'por_pagina' => $por_pagina]) ?>" aria-label="Siguiente">
+            <li class="page-item <?= htmlspecialchars((string) ($nextDisabled), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+                <a class="page-link" href="<?= htmlspecialchars((string) (build_page_url(['pagina' => $nextPage, 'por_pagina' => $por_pagina])), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" aria-label="Siguiente">
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </li>

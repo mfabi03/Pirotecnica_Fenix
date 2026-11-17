@@ -104,14 +104,32 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
         }
     }
 
+    public function existeCategoria($nombre, $excluirId = null)
+    {
+        try {
+            $sql = "SELECT COUNT(*) FROM categoria
+                    WHERE LOWER(TRIM(nombre_categoria)) = LOWER(TRIM(:nombre))
+                      AND eliminado = 0";
+            $parametros = [':nombre' => trim((string)$nombre)];
+
+            if ($excluirId !== null) {
+                $sql .= " AND id_categoria <> :excluir_id";
+                $parametros[':excluir_id'] = (int)$excluirId;
+            }
+
+            $stmt = $this->conex->prepare($sql);
+            $stmt->execute($parametros);
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            throw new Exception("No se pudo verificar el nombre de la categoría.", 0, $e);
+        }
+    }
+
     // REGISTRAR CATEGORIA
     public function registrarCategoria(array $datos)
     {
         try {
-            $checkSql = "SELECT COUNT(*) FROM categoria WHERE nombre_categoria = :nombre AND eliminado = 0";
-            $checkStmt = $this->conex->prepare($checkSql);
-            $checkStmt->execute([':nombre' => $datos['nombre_categoria']]);
-            if ($checkStmt->fetchColumn() > 0) {
+            if ($this->existeCategoria($datos['nombre_categoria'])) {
                 throw new Exception("Ya existe una categoría activa con el nombre '{$datos['nombre_categoria']}'.");
             }
 
@@ -142,14 +160,7 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
                 throw new Exception("La categoría con ID {$id} no existe o está inactiva.");
             }
 
-            $checkNombreSql = "SELECT COUNT(*) FROM categoria
-                               WHERE nombre_categoria = :nombre AND id_categoria != :id AND eliminado = 0";
-            $checkNombreStmt = $this->conex->prepare($checkNombreSql);
-            $checkNombreStmt->execute([
-                ':nombre' => $datos['nombre_categoria'],
-                ':id' => $id
-            ]);
-            if ($checkNombreStmt->fetchColumn() > 0) {
+            if ($this->existeCategoria($datos['nombre_categoria'], $id)) {
                 throw new Exception("Ya existe otra categoría activa con el nombre '{$datos['nombre_categoria']}'.");
             }
 
@@ -192,11 +203,15 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
     {
         try {
             $stmtCheck = $this->conex->prepare(
-                "SELECT id_categoria FROM categoria WHERE id_categoria = :id AND eliminado = 1 LIMIT 1"
+                "SELECT id_categoria, nombre_categoria FROM categoria WHERE id_categoria = :id AND eliminado = 1 LIMIT 1"
             );
             $stmtCheck->execute([':id' => $id]);
-            if (!$stmtCheck->fetch()) {
+            $categoria = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            if (!$categoria) {
                 throw new Exception("La categoría no existe o ya está activa.");
+            }
+            if ($this->existeCategoria($categoria['nombre_categoria'], $id)) {
+                throw new Exception("No se puede reactivar la categoría porque ya existe otra categoría activa con ese nombre.");
             }
 
             $stmt = $this->conex->prepare(

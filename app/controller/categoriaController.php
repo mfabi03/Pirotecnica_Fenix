@@ -32,6 +32,36 @@ if (!in_array($estado_categoria, ['todos', 'activos', 'inactivos'], true)) {
 // ==========================================
 // ENDPOINTS AJAX
 // ==========================================
+if ($action === 'check_duplicado') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        if (!$permisoHelper->tienePermiso($id_rol_actual, 'Categorias', 'leer')) {
+            http_response_code(403);
+            throw new Exception('No tienes permiso para consultar categorías.');
+        }
+
+        $campo = strtolower(Validador::limpiar($_GET['campo'] ?? ''));
+        $nombre = trim(Validador::limpiar($_GET['valor'] ?? ''));
+        $excluirId = isset($_GET['excluir_id']) && is_numeric($_GET['excluir_id'])
+            ? (int)$_GET['excluir_id']
+            : null;
+
+        if ($campo !== 'nombre_categoria' || $nombre === '') {
+            throw new Exception('Datos de verificación inválidos.');
+        }
+
+        echo json_encode([
+            'existe' => $modelo->existeCategoria($nombre, $excluirId),
+            'campo' => $campo,
+            'valor' => $nombre
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        if (http_response_code() < 400) http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
 if (isset($_GET['action']) && $_GET['action'] === 'listar_ajax') {
     header('Content-Type: application/json; charset=utf-8');
     try {

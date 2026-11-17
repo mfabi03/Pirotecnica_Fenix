@@ -9,7 +9,7 @@ require_once __DIR__ . '/../header.php';
         <hr>
 
         <?php if (isset($error)): ?>
-            <div class="alert alert-danger alert-custom"><?= $error ?></div>
+            <div class="alert alert-danger alert-custom"><?= htmlspecialchars((string) ($error), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div>
         <?php endif; ?>
 
         <?php if (isset($_GET['error'])): ?>
@@ -17,7 +17,7 @@ require_once __DIR__ . '/../header.php';
         <?php endif; ?>
 
         <form method="POST" action="?url=notasalida&type=update" id="notaSalidaForm">
-            <input type="hidden" name="id_nota_salida" value="<?= $nota['id_nota_salida'] ?? '' ?>">
+            <input type="hidden" name="id_nota_salida" value="<?= htmlspecialchars((string) ($nota['id_nota_salida'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
 
             <div class="row g-3">
                 <!-- Cliente -->
@@ -31,7 +31,7 @@ require_once __DIR__ . '/../header.php';
                             $idClienteSeleccionado = $nota['id_persona'] ?? $nota['id_cliente'] ?? null;
                             foreach ($clientes as $c): 
                             ?>
-                                <option value="<?= $c['id_cliente'] ?>" <?= ($c['id_cliente'] == $idClienteSeleccionado) ? 'selected' : '' ?>>
+                                <option value="<?= htmlspecialchars((string) ($c['id_cliente']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= htmlspecialchars((string) (($c['id_cliente'] == $idClienteSeleccionado) ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>
                                     <?= htmlspecialchars($c['nombre_cliente'] ?? 'Cliente sin nombre') ?>
                                 </option>
                             <?php endforeach; ?>
@@ -45,7 +45,7 @@ require_once __DIR__ . '/../header.php';
                 <div class="col-md-6">
                     <label class="form-label-custom">Encargado</label>
                     <input type="text" class="form-control bg-light" 
-                           value="<?= $_SESSION['usuario_nombre'] ?? 'Usuario actual' ?>" 
+                           value="<?= htmlspecialchars((string) ($_SESSION['usuario_nombre'] ?? 'Usuario actual'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" 
                            disabled readonly>
                     <small class="text-muted">La persona encargada se registra automáticamente</small>
                 </div>
@@ -67,14 +67,14 @@ require_once __DIR__ . '/../header.php';
                     <tbody id="detallesBody">
                         <?php if (!empty($nota['detalles'])): ?>
                             <?php foreach ($nota['detalles'] as $index => $d): ?>
-                                <tr data-index="<?= $index ?>">
+                                <tr data-index="<?= htmlspecialchars((string) ($index), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                     <td><?= htmlspecialchars($d['nombre_producto']) ?></td>
                                     <td>
-                                        <input type="number" name="detalles[<?= $index ?>][cantidad]" 
+                                        <input type="number" name="detalles[<?= htmlspecialchars((string) ($index), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>][cantidad]" 
                                                class="form-control form-control-sm" 
-                                               value="<?= $d['cantidad'] ?>" min="1" style="width: 80px;">
-                                        <input type="hidden" name="detalles[<?= $index ?>][id_producto]" 
-                                               value="<?= $d['id_producto'] ?>">
+                                               value="<?= htmlspecialchars((string) ($d['cantidad']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" min="1" style="width: 80px;">
+                                        <input type="hidden" name="detalles[<?= htmlspecialchars((string) ($index), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>][id_producto]" 
+                                               value="<?= htmlspecialchars((string) ($d['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                     </td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-danger" 
@@ -100,10 +100,10 @@ require_once __DIR__ . '/../header.php';
                         <option value="">Seleccione un producto...</option>
                         <?php if (!empty($productos) && is_array($productos)): ?>
                             <?php foreach ($productos as $p): ?>
-                                <option value="<?= $p['id_producto'] ?>" 
+                                <option value="<?= htmlspecialchars((string) ($p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" 
                                         data-descripcion="<?= htmlspecialchars($p['descripcion']) ?>"
-                                        data-stock="<?= $p['cantidad'] ?>">
-                                    <?= htmlspecialchars($p['descripcion']) ?> (Stock: <?= $p['cantidad'] ?>)
+                                        data-stock="<?= htmlspecialchars((string) ($p['cantidad']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+                                    <?= htmlspecialchars($p['descripcion']) ?> (Stock: <?= htmlspecialchars((string) ($p['cantidad']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)
                                 </option>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -135,112 +135,6 @@ require_once __DIR__ . '/../header.php';
     </div>
 </div>
 
-<script>
-let detalles = [];
 
-function agregarProducto() {
-    const select = document.getElementById('productoSelect');
-    const cantidad = parseInt(document.getElementById('cantidadInput').value);
-    
-    if (!select.value) {
-        alert('Seleccione un producto');
-        return;
-    }
-    if (!cantidad || cantidad < 1) {
-        alert('Ingrese una cantidad válida');
-        return;
-    }
-    
-    const option = select.options[select.selectedIndex];
-    const stock = parseInt(option.dataset.stock);
-    
-    if (cantidad > stock) {
-        alert('Stock insuficiente. Disponible: ' + stock);
-        return;
-    }
-    
-    const producto = {
-        id_producto: parseInt(select.value),
-        descripcion: option.dataset.descripcion,
-        cantidad: cantidad
-    };
-    
-    detalles.push(producto);
-    actualizarTabla();
-    select.value = '';
-    document.getElementById('cantidadInput').value = 1;
-}
-
-function eliminarProducto(button) {
-    const row = button.closest('tr');
-    row.remove();
-}
-
-function actualizarTabla() {
-    const tbody = document.getElementById('detallesBody');
-    
-    if (detalles.length === 0) {
-        return;
-    }
-    
-    detalles.forEach((d) => {
-        const existingRows = tbody.querySelectorAll('tr');
-        for (let row of existingRows) {
-            const hiddenInput = row.querySelector('input[type="hidden"]');
-            if (hiddenInput && parseInt(hiddenInput.value) === d.id_producto) {
-                const cantInput = row.querySelector('input[type="number"]');
-                if (cantInput) {
-                    cantInput.value = parseInt(cantInput.value) + d.cantidad;
-                }
-                return;
-            }
-        }
-        
-        const tr = document.createElement('tr');
-        const index = tbody.children.length;
-        tr.innerHTML = `
-            <td>${d.descripcion}</td>
-            <td>
-                <input type="number" name="detalles[${index}][cantidad]" 
-                       class="form-control form-control-sm" 
-                       value="${d.cantidad}" min="1" style="width: 80px;">
-                <input type="hidden" name="detalles[${index}][id_producto]" value="${d.id_producto}">
-            </td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarProducto(this)">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-    
-    detalles = [];
-}
-
-document.getElementById('notaSalidaForm').addEventListener('submit', function(e) {
-    const rows = document.querySelectorAll('#detallesBody tr');
-    const productos = [];
-    
-    rows.forEach(row => {
-        const idInput = row.querySelector('input[name*="id_producto"]');
-        const cantInput = row.querySelector('input[name*="cantidad"]');
-        if (idInput && cantInput) {
-            productos.push({
-                id_producto: parseInt(idInput.value),
-                cantidad: parseInt(cantInput.value)
-            });
-        }
-    });
-    
-    if (productos.length === 0) {
-        e.preventDefault();
-        alert('Debe agregar al menos un producto.');
-        return;
-    }
-    
-    document.getElementById('detallesJson').value = JSON.stringify(productos);
-});
-</script>
-
+<?php $scriptsModulo = ['nota_salida_editar.js']; ?>
 <?php require_once __DIR__ . '/../footer.php'; ?>

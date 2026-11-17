@@ -19,7 +19,11 @@
                         <div class="col-12">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombre de la Categoría *</label>
                             <input type="text" name="nombre_categoria" id="editar-categoria-nombre" class="form-control" required
+                                   data-validate="razon"
+                                   data-unico-endpoint="?url=categorias&action=check_duplicado"
+                                   data-unico-campo="nombre_categoria"
                                    style="border-radius: 12px; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.08);">
+                            <small class="feedback-validacion info" id="editar-categoria-nombre-feedback">Mínimo 3 caracteres</small>
                         </div>
                         <div class="col-12">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Descripción</label>

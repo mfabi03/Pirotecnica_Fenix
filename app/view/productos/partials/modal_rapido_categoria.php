@@ -24,7 +24,9 @@
                         <div class="col-12">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Nombre de la Categoría *</label>
                             <input type="text" id="rapido-cat-nombre" name="nombre_categoria" class="form-control" required
-                                   placeholder="Ej: Volcanes, Estrellitas..." data-validate="razon">
+                                   placeholder="Ej: Volcanes, Estrellitas..." data-validate="razon"
+                                   data-unico-endpoint="?url=categorias&action=check_duplicado"
+                                   data-unico-campo="nombre_categoria">
                             <small class="feedback-validacion info" id="rapido-cat-nombre-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
                             </small>

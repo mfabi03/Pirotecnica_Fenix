@@ -323,10 +323,19 @@ try {
         unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
     }
 
-    if ($error) {
+        if ($error) {
         $mensaje = $error;
         $tipo_mensaje = 'danger';
     }
+
+    // Calcular caja cerrada para la vista
+    $caja_cerrada = false;
+    try {
+        $caja_cerrada = $modelo->cajaCerradaHoy($id_usuario_sesion);
+    } catch (Exception $e) {
+        $caja_cerrada = false;
+    }
+
 } catch (Exception $e) {
     die("ERROR al obtener notas: " . $e->getMessage());
 }

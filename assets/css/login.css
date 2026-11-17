@@ -1,0 +1,14 @@
+/* 🔥 REGLA DE ORO: Ignorar el CSS de la plantilla si está deshabilitado */
+        .form-control:disabled, .form-control[disabled] {
+            background-color: #2b2b36 !important;
+            color: #888 !important;
+            border-color: #444 !important;
+            cursor: not-allowed !important;
+            opacity: 0.7 !important;
+        }
+        .btn-login:disabled, .btn-login[disabled] {
+            background: #444 !important;
+            color: #888 !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+        }

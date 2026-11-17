@@ -22,7 +22,7 @@ require_once __DIR__ . '/../header.php';
 
             <!-- Mensajes -->
             <?php if (isset($mensaje) && !empty($mensaje)): ?>
-                <div class="alert alert-<?= $tipo_mensaje ?? 'info' ?> alert-dismissible fade show">
+                <div class="alert alert-<?= htmlspecialchars((string) ($tipo_mensaje ?? 'info'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> alert-dismissible fade show">
                     <?= htmlspecialchars($mensaje) ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
