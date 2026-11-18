@@ -2,9 +2,8 @@
 // app/view/nota_salida/listNotasalidaView.php
 require_once __DIR__ . '/../header.php';
 
-// ✅ Permisos desde notasalidaController.php
-$puede_crear_nota  = $puede_crear    ?? false;
-$puede_anular_nota = $puede_eliminar ?? false;
+// La vista no instancia PermisoHelper ni ConnectDB.
+// Los permisos disponibles ya vienen calculados desde su controlador.
 
 // ✅ Viene del controlador
 $caja_cerrada = $caja_cerrada ?? false;
@@ -34,7 +33,7 @@ $esVistaAnuladas = !empty($_REQUEST['ver_anuladas']);
             </div>
             <div class="col-auto">
                 <?php if (!$esVistaAnuladas): ?>
-                    <?php if ($puede_crear_nota && !$caja_cerrada): ?>
+                    <?php if ($puede_crear && !$caja_cerrada): ?>
                     <a href="?url=notasalida&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                         <i class="fas fa-plus me-1"></i> Registrar Nota de Salida
                     </a>
@@ -266,7 +265,7 @@ $esVistaAnuladas = !empty($_REQUEST['ver_anuladas']);
                                             </button>
                                         <?php endif; ?>
                                         
-                                        <?php if (!$anulada && $puede_anular_nota): ?>
+                                        <?php if (!$anulada && $puede_eliminar): ?>
                                             <button type="button" class="btn-action-circle btn-delete" title="Anular Nota"
                                                     data-nota-action="cancel" data-nota-id="<?= htmlspecialchars((string) ((int) $n['id_nota_salida']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                                                     data-cliente="<?= htmlspecialchars(!empty($n['cliente_razon_social']) ? $n['cliente_razon_social'] : trim(($n['cliente_nombre'] ?? '') . ' ' . ($n['cliente_apellido'] ?? '')), ENT_QUOTES, 'UTF-8') ?>">
@@ -293,7 +292,7 @@ $esVistaAnuladas = !empty($_REQUEST['ver_anuladas']);
 
 <?php
 require_once __DIR__ . '/partials/modal_ver_nota.php';
-if ($puede_anular_nota) {
+if ($puede_eliminar) {
     require_once __DIR__ . '/partials/modal_anular_nota.php';
 }
 ?>

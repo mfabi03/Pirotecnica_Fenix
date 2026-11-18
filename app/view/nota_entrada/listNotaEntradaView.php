@@ -2,9 +2,8 @@
 // app/view/nota_entrada/listNotaEntradaView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-// ✅ Permisos desde notaentradaController.php
-$puede_crear_nota  = $puede_crear    ?? false;
-$puede_anular_nota = $puede_eliminar ?? false;
+// La vista no instancia PermisoHelper ni ConnectDB.
+// Los permisos disponibles ya vienen calculados desde su controlador.
 
 $por_pagina     = $por_pagina     ?? (int)($_GET['por_pagina'] ?? 10);
 $totalRegistros = $totalRegistros ?? (isset($notas) ? count($notas) : 0);
@@ -30,7 +29,7 @@ $esVistaAnuladas = !empty($_GET['ver_anuladas']);
                 </small>
             </div>
             <div class="col-auto">
-                <?php if ($puede_crear_nota && !$esVistaAnuladas): ?>
+                <?php if ($puede_crear && !$esVistaAnuladas): ?>
                 <a href="?url=notaentrada&type=create" class="btn btn-dark-gold" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease; text-decoration: none; display: inline-block;">
                     <i class="fas fa-plus me-1"></i> Registrar Nota de Entrada
                 </a>
@@ -245,7 +244,7 @@ $esVistaAnuladas = !empty($_GET['ver_anuladas']);
                                                     data-nota-action="view" data-nota-id="<?= htmlspecialchars((string) ((int) $n['id_nota_entrada']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <?php if ($puede_anular_nota): ?>
+                                            <?php if ($puede_eliminar): ?>
                                                 <button type="button" class="btn-action-circle btn-delete"
                                                         data-nota-action="cancel" data-nota-id="<?= htmlspecialchars((string) ((int) $n['id_nota_entrada']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                                                         data-proveedor="<?= htmlspecialchars($n['razon_social'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?>"

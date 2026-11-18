@@ -324,6 +324,48 @@ var Validador = (function ($) {
         return todoValido;
     }
 
+    function validarFormularioCompleto(formId) {
+        var $form = $('#' + formId);
+        if (!$form.length) return Promise.resolve({ valido: true });
+        if (!validarFormulario(formId)) {
+            return Promise.resolve({ valido: false, tipo: 'campos' });
+        }
+
+        var $camposUnicos = $form.find('[data-unico-endpoint]');
+        if (!$camposUnicos.length) return Promise.resolve({ valido: true });
+
+        var valores = $camposUnicos.map(function () {
+            return $(this).val();
+        }).get();
+        var verificaciones = $camposUnicos.map(function () {
+            return validarUnico(this).then(function (disponible) {
+                return disponible === true;
+            }, function () {
+                return false;
+            });
+        }).get();
+
+        return Promise.all(verificaciones).then(function (resultados) {
+            var sinCambios = true;
+            $camposUnicos.each(function (index) {
+                if ($(this).val() !== valores[index]) sinCambios = false;
+            });
+
+            var duplicado = $camposUnicos.filter(function () {
+                return $(this).data('unicoEstado') === 'duplicado';
+            }).length > 0;
+            var verificable = $camposUnicos.filter(function () {
+                return !['ok', 'duplicado'].includes($(this).data('unicoEstado'));
+            }).length === 0;
+            var valido = sinCambios && verificable && resultados.every(Boolean);
+
+            return {
+                valido: valido,
+                tipo: valido ? '' : (duplicado ? 'duplicado' : 'disponibilidad')
+            };
+        });
+    }
+
     // ---------------------------------------------------------
     // Auto formato
     // ---------------------------------------------------------
@@ -421,6 +463,7 @@ var Validador = (function ($) {
         init: init,
         validarCampo: validarCampo,
         validarFormulario: validarFormulario,
+        validarFormularioCompleto: validarFormularioCompleto,
         resetFormulario: resetFormulario,
         resetEstadoVisual: resetEstadoVisual,
         calcularEdad: calcularEdad,

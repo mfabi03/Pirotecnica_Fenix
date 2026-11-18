@@ -2,10 +2,8 @@
 // app/view/proveedores/listProveedoresView.php
 require_once __DIR__ . '/../header.php';
 
-// ✅ Permisos desde proveedoresController.php
-$puede_crear_proveedor    = $puede_crear    ?? false;
-$puede_editar_proveedor   = $puede_editar   ?? false;
-$puede_eliminar_proveedor = $puede_eliminar ?? false;
+// La vista no instancia PermisoHelper ni ConnectDB.
+// Los permisos disponibles ya vienen calculados desde su controlador.
 
 $verEliminados = !empty($_GET['ver_eliminados']);
 
@@ -31,7 +29,7 @@ $totalPaginas   = $totalPaginas   ?? 1;
                 </small>
             </div>
             <div class="col-auto d-flex align-items-center">
-                <?php if ($puede_crear_proveedor && !$verEliminados): ?>
+                <?php if ($puede_crear && !$verEliminados): ?>
                 <button type="button" class="btn btn-dark-gold" data-bs-toggle="modal" data-bs-target="#modalRegistrarProveedor" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease;">
                     <i class="fas fa-plus me-1"></i> Registrar Proveedor
                 </button>
@@ -173,13 +171,13 @@ $totalPaginas   = $totalPaginas   ?? 1;
                                                     data-proveedor-action="view" data-proveedor-id="<?= htmlspecialchars((string) ((int) $p['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <?php if ($puede_editar_proveedor): ?>
+                                            <?php if ($puede_editar): ?>
                                                 <button type="button" class="btn-action-circle btn-edit" title="Editar"
                                                         data-proveedor-action="edit" data-proveedor-id="<?= htmlspecialchars((string) ((int) $p['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
                                             <?php endif; ?>
-                                            <?php if ($puede_eliminar_proveedor): ?>
+                                            <?php if ($puede_eliminar): ?>
                                                 <button type="button" class="btn-action-circle btn-delete"
                                                         title="Inactivar" data-proveedor-action="inactivate" data-proveedor-id="<?= htmlspecialchars((string) ((int) $p['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                                     <i class="fas fa-ban"></i>
@@ -190,7 +188,7 @@ $totalPaginas   = $totalPaginas   ?? 1;
                                                     data-proveedor-action="view" data-proveedor-id="<?= htmlspecialchars((string) ((int) $p['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <?php if ($puede_eliminar_proveedor): ?>
+                                            <?php if ($puede_eliminar): ?>
                                             <button type="button" class="btn-action-circle btn-reactivate"
                                                     title="Reactivar" data-proveedor-action="reactivate" data-proveedor-id="<?= htmlspecialchars((string) ((int) $p['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                                                 <i class="fas fa-undo-alt"></i>

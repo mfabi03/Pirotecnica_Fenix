@@ -2,10 +2,8 @@
 // app/view/configuracion/usuarioLista.php
 require_once __DIR__ . '/../header.php';
 
-// ✅ Permisos desde UsuarioController.php
-$puede_crear_usuario    = $puede_crear    ?? false;
-$puede_editar_usuario   = $puede_editar   ?? false;
-$puede_eliminar_usuario = $puede_eliminar ?? false;
+// La vista no instancia PermisoHelper ni ConnectDB.
+// Los permisos disponibles ya vienen calculados desde su controlador.
 
 $por_pagina     = $por_pagina     ?? (int)($_GET['por_pagina'] ?? 10);
 $totalRegistros = $totalRegistros ?? (isset($usuarios) ? count($usuarios) : 0);
@@ -28,7 +26,7 @@ $ver_papelera   = $ver_papelera   ?? (isset($_GET['papelera']) && $_GET['papeler
                 </small>
             </div>
             <div class="col-auto">
-                <?php if (!$ver_papelera && $puede_crear_usuario): ?>
+                <?php if (!$ver_papelera && $puede_crear): ?>
                 <button type="button" 
                         class="btn btn-dark-gold" 
                         data-bs-toggle="modal" 
@@ -177,7 +175,7 @@ $ver_papelera   = $ver_papelera   ?? (isset($_GET['papelera']) && $_GET['papeler
                                         <button type="button" class="btn-action-circle btn-view btn-ver-usuario" title="Ver" data-id="<?= htmlspecialchars((string) ((int)$usuario['id_usuario']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><i class="fas fa-eye"></i></button>
 
                                          <?php if ($ver_papelera): ?>
-                                            <?php if ($puede_editar_usuario): ?>
+                                            <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-reactivar-usuario" title="Restaurar Usuario"
                                                     style="background: #07e49a; color: #ffffff; border: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);"
                                                     data-id="<?= htmlspecialchars((string) ((int)$usuario['id_usuario']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" 
@@ -186,11 +184,11 @@ $ver_papelera   = $ver_papelera   ?? (isset($_GET['papelera']) && $_GET['papeler
                                             </button>
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <?php if ($puede_editar_usuario): ?>
+                                            <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-edit btn-editar-usuario" title="Editar" data-id="<?= htmlspecialchars((string) ((int)$usuario['id_usuario']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><i class="fas fa-edit"></i></button>
                                             <?php endif; ?>
                                             
-                                            <?php if ($puede_eliminar_usuario && ((int)$usuario['id_usuario'] !== (int)($_SESSION['id_usuario'] ?? 0))): ?>
+                                            <?php if ($puede_eliminar && ((int)$usuario['id_usuario'] !== (int)($_SESSION['id_usuario'] ?? 0))): ?>
                                                 <button type="button" class="btn-action-circle btn-delete btn-eliminar-usuario" title="Mover a Papelera" data-id="<?= htmlspecialchars((string) ((int)$usuario['id_usuario']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" data-nombre="<?= htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido']) ?>"><i class="fas fa-trash-alt"></i></button>
                                             <?php endif; ?>
                                         <?php endif; ?>

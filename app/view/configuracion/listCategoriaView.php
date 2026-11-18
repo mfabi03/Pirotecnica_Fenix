@@ -2,19 +2,14 @@
 // app/view/configuracion/listCategoriaView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-// 🔥 LA VISTA YA NO INSTANCIA PERMISOHELPER NI CONNECTDB
-// Las variables $puede_crear, $puede_editar y $puede_eliminar
-// ya vienen calculadas desde el controlador.
+// La vista no instancia PermisoHelper ni ConnectDB.
+// Los permisos disponibles ya vienen calculados desde su controlador.
 
 // Paginación
 $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
 $totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($categorias) ? count($categorias) : 0);
 $pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
 $totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
-$puede_crear_categoria = $puede_crear ?? false;
-$puede_editar_categoria = $puede_editar ?? false;
-$puede_eliminar_categoria = $puede_eliminar ?? false;
-
 // Saber si estamos en la vista de eliminados
 $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 ?>

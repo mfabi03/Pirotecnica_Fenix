@@ -2,9 +2,8 @@
 // app/view/productos/listProductsView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-$puede_crear_producto    = $puede_crear    ?? false;
-$puede_editar_producto   = $puede_editar   ?? false;
-$puede_eliminar_producto = $puede_eliminar ?? false;
+// La vista no instancia PermisoHelper ni ConnectDB.
+// Los permisos disponibles ya vienen calculados desde su controlador.
 
 // Paginación
 $por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
@@ -32,7 +31,7 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                 </small>
             </div>
             <div class="col-auto d-flex align-items-center">
-                <?php if ($puede_crear_producto && !$esVistaEliminados): ?>
+                <?php if ($puede_crear && !$esVistaEliminados): ?>
                 <button type="button" class="btn btn-dark-gold" data-bs-toggle="modal" data-bs-target="#modalRegistrarProducto" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px; transition: all 0.3s ease;">
                     <i class="fas fa-plus me-1"></i> Registrar Producto
                 </button>
@@ -212,7 +211,7 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                                         
                                         <?php if (!$estaActivo): ?>
                                             <!-- INACTIVO: SOLO REACTIVAR -->
-                                            <?php if ($puede_editar_producto): ?>
+                                            <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-reactivate" title="Reactivar Producto"
                                                     onclick="confirmarReactivarProducto(<?= htmlspecialchars((string) ((int) $p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
                                                 <i class="fas fa-undo-alt"></i>
@@ -220,13 +219,13 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <!-- ACTIVO: EDITAR Y ELIMINAR -->
-                                            <?php if ($puede_editar_producto): ?>
+                                            <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-edit" title="Editar" onclick="editarProducto(<?= htmlspecialchars((string) ((int) $p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <?php endif; ?>
                                             
-                                            <?php if ($puede_eliminar_producto): ?>
+                                            <?php if ($puede_eliminar): ?>
                                             <button type="button" class="btn-action-circle btn-delete" title="Eliminar" onclick="confirmarEliminarProducto(<?= htmlspecialchars((string) ((int) $p['id_producto']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($p['descripcion'] ?? '')) ?>')">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
@@ -270,7 +269,7 @@ $esVistaEliminados = (($estado_producto ?? 'todos') === 'inactivos');
 <?php require_once __DIR__ . '/partials/modal_eliminar_producto.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_rapido_categoria.php'; ?>
 <?php require_once __DIR__ . '/partials/modal_rapido_proveedor.php'; ?>
-<?php if ($puede_editar_producto): ?>
+<?php if ($puede_editar): ?>
 <div class="modal fade" id="modalReactivarProducto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">

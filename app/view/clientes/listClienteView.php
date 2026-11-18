@@ -2,10 +2,8 @@
 // app/view/clientes/listClienteView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-// ✅ Permisos vienen calculados desde clientesController.php
-$puede_crear_cliente    = $puede_crear    ?? false;
-$puede_editar_cliente   = $puede_editar   ?? false;
-$puede_eliminar_cliente = $puede_eliminar ?? false;
+// La vista no instancia PermisoHelper ni ConnectDB.
+// Los permisos disponibles ya vienen calculados desde su controlador.
 
 // Paginación
 $por_pagina     = $por_pagina     ?? (int)($_GET['por_pagina'] ?? 10);
@@ -37,7 +35,7 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
                         <i class="fas fa-arrow-left me-1"></i> Volver a Clientes Activos
                     </a>
                 <?php else: ?>
-                    <?php if ($puede_crear_cliente): ?>
+                    <?php if ($puede_crear): ?>
                     <button type="button" class="btn btn-dark-gold" 
                             data-bs-toggle="modal" data-bs-target="#modalRegistrarCliente"
                             style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
@@ -209,21 +207,21 @@ $esVistaEliminados = (($estado_cliente ?? 'todos') === 'inactivos');
                                         </button>
                                         
                                         <?php if ($estaActivo): ?>
-                                            <?php if ($puede_editar_cliente): ?>
+                                            <?php if ($puede_editar): ?>
                                                 <button type="button" class="btn-action-circle btn-edit" title="Editar"
                                                         onclick="editarCliente(<?= htmlspecialchars((string) ((int) $c['id_cliente']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
                                             <?php endif; ?>
                                             
-                                            <?php if ($puede_eliminar_cliente): ?>
+                                            <?php if ($puede_eliminar): ?>
                                                 <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
                                                         onclick="confirmarEliminarCliente(<?= htmlspecialchars((string) ((int) $c['id_cliente']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($nombreCliente)) ?>')">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <?php if ($puede_editar_cliente): ?>
+                                            <?php if ($puede_editar): ?>
                                                 <button type="button" class="btn-action-circle btn-reactivar" title="Reactivar Cliente"
                                                         onclick="confirmarReactivarCliente(<?= htmlspecialchars((string) ((int) $c['id_cliente']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($nombreCliente)) ?>')">
                                                     <i class="fas fa-undo-alt"></i>

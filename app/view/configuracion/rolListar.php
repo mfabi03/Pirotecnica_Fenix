@@ -2,11 +2,7 @@
 // app/view/configuracion/rolListar.php
 require_once __DIR__ . '/../header.php';
 
-// En este módulo solo entra el Administrador (verificado en RolController)
-// Por eso todos los permisos son true
-$puede_crear    = true;
-$puede_editar   = true;
-$puede_eliminar = true;
+// El acceso a este módulo está restringido al administrador desde RolController.
 
 // Paginación
 $por_pagina     = $por_pagina     ?? (int)($_GET['por_pagina'] ?? 10);

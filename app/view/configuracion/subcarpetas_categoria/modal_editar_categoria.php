@@ -1,4 +1,4 @@
-<?php if ($puede_editar_categoria): ?>
+<?php if ($puede_editar): ?>
 <div class="modal fade" id="modalEditarCategoria" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
