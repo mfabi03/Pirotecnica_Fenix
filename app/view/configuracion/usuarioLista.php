@@ -224,67 +224,80 @@ $ver_papelera   = $ver_papelera   ?? (isset($_GET['papelera']) && $_GET['papeler
     </div>
 </div>
 
-<!-- MODALES DE USUARIO -->
+<!-- MODAL REGISTRAR USUARIO: ASISTENTE DE TRES PASOS -->
 <div class="modal fade" id="modalRegistrarUsuario" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px;">
-            <div class="modal-header" style="background: #1a1a2e; padding: 16px 24px;">
+        <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-user-plus me-2" style="color: #f39c12;"></i> Registrar Nuevo Usuario
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1);"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
+
             <form id="formRegistrarUsuario">
                 <div class="modal-body" style="padding: 20px 24px;">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Nombre *</label>
-                            <input type="text" name="nombre" id="wiz-nombre" class="form-control" required data-validate="nombre">
+                    <div class="wizard">
+                        <div class="wizard-inner">
+                            <div class="connecting-line"></div>
+                            <ul class="nav nav-tabs" role="tablist" id="wizard-tabs">
+                                <li role="presentation" class="active"><span class="round-tab"><i class="fas fa-user"></i></span></li>
+                                <li role="presentation" class="disabled"><span class="round-tab"><i class="fas fa-lock"></i></span></li>
+                                <li role="presentation" class="disabled"><span class="round-tab"><i class="fas fa-check"></i></span></li>
+                            </ul>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Apellido *</label>
-                            <input type="text" name="apellido" id="wiz-apellido" class="form-control" required data-validate="nombre">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Cédula *</label>
-                            <input type="text" name="cedula" id="wiz-cedula" class="form-control" required data-validate="cedula" data-unico-endpoint="?url=usuarios&action=check_cedula" data-unico-campo="cedula">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Teléfono *</label>
-                            <input type="text" name="telefono" id="wiz-telefono" class="form-control" required data-validate="telefono">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Correo *</label>
-                            <input type="email" name="correo_electronico" id="wiz-correo" class="form-control" required data-validate="correo">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Dirección *</label>
-                            <input type="text" name="direccion" id="wiz-direccion" class="form-control" required data-validate="direccion">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Usuario *</label>
-                            <input type="text" name="usuario" id="wiz-usuario" class="form-control" required data-validate="nombre" data-unico-endpoint="?url=usuarios&action=check_usuario" data-unico-campo="usuario">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Contraseña *</label>
-                            <input type="password" name="clave" id="wiz-clave" class="form-control" required data-validate="razon">
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label">Rol *</label>
-                            <select name="id_rol" id="wiz-rol" class="form-select" required data-no-search="true">
-                                <option value="">Seleccione un rol</option>
-                                <?php foreach (($roles ?? []) as $rol): ?>
-                                    <option value="<?= htmlspecialchars((string) ((int)$rol['id_rol']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($rol['nombre_rol']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="step1">
+                                <h4 class="mb-3 text-center" style="color: #f39c12; font-weight: bold;">Paso 1: Datos Personales</h4>
+                                <div class="row g-3">
+                                    <div class="col-md-6"><label class="form-label">Nombre *</label><input type="text" name="nombre" id="wiz-nombre" class="form-control" required data-validate="nombre"><small class="feedback-validacion info" id="wiz-nombre-feedback"></small></div>
+                                    <div class="col-md-6"><label class="form-label">Apellido *</label><input type="text" name="apellido" id="wiz-apellido" class="form-control" required data-validate="nombre"><small class="feedback-validacion info" id="wiz-apellido-feedback"></small></div>
+                                    <div class="col-md-6"><label class="form-label">Cédula *</label><input type="text" name="cedula" id="wiz-cedula" class="form-control" required data-validate="cedula" data-unico-endpoint="?url=usuarios&action=check_cedula" data-unico-campo="cedula"><small class="feedback-validacion info" id="wiz-cedula-feedback"></small></div>
+                                    <div class="col-md-6"><label class="form-label">Teléfono *</label><input type="text" name="telefono" id="wiz-telefono" class="form-control" required data-validate="telefono"><small class="feedback-validacion info" id="wiz-telefono-feedback"></small></div>
+                                    <div class="col-md-6"><label class="form-label">Correo *</label><input type="email" name="correo_electronico" id="wiz-correo" class="form-control" required data-validate="correo"><small class="feedback-validacion info" id="wiz-correo-feedback"></small></div>
+                                    <div class="col-md-6"><label class="form-label">Dirección *</label><input type="text" name="direccion" id="wiz-direccion" class="form-control" required data-validate="direccion"><small class="feedback-validacion info" id="wiz-direccion-feedback"></small></div>
+                                </div>
+                                <div class="text-end mt-4">
+                                    <button type="button" class="btn btn-warning next-step" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 25px; border-radius: 50px;">Siguiente <i class="fas fa-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane" id="step2" style="display:none;">
+                                <h4 class="mb-3 text-center" style="color: #f39c12; font-weight: bold;">Paso 2: Cuenta</h4>
+                                <div class="row g-3">
+                                    <div class="col-md-12"><label class="form-label">Usuario *</label><input type="text" name="usuario" id="wiz-usuario" class="form-control" required data-validate="nombre" data-unico-endpoint="?url=usuarios&action=check_usuario" data-unico-campo="usuario"><small class="feedback-validacion info" id="wiz-usuario-feedback"></small></div>
+                                    <div class="col-md-6"><label class="form-label">Contraseña *</label><input type="password" name="clave" id="wiz-clave" class="form-control" required data-validate="razon"><small class="feedback-validacion info" id="wiz-clave-feedback"></small></div>
+                                    <div class="col-md-6"><label class="form-label">Confirmar Contraseña *</label><input type="password" id="wiz-clave-confirm" class="form-control" required><small id="wiz-clave-confirm-feedback" class="feedback-validacion info"></small></div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Rol *</label>
+                                        <select name="id_rol" id="wiz-rol" class="form-select" required data-no-search="true">
+                                            <option value="">Seleccione un rol</option>
+                                            <?php foreach (($roles ?? []) as $rol): ?>
+                                                <option value="<?= htmlspecialchars((string) ((int)$rol['id_rol']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($rol['nombre_rol']) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="button" class="btn btn-secondary prev-step" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;"><i class="fas fa-arrow-left"></i> Atrás</button>
+                                    <button type="button" class="btn btn-warning next-step" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 25px; border-radius: 50px;">Revisar <i class="fas fa-check"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane" id="complete" style="display:none;">
+                                <h4 class="mb-3 text-center text-success" style="font-weight: bold;"><i class="fas fa-check-circle"></i> Confirmar</h4>
+                                <div class="alert alert-info"><span id="resumen-datos"></span></div>
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="button" class="btn btn-secondary prev-step" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;"><i class="fas fa-arrow-left"></i> Atrás</button>
+                                    <button type="submit" class="btn btn-warning" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 10px 25px; border-radius: 50px;"><i class="fas fa-save"></i> Guardar Usuario</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600;">
-                        <i class="fas fa-save me-1"></i> Registrar Usuario
-                    </button>
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -364,5 +377,5 @@ $ver_papelera   = $ver_papelera   ?? (isset($_GET['papelera']) && $_GET['papeler
     </div>
 </div>
 
-<?php $scriptsModulo = ['usuarios.js']; ?>
+<?php $scriptsModulo = ['usuarios.js?v=' . filemtime(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'usuarios.js')]; ?>
 <?php require_once __DIR__ . '/../footer.php'; ?>
