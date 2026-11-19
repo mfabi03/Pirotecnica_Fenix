@@ -5,11 +5,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 // La vista no instancia PermisoHelper ni ConnectDB.
 // Los permisos disponibles ya vienen calculados desde su controlador.
 
-// Paginación
-$por_pagina = isset($por_pagina) ? $por_pagina : (int)($_GET['por_pagina'] ?? 10);
-$totalRegistros = isset($totalRegistros) ? $totalRegistros : (isset($categorias) ? count($categorias) : 0);
-$pagina_actual = isset($pagina_actual) ? $pagina_actual : (int)($_GET['pagina'] ?? 1);
-$totalPaginas = isset($totalPaginas) ? $totalPaginas : 1;
 // Saber si estamos en la vista de eliminados
 $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 ?>

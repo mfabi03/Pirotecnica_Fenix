@@ -5,11 +5,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 // La vista no instancia PermisoHelper ni ConnectDB.
 // Los permisos disponibles ya vienen calculados desde su controlador.
 
-$por_pagina     = $por_pagina     ?? (int)($_GET['por_pagina'] ?? 10);
-$totalRegistros = $totalRegistros ?? (isset($notas) ? count($notas) : 0);
-$pagina_actual  = $pagina_actual  ?? (int)($_GET['pagina'] ?? 1);
-$totalPaginas   = $totalPaginas   ?? 1;
-
 $esVistaAnuladas = !empty($_GET['ver_anuladas']);
 ?>
 

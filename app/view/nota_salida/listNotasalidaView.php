@@ -8,11 +8,6 @@ require_once __DIR__ . '/../header.php';
 // ✅ Viene del controlador
 $caja_cerrada = $caja_cerrada ?? false;
 
-$por_pagina     = $por_pagina     ?? (int)($_GET['por_pagina'] ?? 10);
-$totalRegistros = $totalRegistros ?? (isset($notas) ? count($notas) : 0);
-$pagina_actual  = $pagina_actual  ?? (int)($_GET['pagina'] ?? 1);
-$totalPaginas   = $totalPaginas   ?? 1;
-
 $esVistaAnuladas = !empty($_REQUEST['ver_anuladas']);
 ?>
 

@@ -5,10 +5,6 @@ require_once __DIR__ . '/../header.php';
 // La vista no instancia PermisoHelper ni ConnectDB.
 // Los permisos disponibles ya vienen calculados desde su controlador.
 
-$por_pagina     = $por_pagina     ?? (int)($_GET['por_pagina'] ?? 10);
-$totalRegistros = $totalRegistros ?? (isset($usuarios) ? count($usuarios) : 0);
-$pagina_actual  = $pagina_actual  ?? (int)($_GET['pagina'] ?? 1);
-$totalPaginas   = $totalPaginas   ?? 1;
 $ver_papelera   = $ver_papelera   ?? (isset($_GET['papelera']) && $_GET['papelera'] == '1');
 ?>
 

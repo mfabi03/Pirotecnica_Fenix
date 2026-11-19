@@ -1,10 +1,6 @@
 ﻿<?php
 // app/view/reporteCaja/reporteCajaView.php
 $movimientos     = $movimientos ?? [];
-$paginaActual    = $paginaActual ?? 1;
-$totalPaginas    = $totalPaginas ?? 1;
-$totalRegistros  = $totalRegistros ?? 0;
-$porPaginaActual = $porPaginaActual ?? 10;
 $totalUnidades   = $totalUnidades ?? 0;
 $totalDocumentos = $totalDocumentos ?? 0;
 

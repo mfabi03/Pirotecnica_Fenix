@@ -7,10 +7,6 @@ require_once __DIR__ . '/../header.php';
 
 $verEliminados = !empty($_GET['ver_eliminados']);
 
-$por_pagina     = $por_pagina     ?? (int)($_GET['por_pagina'] ?? 10);
-$totalRegistros = $totalRegistros ?? (isset($proveedores) ? count($proveedores) : 0);
-$pagina_actual  = $pagina_actual  ?? (int)($_GET['pagina'] ?? 1);
-$totalPaginas   = $totalPaginas   ?? 1;
 ?>
 
 

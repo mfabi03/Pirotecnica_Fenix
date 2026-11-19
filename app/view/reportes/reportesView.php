@@ -4,8 +4,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
 
 // Variables que vienen del controlador
 $movimientos     = $movimientos ?? [];
-$totalRegistros  = $totalRegistros ?? 0;
-$porPaginaActual = $porPaginaActual ?? 10;
 $totalEntradas   = $totalEntradas ?? 0;
 $totalSalidas    = $totalSalidas ?? 0;
 $totalAnuladas   = $totalAnuladas ?? 0;
