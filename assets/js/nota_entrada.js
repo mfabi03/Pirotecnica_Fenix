@@ -34,6 +34,227 @@ $(document).ready(function() {
         else instance.show();
     }
 
+    function configurarModalAnidado(selector) {
+        $(selector)
+            .on('show.bs.modal', function() {
+                var zIndex = 1055 + (10 * $('.modal.show').length);
+                var $modal = $(this);
+                $modal.css('z-index', zIndex);
+
+                window.setTimeout(function() {
+                    $('.modal-backdrop:not(.modal-stack)').last()
+                        .css('z-index', zIndex - 5)
+                        .addClass('modal-stack');
+                }, 0);
+            })
+            .on('hidden.bs.modal', function() {
+                $(this).css('z-index', '');
+                if ($('.modal.show').length) $('body').addClass('modal-open');
+            });
+    }
+
+    configurarModalAnidado('#modalRapidoProveedor, #modalRapidoCategoria');
+
+    function actualizarOpcionSelect(select, id, texto, atributos) {
+        if (!select) return;
+        var opcion = Array.prototype.find.call(select.options, function(item) {
+            return item.value === String(id);
+        });
+        if (!opcion) {
+            opcion = new Option(texto, id);
+            select.add(opcion);
+        }
+        opcion.textContent = texto;
+        Object.keys(atributos || {}).forEach(function(nombre) {
+            opcion.setAttribute(nombre, atributos[nombre]);
+        });
+        select.dispatchEvent(new Event('refresh-search'));
+        select.value = String(id);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+
+        var inputBusqueda = $(select).closest('.ss-wrapper').find('.ss-input').get(0);
+        if (inputBusqueda) inputBusqueda.value = texto;
+    }
+
+    function prepararModalRapido(modalId, formId, errorId) {
+        var form = document.getElementById(formId);
+        if (form) form.reset();
+        $(errorId).hide();
+        $(errorId + '-msg').text('');
+        if (typeof window.Validador !== 'undefined' && form) {
+            window.Validador.init(form);
+            window.Validador.resetEstadoVisual(form);
+        }
+        modal(modalId, 'show');
+    }
+
+    function guardarRegistroRapido(configuracion) {
+        var form = document.getElementById(configuracion.formId);
+        var boton = $(configuracion.botonId);
+        if (!form || !boton.length) return;
+
+        var htmlOriginal = boton.html();
+        if (!form.reportValidity()) return;
+
+        var validador = window.Validador;
+        if (!validador) {
+            enviarRegistro();
+            return;
+        }
+
+        validador.init(document.getElementById(configuracion.modalId.slice(1)));
+        if (configuracion.validarUnicos) {
+            $(form).find('[data-unico-endpoint]').data('unicoEstado', '');
+        }
+        if (!configuracion.validarUnicos) {
+            if (!validador.validarFormulario(configuracion.formId)) return;
+            enviarRegistro();
+            return;
+        }
+
+        boton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Verificando...');
+        validador.validarFormularioCompleto(configuracion.formId)
+            .then(function(resultado) {
+                if (!resultado.valido) {
+                    if (resultado.tipo === 'disponibilidad') {
+                        $(configuracion.errorId + '-msg').text('No se pudo verificar la disponibilidad de los datos. Inténtalo nuevamente.');
+                        $(configuracion.errorId).show();
+                    }
+                    return;
+                }
+                enviarRegistro();
+            })
+            .catch(function() {
+                $(configuracion.errorId + '-msg').text('No se pudo completar la validación. Inténtalo nuevamente.');
+                $(configuracion.errorId).show();
+            })
+            .finally(function() {
+                boton.prop('disabled', false).html(htmlOriginal);
+            });
+
+        function enviarRegistro() {
+            boton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
+            var datos = new FormData(form);
+            if (configuracion.type) datos.append('type', configuracion.type);
+
+            fetch(configuracion.url, { method: 'POST', body: datos })
+                .then(function(respuesta) {
+                    return respuesta.json().then(function(data) {
+                        if (!respuesta.ok || !data.success) {
+                            throw new Error(data.error || 'No se pudo completar el registro.');
+                        }
+                        return data;
+                    });
+                })
+                .then(function(data) {
+                    configuracion.alGuardar(data);
+                    modal(configuracion.modalId, 'hide');
+                    if (typeof window.mostrarAlerta === 'function') {
+                        window.mostrarAlerta(configuracion.mensaje(data), 'success');
+                    }
+                })
+                .catch(function(error) {
+                    $(configuracion.errorId + '-msg').text(error.message);
+                    $(configuracion.errorId).show();
+                })
+                .finally(function() {
+                    boton.prop('disabled', false).html(htmlOriginal);
+                });
+        }
+    }
+
+    $('#btnAbrirModalProveedor').on('click', function() {
+        prepararModalRapido('#modalRapidoProveedor', 'formRapidoProveedor', '#modal-rapido-proveedor-error');
+    });
+
+    $('#btnAbrirModalProveedorDesdeProducto').on('click', function() {
+        prepararModalRapido('#modalRapidoProveedor', 'formRapidoProveedor', '#modal-rapido-proveedor-error');
+    });
+
+    $('#btnAbrirModalCategoriaNotaEntrada').on('click', function() {
+        prepararModalRapido('#modalRapidoCategoria', 'formRapidoCategoria', '#modal-rapido-categoria-error');
+    });
+
+    $('#btnAbrirModalProducto').on('click', function() {
+        prepararModalRapido('#modalRapidoProducto', 'formRapidoProducto', '#modal-rapido-producto-error');
+        var proveedorSeleccionado = $('#id_proveedor').val();
+        if (proveedorSeleccionado) {
+            var selectorProveedor = document.getElementById('rapido-prod-proveedor');
+            selectorProveedor.value = proveedorSeleccionado;
+            selectorProveedor.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    });
+
+    $('#btnGuardarProveedorRapido').on('click', function() {
+        guardarRegistroRapido({
+            formId: 'formRapidoProveedor',
+            botonId: '#btnGuardarProveedorRapido',
+            modalId: '#modalRapidoProveedor',
+            errorId: '#modal-rapido-proveedor-error',
+            url: '?url=notaentrada',
+            type: 'store_rapido_proveedor_ajax',
+            validarUnicos: true,
+            alGuardar: function(data) {
+                var texto = data.razon_social + ' - ' + data.rif;
+                actualizarOpcionSelect(document.getElementById('id_proveedor'), data.id_proveedor, texto);
+                actualizarOpcionSelect(document.getElementById('rapido-prod-proveedor'), data.id_proveedor, data.razon_social);
+            },
+            mensaje: function(data) {
+                return 'Proveedor "' + data.razon_social + '" registrado exitosamente.';
+            }
+        });
+    });
+
+    $('#btnGuardarProductoRapido').on('click', function() {
+        guardarRegistroRapido({
+            formId: 'formRapidoProducto',
+            botonId: '#btnGuardarProductoRapido',
+            modalId: '#modalRapidoProducto',
+            errorId: '#modal-rapido-producto-error',
+            url: '?url=notaentrada',
+            type: 'store_rapido_producto_ajax',
+            validarUnicos: true,
+            alGuardar: function(data) {
+                var costo = Number(data.costo_unitario) || 0;
+                actualizarOpcionSelect(
+                    document.getElementById('productoSelect'),
+                    data.id_producto,
+                    data.descripcion + ' (Stock: 0)',
+                    {
+                        'data-descripcion': data.descripcion,
+                        'data-costo': costo.toFixed(2),
+                        'data-stock': '0'
+                    }
+                );
+                document.getElementById('costoInput').value = costo.toFixed(2);
+            },
+            mensaje: function(data) {
+                return 'Producto "' + data.descripcion + '" registrado exitosamente.';
+            }
+        });
+    });
+
+    $('#btnGuardarCategoriaRapido').on('click', function() {
+        guardarRegistroRapido({
+            formId: 'formRapidoCategoria',
+            botonId: '#btnGuardarCategoriaRapido',
+            modalId: '#modalRapidoCategoria',
+            errorId: '#modal-rapido-categoria-error',
+            url: '?url=categorias&action=store_rapido_ajax',
+            validarUnicos: true,
+            alGuardar: function(data) {
+                actualizarOpcionSelect(
+                    document.getElementById('rapido-prod-categoria'),
+                    data.id_categoria,
+                    data.nombre_categoria
+                );
+            },
+            mensaje: function(data) {
+                return 'Categoría "' + data.nombre_categoria + '" registrada exitosamente.';
+            }
+        });
+    });
+
     function inicializarDetalleNotaEntrada() {
         var $form = $('#notaEntradaForm');
         var productoSelect = $('#productoSelect').get(0);

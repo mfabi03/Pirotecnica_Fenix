@@ -22,7 +22,8 @@
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
                             <input type="text" id="rapido-prov-rif-prod" name="rif" class="form-control" required
-                                   placeholder="Ej: J-123456789" data-validate="rif">
+                                   placeholder="Ej: J-123456789" data-validate="rif"
+                                   data-unico-endpoint="?url=proveedores&action=check_rif" data-unico-campo="rif">
                             <small class="feedback-validacion info" id="rapido-prov-rif-prod-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Formato: J-123456789
                             </small>
@@ -30,7 +31,8 @@
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono *</label>
                             <input type="tel" id="rapido-prov-telefono-prod" name="numero_contacto" class="form-control" required
-                                   placeholder="Ej: 0412-5556677" data-validate="telefono">
+                                   placeholder="Ej: 0412-5556677" data-validate="telefono_proveedor"
+                                   data-unico-endpoint="?url=proveedores&amp;action=check_unique" data-unico-campo="telefono_proveedor">
                             <small class="feedback-validacion info" id="rapido-prov-telefono-prod-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Formato: 0412-1234567
                             </small>

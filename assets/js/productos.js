@@ -143,6 +143,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('ver-producto-costo').textContent = '$' + parseFloat(p.costo_unitario || 0).toFixed(2);
         document.getElementById('ver-producto-especificaciones').textContent = p.especificaciones || 'Sin especificaciones';
 
+        var imagenProducto = document.getElementById('ver-producto-imagen');
+        var contenedorImagen = document.getElementById('ver-producto-imagen-container');
+        if (imagenProducto && contenedorImagen) {
+            imagenProducto.onerror = function() {
+                this.removeAttribute('src');
+                contenedorImagen.classList.add('d-none');
+            };
+            if (p.imagen) {
+                imagenProducto.src = p.imagen;
+                imagenProducto.alt = 'Imagen de ' + (p.descripcion || 'producto');
+                contenedorImagen.classList.remove('d-none');
+            } else {
+                imagenProducto.removeAttribute('src');
+                imagenProducto.alt = '';
+                contenedorImagen.classList.add('d-none');
+            }
+        }
+
         var modal = document.getElementById('modalVerProducto');
         if (modal) {
             new bootstrap.Modal(modal).show();
@@ -277,11 +295,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var btnAbrirProv = document.getElementById('btnAbrirModalProveedor');
     if (btnAbrirProv) {
         btnAbrirProv.addEventListener('click', function () {
-            document.getElementById('formRapidoProveedorProducto').reset();
+            var form = document.getElementById('formRapidoProveedorProducto');
+            var modalProveedor = document.getElementById('modalRapidoProveedorProducto');
+            form.reset();
             document.getElementById('modal-rapido-proveedor-error').style.display = 'none';
-            
+            if (typeof Validador !== 'undefined') {
+                Validador.init(modalProveedor);
+                Validador.resetEstadoVisual(form);
+            }
+
             // Abrimos el modal con un z-index mayor
-            new bootstrap.Modal(document.getElementById('modalRapidoProveedorProducto')).show();
+            new bootstrap.Modal(modalProveedor).show();
         });
     }
 
@@ -289,58 +313,84 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnGuardarProv) {
         btnGuardarProv.addEventListener('click', function () {
             var formId = 'formRapidoProveedorProducto';
+            var form = document.getElementById(formId);
+            var modalProveedor = document.getElementById('modalRapidoProveedorProducto');
+            var error = document.getElementById('modal-rapido-proveedor-error');
+            var errorMsg = document.getElementById('modal-rapido-proveedor-error-msg');
+            var htmlOriginal = btnGuardarProv.innerHTML;
+            var camposUnicos = $(form).find('[data-unico-endpoint]');
+            camposUnicos.data('unicoEstado', '');
             
             if (typeof Validador !== 'undefined') {
-                Validador.init(document.getElementById('modalRapidoProveedorProducto'));
-                if (!Validador.validarFormulario(formId)) return;
+                Validador.init(modalProveedor);
             }
-            
-            var formData = new FormData(document.getElementById(formId));
+            if (!form.reportValidity()) return;
+            if (typeof Validador !== 'undefined' && !Validador.validarFormulario(formId)) {
+                return;
+            }
+
+            var verificacion = camposUnicos.length && typeof Validador !== 'undefined'
+                ? Validador.validarFormularioCompleto(formId)
+                : Promise.resolve({ valido: true });
+
             btnGuardarProv.disabled = true;
-            btnGuardarProv.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
-            
-            fetch('?url=proveedores&type=store_rapido_ajax', { method: 'POST', body: formData })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                btnGuardarProv.disabled = false;
-                btnGuardarProv.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Proveedor';
-                
-                if (!data.success) {
-                    document.getElementById('modal-rapido-proveedor-error-msg').textContent = data.error || 'Error';
-                    document.getElementById('modal-rapido-proveedor-error').style.display = 'block';
-                    return;
-                }
-                
-                var selectProv = document.getElementById('id_proveedor');
-                if (selectProv) {
-                    var existe = false;
-                    for (var i = 0; i < selectProv.options.length; i++) {
-                        if (selectProv.options[i].value == data.id_proveedor) { existe = true; break; }
+            btnGuardarProv.innerHTML = camposUnicos.length
+                ? '<i class="fas fa-spinner fa-spin me-1"></i> Verificando...'
+                : '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+
+            verificacion.then(function(resultado) {
+                    if (!resultado.valido) {
+                        if (resultado.tipo === 'disponibilidad') {
+                            errorMsg.textContent = 'No se pudo verificar la disponibilidad del RIF o teléfono.';
+                            error.style.display = 'block';
                     }
-                    if (!existe) {
-                        var opt = document.createElement('option');
-                        opt.value = data.id_proveedor;
-                        opt.textContent = data.razon_social + ' - ' + data.rif;
-                        selectProv.appendChild(opt);
+                        return;
                     }
-                    selectProv.value = data.id_proveedor;
-                    
-                    // Actualizar el buscador
-                    var ssWrapper = selectProv.closest('.ss-wrapper');
-                    if (ssWrapper) {
-                        var ssInput = ssWrapper.querySelector('.ss-input');
-                        if (ssInput) ssInput.value = data.razon_social + ' - ' + data.rif;
-                    }
-                }
-                
-                bootstrap.Modal.getInstance(document.getElementById('modalRapidoProveedorProducto')).hide();
-            })
-            .catch(function(err) {
-                btnGuardarProv.disabled = false;
-                btnGuardarProv.innerHTML = '<i class="fas fa-save me-1"></i> Guardar Proveedor';
-                document.getElementById('modal-rapido-proveedor-error-msg').textContent = 'Error: ' + err.message;
-                document.getElementById('modal-rapido-proveedor-error').style.display = 'block';
-            });
+
+                    btnGuardarProv.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+                    return fetch('?url=proveedores&type=store_rapido_ajax', {
+                        method: 'POST',
+                        body: new FormData(form)
+                    })
+                    .then(function(response) {
+                        return response.json().then(function(data) {
+                            if (!response.ok || !data.success) {
+                                throw new Error(data.error || 'No se pudo registrar el proveedor.');
+                        }
+                            return data;
+                        });
+                    })
+                    .then(function(data) {
+                        var selectProv = document.getElementById('id_proveedor');
+                        if (selectProv) {
+                            var opcion = Array.prototype.find.call(selectProv.options, function(item) {
+                                return item.value === String(data.id_proveedor);
+                            });
+                            if (!opcion) {
+                                opcion = new Option(data.razon_social + ' - ' + data.rif, data.id_proveedor);
+                                selectProv.add(opcion);
+                            }
+                            opcion.textContent = data.razon_social + ' - ' + data.rif;
+                            selectProv.dispatchEvent(new Event('refresh-search'));
+                            selectProv.value = String(data.id_proveedor);
+                            selectProv.dispatchEvent(new Event('change', { bubbles: true }));
+
+                            var buscador = selectProv.closest('.ss-wrapper');
+                            if (buscador) {
+                                var input = buscador.querySelector('.ss-input');
+                                if (input) input.value = opcion.textContent;
+                            }
+                        }
+
+                        bootstrap.Modal.getInstance(modalProveedor).hide();
+                    });
+                }).catch(function(err) {
+                    errorMsg.textContent = err.message || 'No se pudo verificar la disponibilidad.';
+                    error.style.display = 'block';
+                }).finally(function() {
+                    btnGuardarProv.disabled = false;
+                    btnGuardarProv.innerHTML = htmlOriginal;
+                });
         });
     }
 

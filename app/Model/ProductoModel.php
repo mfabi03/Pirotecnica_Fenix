@@ -57,6 +57,7 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
             $sql = "SELECT
                         p.id_producto,
                         p.descripcion,
+                        p.imagen,
                         p.cantidad AS stock,
                         p.stock_minimo,
                         p.costo_unitario,
@@ -119,6 +120,7 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
             $sql = "SELECT
                         p.id_producto,
                         p.descripcion,
+                        p.imagen,
                         p.cantidad AS stock,
                         p.stock_minimo,
                         p.costo_unitario,
@@ -188,6 +190,7 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
 
             $sql = "INSERT INTO producto (
                         descripcion,
+                        imagen,
                         cantidad,
                         stock_minimo,
                         costo_unitario,
@@ -197,6 +200,7 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
                         eliminado
                     ) VALUES (
                         :descripcion,
+                        :imagen,
                         :cantidad,
                         :stock_minimo,
                         :costo_unitario,
@@ -209,6 +213,7 @@ class ProductoModel extends ConnectDB implements InterfacesCrudModel
             $stmt = $this->conex->prepare($sql);
             $success = $stmt->execute([
                 ':descripcion' => $descripcion,
+                ':imagen' => $datos['imagen'] ?? null,
                 ':cantidad' => $datos['cantidad'] ?? 0,
                 ':stock_minimo' => $datos['stock_minimo'] ?? 10,
                 ':costo_unitario' => $datos['costo_unitario'] ?? 0,

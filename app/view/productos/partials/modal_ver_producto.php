@@ -26,6 +26,26 @@
                 </div>
 
                 <div class="row g-4">
+                    <div class="col-12 d-none" id="ver-producto-imagen-container">
+                        <div class="p-3" style="background: #f8f9fa; border: 1px solid rgba(26,26,46,0.08); border-radius: 16px;">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="d-inline-flex align-items-center justify-content-center me-2"
+                                      style="width: 36px; height: 36px; background: rgba(243,156,18,0.12); color: #f39c12; border-radius: 10px;">
+                                    <i class="fas fa-image"></i>
+                                </span>
+                                <div>
+                                    <h6 class="mb-0" style="color: #1a1a2e; font-weight: 700;">Imagen del Producto</h6>
+                                    <small style="color: #6c757d;">Fotografía del artículo registrado</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center overflow-hidden"
+                                 style="min-height: 190px; background: linear-gradient(145deg, #ffffff, #eef0f3); border: 1px solid rgba(26,26,46,0.06); border-radius: 12px;">
+                                <img id="ver-producto-imagen" src="" alt="" class="img-fluid"
+                                     style="width: 100%; max-width: 280px; height: 260px; object-fit: contain; padding: 12px; filter: drop-shadow(0 8px 14px rgba(26,26,46,0.16));">
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- COLUMNA IZQUIERDA -->
                     <div class="col-md-6">
                         <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">

@@ -88,7 +88,8 @@ if ($action === 'store_rapido_ajax') {
             'descripcion'      => Validador::limpiar($_POST['descripcion'] ?? '')
         ];
 
-        $id_categoria = $modelo->registrarCategoria($datos);
+        $modelo->setNombreCategoria( $datos['nombre_categoria'] );
+        $id_categoria = $modelo->registrarCategoria();
 
         echo json_encode([
             'success' => true,

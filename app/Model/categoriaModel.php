@@ -11,6 +11,17 @@ use App\Pirotecnicafenix\Interfaces\InterfacesCrudModel;
 class CategoriaModel extends ConnectDB implements InterfacesCrudModel
 {
     private $conex;
+    private $nombre_categoria;
+
+    public function setNombreCategoria( $nombre_categoria ) {
+
+        $this->nombre_categoria = $nombre_categoria;
+    }
+
+    protected function getNombreCategoria() {
+
+        return $this->nombre_categoria;
+    }
 
     public function __construct()
     {
@@ -136,9 +147,11 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
             $sql = "INSERT INTO categoria (nombre_categoria, descripcion, eliminado)
                     VALUES (:nombre_categoria, :descripcion, 0)";
             $stmt = $this->conex->prepare($sql);
+            $stmt->bindParam(':nombre_categoria', $this->getNombreCategoria(), PDO::PARAM_STR);
+            $stmt->bindParam(':descripcion', $datos['descripcion'], PDO::PARAM_STR);
 
             $stmt->execute([
-                ':nombre_categoria' => $datos['nombre_categoria'],
+                ':nombre_categoria' => $this->getNombreCategoria(),
                 ':descripcion' => $datos['descripcion'] ?? null
             ]);
 

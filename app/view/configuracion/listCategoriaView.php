@@ -175,7 +175,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                 <td class="text-center">
                                     <?php if (!$estaActiva): ?>
                                         <span class="badge" style="background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">
-                                            <i class="fas fa-times-circle me-1"></i> Inactivo
+                                            <i class="fas fa-times-circle me-1"></i> Eliminado
                                         </span>
                                     <?php else: ?>
                                         <span class="badge" style="background: rgba(40,167,69,0.12); color: #28a745; padding: 4px 12px; border-radius: 50px; font-weight: 600; font-size: 0.7rem;">

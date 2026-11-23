@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const options = Array.from(select.options).map(function (option) {
+        let options = Array.from(select.options).map(function (option) {
             return {
                 value: option.value,
                 label: option.textContent.trim(),
@@ -124,6 +124,22 @@ document.addEventListener('DOMContentLoaded', function () {
         select.addEventListener('change', function () {
             const selectedOption = select.options[select.selectedIndex];
             input.value = selectedOption && selectedOption.value ? selectedOption.textContent.trim() : '';
+        });
+
+        select.addEventListener('refresh-search', function () {
+            options = Array.from(select.options).map(function (option) {
+                return {
+                    value: option.value,
+                    label: option.textContent.trim(),
+                    disabled: option.disabled,
+                    selected: option.selected
+                };
+            }).filter(function (option) {
+                return !(option.value === '' && !option.selected);
+            });
+            if (dropdown.style.display !== 'none') {
+                renderItems(input.value);
+            }
         });
 
         input.addEventListener('keydown', function (event) {

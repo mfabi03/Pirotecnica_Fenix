@@ -9,9 +9,17 @@ use App\Pirotecnicafenix\Helpers\PermisoHelper;
 use App\Pirotecnicafenix\Helpers\Validador;
 use Exception;
 
+require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'timezone.php';
+
 $type = $_POST['type'] ?? $_GET['type'] ?? 'list';
 $id = $_POST['id'] ?? $_GET['id'] ?? null;
-$esSolicitudJson = in_array($type, ['show_json', 'detalle_json', 'estado_ajax'], true);
+$esSolicitudJson = in_array($type, [
+    'show_json',
+    'detalle_json',
+    'estado_ajax',
+    'store_rapido_producto_ajax',
+    'store_rapido_proveedor_ajax'
+], true);
 
 error_reporting(E_ALL);
 ini_set('display_errors', $esSolicitudJson ? '0' : '1');
@@ -175,10 +183,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $idProveedor = Validador::validarId($_POST['id_proveedor'] ?? null, 'proveedor');
-            $fecha = Validador::validarFecha($_POST['fecha_ingreso'] ?? '', 'fecha de ingreso', 'Y-m-d\TH:i');
-
             $datos = [
-                'fecha_ingreso' => date('Y-m-d H:i:s', strtotime($fecha)),
+                'fecha_ingreso' => fechaHoraVenezuela('Y-m-d H:i:s'),
                 'id_proveedor'  => $idProveedor,
                 'descripcion'   => Validador::limpiar($_POST['descripcion'] ?? '')
             ];
@@ -314,6 +320,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = '❌ ' . $e->getMessage();
         }
     }
+}
+
+// ==========================================
+// AJAX: REGISTRO RÁPIDO PARA NOTA DE ENTRADA
+// ==========================================
+if (in_array($type, ['store_rapido_producto_ajax', 'store_rapido_proveedor_ajax'], true)) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        if (!$puede_crear) {
+            http_response_code(403);
+            throw new Exception('No tienes permiso para registrar datos desde una nota de entrada.');
+        }
+
+        if ($type === 'store_rapido_producto_ajax') {
+            $idProveedor = Validador::validarId($_POST['id_proveedor'] ?? null, 'proveedor');
+            if (!$proveedorModel->proveedorActivoExiste($idProveedor)) {
+                throw new Exception('El proveedor seleccionado no existe o está inactivo.');
+            }
+
+            $datosProducto = [
+                'descripcion'      => Validador::requerido($_POST['descripcion'] ?? '', 'descripción'),
+                'id_categoria'     => Validador::validarId($_POST['id_categoria'] ?? null, 'categoría'),
+                'id_proveedor'     => $idProveedor,
+                'cantidad'         => 0,
+                'stock_minimo'     => (int)($_POST['stock_minimo'] ?? 10),
+                'costo_unitario'   => Validador::numeroPositivo($_POST['costo_unitario'] ?? 0, 'costo unitario', 0),
+                'especificaciones' => Validador::limpiar($_POST['especificaciones'] ?? '')
+            ];
+
+            $idProducto = $productoModel->registrarProducto($datosProducto);
+            if (!$idProducto) {
+                throw new Exception('No se pudo registrar el producto.');
+            }
+
+            echo json_encode([
+                'success'        => true,
+                'id_producto'    => (int)$idProducto,
+                'descripcion'    => $datosProducto['descripcion'],
+                'costo_unitario' => $datosProducto['costo_unitario'],
+                'stock'          => 0
+            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        } else {
+            $datosProveedor = [
+                'rif'                => Validador::requerido($_POST['rif'] ?? '', 'RIF'),
+                'razon_social'       => Validador::requerido($_POST['razon_social'] ?? '', 'razón social'),
+                'numero_contacto'    => Validador::requerido($_POST['numero_contacto'] ?? '', 'número de contacto'),
+                'direccion'          => Validador::requerido($_POST['direccion'] ?? '', 'dirección'),
+                'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? '')
+            ];
+
+            $idProveedor = $proveedorModel->registrarProveedor($datosProveedor);
+            if (!$idProveedor) {
+                throw new Exception('No se pudo registrar el proveedor.');
+            }
+
+            echo json_encode([
+                'success'      => true,
+                'id_proveedor' => (int)$idProveedor,
+                'razon_social' => $datosProveedor['razon_social'],
+                'rif'          => $datosProveedor['rif']
+            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        }
+    } catch (Exception $e) {
+        if (http_response_code() < 400) {
+            http_response_code(400);
+        }
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+    exit;
 }
 
 // ==========================================

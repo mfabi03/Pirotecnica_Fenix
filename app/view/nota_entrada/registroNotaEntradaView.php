@@ -72,7 +72,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                                             <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
                                                 <i class="fas fa-calendar-alt me-1"></i> Fecha de Ingreso <span class="text-danger">*</span>
                                             </label>
-                                            <input type="datetime-local" name="fecha_ingreso" class="form-control"
+                                            <input type="datetime-local" name="fecha_ingreso" class="form-control" readonly
                                                    value="<?= htmlspecialchars((string) (date('Y-m-d\TH:i')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" required
                                                    style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 10px 16px;">
                                         </div>
@@ -264,7 +264,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">RIF *</label>
                             <input type="text" id="rapido-prov-rif" name="rif" class="form-control" required
-                                   placeholder="Ej: J-123456789" data-validate="rif">
+                                   placeholder="Ej: J-123456789" data-validate="rif"
+                                   data-unico-endpoint="?url=proveedores&action=check_rif" data-unico-campo="rif">
                             <small class="feedback-validacion info" id="rapido-prov-rif-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Formato: J-123456789
                             </small>
@@ -272,7 +273,8 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Teléfono *</label>
                             <input type="tel" id="rapido-prov-telefono" name="numero_contacto" class="form-control" required
-                                   placeholder="Ej: 0412-5556677" data-validate="telefono">
+                                   placeholder="Ej: 0412-5556677" data-validate="telefono_proveedor"
+                                   data-unico-endpoint="?url=proveedores&amp;action=check_unique" data-unico-campo="telefono_proveedor">
                             <small class="feedback-validacion info" id="rapido-prov-telefono-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Formato: 0412-1234567
                             </small>
@@ -346,36 +348,54 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                         <div class="col-12">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Descripción del Producto *</label>
                             <input type="text" id="rapido-prod-descripcion" name="descripcion" class="form-control" required
-                                   placeholder="Ej: Volcán grande" data-validate="razon">
+                                   placeholder="Ej: Volcán grande" data-validate="razon"
+                                   data-unico-endpoint="?url=productos&type=check_duplicado" data-unico-campo="descripcion">
                             <small class="feedback-validacion info" id="rapido-prod-descripcion-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
                             </small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Categoría *</label>
-                            <select id="rapido-prod-categoria" name="id_categoria" class="form-select" required
-                                    style="border-radius: 12px; padding: 10px 14px;">
-                                <option value="">Seleccione categoría...</option>
-                                <?php foreach (($categorias ?? []) as $c): ?>
-                                    <option value="<?= htmlspecialchars((string) ($c['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($c['nombre_categoria']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div class="input-group">
+                                <select id="rapido-prod-categoria" name="id_categoria" class="form-select" required
+                                        style="border-radius: 12px 0 0 12px; padding: 10px 14px;">
+                                    <option value="">Seleccione categoría...</option>
+                                    <?php foreach (($categorias ?? []) as $c): ?>
+                                        <option value="<?= htmlspecialchars((string) ($c['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($c['nombre_categoria']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button" id="btnAbrirModalCategoriaNotaEntrada" class="btn"
+                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 15px; display: flex; align-items: center; justify-content: center;"
+                                        title="Registrar nueva categoría">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Proveedor *</label>
-                            <select id="rapido-prod-proveedor" name="id_proveedor" class="form-select" required
-                                    style="border-radius: 12px; padding: 10px 14px;">
-                                <option value="">Seleccione proveedor...</option>
-                                <?php foreach (($proveedores ?? []) as $p): ?>
-                                    <option value="<?= htmlspecialchars((string) ($p['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($p['razon_social']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div class="input-group">
+                                <select id="rapido-prod-proveedor" name="id_proveedor" class="form-select" required
+                                        style="border-radius: 12px 0 0 12px; padding: 10px 14px;">
+                                    <option value="">Seleccione proveedor...</option>
+                                    <?php foreach (($proveedores ?? []) as $p): ?>
+                                        <option value="<?= htmlspecialchars((string) ($p['id_proveedor']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= htmlspecialchars($p['razon_social']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button" id="btnAbrirModalProveedorDesdeProducto" class="btn"
+                                        style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; border-radius: 0 12px 12px 0; padding: 0 15px; display: flex; align-items: center; justify-content: center;"
+                                        title="Registrar nuevo proveedor">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Stock Mínimo</label>
                             <input type="number" id="rapido-prod-stockmin" name="stock_minimo" class="form-control" 
-                                   min="1" value="10"
+                                   min="1" value="10" data-validate="numero_positivo"
                                    style="border-radius: 12px; padding: 10px 14px;">
+                            <small class="feedback-validacion info" id="rapido-prod-stockmin-feedback">
+                                <i class="fas fa-info-circle me-1"></i> Debe ser mayor que cero
+                            </small>
                             <small style="color: #6c757d; font-size: 0.7rem;">Alerta cuando el stock baje a este nivel</small>
                         </div>
                         <div class="col-12">
@@ -401,6 +421,7 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 </div>
 
+<?php require dirname(__DIR__) . '/productos/partials/modal_rapido_categoria.php'; ?>
 
 <!-- ============================================================ -->
 <!-- SCRIPTS                                                       -->

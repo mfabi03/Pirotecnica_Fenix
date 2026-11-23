@@ -14,7 +14,7 @@
             </div>
 
             <div class="modal-body" style="padding: 20px 24px;">
-                <form method="POST" action="?url=productos&type=store" id="formRegistrarProducto">
+                <form method="POST" action="?url=productos&type=store" id="formRegistrarProducto" enctype="multipart/form-data">
                     <input type="hidden" name="accion" value="store">
                     
                     <div class="row g-3">
@@ -30,6 +30,13 @@
                             <small class="feedback-validacion info" id="reg-prod-descripcion-feedback">
                                 <i class="fas fa-info-circle me-1"></i> Mínimo 3 caracteres
                             </small>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="reg-prod-imagen" class="form-label" style="color: #1a1a2e; font-weight: 600; font-size: 0.85rem;">Imagen del Producto</label>
+                            <input type="file" name="imagen" id="reg-prod-imagen" class="form-control"
+                                   accept="image/jpeg,image/png,image/webp">
+                            <small class="text-muted">Opcional. Formatos JPG, PNG o WebP; máximo 5 MB.</small>
                         </div>
                         
                         <!-- CATEGORÍA CON BOTÓN + -->

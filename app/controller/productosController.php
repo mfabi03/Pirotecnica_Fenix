@@ -5,6 +5,7 @@ namespace App\Pirotecnicafenix\Controller;
 use App\Pirotecnicafenix\Model\ProductoModel;
 use App\Pirotecnicafenix\Model\ProveedoresModel;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
+use App\Pirotecnicafenix\Helpers\UploadHelper;
 use App\Pirotecnicafenix\Helpers\Validador;
 use Exception;
 
@@ -171,6 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: ?url=productos&type=list");
             exit();
         }
+        $rutaImagen = null;
         try {
             $datos = [
                 'descripcion'      => Validador::requerido($_POST['descripcion'] ?? '', 'descripción'),
@@ -186,16 +188,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("El proveedor seleccionado no existe o está inactivo.");
             }
 
+            $rutaImagen = UploadHelper::guardarImagenProducto($_FILES['imagen'] ?? null);
+            $datos['imagen'] = $rutaImagen;
+
             $resultado = $modelo->registrarProducto($datos);
             if ($resultado === false || intval($resultado) <= 0) {
                 throw new Exception("No se pudo registrar el producto.");
             }
 
+            $rutaImagen = null;
             $_SESSION['mensaje'] = 'Producto registrado exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
             header("Location: ?url=productos&type=list");
             exit();
         } catch (Exception $e) {
+            if ($rutaImagen !== null) {
+                try {
+                    UploadHelper::eliminarImagenProducto($rutaImagen);
+                } catch (Exception $errorLimpieza) {
+                    error_log('No se pudo limpiar la imagen del producto después de un error: ' . $errorLimpieza->getMessage());
+                }
+            }
             $_SESSION['mensaje'] = $e->getMessage();
             $_SESSION['tipo_mensaje'] = 'danger';
             header("Location: ?url=productos&type=list");
