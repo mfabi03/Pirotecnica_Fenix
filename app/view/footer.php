@@ -35,6 +35,13 @@ SCRIPTS GLOBALES - ORDEN CRÍTICO
 <!-- 2. Bootstrap DESPUÉS de jQuery (obligatorio para collapse, modals, dropdowns) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- 2.5 Scripts externos de librerías dependientes de jQuery (ej. DataTables) -->
+<?php if (!empty($scriptsExternos) && is_array($scriptsExternos)): ?>
+    <?php foreach ($scriptsExternos as $scriptExt): ?>
+        <script src="<?= htmlspecialchars($scriptExt, ENT_QUOTES, 'UTF-8') ?>"></script>
+    <?php endforeach; ?>
+<?php endif; ?>
+
 <!-- 3. Validador global -->
 <script src="/pirotecnica_fenix/assets/js/validaciones.jquery.js"></script>
 

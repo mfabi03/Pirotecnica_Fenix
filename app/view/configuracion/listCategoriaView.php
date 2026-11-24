@@ -2,15 +2,146 @@
 // app/view/configuracion/listCategoriaView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-// La vista no instancia PermisoHelper ni ConnectDB.
-// Los permisos disponibles ya vienen calculados desde su controlador.
-
-// Saber si estamos en la vista de eliminados
 $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 ?>
 
-<!-- ESTILOS PARA LOS BOTONES DE ACCIÓN CIRCULARES -->
+<!-- ========================================== -->
+<!-- DATATABLES CON BOOTSTRAP 5 DESDE CDN       -->
+<!-- ========================================== -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
 
+<style>
+    /* Visibilidad forzada e integración visual con tema oscuro/claro */
+    #tablaCategorias_wrapper,
+    .dataTables_wrapper,
+    .dataTables_wrapper .row,
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .dataTables_wrapper > .row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label,
+    .dataTables_wrapper .dataTables_info {
+        color: #1a1a2e !important;
+        font-weight: 500 !important;
+        font-size: 0.9rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px;
+        margin-bottom: 0 !important;
+    }
+
+    .dataTables_wrapper .dataTables_filter {
+        text-align: right !important;
+    }
+
+    /* Sobrescribir reglas globales de .dark-card en estilo.css */
+    .dark-card .dataTables_wrapper .dataTables_filter input.form-control {
+        background: #ffffff !important;
+        color: #1a1a2e !important;
+        border: 1.5px solid #ced4da !important;
+        border-radius: 50px !important;
+        padding: 6px 16px !important;
+        min-height: 36px !important;
+        width: 220px !important;
+        display: inline-block !important;
+        box-shadow: none !important;
+    }
+
+    .dark-card .dataTables_wrapper .dataTables_filter input.form-control:focus {
+        border-color: #f39c12 !important;
+        box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.15) !important;
+    }
+
+    .dark-card .dataTables_wrapper .dataTables_length select.form-select {
+        background-color: #ffffff !important;
+        color: #1a1a2e !important;
+        border: 1.5px solid #ced4da !important;
+        border-radius: 50px !important;
+        padding: 5px 32px 5px 14px !important;
+        min-height: 36px !important;
+        width: auto !important;
+        display: inline-block !important;
+        box-shadow: none !important;
+    }
+
+    .dark-card .dataTables_wrapper .dataTables_length select.form-select:focus {
+        border-color: #f39c12 !important;
+        box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.15) !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate {
+        display: flex !important;
+        justify-content: flex-end !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate ul.pagination {
+        display: flex !important;
+        gap: 4px;
+        margin: 0 !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .page-item .page-link {
+        border-radius: 50px !important;
+        color: #1a1a2e !important;
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        padding: 6px 14px !important;
+        font-weight: 500;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        box-shadow: none !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .page-item .page-link:hover {
+        background: #e67e22 !important;
+        border-color: #e67e22 !important;
+        color: #ffffff !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+        background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+        border-color: #f39c12 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
+        background: #f1f3f5 !important;
+        color: #adb5bd !important;
+        border-color: #e9ecef !important;
+        cursor: not-allowed;
+    }
+
+    .dark-card.no-card-jump:hover {
+        transform: none !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            justify-content: center !important;
+            text-align: center !important;
+            margin-bottom: 8px;
+        }
+    }
+</style>
 
 <div class="col-md-8 col-lg-12">
             
@@ -32,7 +163,6 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                         <i class="fas fa-arrow-left me-1"></i> Volver a Categorías Activas
                     </a>
                 <?php else: ?>
-                    <!-- 🔥 USAMOS LA VARIABLE $puede_crear -->
                     <?php if ($puede_crear): ?>
                     <button type="button" class="btn btn-dark-gold" 
                             data-bs-toggle="modal" data-bs-target="#modalRegistrarCategoria"
@@ -43,73 +173,6 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                 <?php endif; ?>
             </div>
         </div>
-    </div>
-
-    <!-- FILTRO DE BÚSQUEDA -->
-    <div class="card shadow-sm p-3 mb-4 bg-white">
-        <form id="formFiltroCategorias" method="GET" action="" class="row g-3 align-items-end" autocomplete="off">
-            <input type="hidden" name="url" value="categorias">
-            <input type="hidden" name="action" value="lista">
-            <input type="hidden" name="estado_categoria" value="<?= htmlspecialchars((string) ($esVistaEliminados ? 'inactivos' : 'activos'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
-            
-            <div class="col-md-2">
-                <label class="form-label fw-bold small text-dark mb-0">Mostrar</label>
-                <select name="por_pagina" class="form-select form-select-sm" data-no-search="true" onchange="this.form.submit()">
-                    <?php foreach ([5, 10, 25, 50] as $o): ?>
-                        <option value="<?= htmlspecialchars((string) ($o), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= htmlspecialchars((string) (($por_pagina == $o) ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>><?= htmlspecialchars((string) ($o), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label fw-bold small text-dark mb-0">Buscar</label>
-                <input type="text" name="busqueda" class="form-control form-control-sm" 
-                       list="listaCategorias"
-                       placeholder="Nombre o ID..."
-                       value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
-                <datalist id="listaCategorias">
-                    <?php
-                    $sugerencias = [];
-                    if (!empty($categorias) && is_array($categorias)):
-                        foreach ($categorias as $cat):
-                            $nombre = trim($cat['nombre_categoria'] ?? '');
-                            $id     = trim((string)($cat['id_categoria'] ?? ''));
-                            if ($nombre !== '') $sugerencias[$nombre]   = 1;
-                            if ($id     !== '') $sugerencias['#' . $id] = 1;
-                        endforeach;
-                    endif;
-
-                    foreach (array_keys($sugerencias) as $s): ?>
-                        <option value="<?= htmlspecialchars($s) ?>">
-                    <?php endforeach; ?>
-                </datalist>
-            </div>
-            
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-gold w-100">
-                    <i class="fas fa-search me-1"></i> Buscar
-                </button>
-            </div>
-            
-            <div class="col-md-2">
-                <a href="?url=categorias&action=lista" class="btn btn-secondary w-100">
-                    <i class="fas fa-times me-1"></i> Limpiar
-                </a>
-            </div>
-
-            <!-- BOTÓN VER ELIMINADOS EN LOS FILTROS -->
-            <div class="col-md-2">
-                <?php if ($esVistaEliminados): ?>
-                    <a href="?url=categorias&action=lista" class="btn btn-success w-100" style="background: #28a745; border: none; color: #fff;">
-                        <i class="fas fa-undo-alt me-1"></i> Ver Activos
-                    </a>
-                <?php else: ?>
-                    <a href="?url=categorias&action=lista&estado_categoria=inactivos" class="btn btn-danger w-100" style="background: #dc3545; border: none; color: #fff;">
-                        <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
-                    </a>
-                <?php endif; ?>
-            </div>
-        </form>
     </div>
 
     <!-- MENSAJES -->
@@ -133,39 +196,39 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
         </div>
     <?php endif; ?>
 
-    <!-- TABLA DE CATEGORÍAS -->
-    <div class="dark-card card shadow-sm dark-table-header">
+    <!-- TABLA DE CATEGORÍAS CON DATATABLES -->
+    <div class="dark-card no-card-jump card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0">
                 <i class="fas fa-tags me-2"></i> 
                 <?= htmlspecialchars((string) ($esVistaEliminados ? 'Categorías Inactivas' : 'Categorías Registradas'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
             </h5>
+            <div>
+                <?php if ($esVistaEliminados): ?>
+                    <a href="?url=categorias&action=lista" class="btn btn-sm btn-success" style="border-radius: 50px;">
+                        <i class="fas fa-undo-alt me-1"></i> Ver Activos
+                    </a>
+                <?php else: ?>
+                    <a href="?url=categorias&action=lista&estado_categoria=inactivos" class="btn btn-sm btn-danger" style="border-radius: 50px;">
+                        <i class="fas fa-trash-alt me-1"></i> Ver Eliminados
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
         
-        <div class="table-responsive">
-            <table class="table table-hover align-middle m-0">
+        <div class="card-body p-4">
+            <div class="table-responsive">
+            <table id="tablaCategorias" class="table table-hover align-middle m-0 w-100">
                 <thead>
                     <tr>
-                        <th class="ps-4 py-3">NOMBRE</th>
-                        <th class="py-3">DESCRIPCIÓN</th>
-                        <th class="py-3 text-center">STATUS</th>
-                        <th class="pe-4 py-3 text-center">ACCIONES</th>
+                        <th>NOMBRE</th>
+                        <th>DESCRIPCIÓN</th>
+                        <th class="text-center">STATUS</th>
+                        <th class="text-center">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($categorias)): ?>
-                        <tr>
-                            <td colspan="4" class="text-center py-5 dark-empty">
-                                <div class="py-4">
-                                    <i class="fas fa-tags fa-3x d-block mb-3" style="opacity: 0.3;"></i>
-                                    <p class="mb-0">
-                                        <?= htmlspecialchars((string) ($esVistaEliminados ? 'No hay categorías inactivas' : 'No hay categorías registradas'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
-                                    </p>
-                                    <small><?= htmlspecialchars((string) ($esVistaEliminados ? 'Las categorías activas están en la lista principal' : 'Comienza registrando una nueva categoría'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></small>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php else: ?>
+                    <?php if (!empty($categorias)): ?>
                         <?php foreach ($categorias as $cat): ?>
                             <?php $estaActiva = (($cat['eliminado'] ?? 0) == 0); ?>
                             <tr>
@@ -184,37 +247,31 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="pe-4 text-center">
+                                <td class="text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <!-- VER -->
                                         <button type="button" class="btn-action-circle btn-view" title="Ver Detalle"
-                                                onclick="verDetalleCategoria(<?= htmlspecialchars((string) ((int) $cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
+                                                onclick="verDetalleCategoria(<?= (int) $cat['id_categoria'] ?>)">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         
                                         <?php if (!$estaActiva): ?>
-                                            <!-- INACTIVA: SOLO REACTIVAR -->
-                                            <!-- 🔥 USAMOS LA VARIABLE $puede_editar -->
                                             <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-reactivar" title="Reactivar Categoría"
-                                                    onclick="confirmarReactivarCategoria(<?= htmlspecialchars((string) ((int) $cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
+                                                    onclick="confirmarReactivarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
                                                 <i class="fas fa-undo-alt"></i>
                                             </button>
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <!-- ACTIVA: EDITAR Y ELIMINAR -->
-                                            <!-- 🔥 USAMOS LA VARIABLE $puede_editar -->
                                             <?php if ($puede_editar): ?>
                                             <button type="button" class="btn-action-circle btn-edit" title="Editar"
-                                                    onclick="editarCategoria(<?= htmlspecialchars((string) ((int) $cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
+                                                    onclick="editarCategoria(<?= (int) $cat['id_categoria'] ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <?php endif; ?>
                                             
-                                            <!-- 🔥 USAMOS LA VARIABLE $puede_eliminar -->
                                             <?php if ($puede_eliminar): ?>
                                             <button type="button" class="btn-action-circle btn-delete" title="Eliminar"
-                                                    onclick="confirmarEliminarCategoria(<?= htmlspecialchars((string) ((int) $cat['id_categoria']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
+                                                    onclick="confirmarEliminarCategoria(<?= (int) $cat['id_categoria'] ?>, '<?= htmlspecialchars(addslashes($cat['nombre_categoria'] ?? '')) ?>')">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
                                             <?php endif; ?>
@@ -226,64 +283,44 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
                     <?php endif; ?>
                 </tbody>
             </table>
-        </div>
-        
-        <div class="card-footer py-3 d-flex justify-content-between align-items-center">
-            <span class="text-muted small">
-                <i class="fas fa-tags me-1"></i> 
-                Total: <?= htmlspecialchars((string) ($totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> categorías
-            </span>
-            <?php require_once dirname(__DIR__, 2) . "/view/partials/por_pagina_selector.php"; ?>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- MODALES -->
+<!-- MODALES (Se mantienen igual) -->
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_registrar_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_ver_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_editar_categoria.php'; ?>
 <?php require_once __DIR__ . '/subcarpetas_categoria/modal_eliminar_categoria.php'; ?>
 
-<!-- MODAL REACTIVAR -->
 <?php if ($puede_editar): ?>
 <div class="modal fade" id="modalReactivarCategoria" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(40,167,69,0.3); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
                     <i class="fas fa-undo-alt me-2" style="color: #28a745;"></i> Reactivar Categoría
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
-
             <form method="POST" action="?url=categorias&action=reactivar">
                 <input type="hidden" name="accion" value="reactivar">
                 <input type="hidden" name="id_categoria" id="reactivar-categoria-id">
-                
                 <div class="modal-body" style="padding: 20px 24px; color: #1a1a2e;">
                     <p style="margin-bottom: 12px;">¿Deseas reactivar esta categoría?</p>
-                    
                     <div class="p-3 mb-3" style="background: #f8f9fa; border-left: 4px solid #28a745; border-radius: 8px;">
                         <strong style="color: #6c757d; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px;">Categoría a reactivar</strong>
                         <span id="reactivar-categoria-nombre" style="color: #1a1a2e; font-weight: 600; font-size: 1rem;">—</span>
                     </div>
-
                     <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; border-radius: 12px; padding: 12px 16px; margin-bottom: 0;">
                         <i class="fas fa-check-circle me-2"></i>
-                        La categoría volverá a estar <strong>Activa</strong> y disponible para asignarse a productos.
+                        La categoría volverá a estar <strong>Activa</strong>.
                     </div>
                 </div>
-
                 <div class="modal-footer" style="border-top: 1px solid #e9ecef; padding: 16px 24px;">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"
-                            style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn"
-                            style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;">
-                        <i class="fas fa-check me-1"></i> Sí, reactivar
-                    </button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 50px; padding: 10px 25px; font-weight: 600;">Cancelar</button>
+                    <button type="submit" class="btn" style="background: #28a745; border: none; color: #fff; font-weight: 600; padding: 10px 30px; border-radius: 50px;"><i class="fas fa-check me-1"></i> Sí, reactivar</button>
                 </div>
             </form>
         </div>
@@ -291,7 +328,7 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 </div>
 <?php endif; ?>
 
-<!-- DATOS EN JSON + JAVASCRIPT -->
+<!-- DATOS EN JSON -->
 <script id="categoriasData" type="application/json">
 <?= json_encode(
     isset($categorias) && is_array($categorias) ? array_values($categorias) : [],
@@ -299,7 +336,13 @@ $esVistaEliminados = (($estado_categoria ?? 'todos') === 'inactivos');
 ) ?>
 </script>
 
-
-
-<?php $scriptsModulo = ['categorias.js']; ?>
-<?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>
+<?php
+$scriptsExternos = [
+    'https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js',
+    'https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js',
+    'https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js',
+    'https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js',
+];
+$scriptsModulo = ['categorias.js?v=' . filemtime(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'categorias.js')];
+require_once dirname(__DIR__, 2) . "/view/footer.php";
+?>
