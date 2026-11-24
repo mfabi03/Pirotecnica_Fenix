@@ -1,23 +1,21 @@
 <?php
-// ============================================================
-// PARTIAL: Modal para Ver Detalle de una Nota (Entrada o Salida)
-// ============================================================
+// app/view/reportes/verDetalleView.php
+// Partial: Modal para Ver Detalle de una Nota (Entrada o Salida)
 ?>
-
 <div class="modal fade" id="modalVerNota" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="background: #ffffff; border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
-            
+
             <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 24px;">
                 <h5 class="modal-title" style="color: #ffffff; font-weight: 700;">
-                    <i class="fas fa-eye me-2" style="color: #f39c12;"></i> 
+                    <i class="fas fa-eye me-2" style="color: #f39c12;"></i>
                     Detalle de Nota <span id="ver-nota-id" style="color: #f39c12;">—</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.7;"></button>
             </div>
 
             <div class="modal-body" style="padding: 20px 24px;">
-                
+
                 <div id="ver-nota-cargando" class="text-center py-5">
                     <div class="spinner-border" style="color: #f39c12;" role="status">
                         <span class="visually-hidden">Cargando...</span>
@@ -31,7 +29,7 @@
                 </div>
 
                 <div id="ver-nota-contenido" style="display: none;">
-                    
+
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <div class="p-3" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
@@ -110,6 +108,3 @@
         </div>
     </div>
 </div>
-
-<!-- ❌ ELIMINADO: <script> con window.verDetalleNota y escapeHtml -->
-<!-- Ahora vive en assets/js/verDetalleNota.jquery.js -->

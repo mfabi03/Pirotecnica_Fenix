@@ -6,32 +6,18 @@ use App\Pirotecnicafenix\Model\NotaentradaModel;
 use App\Pirotecnicafenix\Model\ProductoModel;
 use App\Pirotecnicafenix\Model\ProveedoresModel;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
-use App\Pirotecnicafenix\Helpers\Validador;
+use App\Pirotecnicafenix\Traits\ValidadorTrait;
 use Exception;
-
-require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'timezone.php';
 
 $type = $_POST['type'] ?? $_GET['type'] ?? 'list';
 $id = $_POST['id'] ?? $_GET['id'] ?? null;
-$esSolicitudJson = in_array($type, [
-    'show_json',
-    'detalle_json',
-    'estado_ajax',
-    'store_rapido_producto_ajax',
-    'store_rapido_proveedor_ajax'
-], true);
+$esSolicitudJson = in_array($type, ['show_json', 'detalle_json', 'estado_ajax'], true);
 
-error_reporting(E_ALL);
-ini_set('display_errors', $esSolicitudJson ? '0' : '1');
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $id_usuario_sesion = (int)($_SESSION['id_usuario'] ?? $_SESSION['usuario_id'] ?? 0);
 
-// 🔒 Bloqueo de cajero (rol 3)
 if ((int)$id_rol_actual === 3) {
     if ($esSolicitudJson) {
         http_response_code(403);
@@ -40,48 +26,90 @@ if ((int)$id_rol_actual === 3) {
         exit;
     }
     $_SESSION['error'] = 'No tienes permiso para acceder a las Notas de Entrada.';
-    header('Location: ?url=dashboard');
-    exit();
+    header('Location: ?url=dashboard'); exit();
 }
 
-// 1. MODELOS (heredan conexión)
 $modelo         = new NotaentradaModel();
 $productoModel  = new ProductoModel();
 $proveedorModel = new ProveedoresModel();
+$val = new class { use ValidadorTrait; };
 
-// 2. PERMISOS (una sola vez)
 $permisoHelper = new PermisoHelper();
 $puede_crear    = $permisoHelper->tienePermiso($id_rol_actual, 'Notas de Entrada', 'crear');
 $puede_editar   = $permisoHelper->tienePermiso($id_rol_actual, 'Notas de Entrada', 'actualizar');
 $puede_eliminar = $permisoHelper->tienePermiso($id_rol_actual, 'Notas de Entrada', 'eliminar');
 
-$error = null;
-$success = null;
-$nota = null;
-$notas = [];
-$productos = [];
-$proveedores = [];
-$resumen = [];
-$tipo_mensaje = '';
-
+$error = null; $success = null; $nota = null;
+$notas = []; $productos = []; $proveedores = []; $resumen = []; $tipo_mensaje = '';
 $rutaRaiz = dirname(__DIR__, 2);
 
-// ==========================================
-// AJAX: CAMBIO DE ESTADO (inactivar)
-// ==========================================
+/* ============================================================
+ * ENDPOINT AJAX: DETALLE DE NOTA (JSON) — para el modal
+ * URL: ?url=notaentrada&type=detalle_json&id=123
+ * ============================================================ */
+if ($type === 'detalle_json') {
+    while (ob_get_level()) { ob_end_clean(); }
+    header('Content-Type: application/json; charset=utf-8');
+
+    try {
+        $idNota = $val->validarId($id, 'ID de nota');
+        $notaJson = $modelo->obtenerNotaEntradaPorId($idNota);
+        if (!$notaJson) {
+            throw new Exception('Nota de entrada no encontrada.');
+        }
+
+        // Normalizar campos que espera el modal
+        $notaJson['cliente']   = $notaJson['razon_social'] ?? 'N/A';
+        $notaJson['documento'] = $notaJson['rif'] ?? 'N/A';
+        $notaJson['fecha']     = $notaJson['fecha_ingreso'] ?? '';
+        $notaJson['encargado'] = $notaJson['encargado_nombre'] ?? 'N/A';
+        $notaJson['tipo_base'] = 'Entrada';
+
+        $detalles = $notaJson['detalles'] ?? [];
+        if (is_array($detalles)) {
+            foreach ($detalles as &$d) {
+                $d['nombre_producto'] = $d['nombre_producto'] ?? 'N/A';
+                $d['categoria']       = $d['nombre_categoria'] ?? 'Sin categoría';
+                $d['cantidad']        = (int)($d['cantidad'] ?? 0);
+                $d['costo_unitario']  = (float)($d['costo_unitario'] ?? 0);
+
+                $esp = trim((string)($d['especificaciones'] ?? ''));
+                $d['especificaciones'] = $esp !== '' ? $esp : ($notaJson['descripcion'] ?? '');
+                $d['descripcion']      = $d['especificaciones'];
+            }
+            unset($d);
+        } else {
+            $notaJson['detalles'] = [];
+        }
+
+        echo json_encode([
+            'success' => true,
+            'nota'    => $notaJson,
+            'tipo'    => 'Entrada'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (Throwable $e) {
+        http_response_code(200); // 200 para que fetch no lance por status
+        echo json_encode([
+            'success' => false,
+            'error'   => $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+/* ============================================================
+ * ENDPOINT AJAX: ANULAR NOTA (JSON)
+ * ============================================================ */
 if ($type === 'estado_ajax') {
     header('Content-Type: application/json; charset=utf-8');
     $accion = $_POST['accion'] ?? '';
-
     try {
-        if (!$puede_eliminar) {
-            http_response_code(403);
-            throw new Exception('No tienes permiso para cambiar el estado de las notas.');
-        }
-        $id = Validador::validarId($id, 'ID de nota');
-
+        if (!$puede_eliminar) { http_response_code(403); throw new Exception('No tienes permiso para cambiar el estado de las notas.'); }
+        $id = $val->validarId($id, 'ID de nota');
         if ($accion === 'inactivar') {
-            $motivo = Validador::requerido($_POST['motivo'] ?? '', 'motivo de anulación');
+            $motivo = $val->requerido($_POST['motivo'] ?? '', 'motivo de anulación');
             $modelo->anularNotaEntrada($id, $motivo, $modelo->obtenerIdUsuarioValido($id_usuario_sesion));
             echo json_encode(['success' => true, 'message' => 'Nota anulada y stock revertido.'], JSON_UNESCAPED_UNICODE);
         } else {
@@ -89,32 +117,28 @@ if ($type === 'estado_ajax') {
             throw new Exception('Acción de estado no válida.');
         }
     } catch (Exception $e) {
-        if (http_response_code() < 400) {
-            http_response_code(500);
-        }
-        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        if (http_response_code() < 400) http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
     }
     exit;
 }
 
-// ==========================================
-// POST
-// ==========================================
+/* ============================================================
+ * POST (store / update)
+ * ============================================================ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // ACTUALIZAR
     if ($type === 'update') {
         if (!$puede_editar) {
             $_SESSION['mensaje'] = 'No tienes permiso para actualizar notas de entrada.';
             $_SESSION['tipo_mensaje'] = 'danger';
-            header('Location: ?url=notaentrada&type=list');
-            exit();
+            header('Location: ?url=notaentrada&type=list'); exit();
         }
         $idNota = $_POST['id_nota_entrada'] ?? '';
         try {
-            $idNota = Validador::validarId($idNota, 'ID de nota');
-            $fechaEntrada = Validador::validarFecha($_POST['fecha_ingreso'] ?? '', 'fecha de ingreso', 'Y-m-d\TH:i');
-            $idProveedor = Validador::validarId($_POST['id_proveedor'] ?? null, 'proveedor');
+            $idNota = $val->validarId($idNota, 'ID de nota');
+            $fechaEntrada = $val->validarFechaOExcepcion($_POST['fecha_ingreso'] ?? '', 'fecha de ingreso', 'Y-m-d\TH:i');
+            $idProveedor = $val->validarId($_POST['id_proveedor'] ?? null, 'proveedor');
 
             $productosIds = $_POST['detalle_producto'] ?? [];
             $cantidades   = $_POST['detalle_cantidad'] ?? [];
@@ -125,15 +149,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $detalles = [];
-            foreach ($productosIds as $indice => $productoId) {
+            foreach ($productosIds as $i => $productoId) {
                 $detalles[] = [
-                    'id_producto'   => Validador::validarId($productoId, 'producto'),
-                    'cantidad'      => (int)Validador::numeroPositivo($cantidades[$indice] ?? 0, 'cantidad', 1),
-                    'costo_unitario'=> Validador::numeroPositivo($costos[$indice] ?? 0, 'costo unitario', 0)
+                    'id_producto'    => $val->validarId($productoId, 'producto'),
+                    'cantidad'       => (int)$val->numeroPositivo($cantidades[$i] ?? 0, 'cantidad', 1),
+                    'costo_unitario' => $val->numeroPositivo($costos[$i] ?? 0, 'costo unitario', 0)
                 ];
             }
-
-            $descripcion = Validador::limpiar($_POST['descripcion'] ?? '');
+            $descripcion = $val->limpiar($_POST['descripcion'] ?? '');
 
             $modelo->actualizarNotaEntradaCompleta($idNota, [
                 'fecha_ingreso' => date('Y-m-d H:i:s', strtotime($fechaEntrada)),
@@ -143,8 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $_SESSION['mensaje'] = 'Nota de Entrada actualizada exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
-            header('Location: ?url=notaentrada&type=list');
-            exit();
+            header('Location: ?url=notaentrada&type=list'); exit();
         } catch (Exception $e) {
             $error = 'No se pudo actualizar la nota: ' . $e->getMessage();
             $type = 'edit';
@@ -152,17 +174,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // REGISTRAR NOTA
     if ($type === 'store') {
         if (!$puede_crear) {
             $_SESSION['mensaje'] = 'No tienes permiso para crear notas de entrada.';
             $_SESSION['tipo_mensaje'] = 'danger';
-            header('Location: ?url=notaentrada&type=list');
-            exit();
+            header('Location: ?url=notaentrada&type=list'); exit();
         }
         try {
             $idUsuario = $modelo->obtenerIdUsuarioValido($id_usuario_sesion);
-
             $detalles = [];
             $productos_ids = $_POST['detalle_producto'] ?? [];
             $cantidades    = $_POST['detalle_cantidad'] ?? [];
@@ -171,374 +190,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             for ($i = 0; $i < count($productos_ids); $i++) {
                 if (!empty($productos_ids[$i]) && !empty($cantidades[$i])) {
                     $detalles[] = [
-                        'id_producto'    => Validador::validarId($productos_ids[$i], 'producto'),
-                        'cantidad'       => (int)Validador::numeroPositivo($cantidades[$i], 'cantidad', 1),
-                        'costo_unitario' => Validador::numeroPositivo($costos[$i] ?? 0, 'costo unitario', 0)
+                        'id_producto'    => $val->validarId($productos_ids[$i], 'producto'),
+                        'cantidad'       => (int)$val->numeroPositivo($cantidades[$i], 'cantidad', 1),
+                        'costo_unitario' => $val->numeroPositivo($costos[$i] ?? 0, 'costo unitario', 0)
                     ];
                 }
             }
+            if (empty($detalles)) throw new Exception("Debe agregar al menos un producto.");
 
-            if (empty($detalles)) {
-                throw new Exception("Debe agregar al menos un producto.");
-            }
+            $idProveedor = $val->validarId($_POST['id_proveedor'] ?? null, 'proveedor');
+            $fechaEntrada = $val->validarFechaOExcepcion($_POST['fecha_ingreso'] ?? date('Y-m-d\TH:i'), 'fecha de ingreso', 'Y-m-d\TH:i');
+            $descripcion = $val->limpiar($_POST['descripcion'] ?? '');
 
-            $idProveedor = Validador::validarId($_POST['id_proveedor'] ?? null, 'proveedor');
-            $datos = [
-                'fecha_ingreso' => fechaHoraVenezuela('Y-m-d H:i:s'),
+            $idNota = $modelo->guardarNotaEntradaCompleta([
+                'fecha_ingreso' => date('Y-m-d H:i:s', strtotime($fechaEntrada)),
                 'id_proveedor'  => $idProveedor,
-                'descripcion'   => Validador::limpiar($_POST['descripcion'] ?? '')
-            ];
+                'descripcion'   => $descripcion
+            ], $detalles, $idUsuario);
 
-            $modelo->guardarNotaEntradaCompleta($datos, $detalles, $idUsuario);
-
-            $_SESSION['mensaje'] = '✅ Nota de Entrada registrada exitosamente.';
+            $_SESSION['mensaje'] = 'Nota de Entrada registrada exitosamente.';
             $_SESSION['tipo_mensaje'] = 'success';
-            header("Location: ?url=notaentrada&type=list");
-            exit();
+            header('Location: ?url=notaentrada&type=list'); exit();
         } catch (Exception $e) {
-            $error = '❌ ' . $e->getMessage();
-        }
-    }
-
-    // REGISTRO RÁPIDO DE PRODUCTO
-    if ($type === 'store_rapido_producto') {
-        if (!$puede_crear) {
-            $_SESSION['error'] = '❌ No tienes permiso para registrar productos.';
-            header("Location: ?url=notaentrada&type=create");
-            exit;
-        }
-        try {
-            $cantidadOriginal    = (int)($_POST['cantidad'] ?? 1);
-            $costoOriginal       = Validador::numeroPositivo($_POST['costo_unitario'] ?? 0, 'costo unitario', 0);
-            $idProveedorOriginal = Validador::validarId($_POST['id_proveedor'] ?? null, 'proveedor');
-
-            $datosProducto = [
-                'descripcion'      => Validador::requerido($_POST['descripcion'] ?? '', 'descripción'),
-                'id_categoria'     => Validador::validarId($_POST['id_categoria'] ?? null, 'categoría'),
-                'id_proveedor'     => $idProveedorOriginal,
-                'cantidad'         => 0,
-                'costo_unitario'   => $costoOriginal,
-                'especificaciones' => ''
-            ];
-
-            $id_producto = $productoModel->registrarProducto($datosProducto);
-            if (!$id_producto) {
-                throw new Exception("Error al guardar el producto");
-            }
-
-            $_SESSION['nuevo_producto_id'] = $id_producto;
-            $_SESSION['nuevo_producto_nombre'] = $datosProducto['descripcion'];
-            $_SESSION['nuevo_producto_costo'] = $costoOriginal;
-            $_SESSION['mensaje_rapido'] = "✅ Producto '{$datosProducto['descripcion']}' registrado exitosamente";
-            $_SESSION['tipo_rapido'] = 'success';
-
-            $return = $_REQUEST['return'] ?? 'notaentrada';
-            $params = [
-                'url'          => $return,
-                'type'         => 'create',
-                'id_producto'  => $id_producto,
-                'id_proveedor' => $idProveedorOriginal,
-                'cantidad'     => $cantidadOriginal,
-                'costo'        => $costoOriginal
-            ];
-            header("Location: ?" . http_build_query($params));
-            exit;
-        } catch (Exception $e) {
-            $_SESSION['error'] = '❌ ' . $e->getMessage();
-            $return = $_REQUEST['return'] ?? null;
-            if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create");
-                exit;
-            }
-            header("Location: ?url=notaentrada&type=create");
-            exit;
-        }
-    }
-
-    // REGISTRO RÁPIDO DE PROVEEDOR
-    if ($type === 'store_rapido_proveedor') {
-        if (!$puede_crear) {
-            $_SESSION['error'] = '❌ No tienes permiso para registrar proveedores.';
-            header("Location: ?url=notaentrada&type=create");
-            exit;
-        }
-        try {
-            $datosProveedor = [
-                'rif'                => Validador::requerido($_POST['rif'] ?? '', 'RIF'),
-                'razon_social'       => Validador::requerido($_POST['razon_social'] ?? '', 'razón social'),
-                'numero_contacto'    => Validador::requerido($_POST['numero_contacto'] ?? '', 'número de contacto'),
-                'direccion'          => Validador::requerido($_POST['direccion'] ?? '', 'dirección'),
-                'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? '')
-            ];
-
-            $id_proveedor = $proveedorModel->registrarProveedor($datosProveedor);
-            if (!$id_proveedor) {
-                throw new Exception("Error al guardar el proveedor");
-            }
-
-            $_SESSION['nuevo_proveedor_id'] = (int)$id_proveedor;
-            $_SESSION['nuevo_proveedor_nombre'] = $datosProveedor['razon_social'];
-            $_SESSION['mensaje_rapido'] = "✅ Proveedor '{$datosProveedor['razon_social']}' registrado exitosamente";
-            $_SESSION['tipo_rapido'] = 'success';
-
-            $return = $_REQUEST['return'] ?? 'notaentrada';
-            header("Location: ?url=" . urlencode($return) . "&type=create&id_proveedor=" . (int)$id_proveedor);
-            exit;
-        } catch (Exception $e) {
-            $_SESSION['error'] = '❌ ' . $e->getMessage();
-            $return = $_REQUEST['return'] ?? null;
-            if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create");
-                exit;
-            }
-            header("Location: ?url=notaentrada&type=create");
-            exit;
-        }
-    }
-
-    // ANULAR
-    if ($type === 'anular') {
-        if (!$puede_eliminar) {
-            $_SESSION['mensaje'] = 'No tienes permiso para anular notas de entrada.';
-            $_SESSION['tipo_mensaje'] = 'danger';
-            header("Location: ?url=notaentrada&type=list");
-            exit();
-        }
-        try {
-            $id = Validador::validarId($_POST['id_nota_entrada'] ?? null, 'ID de nota');
-            $motivo = Validador::requerido($_POST['motivo_eliminacion'] ?? $_POST['motivo_anulacion'] ?? '', 'motivo de anulación');
-            $idUsuario = $modelo->obtenerIdUsuarioValido($id_usuario_sesion);
-
-            $modelo->anularNotaEntrada($id, $motivo, $idUsuario);
-
-            $_SESSION['contador_anulaciones_notaentrada'] = (int)($modelo->getResumen()['total_anuladas'] ?? 0);
-            $_SESSION['mensaje'] = '✅ Nota de Entrada anulada exitosamente. El stock ha sido revertido.';
-            $_SESSION['tipo_mensaje'] = 'warning';
-            header("Location: ?url=notaentrada&type=list");
-            exit();
-        } catch (Exception $e) {
-            $error = '❌ ' . $e->getMessage();
+            $error = $e->getMessage();
         }
     }
 }
 
-// ==========================================
-// AJAX: REGISTRO RÁPIDO PARA NOTA DE ENTRADA
-// ==========================================
-if (in_array($type, ['store_rapido_producto_ajax', 'store_rapido_proveedor_ajax'], true)) {
-    header('Content-Type: application/json; charset=utf-8');
-
-    try {
-        if (!$puede_crear) {
-            http_response_code(403);
-            throw new Exception('No tienes permiso para registrar datos desde una nota de entrada.');
-        }
-
-        if ($type === 'store_rapido_producto_ajax') {
-            $idProveedor = Validador::validarId($_POST['id_proveedor'] ?? null, 'proveedor');
-            if (!$proveedorModel->proveedorActivoExiste($idProveedor)) {
-                throw new Exception('El proveedor seleccionado no existe o está inactivo.');
-            }
-
-            $datosProducto = [
-                'descripcion'      => Validador::requerido($_POST['descripcion'] ?? '', 'descripción'),
-                'id_categoria'     => Validador::validarId($_POST['id_categoria'] ?? null, 'categoría'),
-                'id_proveedor'     => $idProveedor,
-                'cantidad'         => 0,
-                'stock_minimo'     => (int)($_POST['stock_minimo'] ?? 10),
-                'costo_unitario'   => Validador::numeroPositivo($_POST['costo_unitario'] ?? 0, 'costo unitario', 0),
-                'especificaciones' => Validador::limpiar($_POST['especificaciones'] ?? '')
-            ];
-
-            $idProducto = $productoModel->registrarProducto($datosProducto);
-            if (!$idProducto) {
-                throw new Exception('No se pudo registrar el producto.');
-            }
-
-            echo json_encode([
-                'success'        => true,
-                'id_producto'    => (int)$idProducto,
-                'descripcion'    => $datosProducto['descripcion'],
-                'costo_unitario' => $datosProducto['costo_unitario'],
-                'stock'          => 0
-            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-        } else {
-            $datosProveedor = [
-                'rif'                => Validador::requerido($_POST['rif'] ?? '', 'RIF'),
-                'razon_social'       => Validador::requerido($_POST['razon_social'] ?? '', 'razón social'),
-                'numero_contacto'    => Validador::requerido($_POST['numero_contacto'] ?? '', 'número de contacto'),
-                'direccion'          => Validador::requerido($_POST['direccion'] ?? '', 'dirección'),
-                'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? '')
-            ];
-
-            $idProveedor = $proveedorModel->registrarProveedor($datosProveedor);
-            if (!$idProveedor) {
-                throw new Exception('No se pudo registrar el proveedor.');
-            }
-
-            echo json_encode([
-                'success'      => true,
-                'id_proveedor' => (int)$idProveedor,
-                'razon_social' => $datosProveedor['razon_social'],
-                'rif'          => $datosProveedor['rif']
-            ], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-        }
-    } catch (Exception $e) {
-        if (http_response_code() < 400) {
-            http_response_code(400);
-        }
-        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-    }
-    exit;
-}
-
-// ==========================================
-// AJAX: DETALLE JSON
-// ==========================================
-if ($esSolicitudJson) {
-    header('Content-Type: application/json; charset=utf-8');
-    ini_set('display_errors', '0');
-
-    try {
-        $id = Validador::validarId($id, 'ID de nota');
-        $notaJson = $modelo->obtenerNotaEntradaPorId($id);
-        if (!$notaJson) {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'Nota no encontrada'], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-            exit;
-        }
-        echo json_encode(['success' => true, 'nota' => $notaJson], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-    } catch (Throwable $e) {
-        error_log('Error al obtener detalle JSON de nota de entrada: ' . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'No se pudo cargar el detalle de la nota'], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-    }
-    exit;
-}
-
-// ==========================================
-// VISTAS
-// ==========================================
+/* ============================================================
+ * VISTAS
+ * ============================================================ */
 $baseViewPath = $rutaRaiz . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'nota_entrada';
 
-// PDF
-if ($type === 'generar_pdf' && $id) {
-    $archivoPdf = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'reportes' . DIRECTORY_SEPARATOR . 'generar_pdf_entrada.php';
-    if (!file_exists($archivoPdf)) {
-        $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf_entrada.php';
-    }
-    if (!file_exists($archivoPdf)) {
-        $archivoPdf = $baseViewPath . DIRECTORY_SEPARATOR . 'generar_pdf.php';
-    }
-    if (file_exists($archivoPdf)) {
-        require_once $archivoPdf;
-        exit();
-    }
-    die("ERROR: No se encuentra el archivo generar_pdf_entrada.php ni generar_pdf.php en: " . $baseViewPath);
-}
-
-// CREAR
 if ($type === 'create') {
     try {
-        $productos   = $modelo->obtenerProductos();
+        $productos = $modelo->obtenerProductos();
         $proveedores = $modelo->obtenerProveedores();
-        $categorias  = $productoModel->obtenerCategorias();
-    } catch (Exception $e) {
-        die("ERROR al obtener datos: " . $e->getMessage());
-    }
-
-    $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . "registroNotaEntradaView.php";
-    if (!file_exists($viewFile)) {
-        die("ERROR: No se encuentra registroNotaEntradaView.php");
-    }
-    require_once $viewFile;
-    exit();
+    } catch (Exception $e) { die("ERROR al obtener datos: " . $e->getMessage()); }
+    require_once $baseViewPath . "/registroNotaEntradaView.php"; exit();
 }
 
-// EDITAR
 if ($type === 'edit' && $id) {
-    if (!$puede_editar) {
-        $_SESSION['error'] = 'No tienes permiso para editar notas de entrada.';
-        header('Location: ?url=notaentrada&type=list');
-        exit();
-    }
     try {
-        $id = Validador::validarId($id, 'ID de nota');
+        $id = $val->validarId($id, 'ID de nota');
         $nota = $modelo->obtenerNotaEntradaPorId($id);
-        if (!$nota || (int)$nota['eliminado'] === 1) {
-            throw new Exception('La nota no existe o ya fue anulada.');
-        }
-        $productos   = $modelo->obtenerProductos();
+        if (!$nota) die("ERROR: Nota no encontrada.");
+        $productos = $modelo->obtenerProductos();
         $proveedores = $modelo->obtenerProveedores();
-    } catch (Exception $e) {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $error = 'No se pudo cargar la nota para editar: ' . $e->getMessage();
-        } else {
-            $_SESSION['error'] = 'No se pudo abrir la nota para editar: ' . $e->getMessage();
-            header('Location: ?url=notaentrada&type=list');
-            exit();
-        }
-    }
-
-    $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . 'editarNotaEntradaView.php';
-    if (!file_exists($viewFile)) {
-        die('ERROR: No se encuentra editarNotaEntradaView.php');
-    }
-    require_once $viewFile;
-    exit();
+    } catch (Exception $e) { die("ERROR al obtener nota: " . $e->getMessage()); }
+    require_once $baseViewPath . "/editarNotaEntradaView.php"; exit();
 }
 
-// VER DETALLE
 if ($type === 'show' && $id) {
     try {
-        $id = Validador::validarId($id, 'ID de nota');
+        $id = $val->validarId($id, 'ID de nota');
         $nota = $modelo->obtenerNotaEntradaPorId($id);
-        if (!$nota) {
-            die("ERROR: Nota de entrada no encontrada.");
-        }
-    } catch (Exception $e) {
-        die("ERROR al obtener nota: " . $e->getMessage());
-    }
-
-    $viewFile = $baseViewPath . DIRECTORY_SEPARATOR . "detalleNotaEntradaView.php";
-    if (!file_exists($viewFile)) {
-        die("ERROR: No se encuentra detalleNotaEntradaView.php");
-    }
-    require_once $viewFile;
-    exit();
+        if (!$nota) die("ERROR: Nota no encontrada.");
+    } catch (Exception $e) { die("ERROR al obtener nota: " . $e->getMessage()); }
+    require_once $baseViewPath . "/detalleNotaEntradaView.php"; exit();
 }
 
-// LISTAR
 try {
-    $buscar = Validador::limpiar($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
-    $estado_nota = !empty($_GET['ver_anuladas']) ? 'inactivos' : 'activos';
-    $notas_full = !empty($buscar)
-        ? $modelo->buscarNotasEntrada($buscar, $estado_nota)
-        : $modelo->obtenerNotasEntrada($estado_nota);
+    $buscar = $val->limpiar($_GET['busqueda'] ?? $_GET['buscar'] ?? '');
+    $estado_nota = !empty($_REQUEST['ver_anuladas']) ? 'inactivos' : 'activos';
+    $notas_full = !empty($buscar) ? $modelo->buscarNotasEntrada($buscar, $estado_nota) : $modelo->obtenerNotasEntrada($estado_nota);
     $resumen = $modelo->getResumen();
-
-    $por_pagina    = (int)($_GET['por_pagina'] ?? 10);
+    $por_pagina = (int)($_GET['por_pagina'] ?? 10);
     $pagina_actual = max(1, (int)($_GET['pagina'] ?? 1));
-    $offset        = ($pagina_actual - 1) * $por_pagina;
-
-    $totalRegistros = is_array($notas_full) ? count($notas_full) : 0;
-    $totalPaginas   = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
-    $notas          = $por_pagina > 0 ? array_slice($notas_full, $offset, $por_pagina) : $notas_full;
+    $offset = ($pagina_actual - 1) * $por_pagina;
+    $totalRegistros = count($notas_full);
+    $totalPaginas = $por_pagina > 0 ? (int)ceil($totalRegistros / $por_pagina) : 1;
+    $notas = $por_pagina > 0 ? array_slice($notas_full, $offset, $por_pagina) : $notas_full;
 
     if (isset($_SESSION['mensaje'])) {
         $success = $_SESSION['mensaje'];
-        unset($_SESSION['mensaje']);
+        $mensaje = $_SESSION['mensaje'];
+        $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? 'info';
+        unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
     }
-    if (isset($_SESSION['tipo_mensaje'])) {
-        $tipo_mensaje = $_SESSION['tipo_mensaje'];
-        unset($_SESSION['tipo_mensaje']);
-    }
-} catch (Exception $e) {
-    die("ERROR al obtener notas: " . $e->getMessage());
-}
+    if ($error) { $mensaje = $error; $tipo_mensaje = 'danger'; }
+} catch (Exception $e) { die("ERROR al obtener notas: " . $e->getMessage()); }
 
-$viewFile = $baseViewPath . DIRECTORY_SEPARATOR . "listNotaEntradaView.php";
-if (!file_exists($viewFile)) {
-    die("ERROR: No se encuentra listNotaEntradaView.php");
-}
-require_once $viewFile;
+require_once $baseViewPath . "/listNotaEntradaView.php";
+exit();

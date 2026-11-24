@@ -10,10 +10,8 @@ class NotaentradaModel extends ConnectDB {
     private $conex;
 
     public function __construct() {
-        
-    parent::__construct();
-
-    $this->conex = $this->getConnection();
+        parent::__construct();
+        $this->conex = $this->getConnection();
     }
 
     // OBTENER PRODUCTOS
@@ -112,7 +110,7 @@ class NotaentradaModel extends ConnectDB {
         }
     }
 
-    // OBTENER NOTA POR ID (CORREGIDO)
+    // OBTENER NOTA POR ID (con especificaciones por producto)
     public function obtenerNotaEntradaPorId($id) {
         try {
             $stmt = $this->conex->prepare("
@@ -143,7 +141,8 @@ class NotaentradaModel extends ConnectDB {
                         d.id_producto,
                         d.cantidad,
                         d.costo_unitario,
-                        p.descripcion as nombre_producto,
+                        p.descripcion       AS nombre_producto,
+                        p.especificaciones  AS especificaciones,
                         c.nombre_categoria
                     FROM detalle_entrada d 
                     JOIN producto p ON d.id_producto = p.id_producto 

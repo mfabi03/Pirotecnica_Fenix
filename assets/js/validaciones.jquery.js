@@ -1,4 +1,3 @@
-
 var Validador = (function ($) {
     'use strict';
 
@@ -8,7 +7,12 @@ var Validador = (function ($) {
     var timersUnico = {};
     var requestIdUnico = {};
 
-   
+    // Prefijos permitidos para documentos
+    var PREFIJOS_DOC = ['V', 'E', 'J', 'G', 'P'];
+
+    // ---------------------------------------------------------
+    // Utilidades de fecha
+    // ---------------------------------------------------------
     function calcularEdad(fechaNacimiento) {
         if (!fechaNacimiento) return null;
         var hoy = new Date();
@@ -27,29 +31,50 @@ var Validador = (function ($) {
         return partes[2] + '/' + partes[1] + '/' + partes[0];
     }
 
-    
-    // VALIDADORES SÍNCRONOS (formato)
+    // ---------------------------------------------------------
+    // Utilidades de documento
+    // ---------------------------------------------------------
+    function soloDigitos(valor, maxLen) {
+        return String(valor || '').replace(/\D+/g, '').slice(0, maxLen);
+    }
 
+    // ---------------------------------------------------------
+    // VALIDADORES SÍNCRONOS (formato)
+    // ---------------------------------------------------------
     var validadores = {
         cedula: function (valor) {
-            if (!valor) return { estado: 'vacio', mensaje: 'Formato: V-12345678' };
-            var regex = /^[VEJvej]-\d{7,9}$/;
-            if (/^\d{7,9}$/.test(valor)) return { estado: 'invalido', mensaje: 'Debe incluir V, E o J al inicio' };
-            if (!regex.test(valor)) return { estado: 'invalido', mensaje: 'Formato inválido. Ejemplo: V-12345678' };
+            var v = String(valor || '').trim().toUpperCase();
+
+            // Vacío o solo el prefijo ("V-", "E-", "J-") → tratar como vacío
+            if (v === '' || /^[VEJ]-?$/.test(v)) {
+                return { estado: 'vacio', mensaje: 'Ingrese el número de cédula' };
+            }
+
+            // Debe ser PREFIJO-NÚMERO (6 a 9 dígitos)
+            if (!/^[VEJ]-\d{6,9}$/.test(v)) {
+                return { estado: 'invalido', mensaje: 'Formato inválido. Ejemplo: V-12345678' };
+            }
             return { estado: 'valido', mensaje: 'Cédula válida' };
         },
         rif: function (valor) {
-            if (!valor) return { estado: 'vacio', mensaje: 'Formato: J-123456789' };
-            var regex = /^[VEJPGvejpg]-?\d{8,9}-?\d?$/;
-            if (/^\d{8,9}$/.test(valor)) return { estado: 'invalido', mensaje: 'Debe incluir la letra J al inicio' };
-            if (!regex.test(valor)) return { estado: 'invalido', mensaje: 'Formato inválido. Ejemplo: J-123456789' };
+            var v = String(valor || '').trim().toUpperCase();
+
+            // Vacío o solo el prefijo ("J-", "G-", etc.) → tratar como vacío
+            if (v === '' || /^[VEJPG]-?$/.test(v)) {
+                return { estado: 'vacio', mensaje: 'Ingrese el número de RIF' };
+            }
+
+            // Debe ser PREFIJO-NÚMERO (6 a 9 dígitos)
+            if (!/^[VEJPG]-\d{6,9}$/.test(v)) {
+                return { estado: 'invalido', mensaje: 'Formato inválido. Ejemplo: J-123456789' };
+            }
             return { estado: 'valido', mensaje: 'RIF válido' };
         },
         telefono: function (valor) {
             if (!valor) return { estado: 'vacio', mensaje: 'Formato: 0412-1234567' };
             var regex = /^(\+?58)?[\s\-]?(0?)(412|414|416|424|426|212|241|251|261|271|281|291)[\s\-]?\d{7}$/;
-            var soloDigitos = valor.replace(/[\s\-+]/g, '');
-            if (soloDigitos.length < 10) return { estado: 'invalido', mensaje: 'Debe tener al menos 10 dígitos' };
+            var soloDig = valor.replace(/[\s\-+]/g, '');
+            if (soloDig.length < 10) return { estado: 'invalido', mensaje: 'Debe tener al menos 10 dígitos' };
             if (!regex.test(valor)) return { estado: 'invalido', mensaje: 'Formato inválido. Ejemplo: 0412-1234567' };
             return { estado: 'valido', mensaje: 'Teléfono válido' };
         },
@@ -148,6 +173,99 @@ var Validador = (function ($) {
     }
 
     // ---------------------------------------------------------
+    // AUTO FORMATO: solo números + prefijo automático
+    // El usuario NUNCA escribe letras. El sistema pone "J-" / "V-".
+    // ---------------------------------------------------------
+    function aplicarAutoFormato(input) {
+        var $input = $(input);
+        var tipo = $input.data('validate');
+
+        if (tipo === 'cedula' || tipo === 'rif') {
+            if ($input.data('docAutoInit') === true) return;
+            $input.data('docAutoInit', true);
+
+            var prefijo = ($input.data('doc-prefijo') || (tipo === 'rif' ? 'J' : 'V'))
+                            .toUpperCase().charAt(0);
+            var maxDigitos = 9;
+
+            $input.attr({
+                inputmode: 'numeric',
+                autocomplete: 'off',
+                maxlength: prefijo.length + 1 + maxDigitos // "J-123456789" = 11
+            });
+
+            // Bloquear teclas que no sean dígitos (deja pasar teclas de control)
+            $input.on('keydown', function (e) {
+                var teclasControl = [
+                    'Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight',
+                    'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', 'Escape'
+                ];
+                if (teclasControl.indexOf(e.key) !== -1) return;
+                if (e.ctrlKey || e.metaKey) return;          // Ctrl+C, Ctrl+V, etc.
+                if (!/^\d$/.test(e.key)) e.preventDefault(); // bloquea letras y símbolos
+            });
+
+            // Formatear en cada cambio (escritura, borrado, pegado)
+            $input.on('input', function () {
+                var num = this.value.replace(/\D+/g, '').slice(0, maxDigitos);
+                var nuevo = num === '' ? '' : prefijo + '-' + num;
+
+                this.value = nuevo;
+
+                // Cursor al final
+                var pos = nuevo.length;
+                try { this.setSelectionRange(pos, pos); } catch (_) {}
+            });
+
+            // Al hacer focus: si está vacío, mostrar prefijo y cursor al final
+            $input.on('focus', function () {
+                if (!this.value) {
+                    this.value = prefijo + '-';
+                    try { this.setSelectionRange(this.value.length, this.value.length); } catch (_) {}
+                }
+            });
+
+            // Al salir: si solo quedó el prefijo, vaciar (para que required funcione)
+            $input.on('blur', function () {
+                if (this.value === prefijo + '-' || this.value === prefijo) {
+                    this.value = '';
+                }
+                // Re-normalizar
+                var num = this.value.replace(/\D+/g, '').slice(0, maxDigitos);
+                this.value = num === '' ? '' : prefijo + '-' + num;
+            });
+
+            // Si ya viene con valor (edición), normalizarlo
+            if ($input.val()) {
+                var num = $input.val().replace(/\D+/g, '').slice(0, maxDigitos);
+                $input.val(num === '' ? '' : prefijo + '-' + num);
+            }
+
+        } else if (tipo === 'telefono' || tipo === 'telefono_proveedor') {
+            $input.on('input', function () {
+                this.value = this.value.replace(/[^0-9\-\s+]/g, '');
+            });
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Cambiar prefijo dinámicamente (para selectores V/E/J/G/P)
+    // ---------------------------------------------------------
+    function cambiarPrefijo(input, nuevoPrefijo) {
+        nuevoPrefijo = String(nuevoPrefijo || '').toUpperCase().charAt(0);
+        if (PREFIJOS_DOC.indexOf(nuevoPrefijo) === -1) return;
+
+        var $input = $(input);
+        $input.data('doc-prefijo', nuevoPrefijo);
+
+        var maxDigitos = 9;
+        var num = ($input.val() || '').replace(/\D+/g, '').slice(0, maxDigitos);
+        $input.val(num === '' ? '' : nuevoPrefijo + '-' + num);
+        $input.attr('maxlength', nuevoPrefijo.length + 1 + maxDigitos);
+        $input.trigger('input');
+    }
+
+    // ---------------------------------------------------------
     // AJAX genérico con $.ajax
     // ---------------------------------------------------------
     function consultarUnico(input) {
@@ -234,21 +352,18 @@ var Validador = (function ($) {
                                 : (campo === 'usuario'
                                     ? 'Este usuario ya está registrado'
                                     : 'Este ' + etiqueta + ' ya está registrado')));
-                    mostrarFeedback($input, $feedbackEl, 'invalido',
-                        mensajeDuplicado);
+                    mostrarFeedback($input, $feedbackEl, 'invalido', mensajeDuplicado);
                     return false;
                 }
                 $input.data('unicoEstado', 'ok');
                 var etiquetaCap = etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1);
-                mostrarFeedback($input, $feedbackEl, 'valido',
-                    etiquetaCap + ' disponible');
+                mostrarFeedback($input, $feedbackEl, 'valido', etiquetaCap + ' disponible');
                 return true;
             })
             .fail(function () {
                 if (reqId !== requestIdUnico[input.id]) return;
                 $input.data('unicoEstado', '');
-                mostrarFeedback($input, $feedbackEl, 'vacio',
-                    'No se pudo verificar disponibilidad');
+                mostrarFeedback($input, $feedbackEl, 'vacio', 'No se pudo verificar disponibilidad');
             });
     }
 
@@ -305,6 +420,11 @@ var Validador = (function ($) {
         }
 
         var esRequired = $input.prop('required');
+
+        // Si el validador dice "vacio" y es required → inválido
+        if (esRequired && resultado.estado === 'vacio') return false;
+
+        // Si está vacío de verdad y es required → inválido
         if (esRequired && !$.trim($input.val())) return false;
 
         return resultado.estado === 'valido' || (resultado.estado === 'vacio' && !esRequired);
@@ -364,34 +484,6 @@ var Validador = (function ($) {
                 tipo: valido ? '' : (duplicado ? 'duplicado' : 'disponibilidad')
             };
         });
-    }
-
-    // ---------------------------------------------------------
-    // Auto formato
-    // ---------------------------------------------------------
-    function aplicarAutoFormato(input) {
-        var $input = $(input);
-        var tipo = $input.data('validate');
-
-        if (tipo === 'cedula') {
-            $input.on('input', function () {
-                var v = this.value.toUpperCase().replace(/[^VEJ0-9-]/g, '');
-                if (/^\d+$/.test(v)) this.value = 'V-' + v;
-                else if (/^[VEJ]\d+$/.test(v)) this.value = v.charAt(0) + '-' + v.substring(1);
-                else this.value = v;
-            });
-        } else if (tipo === 'rif') {
-            $input.on('input', function () {
-                var v = this.value.toUpperCase().replace(/[^VEJPG0-9-]/g, '');
-                if (/^\d+$/.test(v)) this.value = 'J-' + v;
-                else if (/^[VEJPG]\d+$/.test(v)) this.value = v.charAt(0) + '-' + v.substring(1);
-                else this.value = v;
-            });
-        } else if (tipo === 'telefono' || tipo === 'telefono_proveedor') {
-            $input.on('input', function () {
-                this.value = this.value.replace(/[^0-9\-\s+]/g, '');
-            });
-        }
     }
 
     // ---------------------------------------------------------
@@ -469,7 +561,8 @@ var Validador = (function ($) {
         calcularEdad: calcularEdad,
         formatearFecha: formatearFecha,
         onMenorEdad: onMenorEdad,
-        validarUnico: validarUnico
+        validarUnico: validarUnico,
+        cambiarPrefijo: cambiarPrefijo
     };
 })(jQuery);
 

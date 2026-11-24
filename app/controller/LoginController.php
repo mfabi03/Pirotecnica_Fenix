@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 use App\Pirotecnicafenix\Model\LoginModel;
-use App\Pirotecnicafenix\Helpers\Validador;
+use App\Pirotecnicafenix\Traits\ValidadorTrait; // 🔥 Usamos el Trait correcto
 use Exception;
 
 // 1. INICIAR SESIÓN
@@ -17,13 +17,16 @@ if (session_status() === PHP_SESSION_NONE) {
 // 2. MODELO (hereda conexión)
 $modelo = new LoginModel();
 
-// 3. PARÁMETROS
+// 3. INSTANCIAR EL VALIDADOR (Igual que en los otros controladores)
+$val = new class { use ValidadorTrait; };
+
+// 4. PARÁMETROS
 $action = $_GET['action'] ?? 'index';
 $errorMsg = null;
 $bloqueado = false;
 $segundos_restantes = 0;
 
-// 4. LOGOUT
+// 5. LOGOUT
 if ($action === 'logout') {
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
@@ -43,7 +46,7 @@ if ($action === 'logout') {
     exit();
 }
 
-// 5. VERIFICAR BLOQUEO
+// 6. VERIFICAR BLOQUEO
 $tiempo_actual = time();
 
 if (isset($_SESSION['bloqueo_hasta']) && $_SESSION['bloqueo_hasta'] > $tiempo_actual) {
@@ -55,13 +58,14 @@ if (isset($_SESSION['bloqueo_hasta']) && $_SESSION['bloqueo_hasta'] > $tiempo_ac
     $_SESSION['intentos_fallidos'] = 0;
 }
 
-// 6. PROCESAR LOGIN
+// 7. PROCESAR LOGIN
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['usuario'], $_POST['clave'])) {
 
     if (!$bloqueado) {
         try {
-            $usuario = Validador::requerido($_POST['usuario'] ?? '', 'usuario');
-            $clave   = Validador::requerido($_POST['clave'] ?? '', 'contraseña');
+            // 🔥 Usamos el objeto $val en lugar de la clase estática
+            $usuario = $val->requerido($_POST['usuario'] ?? '', 'usuario');
+            $clave   = $val->requerido($_POST['clave'] ?? '', 'contraseña');
 
             $usuarioData = $modelo->autenticar($usuario, $clave);
 
@@ -104,13 +108,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['usuario'], $_POST['cl
     }
 }
 
-// 7. SI YA ESTÁ LOGUEADO
+// 8. SI YA ESTÁ LOGUEADO
 if (isset($_SESSION['id_usuario']) && !empty($_SESSION['id_usuario']) && !$bloqueado) {
     header('Location: ?url=dashboard');
     exit();
 }
 
-// 8. VISTA
+// 9. VISTA
 $error = $errorMsg;
 $basePath = __DIR__ . "/../view/configuracion/";
 $viewFile = $basePath . "login.php";

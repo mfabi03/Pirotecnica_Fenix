@@ -2,9 +2,6 @@
 // app/view/configuracion/usuarioLista.php
 require_once __DIR__ . '/../header.php';
 
-// La vista no instancia PermisoHelper ni ConnectDB.
-// Los permisos disponibles ya vienen calculados desde su controlador.
-
 $ver_papelera   = $ver_papelera   ?? (isset($_GET['papelera']) && $_GET['papelera'] == '1');
 ?>
 
@@ -372,6 +369,162 @@ $ver_papelera   = $ver_papelera   ?? (isset($_GET['papelera']) && $_GET['papeler
         </div>
     </div>
 </div>
+
+<!-- JS DEL WIZARD (delegación, funciona aunque el modal se abra después) -->
+<script>
+(function () {
+    // ---------- SIGUIENTE / ATRÁS ----------
+    document.addEventListener('click', function (e) {
+        // SIGUIENTE
+        const btnNext = e.target.closest('#formRegistrarUsuario .next-step');
+        if (btnNext) {
+            e.preventDefault();
+            const form = document.getElementById('formRegistrarUsuario');
+            if (!form) return;
+
+            const tabs  = form.querySelectorAll('.tab-pane');
+            const steps = form.querySelectorAll('#wizard-tabs li');
+            let current = 0;
+            tabs.forEach((tab, i) => { if (tab.style.display !== 'none') current = i; });
+
+            // Validar paso actual
+            const tabActual = tabs[current];
+            const campos = tabActual.querySelectorAll('input[required], select[required], textarea[required]');
+            for (const campo of campos) {
+                if (!campo.checkValidity()) { campo.reportValidity(); return; }
+            }
+
+            if (current < tabs.length - 1) {
+                const next = current + 1;
+                tabs.forEach((tab, i) => {
+                    tab.style.display = (i === next) ? 'block' : 'none';
+                    tab.classList.toggle('active', i === next);
+                });
+                steps.forEach((li, i) => {
+                    li.classList.toggle('active', i === next);
+                    li.classList.toggle('disabled', i > next);
+                });
+                if (next === tabs.length - 1) actualizarResumen(form);
+            }
+            return;
+        }
+
+        // ATRÁS
+        const btnPrev = e.target.closest('#formRegistrarUsuario .prev-step');
+        if (btnPrev) {
+            e.preventDefault();
+            const form = document.getElementById('formRegistrarUsuario');
+            if (!form) return;
+
+            const tabs  = form.querySelectorAll('.tab-pane');
+            const steps = form.querySelectorAll('#wizard-tabs li');
+            let current = 0;
+            tabs.forEach((tab, i) => { if (tab.style.display !== 'none') current = i; });
+
+            if (current > 0) {
+                const prev = current - 1;
+                tabs.forEach((tab, i) => {
+                    tab.style.display = (i === prev) ? 'block' : 'none';
+                    tab.classList.toggle('active', i === prev);
+                });
+                steps.forEach((li, i) => {
+                    li.classList.toggle('active', i === prev);
+                    li.classList.toggle('disabled', i > prev);
+                });
+            }
+            return;
+        }
+    });
+
+    function actualizarResumen(form) {
+        const resumen = document.getElementById('resumen-datos');
+        if (!resumen) return;
+        const nombre   = form.querySelector('[name="nombre"]')?.value || '';
+        const apellido = form.querySelector('[name="apellido"]')?.value || '';
+        const cedula   = form.querySelector('[name="cedula"]')?.value || '';
+        const usuario  = form.querySelector('[name="usuario"]')?.value || '';
+        const rolSel   = form.querySelector('[name="id_rol"]');
+        const rol      = rolSel ? (rolSel.options[rolSel.selectedIndex]?.text || '') : '';
+        resumen.innerHTML = `<b>${nombre} ${apellido}</b><br>Cédula: ${cedula}<br>Usuario: ${usuario}<br>Rol: ${rol}`;
+    }
+
+    // ---------- CONFIRMAR CONTRASEÑA ----------
+    document.addEventListener('input', function (e) {
+        if (e.target && e.target.id === 'wiz-clave-confirm') {
+            const clave = document.getElementById('wiz-clave');
+            const fb = document.getElementById('wiz-clave-confirm-feedback');
+            if (!clave || !fb) return;
+            if (e.target.value === '') { fb.textContent = ''; return; }
+            if (clave.value === e.target.value) {
+                fb.textContent = '✅ Las contraseñas coinciden';
+                fb.style.color = '#28a745';
+            } else {
+                fb.textContent = '❌ Las contraseñas no coinciden';
+                fb.style.color = '#dc3545';
+            }
+        }
+    });
+
+    // ---------- SUBMIT FINAL ----------
+    document.addEventListener('submit', function (e) {
+        if (!e.target || e.target.id !== 'formRegistrarUsuario') return;
+        e.preventDefault();
+
+        const form = e.target;
+        const clave   = document.getElementById('wiz-clave');
+        const confirm = document.getElementById('wiz-clave-confirm');
+        if (clave && confirm && clave.value !== confirm.value) {
+            alert('Las contraseñas no coinciden');
+            return;
+        }
+
+        const formData = new FormData(form);
+        formData.append('accion', 'store_ajax');
+
+        const btnSubmit = form.querySelector('button[type="submit"]');
+        const originalHTML = btnSubmit ? btnSubmit.innerHTML : '';
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Guardando...';
+        }
+
+        fetch('?url=usuarios', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const modalEl = document.getElementById('modalRegistrarUsuario');
+                    if (modalEl) {
+                        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                        modal.hide();
+                    }
+                    mostrarAlerta(data.mensaje || 'Usuario registrado exitosamente', 'success');
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    mostrarAlerta(data.mensaje || 'Error al registrar usuario', 'danger');
+                    if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = originalHTML; }
+                }
+            })
+            .catch(err => {
+                mostrarAlerta('Error: ' + err.message, 'danger');
+                if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = originalHTML; }
+            });
+    });
+
+    function mostrarAlerta(texto, tipo) {
+        const alerta = document.createElement('div');
+        alerta.className = 'alert ' + (tipo === 'success' ? 'dark-alert-success' : 'dark-alert-danger') + ' alert-dismissible fade show shadow-sm border-0';
+        alerta.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 320px;';
+        alerta.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas ${tipo === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-3 fs-4"></i>
+                <span>${texto}</span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>`;
+        document.body.appendChild(alerta);
+        setTimeout(() => alerta.remove(), 4000);
+    }
+})();
+</script>
 
 <?php $scriptsModulo = ['usuarios.js?v=' . filemtime(dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'usuarios.js')]; ?>
 <?php require_once __DIR__ . '/../footer.php'; ?>

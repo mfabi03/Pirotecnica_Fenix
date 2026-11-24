@@ -87,7 +87,11 @@ class FrontController {
             'cierre_caja_ajax'     => ['archivo' => 'ReporteCajaController.php', 'permiso' => ['ReporteCaja', 'leer']],
             'confirmar_cierre_caja'=> ['archivo' => 'ReporteCajaController.php', 'permiso' => ['ReporteCaja', 'leer']],
             'detalle_caja_json'    => ['archivo' => 'ReporteCajaController.php', 'permiso' => ['ReporteCaja', 'leer']],
-            'obtener_motivo_ajax'  => ['archivo' => 'ReportesController.php', 'permiso' => ['Reportes', 'leer']]
+            'obtener_motivo_ajax'  => ['archivo' => 'ReportesController.php', 'permiso' => ['Reportes', 'leer']],
+            
+            // 🔥 NUEVAS RUTAS PARA EL HISTORIAL (Solucionan el error de JSON)
+            'ver_cierre_ajax'       => ['archivo' => 'ReporteCajaController.php', 'permiso' => ['ReporteCaja', 'leer']],
+            'exportar_pdf_historial'=> ['archivo' => 'ReporteCajaController.php', 'permiso' => ['ReporteCaja', 'leer']]
         ];
 
         // Validar si la ruta existe
@@ -124,6 +128,10 @@ class FrontController {
                 'confirmar_cierre_caja'=> 'ReporteCajaController',
                 'detalle_caja_json'    => 'ReporteCajaController',
                 'obtener_motivo_ajax'  => 'ReportesController',
+                
+                // 🔥 MAPEO DE LAS NUEVAS RUTAS
+                'ver_cierre_ajax'       => 'ReporteCajaController',
+                'exportar_pdf_historial'=> 'ReporteCajaController'
             ];
 
             if (isset($controladoresPorClase[$url])) {
@@ -150,6 +158,10 @@ class FrontController {
                 if ($url === 'confirmar_cierre_caja') $metodo = 'confirmarCierreCajaAjax';
                 if ($url === 'detalle_caja_json')     $metodo = 'verDetalleAjax';
                 if ($url === 'obtener_motivo_ajax')   $metodo = 'obtenerCierreAjax';
+                
+                // 🔥 ASIGNACIÓN DE LOS NUEVOS MÉTODOS
+                if ($url === 'ver_cierre_ajax')        $metodo = 'verCierreAjax';
+                if ($url === 'exportar_pdf_historial') $metodo = 'exportarPDFHistorico';
 
                 if (!method_exists($controller, $metodo)) {
                     $this->error404("El controlador {$nombreClase} no tiene método {$metodo}().");

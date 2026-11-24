@@ -4,22 +4,18 @@ namespace App\Pirotecnicafenix\Controller;
 
 use App\Pirotecnicafenix\Model\clientesModel;
 use App\Pirotecnicafenix\Helpers\PermisoHelper;
-use App\Pirotecnicafenix\Helpers\Validador;
+use App\Pirotecnicafenix\Traits\ValidadorTrait;
 use Exception;
 
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-// 1. Sesión
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 
-// 2. Modelo (hereda conexión)
 $modelo = new clientesModel();
+$val = new class { use ValidadorTrait; };
 
-// 3. Permisos (una sola vez)
 $id_rol_actual = $_SESSION['id_rol'] ?? 0;
 $permisoHelper = new PermisoHelper();
 
@@ -27,23 +23,22 @@ $puede_crear    = $permisoHelper->tienePermiso($id_rol_actual, 'Clientes', 'crea
 $puede_editar   = $permisoHelper->tienePermiso($id_rol_actual, 'Clientes', 'actualizar');
 $puede_eliminar = $permisoHelper->tienePermiso($id_rol_actual, 'Clientes', 'eliminar');
 
-// 4. Entrada
 $type     = $_GET['type'] ?? 'list';
 $id       = $_GET['id'] ?? null;
 $mensaje  = $_SESSION['mensaje'] ?? null;
 $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? null;
 unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
 
-$busqueda = Validador::limpiar($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? '');
-$tipo     = Validador::limpiar($_REQUEST['tipo'] ?? 'todos');
+$busqueda = $val->limpiar($_REQUEST['busqueda'] ?? $_REQUEST['buscar'] ?? '');
+$tipo     = $val->limpiar($_REQUEST['tipo'] ?? 'todos');
 
-$estado_cliente = strtolower(Validador::limpiar($_REQUEST['estado_cliente'] ?? 'activos'));
+$estado_cliente = strtolower($val->limpiar($_REQUEST['estado_cliente'] ?? 'activos'));
 if (!in_array($estado_cliente, ['todos', 'activos', 'inactivos'], true)) {
     $estado_cliente = 'activos';
 }
 
 /* ============================================================
- *  HELPERS INTERNOS DEL CONTROLADOR
+ *  HELPERS INTERNOS DEL CONTROLADOR (sin cambios)
  * ============================================================ */
 function _clientesRedirPost($return, $idCliente = null)
 {
@@ -60,21 +55,17 @@ function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null)
         'DUPLICADO_CEDULA:' => ['campo' => 'cedula', 'etiqueta' => 'cédula'],
         'DUPLICADO_RIF:'    => ['campo' => 'rif',    'etiqueta' => 'RIF'],
     ];
-
     foreach ($map as $prefijo => $info) {
         if (strpos($msg, $prefijo) === 0) {
             $campo  = $info['campo'];
             $sufijo = $esEdicion ? ' en otro cliente' : '';
-
             $_SESSION['errores_campo'] = [
                 $campo => 'Esta ' . $info['etiqueta'] . ' ya está registrada' . $sufijo
             ];
-
             if ($formModal) {
                 $_SESSION['form_modal'] = $formModal;
                 $_SESSION['form_data']  = $_POST;
             }
-
             return true;
         }
     }
@@ -82,7 +73,7 @@ function _clientesDetectarDuplicado($msg, $esEdicion = false, $formModal = null)
 }
 
 // ==========================================
-// ENDPOINT: CHECK DUPLICADO (AJAX)
+// AJAX: CHECK DUPLICADO
 // ==========================================
 if ($type === 'check_duplicado') {
     header('Content-Type: application/json; charset=utf-8');
@@ -94,22 +85,24 @@ if ($type === 'check_duplicado') {
     }
 
     try {
-        $campo     = strtolower(Validador::limpiar($_GET['campo'] ?? ''));
-        $valor     = Validador::limpiar($_GET['valor'] ?? '');
+        $campo     = strtolower($val->limpiar($_GET['campo'] ?? ''));
+        $valor     = $val->limpiar($_GET['valor'] ?? '');
         $excluirId = isset($_GET['excluir_id']) && is_numeric($_GET['excluir_id'])
             ? (int) $_GET['excluir_id']
             : null;
 
-        if (!in_array($campo, ['cedula', 'rif'], true)) {
-            throw new Exception('Campo inválido');
-        }
-        if ($valor === '') {
-            throw new Exception('Valor vacío');
-        }
+        if (!in_array($campo, ['cedula', 'rif'], true)) throw new Exception('Campo inválido');
+        if ($valor === '') throw new Exception('Valor vacío');
 
+        // 🔥 Normalizar el documento antes de consultar
         if ($campo === 'cedula') {
+            $tipo_doc = $val->limpiar($_GET['tipo_documento'] ?? 'V');
+            $valor = $val->documentoCompleto($tipo_doc, $valor);
             $existe = $modelo->existeCedula($valor, $excluirId);
         } else {
+            $tipo_doc = $val->limpiar($_GET['tipo_documento'] ?? 'J');
+            $digito   = $val->limpiar($_GET['digito_rif'] ?? '');
+            $valor = $val->documentoCompleto($tipo_doc, $valor, $digito !== '' ? $digito : null);
             $existe = $modelo->existeRif($valor, $excluirId);
         }
 
@@ -127,7 +120,7 @@ if ($type === 'check_duplicado') {
 }
 
 // ==========================================
-// POST: ELIMINAR (lógico)
+// POST: ELIMINAR
 // ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POST['accion']) && $_POST['accion'] === 'eliminar'))) {
     if (!$puede_eliminar) {
@@ -137,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'delete' || (isset($_POS
         exit();
     }
     try {
-        $id = Validador::validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
+        $id = $val->validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
         $resultado = $modelo->eliminarCliente($id);
         $_SESSION['mensaje'] = $resultado ? "✅ Cliente eliminado exitosamente" : "No se pudo eliminar el cliente";
         $_SESSION['tipo_mensaje'] = $resultado ? "success" : "danger";
@@ -166,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($type === 'reactivar' || (isset($_
         exit();
     }
     try {
-        $id = Validador::validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
+        $id = $val->validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
         $modelo->reactivarCliente($id);
         $_SESSION['mensaje'] = "✅ Cliente reactivado exitosamente";
         $_SESSION['tipo_mensaje'] = "success";
@@ -190,23 +183,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     }
     $resultado = null;
     try {
-        $cedula = Validador::requerido($_POST['cedula'] ?? '', 'cédula');
-        if (!Validador::validarCedula($cedula)) {
-            throw new Exception("El formato de la cédula no es válido (ej: V-12345678).");
-        }
+        // 🔥 Cédula sin prefijo manual: tipo_documento + número → "V-12345678"
+        $tipo_doc = $val->limpiar($_POST['tipo_documento'] ?? 'V');
+        $cedula   = $val->documentoCompleto($tipo_doc, $_POST['cedula'] ?? '');
 
-        $fechaNac = Validador::validarFecha($_POST['fecha_de_nacimiento'] ?? '', 'fecha de nacimiento');
-        if (!Validador::validarEdad($fechaNac, 18)) {
-            throw new Exception("El cliente debe ser mayor de edad (mínimo 18 años).");
+        $fechaNac = $val->validarFechaOExcepcion($_POST['fecha_de_nacimiento'] ?? '', 'fecha de nacimiento', 'Y-m-d');
+        if (!$val->validateEdad($fechaNac, 18)) {
+            throw new Exception($val->getErrors()['fecha_nacimiento'] ?? 'El cliente debe ser mayor de edad.');
         }
 
         $datos = [
             'cedula'              => $cedula,
-            'nombre'              => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
-            'apellido'            => Validador::requerido($_POST['apellido'] ?? '', 'apellido'),
-            'telefono'            => Validador::limpiar($_POST['telefono'] ?? ''),
-            'correo_electronico'  => Validador::limpiar($_POST['correo_electronico'] ?? ''),
-            'direccion'           => Validador::limpiar($_POST['direccion'] ?? ''),
+            'nombre'              => $val->requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'            => $val->requerido($_POST['apellido'] ?? '', 'apellido'),
+            'telefono'            => $val->limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico'  => $val->limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'           => $val->limpiar($_POST['direccion'] ?? ''),
             'fecha_de_nacimiento' => $fechaNac
         ];
 
@@ -242,28 +234,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
         exit();
     }
     try {
-        $cedula = Validador::requerido($_POST['cedula'] ?? '', 'cédula');
-        if (!Validador::validarCedula($cedula)) {
-            throw new Exception("El formato de la cédula no es válido.");
-        }
+        $tipo_doc = $val->limpiar($_POST['tipo_documento'] ?? 'V');
+        $cedula   = $val->documentoCompleto($tipo_doc, $_POST['cedula'] ?? '');
 
         $fechaNac = $_POST['fecha_de_nacimiento'] ?? date('Y-m-d', strtotime('-18 years'));
-        if (!Validador::validarEdad($fechaNac, 18)) {
-            throw new Exception("El cliente debe ser mayor de edad.");
+        if (!$val->validateEdad($fechaNac, 18)) {
+            throw new Exception($val->getErrors()['fecha_nacimiento'] ?? 'El cliente debe ser mayor de edad.');
         }
 
         $datosCliente = [
             'cedula'              => $cedula,
-            'nombre'              => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
-            'apellido'            => Validador::requerido($_POST['apellido'] ?? '', 'apellido'),
-            'telefono'            => Validador::limpiar($_POST['telefono'] ?? ''),
-            'correo_electronico'  => Validador::limpiar($_POST['correo_electronico'] ?? ''),
-            'direccion'           => Validador::limpiar($_POST['direccion'] ?? ''),
+            'nombre'              => $val->requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'            => $val->requerido($_POST['apellido'] ?? '', 'apellido'),
+            'telefono'            => $val->limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico'  => $val->limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'           => $val->limpiar($_POST['direccion'] ?? ''),
             'fecha_de_nacimiento' => $fechaNac
         ];
 
         $id = $modelo->registrarClienteNatural($datosCliente);
-
         if ($id) {
             $_SESSION['nuevo_cliente_id'] = $id;
             $_SESSION['nuevo_cliente_nombre'] = $datosCliente['nombre'] . ' ' . $datosCliente['apellido'];
@@ -271,37 +260,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type === 'store_rapido') {
             $_SESSION['tipo_rapido'] = 'success';
 
             $return = $_REQUEST['return'] ?? null;
-            if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create&id_cliente=" . $id);
-                exit;
-            }
-            header("Location: ?url=clientes&type=list");
-            exit;
+            if ($return) { header("Location: ?url=" . urlencode($return) . "&type=create&id_cliente=" . $id); exit; }
+            header("Location: ?url=clientes&type=list"); exit;
         }
         throw new Exception("No se pudo registrar el cliente.");
     } catch (Exception $e) {
         $msg = $e->getMessage();
-
         if (_clientesDetectarDuplicado($msg, false, 'registrar_natural')) {
             $return = $_REQUEST['return'] ?? null;
-            if ($return) {
-                header("Location: ?url=" . urlencode($return) . "&type=create");
-            } else {
-                header("Location: ?url=clientes&type=list");
-            }
+            if ($return) { header("Location: ?url=" . urlencode($return) . "&type=create"); }
+            else { header("Location: ?url=clientes&type=list"); }
             exit;
         }
-
         $_SESSION['mensaje_rapido'] = "❌ " . $msg;
         $_SESSION['tipo_rapido'] = 'danger';
-
         $return = $_REQUEST['return'] ?? null;
-        if ($return) {
-            header("Location: ?url=" . urlencode($return) . "&type=create");
-            exit;
-        }
-        header("Location: ?url=clientes&type=list");
-        exit;
+        if ($return) { header("Location: ?url=" . urlencode($return) . "&type=create"); exit; }
+        header("Location: ?url=clientes&type=list"); exit;
     }
 }
 
@@ -317,18 +292,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
     }
     $resultado = null;
     try {
-        $rif = Validador::requerido($_POST['rif'] ?? '', 'RIF');
-        if (!Validador::validarRIF($rif)) {
-            throw new Exception("El formato del RIF no es válido (ej: J-12345678-9).");
-        }
+        $tipo_doc = $val->limpiar($_POST['tipo_documento'] ?? 'J');
+        $digito   = $val->limpiar($_POST['digito_rif'] ?? '');
+        $rif = $val->documentoCompleto($tipo_doc, $_POST['rif'] ?? '', $digito !== '' ? $digito : null);
 
         $datos = [
             'cedula'             => $rif,
             'rif'                => $rif,
-            'razon_social'       => Validador::requerido($_POST['razon_social'] ?? '', 'razón social'),
-            'telefono'           => Validador::limpiar($_POST['telefono'] ?? ''),
-            'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? ''),
-            'direccion'          => Validador::limpiar($_POST['direccion'] ?? '')
+            'razon_social'       => $val->requerido($_POST['razon_social'] ?? '', 'razón social'),
+            'telefono'           => $val->limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico' => $val->limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'          => $val->limpiar($_POST['direccion'] ?? '')
         ];
 
         $resultado = $modelo->registrarClienteJuridico($datos);
@@ -363,25 +337,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         exit();
     }
     try {
-        $id = Validador::validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
+        $id = $val->validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
 
-        $cedula = Validador::requerido($_POST['cedula'] ?? '', 'cédula');
-        if (!Validador::validarCedula($cedula)) {
-            throw new Exception("El formato de la cédula no es válido.");
-        }
+        $tipo_doc = $val->limpiar($_POST['tipo_documento'] ?? 'V');
+        $cedula   = $val->documentoCompleto($tipo_doc, $_POST['cedula'] ?? '');
 
         $fechaNac = $_POST['fecha_de_nacimiento'] ?? '';
-        if ($fechaNac !== '' && !Validador::validarEdad($fechaNac, 18)) {
-            throw new Exception("El cliente debe ser mayor de edad.");
+        if ($fechaNac !== '' && !$val->validateEdad($fechaNac, 18)) {
+            throw new Exception($val->getErrors()['fecha_nacimiento'] ?? 'El cliente debe ser mayor de edad.');
         }
 
         $datos = [
             'cedula'              => $cedula,
-            'nombre'              => Validador::requerido($_POST['nombre'] ?? '', 'nombre'),
-            'apellido'            => Validador::requerido($_POST['apellido'] ?? '', 'apellido'),
-            'telefono'            => Validador::limpiar($_POST['telefono'] ?? ''),
-            'correo_electronico'  => Validador::limpiar($_POST['correo_electronico'] ?? ''),
-            'direccion'           => Validador::limpiar($_POST['direccion'] ?? ''),
+            'nombre'              => $val->requerido($_POST['nombre'] ?? '', 'nombre'),
+            'apellido'            => $val->requerido($_POST['apellido'] ?? '', 'apellido'),
+            'telefono'            => $val->limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico'  => $val->limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'           => $val->limpiar($_POST['direccion'] ?? ''),
             'fecha_de_nacimiento' => $fechaNac
         ];
 
@@ -410,20 +382,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
         exit();
     }
     try {
-        $id = Validador::validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
+        $id = $val->validarId($_POST['id_cliente'] ?? null, 'ID de cliente');
 
-        $rif = Validador::requerido($_POST['rif'] ?? '', 'RIF');
-        if (!Validador::validarRIF($rif)) {
-            throw new Exception("El formato del RIF no es válido.");
-        }
+        $tipo_doc = $val->limpiar($_POST['tipo_documento'] ?? 'J');
+        $digito   = $val->limpiar($_POST['digito_rif'] ?? '');
+        $rif = $val->documentoCompleto($tipo_doc, $_POST['rif'] ?? '', $digito !== '' ? $digito : null);
 
         $datos = [
             'cedula'             => $rif,
             'rif'                => $rif,
-            'razon_social'       => Validador::requerido($_POST['razon_social'] ?? '', 'razón social'),
-            'telefono'           => Validador::limpiar($_POST['telefono'] ?? ''),
-            'correo_electronico' => Validador::limpiar($_POST['correo_electronico'] ?? ''),
-            'direccion'          => Validador::limpiar($_POST['direccion'] ?? '')
+            'razon_social'       => $val->requerido($_POST['razon_social'] ?? '', 'razón social'),
+            'telefono'           => $val->limpiar($_POST['telefono'] ?? ''),
+            'correo_electronico' => $val->limpiar($_POST['correo_electronico'] ?? ''),
+            'direccion'          => $val->limpiar($_POST['direccion'] ?? '')
         ];
 
         $modelo->actualizarClienteJuridico($id, $datos);
@@ -445,10 +416,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion']) && $_POST['
 // ==========================================
 $basePath = __DIR__ . "/../view/clientes/";
 
-// OBTENER CLIENTE PARA DETALLE/EDICIÓN
 if (in_array($type, ['view', 'edit', 'edit_juridico'], true) && $id) {
     try {
-        $id = Validador::validarId($id, 'ID de cliente');
+        $id = $val->validarId($id, 'ID de cliente');
     } catch (Exception $e) {
         $_SESSION['mensaje'] = "ID de cliente inválido";
         $_SESSION['tipo_mensaje'] = "danger";
@@ -465,7 +435,6 @@ if (in_array($type, ['view', 'edit', 'edit_juridico'], true) && $id) {
     }
 }
 
-// LISTA
 if ($type === 'list' || $type === '') {
     $ajax = (!empty($_GET['ajax']) || !empty($_POST['ajax']));
 

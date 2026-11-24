@@ -6,7 +6,6 @@
         var $error     = $('#ver-nota-error');
         var $contenido = $('#ver-nota-contenido');
 
-        // Reset visual del modal
         $cargando.show();
         $error.hide();
         $contenido.hide();
@@ -27,28 +26,28 @@
         // Ajustar columnas y etiquetas según tipo
         $('.col-dinero').toggleClass('d-none', !esEntrada);
         $('#ver-nota-label-cliente').text(esEntrada ? 'PROVEEDOR' : 'CLIENTE');
-        $('#ver-nota-th-descripcion').text(esEntrada ? 'Descripción' : 'Categoría');
+        $('#ver-nota-th-descripcion').text(esEntrada ? 'Descripción / Especificaciones' : 'Categoría');
 
-        // Actualizar botón de imprimir PDF
+        // 🔥 Botón de imprimir PDF → endpoint que reutiliza los generadores existentes
         var $btnImprimir = $('#btnImprimirNotaIndividual');
         if ($btnImprimir.length) {
             var urlPdf = esEntrada
-                ? '?url=exportar_pdf&tipo=entrada&id=' + id
-                : '?url=exportar_pdf&tipo=salida&id=' + id;
+                ? '?url=reportes&action=exportarNotaEntradaPDF&id=' + id
+                : '?url=reportes&action=exportarNotaSalidaPDF&id=' + id;
             $btnImprimir.attr('href', urlPdf);
         }
 
-        // 🔥 PETICIÓN CORREGIDA: POST en lugar de GET
-        var url = esEntrada ? '?url=notaentrada' : '?url=notasalida';
-        var datos = esEntrada 
-            ? { type: 'show_json', id: id } 
-            : { type: 'detalle_json', id: id };
+        // Endpoint unificado del modal
+        var url = '?url=reportes&action=verDetalleAjax'
+                + '&id=' + encodeURIComponent(id)
+                + '&tipo=' + encodeURIComponent(esEntrada ? 'Entrada' : 'Salida')
+                + '&_=' + Date.now();
 
         $.ajax({
             url: url,
-            method: 'POST', // 🔥 IMPORTANTE: POST
+            method: 'GET',
             dataType: 'json',
-            data: datos     // 🔥 IMPORTANTE: los datos van en el body
+            headers: { 'Accept': 'application/json' }
         })
         .done(function (data) {
             $cargando.hide();
@@ -73,16 +72,16 @@
 
             // Encargado
             $('#ver-nota-encargado').text(
-                nota.usuario_responsable || nota.encargado_nombre || 'N/A'
+                nota.encargado || nota.usuario_responsable || nota.encargado_nombre || 'N/A'
             );
 
             // Cliente / Proveedor
             if (esEntrada) {
-                $('#ver-nota-cliente').text(nota.razon_social || 'Sin proveedor');
-                $('#ver-nota-documento').text(nota.rif || 'N/A');
+                $('#ver-nota-cliente').text(nota.razon_social || nota.cliente || 'Sin proveedor');
+                $('#ver-nota-documento').text(nota.rif || nota.documento || 'N/A');
             } else {
                 $('#ver-nota-cliente').text(nota.cliente || 'N/A');
-                $('#ver-nota-documento').text(nota.cedula || nota.rif || 'N/A');
+                $('#ver-nota-documento').text(nota.documento || nota.cedula || nota.rif || 'N/A');
             }
 
             // Productos
@@ -95,9 +94,12 @@
                     var cantidad = parseInt(d.cantidad, 10) || 0;
                     totalUnidades += cantidad;
 
-                    var colDesc = esEntrada
-                        ? (nota.descripcion || 'Sin descripción')
-                        : (d.nombre_categoria || d.descripcion || 'N/A');
+                    var colDesc;
+                    if (esEntrada) {
+                        colDesc = d.especificaciones || d.descripcion || d.nombre_categoria || 'Sin descripción';
+                    } else {
+                        colDesc = d.categoria || d.nombre_categoria || 'N/A';
+                    }
 
                     var $tr = $('<tr>');
 

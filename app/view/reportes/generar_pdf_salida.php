@@ -1,25 +1,33 @@
 <?php
 // app/view/reportes/generar_pdf_salida.php
 
-error_reporting(0);
-ini_set('display_errors', 0);
 while (ob_get_level() > 0) { ob_end_clean(); }
 
 require_once dirname(__DIR__, 3) . '/fpdf.php';
 require_once dirname(__DIR__, 3) . '/app/Config/Connect/ConnectDB.php';
 
-use App\Pirotecnicafenix\Config\Connect\ConnectDB;
 use App\Pirotecnicafenix\Model\notasalidaModel;
 
-if (!isset($_GET['id']) || empty($_GET['id'])) { die("ID de nota no proporcionado."); }
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    die("ID de nota no proporcionado.");
+}
+
 $idNota = (int) $_GET['id'];
 
 try {
-    $db = (new ConnectDB())->getConnection();
-    $modelo = new notasalidaModel($db);
+    // Intentar con conexión explícita y, si falla, instanciar sin argumentos
+    try {
+        $db = (new \App\Pirotecnicafenix\Config\Connect\ConnectDB())->getConnection();
+        $modelo = new notasalidaModel($db);
+    } catch (\Throwable $eConn) {
+        $modelo = new notasalidaModel();
+    }
+
     $nota = $modelo->obtenerNotaPorId($idNota);
     if (!$nota) die("Nota de salida no encontrada.");
-} catch (Exception $e) { die("Error: " . $e->getMessage()); }
+} catch (\Throwable $e) {
+    die("Error al generar PDF: " . $e->getMessage());
+}
 
 function pdf_txt($texto) {
     $texto = (string) $texto;
@@ -164,7 +172,6 @@ $pdf->SetFillColor(245, 245, 245);
 $pdf->SetTextColor(73, 80, 87);
 $pdf->SetFont('Arial', 'B', 8);
 
-// 🔥 SOLO Producto, Categoría y Cant. (Sin Costo)
 $w = [14, 90, 55, 31];
 $headers = ['ID', 'Producto', 'Categoría', 'Cant.'];
 foreach ($headers as $i => $h) {

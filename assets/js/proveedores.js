@@ -1,252 +1,173 @@
-$(document).ready(function() {
-    'use strict';
+// app/view/proveedores/proveedores.js
+document.addEventListener('DOMContentLoaded', function () {
 
-    function mostrarError(mensaje) {
-        if (typeof window.mostrarAlerta === 'function') {
-            window.mostrarAlerta(mensaje, 'danger');
-        } else {
-            window.alert(mensaje);
-        }
+    function getModal(id) {
+        const el = document.getElementById(id);
+        return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
     }
 
-    function mensajeError(xhr, status, error) {
-        if (xhr.responseJSON && xhr.responseJSON.error) return xhr.responseJSON.error;
-        if (xhr.responseText) {
-            try {
-                var response = JSON.parse(xhr.responseText);
-                if (response.error) return response.error;
-            } catch (e) {
-                return 'Respuesta no válida del servidor.';
+    const setVal = (elId, val) => {
+        const el = document.getElementById(elId);
+        if (el) el.value = val ?? '';
+    };
+    const setText = (elId, val) => {
+        const el = document.getElementById(elId);
+        if (el) el.textContent = val ?? '—';
+    };
+
+    // ---------- MENSAJE FLOTANTE ----------
+    function mostrarMensaje(texto, tipo) {
+        const colores = {
+            success: { bg: '#d4edda', border: '#c3e6cb', color: '#155724', icon: 'fa-check-circle' },
+            danger:  { bg: '#f8d7da', border: '#f5c6cb', color: '#721c24', icon: 'fa-exclamation-circle' },
+            warning: { bg: '#fff3cd', border: '#ffeeba', color: '#856404', icon: 'fa-exclamation-triangle' },
+            info:    { bg: '#d1ecf1', border: '#bee5eb', color: '#0c5460', icon: 'fa-info-circle' }
+        };
+        const c = colores[tipo] || colores.success;
+
+        const alerta = document.createElement('div');
+        alerta.className = 'alert alert-dismissible fade show shadow-sm';
+        alerta.style.cssText = `
+            position: fixed; top: 20px; right: 20px; z-index: 9999;
+            border-radius: 12px; font-weight: 600; min-width: 320px;
+            background: ${c.bg}; border: 1px solid ${c.border}; color: ${c.color};
+        `;
+        alerta.innerHTML = `<i class="fas ${c.icon} me-2"></i>${texto}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        document.body.appendChild(alerta);
+        setTimeout(() => alerta.remove(), 3500);
+    }
+
+    // ---------- DELEGACIÓN (funciona con tabla recargada por AJAX) ----------
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-proveedor-action]');
+        if (!btn) return;
+
+        const accion = btn.dataset.proveedorAction;
+        const id = btn.dataset.proveedorId;
+        const fila = btn.closest('tr');
+        const nombre = fila ? (fila.querySelector('td:nth-child(2)')?.textContent.trim() || '') : '';
+
+        if (!id) return;
+
+        if (accion === 'view') {
+            cargarDetalle(id, 'ver');
+        } else if (accion === 'edit') {
+            cargarDetalle(id, 'editar');
+        } else if (accion === 'inactivate') {
+            configurarModalEstado('inactivar', nombre, id);
+        } else if (accion === 'reactivate') {
+            configurarModalEstado('reactivar', nombre, id);
+        }
+    });
+
+    // ---------- CARGAR DETALLE ----------
+    function cargarDetalle(id, modo) {
+        fetch('?url=proveedores&type=detalle_ajax', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'id_proveedor=' + encodeURIComponent(id)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) throw new Error(data.error || 'Error al cargar');
+            const p = data.proveedor;
+
+            if (modo === 'ver') {
+                setText('ver-proveedor-razon-titulo', p.razon_social);
+                setText('ver-proveedor-rif-badge', p.rif);
+                setText('ver-proveedor-rif', p.rif);
+                setText('ver-proveedor-razon', p.razon_social);
+                setText('ver-proveedor-telefono', p.numero_contacto);
+                setText('ver-proveedor-correo', p.correo_electronico);
+                setText('ver-proveedor-direccion', p.direccion);
+                getModal('modalVerProveedor')?.show();
+            } else {
+                setVal('editar-proveedor-id', p.id_proveedor);
+                setVal('editar-proveedor-rif', p.rif);
+                setVal('editar-proveedor-telefono', p.numero_contacto);
+                setVal('editar-proveedor-razon', p.razon_social);
+                setVal('editar-proveedor-correo', p.correo_electronico);
+                setVal('editar-proveedor-direccion', p.direccion);
+                setText('editar-proveedor-razon-header', p.razon_social);
+                getModal('modalEditarProveedor')?.show();
+            }
+        })
+        .catch(err => mostrarMensaje('Error: ' + err.message, 'danger'));
+    }
+
+    // ---------- MODAL UNIFICADO (eliminar / reactivar) ----------
+    function configurarModalEstado(accion, nombre, id) {
+        const esReactivar = accion === 'reactivar';
+
+        setVal('estado-proveedor-accion', accion);
+        setVal('estado-proveedor-id', id);
+        setText('estado-proveedor-nombre', nombre || '—');
+        setText('estado-proveedor-titulo', esReactivar ? 'Reactivar Proveedor' : 'Eliminar Proveedor');
+
+        const icono = document.getElementById('estado-proveedor-icono');
+        if (icono) {
+            icono.className = esReactivar ? 'fas fa-check-circle me-2' : 'fas fa-trash-alt me-2';
+            icono.style.color = esReactivar ? '#28a745' : '#dc3545';
+        }
+
+        const header = document.getElementById('estado-proveedor-header');
+        if (header) {
+            header.style.borderBottom = esReactivar
+                ? '1px solid rgba(40,167,69,0.3)'
+                : '1px solid rgba(220,53,69,0.3)';
+        }
+
+        setText('estado-proveedor-pregunta', esReactivar ? '¿Deseas reactivar este proveedor?' : '¿Estás seguro de eliminar este proveedor?');
+        setText('estado-proveedor-label', esReactivar ? 'Proveedor a reactivar' : 'Proveedor a eliminar');
+
+        const infoBox = document.getElementById('estado-proveedor-info-box');
+        if (infoBox) infoBox.style.borderLeftColor = esReactivar ? '#28a745' : '#dc3545';
+
+        const alerta = document.getElementById('estado-proveedor-alerta');
+        const alertaTexto = document.getElementById('estado-proveedor-alerta-texto');
+        if (alerta && alertaTexto) {
+            if (esReactivar) {
+                alerta.style.background = '#d4edda';
+                alerta.style.border = '1px solid #c3e6cb';
+                alerta.style.color = '#155724';
+                alertaTexto.innerHTML = 'El proveedor volverá a estar <strong>Activo</strong> y aparecerá disponible en los selectores de futuras notas.';
+            } else {
+                alerta.style.background = '#f8d7da';
+                alerta.style.border = '1px solid #f5c6cb';
+                alerta.style.color = '#721c24';
+                alertaTexto.innerHTML = 'Esta acción realizará la <strong>eliminación lógica</strong> del proveedor. Si el proveedor tiene notas de entrada asociadas, el sistema bloqueará la eliminación.';
             }
         }
-        return error || status || 'No se pudo completar la solicitud.';
-    }
 
-    function modal(id) {
-        var element = $(id).get(0);
-        if (element && window.bootstrap && bootstrap.Modal) {
-            bootstrap.Modal.getOrCreateInstance(element).show();
+        const btn = document.getElementById('estado-proveedor-btn-confirmar');
+        if (btn) {
+            btn.style.background = esReactivar ? '#28a745' : '#dc3545';
+            btn.innerHTML = esReactivar
+                ? '<i class="fas fa-check me-1"></i> Sí, reactivar'
+                : '<i class="fas fa-trash-alt me-1"></i> Sí, eliminar';
         }
+
+        getModal('modalEstadoProveedor')?.show();
     }
 
-    function cargarProveedor(id, $button, onSuccess) {
-        var originalHtml = $button.length ? $button.html() : '';
-        if ($button.length) $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
-
-        $.ajax({
-            url: '?url=proveedores&type=detalle_ajax',
-            type: 'POST',
-            dataType: 'json',
-            data: { id_proveedor: id }
-        })
-            .done(function(response) {
-                if (!response.success || !response.proveedor) {
-                    mostrarError(response.error || 'No se encontró el proveedor.');
-                    return;
-                }
-                onSuccess(response.proveedor);
-            })
-            .fail(function(xhr, status, error) {
-                mostrarError(mensajeError(xhr, status, error));
-            })
-            .always(function() {
-                if ($button.length) $button.prop('disabled', false).html(originalHtml);
-            });
-    }
-
-    window.verDetalleProveedor = function(id, button) {
-        cargarProveedor(id, $(button), function(proveedor) {
-            $('#ver-proveedor-razon-titulo, #ver-proveedor-razon').text(proveedor.razon_social || '—');
-            $('#ver-proveedor-rif-badge, #ver-proveedor-rif').text(proveedor.rif || '—');
-            $('#ver-proveedor-telefono').text(proveedor.numero_contacto || proveedor.telefono || '—');
-            $('#ver-proveedor-correo').text(proveedor.correo_electronico || '—');
-            $('#ver-proveedor-direccion').text(proveedor.direccion || '—');
-            modal('#modalVerProveedor');
-        });
-    };
-
-    window.editarProveedor = function(id, button) {
-        cargarProveedor(id, $(button), function(proveedor) {
-            $('#editar-proveedor-id').val(proveedor.id_proveedor);
-            $('#editar-proveedor-rif').val(proveedor.rif || '');
-            $('#editar-proveedor-telefono').val(proveedor.numero_contacto || '');
-            $('#editar-proveedor-razon').val(proveedor.razon_social || '');
-            $('#editar-proveedor-correo').val(proveedor.correo_electronico || '');
-            $('#editar-proveedor-direccion').val(proveedor.direccion || '');
-            $('#editar-proveedor-eliminado').val(String(proveedor.eliminado || 0));
-            $('#editar-proveedor-telefono').data('excluir-id', proveedor.id_proveedor);
-            $('#editar-proveedor-razon-header').text(proveedor.razon_social || '—');
-            if (typeof Validador !== 'undefined') Validador.init($('#modalEditarProveedor').get(0));
-            modal('#modalEditarProveedor');
-        });
-    };
-
-    window.confirmarEliminarProveedor = function(id, button) {
-        cargarProveedor(id, $(button), function(proveedor) {
-            $('#eliminar-proveedor-id').val(proveedor.id_proveedor);
-            $('#eliminar-proveedor-nombre').text(proveedor.razon_social || proveedor.rif || '—');
-            modal('#modalEliminarProveedor');
-        });
-    };
-
-    function cambiarEstadoProveedor(id, accion, $button, cerrarModal) {
-        var originalHtml = $button.length ? $button.html() : '';
-        if ($button.length) $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
-
-        $.ajax({
-            url: '?url=proveedores&type=estado_ajax',
-            type: 'POST',
-            dataType: 'json',
-            data: { id_proveedor: id, accion: accion }
-        })
-            .done(function(response) {
-                if (!response.success) {
-                    mostrarError(response.error || 'No se pudo cambiar el estado del proveedor.');
-                    return;
-                }
-                if (cerrarModal) {
-                    var element = $('#modalEliminarProveedor').get(0);
-                    if (element && bootstrap.Modal.getInstance(element)) {
-                        bootstrap.Modal.getInstance(element).hide();
+    // ---------- SUBMIT MODAL UNIFICADO ----------
+    document.addEventListener('submit', function (e) {
+        if (e.target && e.target.id === 'formEstadoProveedor') {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            fetch('?url=proveedores&type=estado_ajax', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        getModal('modalEstadoProveedor')?.hide();
+                        mostrarMensaje(data.message || 'Operación realizada con éxito', 'success');
+                        setTimeout(() => location.reload(), 1200);
+                    } else {
+                        mostrarMensaje(data.error || 'Error al cambiar estado', 'danger');
                     }
-                }
-                window.location.reload();
-            })
-            .fail(function(xhr, status, error) {
-                mostrarError(mensajeError(xhr, status, error));
-            })
-            .always(function() {
-                if ($button.length) $button.prop('disabled', false).html(originalHtml);
-            });
-    }
-
-    window.reactivarProveedor = function(id, button) {
-        if (!window.confirm('¿Deseas reactivar este proveedor?')) return;
-        cambiarEstadoProveedor(id, 'reactivar', $(button), false);
-    };
-
-    $(document).on('click', '[data-proveedor-action]', function() {
-        var $button = $(this);
-        var id = parseInt($button.attr('data-proveedor-id'), 10);
-        var action = $button.attr('data-proveedor-action');
-        if (action === 'view') window.verDetalleProveedor(id, this);
-        if (action === 'edit') window.editarProveedor(id, this);
-        if (action === 'inactivate') window.confirmarEliminarProveedor(id, this);
-        if (action === 'reactivate') window.reactivarProveedor(id, this);
-    });
-
-    $(document).on('change', '[data-auto-submit]', function() {
-        $(this).closest('form').trigger('submit');
-    });
-
-    $('.proveedor-rif, #rif').on('input', function() {
-        $(this).val($(this).val().toUpperCase());
-    }).on('blur', function() {
-        var value = $.trim($(this).val()).toUpperCase();
-        if (/^\d+$/.test(value)) value = 'J-' + value;
-        else if (/^J\d+$/.test(value)) value = 'J-' + value.substring(1);
-        $(this).val(value);
-    });
-
-    $('.proveedor-razon, #razon_social').on('input', function() {
-        $(this).val($(this).val().toUpperCase());
-    });
-
-    $('.proveedor-telefono, #numero_contacto').on('input', function() {
-        $(this).val($(this).val().replace(/[^0-9-]/g, ''));
-    });
-
-    $('#modalRegistrarProveedor').on('shown.bs.modal', function() {
-        if (typeof Validador !== 'undefined') Validador.init(this);
-    });
-
-    function validarFormulario($form) {
-        if (typeof Validador === 'undefined') return true;
-        if (Validador.validarFormulario($form.attr('id'))) return true;
-        mostrarError('Revisa los campos marcados en rojo.');
-        return false;
-    }
-
-    function enviarProveedor($form, tipo) {
-        var $submit = $form.find('[type="submit"]');
-        var originalHtml = $submit.html();
-        var url = tipo === 'store' ? '?url=proveedores&type=store_ajax' : '?url=proveedores&type=update_ajax';
-        function enviar() {
-            $submit.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
-            $.ajax({
-                url: url,
-                type: 'POST',
-                dataType: 'json',
-                data: $form.serialize()
-            })
-                .done(function(response) {
-                    if (!response.success) {
-                        mostrarError(response.error || 'No se pudo guardar el proveedor.');
-                        return;
-                    }
-                    window.location.reload();
                 })
-                .fail(function(xhr, status, error) {
-                    mostrarError(mensajeError(xhr, status, error));
-                })
-                .always(function() {
-                    $submit.prop('disabled', false).html(originalHtml);
-                });
+                .catch(err => mostrarMensaje('Error: ' + err.message, 'danger'));
         }
-
-        if (!validarFormulario($form)) return;
-        var $camposUnicos = $form.find('[data-unico-endpoint]');
-        if ($camposUnicos.length && typeof Validador !== 'undefined') {
-            if ($form.data('verificandoUnicidad')) return;
-            $form.data('verificandoUnicidad', true);
-            $submit.prop('disabled', true);
-            var valoresOriginales = [];
-            var verificaciones = $camposUnicos.map(function() {
-                valoresOriginales.push($(this).val());
-                return Validador.validarUnico(this).then(function(disponible) {
-                    return disponible;
-                }, function() {
-                    return false;
-                });
-            }).get();
-            Promise.all(verificaciones).then(function(resultados) {
-                var sinCambios = true;
-                $camposUnicos.each(function(index) {
-                    if ($(this).val() !== valoresOriginales[index]) sinCambios = false;
-                });
-                $form.data('verificandoUnicidad', false);
-                if (sinCambios && resultados.every(Boolean)) {
-                    enviar();
-                    return;
-                }
-                $submit.prop('disabled', false);
-                if ($camposUnicos.filter(function() {
-                    return !['ok', 'duplicado'].includes($(this).data('unicoEstado'));
-                }).length) {
-                    mostrarError('No se pudo verificar la disponibilidad del teléfono.');
-                }
-            }).catch(function() {
-                $form.data('verificandoUnicidad', false);
-                $submit.prop('disabled', false);
-                mostrarError('No se pudo verificar la disponibilidad del teléfono.');
-            });
-            return;
-        }
-        enviar();
-    }
-
-    $('#formRegistrarProveedor, #formEditarProveedor').on('submit', function(event) {
-        event.preventDefault();
-        enviarProveedor($(this), this.id === 'formRegistrarProveedor' ? 'store' : 'update');
-    });
-
-    $('#formEliminarProveedor').on('submit', function(event) {
-        event.preventDefault();
-        cambiarEstadoProveedor(
-            $('#eliminar-proveedor-id').val(),
-            'inactivar',
-            $(this).find('[type="submit"]'),
-            true
-        );
     });
 });

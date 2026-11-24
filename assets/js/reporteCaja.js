@@ -6,12 +6,10 @@ window.verDetalleCaja = function(id) {
 
     const modalEl = document.getElementById('modalVerNotaCaja');
     let modal = bootstrap.Modal.getInstance(modalEl);
-    if (!modal) {
-        modal = new bootstrap.Modal(modalEl);
-    }
+    if (!modal) { modal = new bootstrap.Modal(modalEl); }
     modal.show();
 
-    let url = '?url=detalle_caja_json&id=' + id;
+    let url = '?url=detalle_caja_json&id=' + id; 
 
     fetch(url)
         .then(response => response.json())
@@ -27,29 +25,18 @@ window.verDetalleCaja = function(id) {
             const nota = data.nota;
             document.getElementById('ver-nota-contenido').style.display = 'block';
 
-            // 🔥 SOLUCIÓN AL FORMATO RARO DE LA FECHA
             const fechaOriginal = nota.fecha || nota.fecha_movimiento || '';
             let fechaFormateada = 'N/A';
-
             if (fechaOriginal) {
-                // Cortamos la hora si viene (ej: "2026-11-09 23:04:19" -> "2026-11-09")
                 const soloFecha = fechaOriginal.split(' ')[0]; 
-                
-                if (typeof Validador !== 'undefined') {
-                    fechaFormateada = Validador.formatearFecha(soloFecha);
-                } else {
-                    // Respaldo por si el Validador no está cargado
+                if (typeof Validador !== 'undefined') { fechaFormateada = Validador.formatearFecha(soloFecha); } 
+                else {
                     const partes = soloFecha.split('-');
-                    if (partes.length === 3) {
-                        fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
-                    } else {
-                        fechaFormateada = soloFecha;
-                    }
+                    if (partes.length === 3) fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                    else fechaFormateada = soloFecha;
                 }
             }
             document.getElementById('ver-nota-fecha').textContent = fechaFormateada;
-
-            // 🔥 SOLUCIÓN AL "UNDEFINED" EN RESPONSABLE
             document.getElementById('ver-nota-encargado').textContent = nota.usuario_responsable || 'N/A';
             document.getElementById('ver-nota-cliente').textContent = nota.cliente || 'N/A';
             document.getElementById('ver-nota-documento').textContent = nota.cedula || nota.rif || 'N/A';
@@ -62,7 +49,6 @@ window.verDetalleCaja = function(id) {
                 nota.detalles.forEach(function(d) {
                     const cantidad = parseInt(d.cantidad) || 0;
                     totalUnidades += cantidad;
-                    
                     tbody.innerHTML += `
                         <tr>
                             <td class="ps-4" style="color: #1a1a2e;">${escapeHtml(d.nombre_producto || 'N/A')}</td>
@@ -74,7 +60,6 @@ window.verDetalleCaja = function(id) {
             } else {
                 tbody.innerHTML = `<tr><td colspan="3" class="text-center py-3" style="color: #6c757d;">No hay productos</td></tr>`;
             }
-
             document.getElementById('ver-nota-total-unidades').textContent = totalUnidades;
         })
         .catch(err => {
@@ -125,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // 🔥 CONFIRMAR CIERRE CON LA RUTA DEL FRONT CONTROLLER
     if (btnCerrarCaja) {
         btnCerrarCaja.addEventListener('click', async function () {
             btnCerrarCaja.disabled = true;
@@ -147,8 +133,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 modal.hide();
 
-                const urlPdf = `?url=exportar_caja_pdf&fecha=${encodeURIComponent(fechaSeleccionada)}`;
-                const urlCsv = `?url=exportar_caja_csv&fecha=${encodeURIComponent(fechaSeleccionada)}`;
+                const idCierreNuevo = result.data.id_cierre || 0;
+                const urlPdf = `?url=exportar_caja_pdf&id_cierre=${idCierreNuevo}&fecha=${encodeURIComponent(fechaSeleccionada)}`;
+                const urlCsv = `?url=exportar_caja_csv&id_cierre=${idCierreNuevo}&fecha=${encodeURIComponent(fechaSeleccionada)}`;
+                
                 document.getElementById('btnReciboPdf').href = urlPdf;
                 document.getElementById('btnReciboExcel').href = urlCsv;
 
@@ -206,6 +194,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // 🔥 ABRIR MODAL CON LA RUTA DEL FRONT CONTROLLER
     btn.addEventListener('click', async function () {
         btn.dataset.fecha = fechaSeleccionada;
 
@@ -216,9 +205,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const formData = new FormData();
             formData.append('fecha', fechaSeleccionada);
 
-            const resp = await fetch('?url=cierre_caja_ajax', {
-                method: 'POST',
-                body: formData
+            const resp = await fetch('?url=cierre_caja_ajax&fecha=' + encodeURIComponent(fechaSeleccionada), {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             
             const data = await resp.json();
@@ -235,30 +224,88 @@ document.addEventListener('DOMContentLoaded', function () {
                 const notasAgrupadas = {};
                 r.detalle.forEach(function(m) {
                     const idNota = m.id_documento;
-                    if (!notasAgrupadas[idNota]) { notasAgrupadas[idNota] = { id_documento: idNota, fecha_movimiento: m.fecha_movimiento, usuario_activo: m.usuario_activo || 'Cajero', cliente: m.nombre_cliente || 'N/A', tipo_cliente: m.tipo_cliente || 'Natural', productos: [], categorias: [], totalUnidades: 0 }; }
-                    let nombreLimpio = m.nombre_producto || 'Sin producto'; if (nombreLimpio.includes('(x')) { nombreLimpio = nombreLimpio.split('(x')[0].trim(); }
-                    if (!notasAgrupadas[idNota].productos.includes(nombreLimpio)) { notasAgrupadas[idNota].productos.push(nombreLimpio); }
-                    if (m.categoria && !notasAgrupadas[idNota].categorias.includes(m.categoria)) { notasAgrupadas[idNota].categorias.push(m.categoria); }
+                    if (!notasAgrupadas[idNota]) { 
+                        notasAgrupadas[idNota] = { 
+                            id_documento: idNota, 
+                            fecha_movimiento: m.fecha_movimiento, 
+                            usuario_activo: m.usuario_activo || 'Cajero', 
+                            cliente: m.nombre_cliente || 'N/A', 
+                            tipo_cliente: m.tipo_cliente || 'Natural', 
+                            productos: [], 
+                            categorias: [], 
+                            totalUnidades: 0 
+                        }; 
+                    }
+                    let nombreLimpio = m.nombre_producto || 'Sin producto'; 
+                    if (nombreLimpio.includes('(x')) { 
+                        nombreLimpio = nombreLimpio.split('(x')[0].trim(); 
+                    }
+                    if (!notasAgrupadas[idNota].productos.includes(nombreLimpio)) { 
+                        notasAgrupadas[idNota].productos.push(nombreLimpio); 
+                    }
+                    if (m.categoria && !notasAgrupadas[idNota].categorias.includes(m.categoria)) { 
+                        notasAgrupadas[idNota].categorias.push(m.categoria); 
+                    }
                     notasAgrupadas[idNota].totalUnidades += parseInt(m.cantidad) || 0;
                 });
+
                 const notasOrdenadas = Object.values(notasAgrupadas).sort((a, b) => Number(b.id_documento) - Number(a.id_documento));
+                
                 notasOrdenadas.forEach(nota => {
-                    let fechaFmt = nota.fecha_movimiento;
-                    if (fechaFmt && fechaFmt.indexOf('-') > -1) { const soloFecha = fechaFmt.split(' ')[0]; const partes = soloFecha.split('-'); fechaFmt = `${partes[2]}/${partes[1]}/${partes[0]}`; }
+                    let soloHora = nota.fecha_movimiento;
+                    if (soloHora && soloHora.indexOf(' ') > -1) {
+                        soloHora = soloHora.split(' ')[1] + ' ' + (soloHora.split(' ')[2] || '');
+                    }
                     const badgeColor = (nota.tipo_cliente === 'Jurídico') ? 'background: #e0f2fe; color: #0369a1;' : 'background: #dcfce7; color: #15803d;';
-                    filasDetalle += `<tr><td class="fw-bold text-dark">#${escapeHtml(nota.id_documento)}</td><td>${escapeHtml(fechaFmt)}</td><td>${escapeHtml(nota.cliente)}</td><td><span class="badge" style="${badgeColor} padding: 4px 12px; border-radius: 50px; font-weight: 600;">${escapeHtml(nota.tipo_cliente)}</span></td><td style="max-width: 250px; white-space: normal;">${escapeHtml(nota.productos.join(', '))}</td><td style="max-width: 200px; white-space: normal;">${escapeHtml(nota.categorias.join(', '))}</td><td class="text-center fw-bold">${escapeHtml(nota.totalUnidades)}</td><td>${escapeHtml(nota.usuario_activo)}</td></tr>`;
+                    
+                    filasDetalle += `
+                        <tr>
+                            <td class="ps-4 fw-bold">#${escapeHtml(nota.id_documento)}</td>
+                            <td>${escapeHtml(soloHora)}</td>
+                            <td>${escapeHtml(nota.cliente)}</td>
+                            <td><span class="badge" style="${badgeColor} padding: 4px 12px; border-radius: 50px; font-weight: 600;">${escapeHtml(nota.tipo_cliente)}</span></td>
+                            <td class="text-center fw-bold">${escapeHtml(nota.productos.length)} Prod.</td>
+                            <td class="text-center fw-bold">${escapeHtml(nota.categorias.length)} Cat.</td>
+                            <td class="text-center fw-bold">${escapeHtml(nota.totalUnidades)} Und.</td>
+                            <td>${escapeHtml(nota.usuario_activo)}</td>
+                        </tr>`;
                 });
-            } else { filasDetalle = `<tr><td colspan="8" class="text-center text-muted py-4">No hay notas pendientes por cerrar</td></tr>`; }
+            } else { 
+                filasDetalle = `<tr><td colspan="8" class="text-center text-muted py-4">No hay notas pendientes por cerrar</td></tr>`; 
+            }
 
             contenedor.innerHTML = `
-                <div class="dark-card card shadow-sm dark-table-header border-0">
-                    <div class="card-header py-3 d-flex justify-content-between align-items-center"><h5 class="m-0"><i class="fas fa-history me-2"></i> Movimientos del Día</h5></div>
-                    <div class="table-responsive"><table class="table table-hover align-middle m-0"><thead><tr><th class="ps-4 py-3">NOTA #</th><th class="py-3">FECHA</th><th class="py-3">CLIENTE</th><th class="py-3">TIPO</th><th class="py-3">PRODUCTOS</th><th class="py-3">CATEGORÍAS</th><th class="py-3 text-center">UNIDADES</th><th class="py-3">ENCARGADO</th></tr></thead><tbody>${filasDetalle}</tbody></table></div>
-                    <div class="card-footer py-3 d-flex justify-content-between align-items-center"><span class="text-muted small fw-bold"><i class="fas fa-file-invoice me-1"></i> Total de notas: <span class="text-danger ms-1">${escapeHtml(r.total_documentos)}</span></span><span class="text-muted small fw-bold">Total unidades: <span class="text-dark ms-1">${escapeHtml(r.total_unidades)}</span></span></div>
+                <div class="dark-card card shadow-sm dark-table-header border-0 m-0">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="m-0"><i class="fas fa-history me-2"></i> Movimientos del Día</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle m-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4 py-3">NOTA #</th>
+                                    <th class="py-3">HORA</th>
+                                    <th class="py-3">CLIENTE</th>
+                                    <th class="py-3">TIPO</th>
+                                    <th class="py-3 text-center">PRODUCTOS</th>
+                                    <th class="py-3 text-center">CATEGORÍAS</th>
+                                    <th class="py-3 text-center">UNIDADES</th>
+                                    <th class="pe-4 py-3">ENCARGADO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${filasDetalle}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer py-3 d-flex justify-content-between align-items-center">
+                        <span class="text-muted small fw-bold"><i class="fas fa-file-invoice me-1"></i> Total de notas: <span class="text-danger ms-1">${escapeHtml(r.total_documentos)}</span></span>
+                        <span class="text-muted small fw-bold">Total unidades: <span class="text-dark ms-1">${escapeHtml(r.total_unidades)}</span></span>
+                    </div>
                 </div>
             `;
-        } catch (e) { contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0">Error de conexión.</div>`; }
+        } catch (e) { 
+            contenedor.innerHTML = `<div class="alert dark-alert-danger mb-0">Error de conexión: ${e.message}</div>`; 
+        }
     });
 });
-
-// Función para abrir el modal de detalle desde el botón de ojo

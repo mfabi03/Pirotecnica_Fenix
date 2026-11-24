@@ -83,7 +83,15 @@ class ReportesModel extends ConnectDB
         LEFT JOIN usuario u ON ne.id_usuario = u.id_usuario
         LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
         {$whereClauseEntrada}
-        GROUP BY ne.id_nota_entrada, ne.fecha_ingreso, ne.eliminado, ne.motivo_anulacion, pr.razon_social, pr.rif, per_u.nombre, per_u.apellido";
+        GROUP BY
+            ne.id_nota_entrada,
+            ne.fecha_ingreso,
+            ne.eliminado,
+            ne.motivo_anulacion,
+            pr.razon_social,
+            pr.rif,
+            per_u.nombre,
+            per_u.apellido";
 
         $sqlSalida = "SELECT
             ns.id_nota_salida AS id_documento,
@@ -113,7 +121,19 @@ class ReportesModel extends ConnectDB
         LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
         LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
         {$whereClauseSalida}
-        GROUP BY ns.id_nota_salida, ns.fecha, ns.eliminado, ns.motivo_anulacion, cj.id_cliente_juridico, cj.razon_social, cj.rif, p_cliente.nombre, p_cliente.apellido, p_cliente.cedula, per_u.nombre, per_u.apellido";
+        GROUP BY
+            ns.id_nota_salida,
+            ns.fecha,
+            ns.eliminado,
+            ns.motivo_anulacion,
+            cj.id_cliente_juridico,
+            cj.razon_social,
+            cj.rif,
+            p_cliente.nombre,
+            p_cliente.apellido,
+            p_cliente.cedula,
+            per_u.nombre,
+            per_u.apellido";
 
         $sqlCierre = "SELECT
             c.id_cierre AS id_documento,
@@ -281,10 +301,9 @@ class ReportesModel extends ConnectDB
     }
 
     /* ============================================================
-     *  🔥 MÉTODOS NUEVOS (movidos del controlador)
+     *  MÉTODOS DE CIERRE
      * ============================================================ */
 
-    // CIERRE POR ID (movido de obtenerCierreAjax y exportarCierrePDF)
     public function obtenerCierrePorId($idCierre)
     {
         try {
@@ -302,19 +321,22 @@ class ReportesModel extends ConnectDB
         }
     }
 
-    // DETALLE DEL CIERRE (movido de obtenerCierreAjax)
     public function obtenerDetalleCierre($idCierre)
     {
         try {
             $cierre = $this->obtenerCierrePorId($idCierre);
             if (!$cierre) return [];
 
-            $sql = "SELECT ns.id_nota_salida AS id_documento, ns.fecha,
+            // 🔥 CORREGIDO: Quitamos el filtro de id_usuario y unificamos los campos que espera el JS
+            $sql = "SELECT ns.id_nota_salida AS id_documento, 
+                              DATE_FORMAT(ns.fecha, '%d/%m/%Y %h:%i %p') AS fecha_movimiento,
                               COALESCE(cj.razon_social, CONCAT(per_cliente.nombre, ' ', per_cliente.apellido)) AS nombre_cliente,
                               CASE WHEN cj.id_cliente_juridico IS NOT NULL THEN 'Jurídico' ELSE 'Natural' END AS tipo_cliente,
-                              GROUP_CONCAT(DISTINCT prod.descripcion SEPARATOR ', ') AS productos,
-                              GROUP_CONCAT(DISTINCT cat.nombre_categoria SEPARATOR ', ') AS categorias,
-                              SUM(ds.cantidad) AS total_unidades,
+                              GROUP_CONCAT(DISTINCT prod.descripcion SEPARATOR ', ') AS nombre_producto,
+                              GROUP_CONCAT(DISTINCT cat.nombre_categoria SEPARATOR ', ') AS categoria,
+                              SUM(ds.cantidad) AS cantidad,
+                              COUNT(DISTINCT ds.id_producto) AS total_productos,
+                              COUNT(DISTINCT cat.id_categoria) AS total_categorias,
                               COALESCE(CONCAT(per_u.nombre, ' ', per_u.apellido), 'N/A') AS usuario_activo
                        FROM nota_de_salida ns
                        INNER JOIN detalle_salida ds ON ns.id_nota_salida = ds.id_nota_salida
@@ -325,7 +347,6 @@ class ReportesModel extends ConnectDB
                        LEFT JOIN usuario u ON ns.id_usuario = u.id_usuario
                        LEFT JOIN persona per_u ON u.id_persona = per_u.id_persona
                        WHERE ns.id_nota_salida <= :ultimo_id
-                         AND ns.id_usuario = :id_usuario
                          AND DATE(ns.fecha) = :fecha_cierre
                          AND ns.eliminado = 0
                        GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per_u.nombre, per_u.apellido
@@ -333,8 +354,7 @@ class ReportesModel extends ConnectDB
 
             $stmt = $this->conex->prepare($sql);
             $stmt->execute([
-                ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
-                ':id_usuario' => $cierre['id_usuario'],
+                ':ultimo_id' => $cierre['ultimo_id_nota_salida'] ?? 9999999,
                 ':fecha_cierre' => $cierre['fecha_cierre']
             ]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -344,7 +364,6 @@ class ReportesModel extends ConnectDB
         }
     }
 
-    // DETALLE DEL CIERRE PARA PDF (movido de exportarCierrePDF)
     public function obtenerDetalleCierrePDF($idCierre)
     {
         try {
@@ -368,7 +387,6 @@ class ReportesModel extends ConnectDB
                        LEFT JOIN persona per_cliente ON ns.id_persona = per_cliente.id_persona
                        LEFT JOIN cliente_juridico cj ON per_cliente.id_persona = cj.id_persona
                        WHERE ns.id_nota_salida <= :ultimo_id
-                         AND ns.id_usuario = :id_usuario
                          AND DATE(ns.fecha) = :fecha_cierre
                          AND ns.eliminado = 0
                        GROUP BY ns.id_nota_salida, ns.fecha, cj.razon_social, per_cliente.nombre, per_cliente.apellido, cj.id_cliente_juridico, per.nombre, per.apellido
@@ -376,8 +394,7 @@ class ReportesModel extends ConnectDB
 
             $stmt = $this->conex->prepare($sql);
             $stmt->execute([
-                ':ultimo_id' => $cierre['ultimo_id_nota_salida'],
-                ':id_usuario' => $cierre['id_usuario'],
+                ':ultimo_id' => $cierre['ultimo_id_nota_salida'] ?? 9999999,
                 ':fecha_cierre' => $cierre['fecha_cierre']
             ]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
