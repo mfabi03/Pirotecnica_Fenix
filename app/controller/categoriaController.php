@@ -44,9 +44,6 @@ if ($action === 'check_duplicado') {
     exit;
 }
 
-<<<<<<< HEAD
-// POST: Registrar y Actualizar
-=======
 if (isset($_GET['action']) && $_GET['action'] === 'listar_ajax') {
     header('Content-Type: application/json; charset=utf-8');
     try {
@@ -84,7 +81,6 @@ if ($action === 'store_rapido_ajax') {
 // ==========================================
 // POST
 // ==========================================
->>>>>>> origin/main
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($accion === 'guardar' || $accion === 'create' || $accion === 'store') {
