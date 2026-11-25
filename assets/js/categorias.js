@@ -133,3 +133,66 @@ document.addEventListener('DOMContentLoaded', function () {
         }, ms);
     });
 });
+$(document).ready(function($) {
+    function inicializarTablaCategorias() {
+        const $tabla = $('#tablaCategorias');
+        if (!$tabla.length || $.fn.DataTable.isDataTable('#tablaCategorias')) {
+            return;
+        }
+
+        $tabla.DataTable({
+            language: {
+                decimal: '',
+                emptyTable: 'No hay categorías disponibles',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ categorías',
+                infoEmpty: 'Mostrando 0 a 0 de 0 categorías',
+                infoFiltered: '(filtrado de _MAX_ categorías totales)',
+                lengthMenu: 'Mostrar _MENU_ registros',
+                loadingRecords: 'Cargando...',
+                processing: 'Procesando...',
+                search: 'Buscar:',
+                zeroRecords: 'No se encontraron categorías coincidentes',
+                paginate: {
+                    first: 'Primero',
+                    last: 'Último',
+                    next: 'Siguiente',
+                    previous: 'Anterior'
+                }
+            },
+            pageLength: 10,
+            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
+            order: [[0, 'asc']],
+            columnDefs: [
+                { orderable: false, searchable: false, targets: [2, 3] }
+            ],
+            responsive: true,
+            dom: "<'row mb-3 align-items-center'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                 "<'row'<'col-sm-12'tr>>" +
+                 "<'row mt-3 align-items-center'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+        });
+    }
+
+    function cargarScriptSecuencial(urls, callback) {
+        if (!urls.length) {
+            callback();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = urls[0];
+        script.onload = function() {
+            cargarScriptSecuencial(urls.slice(1), callback);
+        };
+        document.body.appendChild(script);
+    }
+
+    if (typeof $.fn.DataTable === 'function') {
+        inicializarTablaCategorias();
+    } else {
+        cargarScriptSecuencial([
+            'https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js',
+            'https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js',
+            'https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js',
+            'https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js'
+        ], inicializarTablaCategorias);
+    }
+});

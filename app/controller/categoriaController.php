@@ -44,7 +44,47 @@ if ($action === 'check_duplicado') {
     exit;
 }
 
+<<<<<<< HEAD
 // POST: Registrar y Actualizar
+=======
+if (isset($_GET['action']) && $_GET['action'] === 'listar_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        echo json_encode(['success' => true, 'categorias' => $modelo->obtenerCategorias()], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'store_rapido_ajax') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        if (!$puede_crear) throw new Exception("No tienes permiso para registrar categorías.");
+
+        $datos = [
+            'nombre_categoria' => $val->requerido($_POST['nombre_categoria'] ?? '', 'nombre de la categoría'),
+            'descripcion'      => $val->limpiar($_POST['descripcion'] ?? '')
+        ];
+
+        $modelo->setNombreCategoria($datos['nombre_categoria']);
+        $id_categoria = $modelo->registrarCategoria($datos); // Corregido: pasar $datos
+
+        echo json_encode([
+            'success' => true,
+            'id_categoria' => $id_categoria,
+            'nombre_categoria' => $datos['nombre_categoria']
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
+// ==========================================
+// POST
+// ==========================================
+>>>>>>> origin/main
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($accion === 'guardar' || $accion === 'create' || $accion === 'store') {
@@ -54,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'nombre_categoria' => $val->requerido($_POST['nombre_categoria'] ?? '', 'nombre'),
                 'descripcion'      => $val->limpiar($_POST['descripcion'] ?? '')
             ];
+            $modelo->setNombreCategoria($datos['nombre_categoria']); // Necesario para el modelo
             $modelo->registrarCategoria($datos);
             $_SESSION['mensaje'] = "Categoría registrada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
@@ -119,22 +160,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $basePath = __DIR__ . "/../view/configuracion/";
 
 if ($action === 'lista' || $action === '' || $action === 'list') {
+    
+    // Obtenemos TODAS las categorías (sin paginar en PHP, DataTables lo hará)
     $categorias_full = !empty($busqueda) ? $modelo->buscarCategorias($busqueda) : $modelo->obtenerCategorias();
 
+    // Filtramos por estado (activos/inactivos/todos)
     if ($estado_categoria === 'activos') {
         $categorias_full = array_values(array_filter($categorias_full, fn($cat) => ((int)($cat['eliminado'] ?? 0)) === 0));
     } elseif ($estado_categoria === 'inactivos') {
         $categorias_full = array_values(array_filter($categorias_full, fn($cat) => ((int)($cat['eliminado'] ?? 0)) === 1));
     }
 
-    $por_pagina = (int) ($_GET['por_pagina'] ?? 10);
-    $pagina     = max(1, (int) ($_GET['pagina'] ?? 1));
-    $offset     = ($pagina - 1) * $por_pagina;
-
-    $categorias     = $por_pagina > 0 ? array_slice($categorias_full, $offset, $por_pagina) : $categorias_full;
-    $totalRegistros = count($categorias_full);
-    $totalPaginas   = $por_pagina > 0 ? (int) ceil($totalRegistros / $por_pagina) : 1;
-    $pagina_actual  = $pagina;
+    $categorias = $categorias_full;
+    $totalRegistros = count($categorias);
 
     $mensaje      = $_SESSION['mensaje'] ?? null;
     $tipo_mensaje = $_SESSION['tipo_mensaje'] ?? 'info';
