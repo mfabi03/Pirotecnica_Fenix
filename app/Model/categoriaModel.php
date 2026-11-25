@@ -11,17 +11,6 @@ use App\Pirotecnicafenix\Interfaces\InterfacesCrudModel;
 class CategoriaModel extends ConnectDB implements InterfacesCrudModel
 {
     private $conex;
-    private $nombre_categoria;
-
-    public function setNombreCategoria( $nombre_categoria ) {
-
-        $this->nombre_categoria = $nombre_categoria;
-    }
-
-    protected function getNombreCategoria() {
-
-        return $this->nombre_categoria;
-    }
 
     public function __construct()
     {
@@ -29,40 +18,12 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
         $this->conex = $this->getConnection();
     }
 
-    /* ============================================================
-     *  MÉTODOS DE LA INTERFAZ (puente)
-     * ============================================================ */
+    public function obtenerTodos() { return $this->obtenerCategorias(); }
+    public function obtenerPorId($id) { return $this->obtenerCategoriaPorId($id); }
+    public function crear($datos) { return $this->registrarCategoria($datos); }
+    public function actualizar($id, $datos) { return $this->actualizarCategoria($id, $datos); }
+    public function eliminar($id) { return $this->eliminarCategoria($id); }
 
-    public function obtenerTodos()
-    {
-        return $this->obtenerCategorias();
-    }
-
-    public function obtenerPorId($id)
-    {
-        return $this->obtenerCategoriaPorId($id);
-    }
-
-    public function crear($datos)
-    {
-        return $this->registrarCategoria($datos);
-    }
-
-    public function actualizar($id, $datos)
-    {
-        return $this->actualizarCategoria($id, $datos);
-    }
-
-    public function eliminar($id)
-    {
-        return $this->eliminarCategoria($id);
-    }
-
-    /* ============================================================
-     *  MÉTODOS ORIGINALES
-     * ============================================================ */
-
-    // OBTENER TODAS LAS CATEGORIAS
     public function obtenerCategorias()
     {
         try {
@@ -77,30 +38,6 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
         }
     }
 
-    // CONTAR CATEGORÍAS
-    public function contarCategorias($termino = null)
-    {
-        try {
-            $termino = trim((string) $termino);
-
-            if ($termino !== '') {
-                $sql = "SELECT COUNT(*) FROM categoria
-                        WHERE (nombre_categoria LIKE :termino OR descripcion LIKE :termino)";
-                $stmt = $this->conex->prepare($sql);
-                $stmt->execute([':termino' => "%{$termino}%"]);
-            } else {
-                $sql = "SELECT COUNT(*) FROM categoria";
-                $stmt = $this->conex->prepare($sql);
-                $stmt->execute();
-            }
-
-            return (int) $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            throw new Exception("Error al contar categorías: " . $e->getMessage());
-        }
-    }
-
-    // OBTENER CATEGORIA POR ID
     public function obtenerCategoriaPorId($id)
     {
         try {
@@ -136,7 +73,6 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
         }
     }
 
-    // REGISTRAR CATEGORIA
     public function registrarCategoria(array $datos)
     {
         try {
@@ -147,11 +83,8 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
             $sql = "INSERT INTO categoria (nombre_categoria, descripcion, eliminado)
                     VALUES (:nombre_categoria, :descripcion, 0)";
             $stmt = $this->conex->prepare($sql);
-            $stmt->bindParam(':nombre_categoria', $this->getNombreCategoria(), PDO::PARAM_STR);
-            $stmt->bindParam(':descripcion', $datos['descripcion'], PDO::PARAM_STR);
-
             $stmt->execute([
-                ':nombre_categoria' => $this->getNombreCategoria(),
+                ':nombre_categoria' => $datos['nombre_categoria'],
                 ':descripcion' => $datos['descripcion'] ?? null
             ]);
 
@@ -162,7 +95,6 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
         }
     }
 
-    // ACTUALIZAR CATEGORIA
     public function actualizarCategoria($id, array $datos)
     {
         try {
@@ -192,7 +124,6 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
         }
     }
 
-    // ELIMINAR CATEGORIA (BORRADO LÓGICO)
     public function eliminarCategoria($id)
     {
         try {
@@ -211,7 +142,6 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
         }
     }
 
-    // REACTIVAR CATEGORIA
     public function reactivarCategoria($id)
     {
         try {
@@ -236,14 +166,12 @@ class CategoriaModel extends ConnectDB implements InterfacesCrudModel
         }
     }
 
-    // BUSCAR CATEGORIAS
     public function buscarCategorias($termino)
     {
         try {
             $sql = "SELECT id_categoria, nombre_categoria, descripcion, eliminado
                     FROM categoria
-                    WHERE (nombre_categoria LIKE :termino
-                       OR descripcion LIKE :termino)
+                    WHERE (nombre_categoria LIKE :termino OR descripcion LIKE :termino)
                     ORDER BY eliminado ASC, nombre_categoria ASC";
             $stmt = $this->conex->prepare($sql);
             $stmt->execute([':termino' => "%{$termino}%"]);

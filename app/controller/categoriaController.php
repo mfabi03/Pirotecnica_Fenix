@@ -18,6 +18,7 @@ $puede_editar   = $permisoHelper->tienePermiso($id_rol_actual, 'Categorias', 'ac
 $puede_eliminar = $permisoHelper->tienePermiso($id_rol_actual, 'Categorias', 'eliminar');
 
 $action   = $_GET['action'] ?? $_POST['action'] ?? 'lista';
+$accion   = $_POST['accion'] ?? $action; // El modal envía "accion"
 $id       = $_GET['id'] ?? $_POST['id_categoria'] ?? null;
 $busqueda = $val->limpiar($_GET['busqueda'] ?? '');
 
@@ -26,80 +27,31 @@ if (!in_array($estado_categoria, ['todos', 'activos', 'inactivos'], true)) {
     $estado_categoria = 'activos';
 }
 
-// ==========================================
-// AJAX
-// ==========================================
+// AJAX: Verificar duplicados
 if ($action === 'check_duplicado') {
     header('Content-Type: application/json; charset=utf-8');
     try {
-        if (!$permisoHelper->tienePermiso($id_rol_actual, 'Categorias', 'leer')) {
-            http_response_code(403);
-            throw new Exception('No tienes permiso para consultar categorías.');
-        }
-
         $campo = strtolower($val->limpiar($_GET['campo'] ?? ''));
         $nombre = trim($val->limpiar($_GET['valor'] ?? ''));
         $excluirId = isset($_GET['excluir_id']) && is_numeric($_GET['excluir_id']) ? (int)$_GET['excluir_id'] : null;
 
-        if ($campo !== 'nombre_categoria' || $nombre === '') throw new Exception('Datos de verificación inválidos.');
+        if ($campo !== 'nombre_categoria' || $nombre === '') throw new Exception('Datos inválidos.');
 
-        echo json_encode([
-            'existe' => $modelo->existeCategoria($nombre, $excluirId),
-            'campo' => $campo,
-            'valor' => $nombre
-        ], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['existe' => $modelo->existeCategoria($nombre, $excluirId)], JSON_UNESCAPED_UNICODE);
     } catch (Exception $e) {
-        if (http_response_code() < 400) http_response_code(500);
         echo json_encode(['error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
     }
     exit;
 }
 
-if (isset($_GET['action']) && $_GET['action'] === 'listar_ajax') {
-    header('Content-Type: application/json; charset=utf-8');
-    try {
-        echo json_encode(['success' => true, 'categorias' => $modelo->obtenerCategorias()], JSON_UNESCAPED_UNICODE);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-    }
-    exit;
-}
-
-if ($action === 'store_rapido_ajax') {
-    header('Content-Type: application/json; charset=utf-8');
-    try {
-        if (!$puede_crear) throw new Exception("No tienes permiso para registrar categorías.");
-
-        $datos = [
-            'nombre_categoria' => $val->requerido($_POST['nombre_categoria'] ?? '', 'nombre de la categoría'),
-            'descripcion'      => $val->limpiar($_POST['descripcion'] ?? '')
-        ];
-
-        $modelo->setNombreCategoria($datos['nombre_categoria']);
-        $id_categoria = $modelo->registrarCategoria();
-
-        echo json_encode([
-            'success' => true,
-            'id_categoria' => $id_categoria,
-            'nombre_categoria' => $datos['nombre_categoria']
-        ], JSON_UNESCAPED_UNICODE);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
-    }
-    exit;
-}
-
-// ==========================================
-// POST
-// ==========================================
+// POST: Registrar y Actualizar
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $accion = $_POST['accion'] ?? $action;
-
-    if ($accion === 'guardar' || $accion === 'create') {
+    
+    if ($accion === 'guardar' || $accion === 'create' || $accion === 'store') {
         AuthMiddleware::requirePermiso('Categorias', 'crear');
         try {
             $datos = [
-                'nombre_categoria' => $val->requerido($_POST['nombre_categoria'] ?? '', 'nombre de la categoría'),
+                'nombre_categoria' => $val->requerido($_POST['nombre_categoria'] ?? '', 'nombre'),
                 'descripcion'      => $val->limpiar($_POST['descripcion'] ?? '')
             ];
             $modelo->registrarCategoria($datos);
@@ -109,34 +61,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mensaje'] = "Error al registrar: " . $e->getMessage();
             $_SESSION['tipo_mensaje'] = "danger";
         }
-        header("Location: ?url=categorias");
+        header("Location: ?url=categorias&action=lista");
         exit();
     }
 
     if ($accion === 'actualizar' || $accion === 'edit' || $accion === 'update') {
         AuthMiddleware::requirePermiso('Categorias', 'actualizar');
         try {
-            $id = $val->validarId($_POST['id_categoria'] ?? null, 'ID de categoría');
+            $idCat = $val->validarId($_POST['id_categoria'] ?? null, 'ID de categoría');
             $datos = [
-                'nombre_categoria' => $val->requerido($_POST['nombre_categoria'] ?? '', 'nombre de la categoría'),
+                'nombre_categoria' => $val->requerido($_POST['nombre_categoria'] ?? '', 'nombre'),
                 'descripcion'      => $val->limpiar($_POST['descripcion'] ?? '')
             ];
-            $modelo->actualizarCategoria($id, $datos);
+            $modelo->actualizarCategoria($idCat, $datos);
             $_SESSION['mensaje'] = "Categoría actualizada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } catch (Exception $e) {
             $_SESSION['mensaje'] = "Error al actualizar: " . $e->getMessage();
             $_SESSION['tipo_mensaje'] = "danger";
         }
-        header("Location: ?url=categorias");
+        header("Location: ?url=categorias&action=lista");
         exit();
     }
 
     if ($accion === 'eliminar' || $accion === 'delete') {
         AuthMiddleware::requirePermiso('Categorias', 'eliminar');
         try {
-            $id = $val->validarId($_POST['id_categoria'] ?? null, 'ID de categoría');
-            $modelo->eliminarCategoria($id);
+            $idCat = $val->validarId($_POST['id_categoria'] ?? null, 'ID de categoría');
+            $modelo->eliminarCategoria($idCat);
             $_SESSION['mensaje'] = "Categoría eliminada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } catch (Exception $e) {
@@ -150,8 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accion === 'reactivar' || $accion === 'restore') {
         AuthMiddleware::requirePermiso('Categorias', 'actualizar');
         try {
-            $id = $val->validarId($_POST['id_categoria'] ?? null, 'ID de categoría');
-            $modelo->reactivarCategoria($id);
+            $idCat = $val->validarId($_POST['id_categoria'] ?? null, 'ID de categoría');
+            $modelo->reactivarCategoria($idCat);
             $_SESSION['mensaje'] = "Categoría reactivada exitosamente";
             $_SESSION['tipo_mensaje'] = "success";
         } catch (Exception $e) {
@@ -163,9 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ==========================================
 // VISTAS
-// ==========================================
 $basePath = __DIR__ . "/../view/configuracion/";
 
 if ($action === 'lista' || $action === '' || $action === 'list') {

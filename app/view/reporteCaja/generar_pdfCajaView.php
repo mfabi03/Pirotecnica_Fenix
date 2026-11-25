@@ -21,7 +21,7 @@ function pdf_txt($texto) {
 $datos_pdf = $datos_pdf ?? [];
 $fecha_reporte = $datos_pdf['fecha'] ?? date('d/m/Y');
 $hora_apertura = $datos_pdf['hora_apertura'] ?? '—';
-$hora_cierre = date('h:i A'); 
+$hora_cierre = $datos_pdf['hora_cierre'] ?? date('h:i A'); // Usar hora de cierre real
 $total_documentos = $datos_pdf['total_documentos'] ?? 0;
 $total_unidades = $datos_pdf['total_unidades'] ?? 0;
 $total_productos = $datos_pdf['total_productos'] ?? 0;
@@ -197,8 +197,9 @@ if (empty($movimientos)) {
         $encargado = trim((string) ($m['usuario_activo'] ?? 'N/A'));
         if (strlen($encargado) > 20) $encargado = substr($encargado, 0, 17) . '...';
 
+        // El formato de fecha ahora es 'dd/mm/YYYY H:i:s'
         $fecha_hora_completa = $m['fecha_movimiento']; 
-        $solo_hora = substr($fecha_hora_completa, 11); 
+        $solo_hora = substr($fecha_hora_completa, 11); // Extrae "H:i:s"
 
         $fill = $alt;
         $pdf->SetFillColor(250, 250, 250);

@@ -2,25 +2,26 @@
 // app/view/reportes/reportesView.php
 require_once dirname(__DIR__, 2) . "/view/header.php";
 
-// Variables que vienen del controlador
 $movimientos     = $movimientos ?? [];
 $totalEntradas   = $totalEntradas ?? 0;
 $totalSalidas    = $totalSalidas ?? 0;
 $totalAnuladas   = $totalAnuladas ?? 0;
 $totalCierres    = $totalCierres ?? 0;
 
-$fecha_inicio = $_GET['fecha_inicio'] ?? $_GET['fecha'] ?? '';
-$fecha_fin    = $_GET['fecha_fin'] ?? '';
+$fecha_inicio    = $_GET['fecha_inicio'] ?? $_GET['fecha'] ?? '';
+$fecha_fin       = $_GET['fecha_fin'] ?? '';
+$tipo_movimiento = $_GET['tipo_movimiento'] ?? '';
+$busqueda        = $_GET['busqueda'] ?? '';
+$id_categoria    = $_GET['id_categoria'] ?? '';
 
 $paramsExport = http_build_query([
     'fecha_inicio'    => $fecha_inicio,
     'fecha_fin'       => $fecha_fin,
-    'tipo_movimiento' => $_GET['tipo_movimiento'] ?? '',
-    'busqueda'        => $_GET['busqueda'] ?? ''
+    'tipo_movimiento' => $tipo_movimiento,
+    'busqueda'        => $busqueda,
+    'id_categoria'    => $id_categoria,
 ]);
 ?>
-
-
 
 <div class="col-md-8 col-lg-12">
     <div class="dark-header-card card p-4 mb-4">
@@ -30,10 +31,16 @@ $paramsExport = http_build_query([
                 <small style="color: rgba(255, 255, 255, 0.6) !important;"><i class="fas fa-history me-2"></i> <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> notas registradas</small>
             </div>
             <div class="col-xl-4 text-end">
-                <a href="?url=exportar_csv&<?= htmlspecialchars((string) ($paramsExport), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" class="btn btn-gold btn-sm fw-bold me-2" style="background: linear-gradient(135deg, #f39c12, #e67e22) !important; border: none !important; color: #fff !important; box-shadow: 0 8px 20px rgba(243, 156, 18, 0.25);">
+                <a href="?url=exportar_csv&<?= htmlspecialchars((string) ($paramsExport), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                   id="btnExportCSV"
+                   class="btn btn-gold btn-sm fw-bold me-2"
+                   style="background: linear-gradient(135deg, #f39c12, #e67e22) !important; border: none !important; color: #fff !important; box-shadow: 0 8px 20px rgba(243, 156, 18, 0.25);">
                     <i class="fas fa-file-excel me-1"></i> CSV
                 </a>
-                <a href="?url=exportar_pdf&<?= htmlspecialchars((string) ($paramsExport), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" target="_blank" class="btn btn-danger btn-sm fw-bold">
+                <a href="?url=exportar_pdf&<?= htmlspecialchars((string) ($paramsExport), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                   id="btnExportPDF"
+                   target="_blank"
+                   class="btn btn-danger btn-sm fw-bold">
                     <i class="fas fa-file-pdf me-1"></i> PDF
                 </a>
             </div>
@@ -43,42 +50,42 @@ $paramsExport = http_build_query([
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" action="?url=reportes" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportes">
-            
+
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Mostrar</label>
                 <select name="por_pagina" class="form-select form-select-sm" onchange="this.form.requestSubmit()">
-                    <?php foreach ([5, 10, 25, 50] as $o): ?>
+                    <?php foreach ([5, 10, 15, 25, 50] as $o): ?>
                         <option value="<?= htmlspecialchars((string) ($o), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= htmlspecialchars((string) (($porPaginaActual == $o) ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>><?= htmlspecialchars((string) ($o), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Desde</label>
-                <input type="date" name="fecha_inicio" class="form-control form-control-sm" value="<?= htmlspecialchars($fecha_inicio) ?>">
+                <input type="date" name="fecha_inicio" id="filtro_fecha_inicio" class="form-control form-control-sm" value="<?= htmlspecialchars($fecha_inicio) ?>">
             </div>
             <div class="col-md-2">
                 <label class="form-label fw-bold small text-dark">Hasta</label>
-                <input type="date" name="fecha_fin" class="form-control form-control-sm" value="<?= htmlspecialchars($fecha_fin) ?>">
+                <input type="date" name="fecha_fin" id="filtro_fecha_fin" class="form-control form-control-sm" value="<?= htmlspecialchars($fecha_fin) ?>">
             </div>
-            
+
             <div class="col-md-3">
                 <label class="form-label fw-bold small text-dark">Tipo</label>
-                <select name="tipo_movimiento" class="form-select form-select-sm" data-no-search="true">
+                <select name="tipo_movimiento" id="filtro_tipo_movimiento" class="form-select form-select-sm" data-no-search="true">
                     <option value="">Todos</option>
-                    <option value="Entrada" <?= htmlspecialchars((string) ((($_GET['tipo_movimiento'] ?? '') == 'Entrada') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Entradas</option>
-                    <option value="Salida" <?= htmlspecialchars((string) ((($_GET['tipo_movimiento'] ?? '') == 'Salida') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Salidas</option>
-                    <option value="Cierre de Caja" <?= htmlspecialchars((string) ((($_GET['tipo_movimiento'] ?? '') == 'Cierre de Caja') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Cierres de Caja</option>
-                    <option value="Anulación" <?= htmlspecialchars((string) ((($_GET['tipo_movimiento'] ?? '') == 'Anulación') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Todas las Anulaciones</option>
-                    <option value="Anulación Entrada" <?= htmlspecialchars((string) ((($_GET['tipo_movimiento'] ?? '') == 'Anulación Entrada') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Anuladas de Entrada</option>
-                    <option value="Anulación Salida" <?= htmlspecialchars((string) ((($_GET['tipo_movimiento'] ?? '') == 'Anulación Salida') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Anuladas de Salida</option>
+                    <option value="Entrada" <?= htmlspecialchars((string) (($tipo_movimiento == 'Entrada') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Entradas</option>
+                    <option value="Salida" <?= htmlspecialchars((string) (($tipo_movimiento == 'Salida') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Salidas</option>
+                    <option value="Cierre de Caja" <?= htmlspecialchars((string) (($tipo_movimiento == 'Cierre de Caja') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Cierres de Caja</option>
+                    <option value="Anulación" <?= htmlspecialchars((string) (($tipo_movimiento == 'Anulación') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Todas las Anulaciones</option>
+                    <option value="Anulación Entrada" <?= htmlspecialchars((string) (($tipo_movimiento == 'Anulación Entrada') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Anulaciones de Entrada</option>
+                    <option value="Anulación Salida" <?= htmlspecialchars((string) (($tipo_movimiento == 'Anulación Salida') ? 'selected' : ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>>Anulaciones de Salida</option>
                 </select>
             </div>
 
             <div class="col-md-3">
                 <label class="form-label fw-bold small text-dark">Buscar</label>
-                <input type="text" name="busqueda" class="form-control form-control-sm" 
-                       placeholder="Ej: Cohete, Juan" 
-                       value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
+                <input type="text" name="busqueda" id="filtro_busqueda" class="form-control form-control-sm"
+                       placeholder="Ej: Cohete, Juan"
+                       value="<?= htmlspecialchars($busqueda) ?>">
             </div>
 
             <div class="col-md-12 mt-3">
@@ -90,6 +97,7 @@ $paramsExport = http_build_query([
         </form>
     </div>
 
+    <!-- TARJETAS DE RESUMEN -->
     <div class="row mb-4 g-3">
         <div class="col-md-3">
             <div class="dark-card card shadow-sm">
@@ -153,6 +161,7 @@ $paramsExport = http_build_query([
         </div>
     </div>
 
+    <!-- TABLA DE MOVIMIENTOS -->
     <div class="dark-card card shadow-sm dark-table-header">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h5 class="m-0"><i class="fas fa-list me-2"></i> Historial de Movimientos</h5>
@@ -173,25 +182,25 @@ $paramsExport = http_build_query([
                 </thead>
                 <tbody>
                     <?php if (!empty($movimientos)): ?>
-                        <?php foreach ($movimientos as $m): 
+                        <?php foreach ($movimientos as $m):
                             $tipo = $m['tipo_movimiento'] ?? '';
                             $esAnulacion = (strpos($tipo, 'Anulación') === 0 || stripos($tipo, 'anulad') !== false);
                             $esCierre = ($tipo === 'Cierre de Caja');
                             $tipoBase = $tipo;
-                            if ($esAnulacion) { 
-                                if (stripos($tipo, 'Entrada') !== false) $tipoBase = 'Entrada'; 
-                                elseif (stripos($tipo, 'Salida') !== false) $tipoBase = 'Salida'; 
+                            if ($esAnulacion) {
+                                if (stripos($tipo, 'Entrada') !== false) $tipoBase = 'Entrada';
+                                elseif (stripos($tipo, 'Salida') !== false) $tipoBase = 'Salida';
                             }
                             $esEntrada = ($tipoBase === 'Entrada');
-                            if ($esCierre) { 
-                                $badgeClass = 'bg-primary'; 
-                            } elseif ($esAnulacion) { 
-                                $badgeClass = 'bg-secondary'; 
-                            } else { 
-                                $badgeClass = $esEntrada ? 'bg-success' : 'bg-danger'; 
+                            if ($esCierre) {
+                                $badgeClass = 'bg-primary';
+                            } elseif ($esAnulacion) {
+                                $badgeClass = 'bg-secondary';
+                            } else {
+                                $badgeClass = $esEntrada ? 'bg-success' : 'bg-danger';
                             }
                             $motivo = $m['motivo_anulacion'] ?? 'No se registró un motivo.';
-                            
+
                             $prodCount = $m['total_productos'] ?? 0;
                             $catCount  = $m['total_categorias'] ?? 0;
                         ?>
@@ -247,9 +256,43 @@ $paramsExport = http_build_query([
                 </tbody>
             </table>
         </div>
-        <div class="card-footer py-3 d-flex justify-content-between align-items-center">
-            <span class="text-muted small"><i class="fas fa-history me-1"></i> Total: <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> notas</span>
-            <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
+
+        <!-- FOOTER CON PAGINACIÓN -->
+        <div class="card-footer py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted small">
+                <i class="fas fa-history me-1"></i> Total: <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> notas
+            </span>
+
+            <?php if (isset($totalPaginas) && $totalPaginas > 1): ?>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm m-0">
+                        <li class="page-item <?= ($paginaActual <= 1) ? 'disabled' : '' ?>">
+                            <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['pagina' => $paginaActual - 1])) ?>">Anterior</a>
+                        </li>
+
+                        <?php
+                        $rango = 2;
+                        for ($i = 1; $i <= $totalPaginas; $i++):
+                            if ($i == 1 || $i == $totalPaginas || ($i >= $paginaActual - $rango && $i <= $paginaActual + $rango)):
+                        ?>
+                            <li class="page-item <?= ($i == $paginaActual) ? 'active' : '' ?>">
+                                <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['pagina' => $i])) ?>"><?= $i ?></a>
+                            </li>
+                        <?php
+                            elseif ($i == $paginaActual - $rango - 1 || $i == $paginaActual + $rango + 1):
+                        ?>
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        <?php
+                            endif;
+                        endfor;
+                        ?>
+
+                        <li class="page-item <?= ($paginaActual >= $totalPaginas) ? 'disabled' : '' ?>">
+                            <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['pagina' => $paginaActual + 1])) ?>">Siguiente</a>
+                        </li>
+                    </ul>
+                </nav>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -257,6 +300,41 @@ $paramsExport = http_build_query([
 <?php require_once __DIR__ . '/verDetalleView.php'; ?>
 <?php require_once __DIR__ . '/MotivoAnulacionView.php'; ?>
 <?php require_once __DIR__ . '/ReciboCierreView.php'; ?>
+
+<!-- JS: actualiza los botones de exportación con los valores ACTUALES del formulario -->
+<script>
+(function () {
+    function actualizarBotonesExport() {
+        const form = document.getElementById('formFiltros');
+        if (!form) return;
+
+        const params = new URLSearchParams();
+        params.set('fecha_inicio',    form.querySelector('[name="fecha_inicio"]')?.value || '');
+        params.set('fecha_fin',       form.querySelector('[name="fecha_fin"]')?.value || '');
+        params.set('tipo_movimiento', form.querySelector('[name="tipo_movimiento"]')?.value || '');
+        params.set('busqueda',        form.querySelector('[name="busqueda"]')?.value || '');
+        params.set('id_categoria',    form.querySelector('[name="id_categoria"]')?.value || '');
+
+        const qs = params.toString();
+
+        const btnCSV = document.getElementById('btnExportCSV');
+        const btnPDF = document.getElementById('btnExportPDF');
+
+        if (btnCSV) btnCSV.href = '?url=exportar_csv&' + qs;
+        if (btnPDF) btnPDF.href = '?url=exportar_pdf&' + qs;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('formFiltros');
+        if (!form) return;
+
+        form.addEventListener('input',  actualizarBotonesExport);
+        form.addEventListener('change', actualizarBotonesExport);
+
+        actualizarBotonesExport();
+    });
+})();
+</script>
 
 <?php $scriptsModulo = ['reportesjquery.js', 'verDetalleNota.jquery.js', 'reciboCierre.js']; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

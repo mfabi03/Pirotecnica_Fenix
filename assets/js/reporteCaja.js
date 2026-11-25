@@ -101,26 +101,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const fechaSeleccionada = btn.getAttribute('data-fecha') || new Date().toISOString().slice(0, 10);
     
     const btnCerrarCaja = document.getElementById('btnConfirmarCierreCaja');
-    const btnAceptarCierreExito = document.getElementById('btnAceptarCierreExito');
 
-    if (btnAceptarCierreExito) {
-        btnAceptarCierreExito.addEventListener('click', function () {
-            modal.hide();
-            window.location.href = `?url=reportecaja`;
-        });
-    }
-
-    // 🔥 CONFIRMAR CIERRE CON LA RUTA DEL FRONT CONTROLLER
     if (btnCerrarCaja) {
         btnCerrarCaja.addEventListener('click', async function () {
             btnCerrarCaja.disabled = true;
             btnCerrarCaja.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
 
+            // 🔥 Capturar la hora de cierre exacta en formato HH:MM:SS
+            const ahora = new Date();
+            const horaCierre = ahora.toLocaleTimeString('en-GB', { hour12: false });
+
             try {
                 const response = await fetch('?url=confirmar_cierre_caja', { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, 
-                    body: new URLSearchParams({ fecha: fechaSeleccionada }) 
+                    body: new URLSearchParams({ 
+                        fecha: fechaSeleccionada,
+                        hora_cierre: horaCierre // 🔥 Enviamos la hora de cierre
+                    }) 
                 });
                 const result = await response.json();
                 
@@ -142,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 document.getElementById('recibo-fecha').textContent = result.data.fecha;
                 document.getElementById('recibo-hora-apertura').textContent = result.data.hora_apertura || '—';
-                document.getElementById('recibo-hora-cierre').textContent = new Date().toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('recibo-hora-cierre').textContent = result.data.hora_cierre || '—'; // 🔥 Hora de cierre del backend
                 document.getElementById('recibo-encargado').textContent = result.data.encargado;
                 document.getElementById('recibo-total-notas').textContent = result.data.total_documentos;
                 document.getElementById('recibo-total-unidades').textContent = result.data.total_unidades;
@@ -194,7 +192,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 🔥 ABRIR MODAL CON LA RUTA DEL FRONT CONTROLLER
     btn.addEventListener('click', async function () {
         btn.dataset.fecha = fechaSeleccionada;
 

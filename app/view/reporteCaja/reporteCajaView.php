@@ -1,30 +1,51 @@
 ﻿<?php
 // app/view/reporteCaja/reporteCajaView.php
 $movimientos     = $movimientos ?? [];
+$totalRegistros  = $totalRegistros ?? count($movimientos);
 $totalUnidades   = $totalUnidades ?? 0;
 $totalDocumentos = $totalDocumentos ?? 0;
 
-// ✅ Vienen del controlador (no consultes $db aquí)
 $categorias      = $categorias ?? [];
 $productosFiltro = $productosFiltro ?? [];
-$fechaFiltro     = $fechaFiltro ?? '';
+$fechaFiltro     = $fechaFiltro ?? date('Y-m-d');
 $cajaCerrada     = $cajaCerrada ?? false;
 $estilosModulo   = ['reporteCaja.css'];
 
 require_once dirname(__DIR__, 2) . "/view/header.php";
+
+function formatearHoraNotaCaja($fechaMov): string
+{
+    $raw = trim((string)($fechaMov ?? ''));
+    if ($raw === '') {
+        return '—';
+    }
+    if (preg_match('/\b(\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|a\.\s*m\.|p\.\s*m\.))\b/i', $raw, $m)) {
+        return strtoupper(trim($m[1]));
+    }
+    $normalizada = preg_replace('#^(\d{2})/(\d{2})/(\d{4})#', '$3-$2-$1', $raw);
+    $ts = strtotime($normalizada);
+    return $ts !== false ? date('h:i A', $ts) : '—';
+}
 ?>
-
-
 
 <div class="col-md-8 col-lg-12">
     <div class="dark-header-card card p-4 mb-4">
         <div class="row align-items-center g-3">
-            <div class="col-xl-8"><h3 class="m-0 dark-title"><i class="fas fa-cash-register text-gold me-2"></i> Reporte Diario de Caja</h3><small style="color: rgba(255, 255, 255, 0.6) !important;"><i class="fas fa-history me-2"></i> <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> movimientos registrados</small></div>
+            <div class="col-xl-8">
+                <h3 class="m-0 dark-title"><i class="fas fa-cash-register text-gold me-2"></i> Reporte Diario de Caja</h3>
+                <small style="color: rgba(255, 255, 255, 0.6) !important;">
+                    <i class="fas fa-history me-2"></i> <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> movimientos registrados
+                </small>
+            </div>
             <div class="col-xl-4 text-end">
                 <?php if (!$cajaCerrada): ?>
-                    <button type="button" id="btnAbrirCierreCaja" class="btn btn-dark-gold" data-fecha="<?= htmlspecialchars($fechaFiltro) ?>" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;"><i class="fas fa-lock me-1"></i> Realizar Cierre</button>
+                    <button type="button" id="btnAbrirCierreCaja" class="btn btn-dark-gold" data-fecha="<?= htmlspecialchars((string)$fechaFiltro, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" style="background: linear-gradient(135deg, #f39c12, #e67e22); border: none; color: #fff; font-weight: 600; padding: 8px 22px; border-radius: 50px;">
+                        <i class="fas fa-lock me-1"></i> Realizar Cierre
+                    </button>
                 <?php else: ?>
-                    <button type="button" class="btn btn-secondary" disabled style="border-radius: 50px; padding: 8px 22px; font-weight: 600; opacity: 0.6;"><i class="fas fa-check-circle me-1"></i> Caja Cerrada</button>
+                    <button type="button" class="btn btn-secondary" disabled style="border-radius: 50px; padding: 8px 22px; font-weight: 600; opacity: 0.6;">
+                        <i class="fas fa-check-circle me-1"></i> Caja Cerrada
+                    </button>
                 <?php endif; ?>
             </div>
         </div>
@@ -33,24 +54,26 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     <div class="card shadow-sm p-3 mb-4 bg-white">
         <form method="GET" id="formFiltros" class="row g-3 align-items-end">
             <input type="hidden" name="url" value="reportecaja">
-            
+
             <div class="col-md-8">
                 <label class="form-label fw-bold small text-dark">Buscar (Cliente, Producto o Categoría)</label>
-                <input type="text" name="busqueda" class="form-control form-control-sm" 
+                <input type="text" name="busqueda" class="form-control form-control-sm"
                        list="listaGlobalReporte"
-                       placeholder="Escribe para buscar en todo el turno..." 
-                       value="<?= htmlspecialchars($_GET['busqueda'] ?? '') ?>">
+                       placeholder="Escribe para buscar en todo el turno..."
+                       value="<?= htmlspecialchars((string)($_GET['busqueda'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                 <datalist id="listaGlobalReporte">
-                    <?php 
+                    <?php
                     $clientesUnicos = array_unique(array_column($movimientos, 'nombre_cliente'));
-                    foreach ($clientesUnicos as $cli): if(empty($cli)) continue; ?>
-                        <option value="<?= htmlspecialchars($cli) ?>">
+                    foreach ($clientesUnicos as $cli):
+                        if (empty($cli)) continue;
+                    ?>
+                        <option value="<?= htmlspecialchars((string)$cli, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                     <?php endforeach; ?>
                     <?php foreach ($productosFiltro as $prod): ?>
-                        <option value="<?= htmlspecialchars($prod['descripcion']) ?>">
+                        <option value="<?= htmlspecialchars((string)($prod['descripcion'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                     <?php endforeach; ?>
                     <?php foreach ($categorias as $cat): ?>
-                        <option value="<?= htmlspecialchars($cat['nombre_categoria']) ?>">
+                        <option value="<?= htmlspecialchars((string)($cat['nombre_categoria'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                     <?php endforeach; ?>
                 </datalist>
             </div>
@@ -79,34 +102,90 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
     </div>
 
     <div class="dark-card card shadow-sm dark-table-header">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center"><h5 class="m-0"><i class="fas fa-history me-2"></i> Movimientos del Día</h5></div>
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h5 class="m-0"><i class="fas fa-history me-2"></i> Movimientos del Día</h5>
+        </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle m-0">
-                <thead><tr><th class="ps-4 py-3">NOTA #</th><th class="py-3">HORA</th><th class="py-3">CLIENTE</th><th class="py-3">TIPO</th><th class="py-3 text-center">PRODUCTOS</th><th class="py-3 text-center">CATEGORÍAS</th><th class="py-3 text-center">UNIDADES</th><th class="py-3">ENCARGADO</th><th class="pe-4 py-3 text-center">ACCIONES</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th class="ps-4 py-3">NOTA #</th>
+                        <th class="py-3">HORA</th>
+                        <th class="py-3">CLIENTE</th>
+                        <th class="py-3">TIPO</th>
+                        <th class="py-3 text-center">PRODUCTOS</th>
+                        <th class="py-3 text-center">CATEGORÍAS</th>
+                        <th class="py-3 text-center">UNIDADES</th>
+                        <th class="py-3">ENCARGADO</th>
+                        <th class="pe-4 py-3 text-center">ACCIONES</th>
+                    </tr>
+                </thead>
                 <tbody>
                     <?php if ($cajaCerrada && empty($movimientos)): ?>
-                        <tr><td colspan="9" class="text-center py-5 dark-empty"><div class="py-4"><i class="fas fa-lock fa-3x d-block mb-3"></i><p class="mb-0">La caja de esta fecha ya fue cerrada</p><small>No hay movimientos nuevos después del cierre para este turno.</small></div></td></tr>
+                        <tr>
+                            <td colspan="9" class="text-center py-5 dark-empty">
+                                <div class="py-4">
+                                    <i class="fas fa-lock fa-3x d-block mb-3"></i>
+                                    <p class="mb-0">La caja de esta fecha ya fue cerrada</p>
+                                    <small>No hay movimientos nuevos después del cierre para este turno.</small>
+                                </div>
+                            </td>
+                        </tr>
                     <?php elseif (!empty($movimientos)): ?>
                         <?php foreach ($movimientos as $m): ?>
+                            <?php
+                            $idDoc = (int)($m['id_documento'] ?? 0);
+                            $detalleProductos = (string)($m['productos_lista'] ?? ($m['nombre_producto'] ?? 'Sin productos'));
+                            $detalleCategoria = (string)($m['categoria'] ?? 'Sin categoría');
+                            $tipoCli = (string)($m['tipo_cliente'] ?? 'Natural');
+                            $estiloTipo = ($tipoCli === 'Jurídico')
+                                ? 'background: #e0f2fe; color: #0369a1;'
+                                : 'background: #dcfce7; color: #15803d;';
+                            ?>
                             <tr>
-                                <td class="ps-4 fw-bold">#<?= htmlspecialchars((string) ((int)$m['id_documento']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars((string) (date('h:i A', strtotime($m['fecha_movimiento']))), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars($m['nombre_cliente'] ?? 'N/A') ?></td>
-                                <td><span class="badge" style="<?= htmlspecialchars((string) (($m['tipo_cliente'] === 'Jurídico') ? 'background: #e0f2fe; color: #0369a1;' : 'background: #dcfce7; color: #15803d;'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> padding: 4px 12px; border-radius: 50px; font-weight: 600;"><?= htmlspecialchars($m['tipo_cliente'] ?? 'Natural') ?></span></td>
-                                <td class="text-center fw-bold"><?= htmlspecialchars((string) ((int)($m['total_productos'] ?? 0)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Prod.</td>
-                                <td class="text-center fw-bold"><?= htmlspecialchars((string) ((int)($m['total_categorias'] ?? 0)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Cat.</td>
-                                <td class="text-center fw-bold"><?= htmlspecialchars((string) ((int)($m['cantidad'] ?? 0)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Und.</td>
-                                <td><?= htmlspecialchars($m['usuario_activo'] ?? 'N/A') ?></td>
-                                <td class="pe-4 text-center"><button type="button" class="btn btn-sm btn-action-circle" style="background: #1a1a2e; color: #0d6efd; border: 1px solid #0d6efd; width: 32px; height: 32px; padding: 0; border-radius: 50%;" onclick="verDetalleCaja(<?= htmlspecialchars((string) ((int)$m['id_documento']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)"><i class="fas fa-eye"></i></button></td>
+                                <td class="ps-4 fw-bold">#<?= htmlspecialchars((string)$idDoc, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars(formatearHoraNotaCaja($m['fecha_movimiento'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string)($m['nombre_cliente'] ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                <td>
+                                    <span class="badge" style="<?= htmlspecialchars($estiloTipo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> padding: 4px 12px; border-radius: 50px; font-weight: 600;">
+                                        <?= htmlspecialchars($tipoCli, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
+                                    </span>
+                                </td>
+                                <td class="text-center fw-bold" title="<?= htmlspecialchars($detalleProductos, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+                                    <?= htmlspecialchars((string)((int)($m['total_productos'] ?? 0)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Prod.
+                                </td>
+                                <td class="text-center fw-bold" title="<?= htmlspecialchars($detalleCategoria, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+                                    <?= htmlspecialchars((string)((int)($m['total_categorias'] ?? 0)), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Cat.
+                                </td>
+                                <td class="text-center fw-bold"><?= htmlspecialchars((string)((int)($m['cantidad'] ?? ($m['total_unidades'] ?? 0))), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Und.</td>
+                                <td><?= htmlspecialchars((string)($m['usuario_activo'] ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                                <td class="pe-4 text-center">
+                                    <button type="button" class="btn btn-sm btn-action-circle"
+                                            style="background: #1a1a2e; color: #0d6efd; border: 1px solid #0d6efd; width: 32px; height: 32px; padding: 0; border-radius: 50%;"
+                                            onclick="verDetalleCaja(<?= htmlspecialchars((string)$idDoc, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <tr><td colspan="9" class="text-center py-5 dark-empty"><div class="py-4"><i class="fas fa-box-open fa-3x d-block mb-3"></i><p class="mb-0">No hay movimientos registrados</p><small>Registra una nota de salida para verla aquí</small></div></td></tr>
+                        <tr>
+                            <td colspan="9" class="text-center py-5 dark-empty">
+                                <div class="py-4">
+                                    <i class="fas fa-box-open fa-3x d-block mb-3"></i>
+                                    <p class="mb-0">No hay movimientos registrados</p>
+                                    <small>Registra una nota de salida para verla aquí</small>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
-        <div class="card-footer py-3 d-flex justify-content-between align-items-center"><span class="text-muted small"><i class="fas fa-history me-1"></i> Total: <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> movimientos</span><?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?></div>
+        <div class="card-footer py-3 d-flex justify-content-between align-items-center">
+            <span class="text-muted small"><i class="fas fa-history me-1"></i> Total: <?= htmlspecialchars((string) ((int)$totalRegistros), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> movimientos</span>
+            <?php require_once __DIR__ . '/../partials/por_pagina_selector.php'; ?>
+        </div>
     </div>
 </div>
 
@@ -157,7 +236,18 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle m-0">
-                            <thead><tr><th class="ps-4 py-3">NOTA #</th><th class="py-3">HORA</th><th class="py-3">CLIENTE</th><th class="py-3">TIPO</th><th class="py-3 text-center">PRODUCTOS</th><th class="py-3 text-center">CATEGORÍAS</th><th class="py-3 text-center">UNIDADES</th><th class="pe-4 py-3">ENCARGADO</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th class="ps-4 py-3">NOTA #</th>
+                                    <th class="py-3">HORA</th>
+                                    <th class="py-3">CLIENTE</th>
+                                    <th class="py-3">TIPO</th>
+                                    <th class="py-3 text-center">PRODUCTOS</th>
+                                    <th class="py-3 text-center">CATEGORÍAS</th>
+                                    <th class="py-3 text-center">UNIDADES</th>
+                                    <th class="pe-4 py-3">ENCARGADO</th>
+                                </tr>
+                            </thead>
                             <tbody id="recibo-tabla-detalles"></tbody>
                         </table>
                     </div>
@@ -177,7 +267,6 @@ require_once dirname(__DIR__, 2) . "/view/header.php";
         </div>
     </div>
 </div>
-
 
 <?php $scriptsModulo = ['reporteCaja.js']; ?>
 <?php require_once dirname(__DIR__, 2) . "/view/footer.php"; ?>

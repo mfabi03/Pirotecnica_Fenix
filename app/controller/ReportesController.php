@@ -5,7 +5,7 @@ namespace App\Pirotecnicafenix\Controller;
 use App\Pirotecnicafenix\Model\ReportesModel;
 use App\Pirotecnicafenix\Model\NotaentradaModel;
 use App\Pirotecnicafenix\Model\notasalidaModel;
-use App\Pirotecnicafenix\Model\ReporteCajaModel; // 🔥 IMPORTAMOS EL MODELO DE CAJA
+use App\Pirotecnicafenix\Model\ReporteCajaModel;
 use App\Pirotecnicafenix\Traits\ValidadorTrait;
 use Exception;
 
@@ -19,17 +19,51 @@ class ReportesController
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+
+        // 👇 Zona horaria Venezuela desde el arranque del controlador
+        require_once dirname(__DIR__) . '/Config/timezone.php';
+
         $this->val = new class { use ValidadorTrait; };
         $this->modelo = new ReportesModel();
     }
 
     /* ============================================================
-     *  INDEX — con DISPATCH MANUAL de action
+     * ORDEN POR MOVIMIENTO REGISTRADO
      * ============================================================ */
+    private function ordenarMovimientos(array $movimientos): array
+    {
+        usort($movimientos, function ($a, $b) {
+            $fa = $a['fecha_movimiento'] ?? null;
+            $fb = $b['fecha_movimiento'] ?? null;
+
+            $vacioA = empty($fa) || $fa === '0000-00-00' || $fa === '0000-00-00 00:00:00';
+            $vacioB = empty($fb) || $fb === '0000-00-00' || $fb === '0000-00-00 00:00:00';
+
+            $tsA = $vacioA ? PHP_INT_MAX : strtotime($fa);
+            $tsB = $vacioB ? PHP_INT_MAX : strtotime($fb);
+
+            if ($tsA !== $tsB) {
+                return $tsB <=> $tsA;
+            }
+
+            $idA = (int)($a['id_documento'] ?? 0);
+            $idB = (int)($b['id_documento'] ?? 0);
+            if ($idA !== $idB) {
+                return $idB <=> $idA;
+            }
+
+            $ordenTipo = ['cierre' => 3, 'salida' => 2, 'entrada' => 1];
+            $tipoA = $ordenTipo[$a['tipo_origen'] ?? ''] ?? 0;
+            $tipoB = $ordenTipo[$b['tipo_origen'] ?? ''] ?? 0;
+
+            return $tipoB <=> $tipoA;
+        });
+
+        return $movimientos;
+    }
 
     public function index()
     {
-        // 🔥 DISPATCH MANUAL: si viene ?action=X y el método existe, ejecutarlo.
         $action = $_GET['action'] ?? null;
         if ($action && $action !== 'index' && method_exists($this, $action)) {
             return $this->$action();
@@ -52,7 +86,7 @@ class ReportesController
         $tipo_movimiento = $req('tipo_movimiento');
 
         $pagina    = isset($_GET['pagina'])     ? max(1, (int)$_GET['pagina'])     : 1;
-        $porPagina = isset($_GET['por_pagina']) ? max(1, (int)$_GET['por_pagina']) : 10;
+        $porPagina = isset($_GET['por_pagina']) ? max(1, (int)$_GET['por_pagina']) : 15;
         if (isset($_POST['por_pagina'])) $porPagina = max(1, (int)$_POST['por_pagina']);
         $offset = ($pagina - 1) * $porPagina;
 
@@ -68,9 +102,18 @@ class ReportesController
         $error_reporte = null;
 
         try {
-            $movimientos     = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, $porPagina, $offset);
-            $totalRegistros  = $this->modelo->contarMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento);
+            $movimientosBrutos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
+            if (!is_array($movimientosBrutos)) {
+                $movimientosBrutos = [];
+            }
+
+            $movimientosBrutos = $this->ordenarMovimientos($movimientosBrutos);
+
+            $totalRegistros  = count($movimientosBrutos);
+            $movimientos     = array_slice($movimientosBrutos, $offset, $porPagina);
+
             $totalesGlobales = $this->modelo->obtenerTotalesReporte($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento);
+
         } catch (\Throwable $e) {
             error_log('Reporte error: ' . $e->getMessage());
             $error_reporte = $e->getMessage();
@@ -101,14 +144,11 @@ class ReportesController
     }
 
     /* ============================================================
-     *  DETALLE NOTA — AJAX unificado (Entrada / Salida / Anulación / Cierre)
-     *  URL: ?url=reportes&action=verDetalleAjax&id=123&tipo=Salida
+     *  DETALLE NOTA — AJAX unificado
      * ============================================================ */
-
     public function verDetalleAjax()
     {
         $val = $this->val;
-
         while (ob_get_level()) { ob_end_clean(); }
         header('Content-Type: application/json; charset=utf-8');
 
@@ -121,14 +161,13 @@ class ReportesController
                 $tipoBase = trim(str_replace('Anulación', '', $tipoBase));
             }
 
-            // 1. Intentar buscar como Cierre de Caja
             if (stripos($tipo, 'Cierre') !== false) {
                 $modeloCaja = new ReporteCajaModel();
                 $cierre = $modeloCaja->obtenerCierrePorId($id);
                 if ($cierre) {
                     $detalles = $modeloCaja->obtenerDetalleCierrePorId($id);
                     echo json_encode([
-                        'success' => true, 
+                        'success' => true,
                         'nota' => array_merge($cierre, ['detalles' => $detalles]),
                         'tipo' => 'Cierre'
                     ], JSON_UNESCAPED_UNICODE);
@@ -200,15 +239,9 @@ class ReportesController
         }
     }
 
-    public function verDetalleNotaAjax()
-    {
-        return $this->verDetalleAjax();
-    }
-
     /* ============================================================
      *  PDF INDIVIDUAL — NOTA DE SALIDA
      * ============================================================ */
-
     public function exportarNotaSalidaPDF()
     {
         $val = $this->val;
@@ -232,7 +265,6 @@ class ReportesController
     /* ============================================================
      *  PDF INDIVIDUAL — NOTA DE ENTRADA
      * ============================================================ */
-
     public function exportarNotaEntradaPDF()
     {
         $val = $this->val;
@@ -254,29 +286,27 @@ class ReportesController
     }
 
     /* ============================================================
-     *  CIERRE — AJAX (Para el historial del modal en Reportes)
+     *  CIERRE — AJAX
      * ============================================================ */
-
     public function obtenerCierreAjax()
     {
         if (ob_get_level()) ob_clean();
         header('Content-Type: application/json; charset=utf-8');
-        
+
         try {
             $id = (int)($_GET['id'] ?? 0);
             if ($id <= 0) throw new Exception('ID de cierre inválido');
 
-            // 🔥 Usamos el modelo de Caja para traer los datos exactos con los conteos
             $modeloCaja = new ReporteCajaModel();
-            
+
             $cierre = $modeloCaja->obtenerCierrePorId($id);
             if (!$cierre) throw new Exception('Cierre no encontrado');
 
             $detalles = $modeloCaja->obtenerDetalleCierrePorId($id);
 
             echo json_encode([
-                'success'  => true, 
-                'cierre'   => $cierre, 
+                'success'  => true,
+                'cierre'   => $cierre,
                 'detalles' => $detalles
             ], JSON_UNESCAPED_UNICODE);
             exit;
@@ -288,9 +318,8 @@ class ReportesController
     }
 
     /* ============================================================
-     *  EXPORTAR CIERRE PDF (Para el botón del modal en Reportes)
+     *  EXPORTAR CIERRE PDF
      * ============================================================ */
-
     public function exportarCierrePDF()
     {
         if (ob_get_level()) ob_clean();
@@ -299,12 +328,12 @@ class ReportesController
             if ($id_cierre <= 0) die("Error: ID de cierre no proporcionado.");
 
             $modeloCaja = new ReporteCajaModel();
-            
+
             $cierre = $modeloCaja->obtenerCierrePorId($id_cierre);
             if (!$cierre) die("Error: Cierre no encontrado.");
 
             $movimientos = $modeloCaja->obtenerDetalleCierrePDF($id_cierre);
-            
+
             $datos_pdf = [
                 'fecha' => date('d/m/Y', strtotime($cierre['fecha_cierre'])),
                 'hora_apertura' => $cierre['hora_apertura'] ? date('h:i A', strtotime($cierre['hora_apertura'])) : '—',
@@ -327,12 +356,16 @@ class ReportesController
     }
 
     /* ============================================================
-     *  EXPORTAR PDF MOVIMIENTOS (reporte completo)
+     *  EXPORTAR PDF MOVIMIENTOS  (CON ZONA HORARIA VENEZUELA)
      * ============================================================ */
-
     public function exportarPDF()
     {
         $val = $this->val;
+        while (ob_get_level()) { ob_end_clean(); }
+
+        // 👇 Fuerza zona horaria Venezuela antes de cualquier date()
+        require_once dirname(__DIR__) . '/Config/timezone.php';
+
         try {
             $tipo = $val->limpiar($_GET['tipo'] ?? 'reporte');
 
@@ -353,6 +386,8 @@ class ReportesController
 
             $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
             if (!is_array($movimientos)) $movimientos = [];
+
+            $movimientos = $this->ordenarMovimientos($movimientos);
 
             $totalEntradas = 0; $totalSalidas = 0; $totalAnuladas = 0; $totalCierres = 0;
             $movimientosPDF = []; $cierresVistos = []; $hora_cierre_pdf = null;
@@ -385,9 +420,11 @@ class ReportesController
             $filtrosStr = [];
             if (!empty($fecha_inicio)) $filtrosStr[] = "Desde: " . date('d/m/Y', strtotime($fecha_inicio));
             if (!empty($fecha_fin))    $filtrosStr[] = "Hasta: " . date('d/m/Y', strtotime($fecha_fin));
+            if (!empty($busqueda))     $filtrosStr[] = "Búsqueda: " . $busqueda;
+            if (!empty($tipo_movimiento)) $filtrosStr[] = "Tipo: " . $tipo_movimiento;
 
             $datos_pdf = [
-                'fecha_reporte' => date('d/m/Y h:i A'),
+                'fecha_reporte' => date('d/m/Y h:i A'),   // 👈 ahora en hora Venezuela
                 'filtros'       => empty($filtrosStr) ? 'Todos los movimientos' : implode(' | ', $filtrosStr),
                 'movimientos'   => $movimientosPDF,
                 'totalEntradas' => $totalEntradas,
@@ -407,12 +444,16 @@ class ReportesController
     }
 
     /* ============================================================
-     *  EXPORTAR CSV
+     *  EXPORTAR CSV  (CON ZONA HORARIA VENEZUELA)
      * ============================================================ */
-
     public function exportarCSV()
     {
         $val = $this->val;
+        while (ob_get_level()) { ob_end_clean(); }
+
+        // 👇 Zona horaria Venezuela también para el nombre del archivo y las horas
+        require_once dirname(__DIR__) . '/Config/timezone.php';
+
         try {
             $fecha_inicio = $val->normalizarFecha($val->limpiar($_GET['fecha_inicio'] ?? ($_GET['fecha'] ?? '')), null);
             $fecha_fin    = $val->normalizarFecha($val->limpiar($_GET['fecha_fin'] ?? ''), null);
@@ -422,6 +463,8 @@ class ReportesController
 
             $movimientos = $this->modelo->obtenerMovimientosDiarios($fecha_inicio, $fecha_fin, $id_categoria, $busqueda, $tipo_movimiento, 999999, 0);
             if (!is_array($movimientos)) $movimientos = [];
+
+            $movimientos = $this->ordenarMovimientos($movimientos);
 
             header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename="Reporte_Movimientos_' . date('Ymd_His') . '.csv"');

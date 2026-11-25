@@ -5,6 +5,9 @@ error_reporting(0);
 ini_set('display_errors', 0);
 while (ob_get_level() > 0) { ob_end_clean(); }
 
+// 👇 Zona horaria Venezuela ANTES de cualquier date()
+require_once dirname(__DIR__, 3) . '/app/Config/timezone.php';
+
 require_once dirname(__DIR__, 3) . '/fpdf.php';
 
 function pdf_txt($texto) {
@@ -24,6 +27,7 @@ $movimientos = $datos_pdf['movimientos'] ?? [];
 $totalEntradas = $datos_pdf['totalEntradas'] ?? 0;
 $totalSalidas = $datos_pdf['totalSalidas'] ?? 0;
 $totalAnuladas = $datos_pdf['totalAnuladas'] ?? 0;
+$totalCierres = $datos_pdf['totalCierres'] ?? 0;
 $usuario_activo = $_SESSION['usuario_nombre'] ?? 'Administrador';
 
 $logoPath = dirname(__DIR__, 3) . '/assets/imagenes/logo.png';
@@ -65,7 +69,7 @@ class PDF extends FPDF
         $this->SetY(-15);
         $this->SetFont('Arial', 'I', 8);
         $this->SetTextColor(128);
-        $this->Cell(0, 10, pdf_txt('Pagina ' . $this->PageNo() . ' - Generado el ' . date('d/m/Y H:i')), 0, 0, 'C');
+        $this->Cell(0, 10, pdf_txt('Pagina ' . $this->PageNo() . ' - Generado el ' . date('d/m/Y h:i A')), 0, 0, 'C');
     }
 }
 
@@ -132,9 +136,9 @@ $pdf->SetFont('Arial', 'B', 9);
 $pdf->Cell(32, 8, pdf_txt((string)$totalAnuladas), 'LR', 1, 'L', true);
 $pdf->SetXY(225, $yInicio + 16);
 $pdf->SetFont('Arial', '', 9);
-$pdf->Cell(30, 8, pdf_txt('Generado por:'), 'LR', 0, 'L', true);
-$pdf->SetFont('Arial', 'B', 8);
-$pdf->Cell(32, 8, pdf_txt($usuario_activo), 'LR', 1, 'L', true);
+$pdf->Cell(30, 8, pdf_txt('Cierres:'), 'LR', 0, 'L', true);
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Cell(32, 8, pdf_txt((string)$totalCierres), 'LR', 1, 'L', true);
 $pdf->Line(225, $yInicio + 24, 287, $yInicio + 24);
 $pdf->SetY($yInicio + 30);
 
@@ -152,7 +156,6 @@ $pdf->SetFillColor(245, 245, 245);
 $pdf->SetTextColor(73, 80, 87);
 $pdf->SetFont('Arial', 'B', 8);
 
-// Anchos para A4 horizontal (277 mm útiles)
 $w = [18, 22, 55, 28, 30, 30, 30, 64];
 $headers = ['N° NOTA', 'FECHA', 'CLIENTE / PROVEEDOR', 'TIPO', 'PRODUCTOS', 'CATEGORÍAS', 'UNIDADES', 'ENCARGADO'];
 foreach ($headers as $i => $h) {
@@ -171,21 +174,17 @@ if (empty($movimientos)) {
     foreach ($movimientos as $m) {
         $tipo = $m['tipo_movimiento'] ?? 'Entrada';
 
-        // 🔥 DETECCIÓN DE CIERRE DE CAJA
         $esCierre = ($tipo === 'Cierre de Caja' || stripos($tipo, 'cierre') !== false);
         $esAnulacion = (strpos($tipo, 'Anulación') === 0 || stripos($tipo, 'anulad') !== false);
 
-        // Datos base
         $cliente = trim((string) ($m['nombre_cliente'] ?? 'N/A'));
         $encargado = trim((string) ($m['usuario_activo'] ?? ''));
         $fecha_mov = isset($m['fecha_movimiento']) ? date('d/m/Y', strtotime($m['fecha_movimiento'])) : '';
 
-        // 🔥 SI ES CIERRE: ajustamos etiquetas y rescatamos totales reales
         if ($esCierre) {
             $cliente = 'Cierre Global de Turno';
             $prodLabel = 'Global';
             $catLabel  = 'Global';
-            // El cierre guarda sus totales en estas columnas (según tu tabla cierre_caja)
             $undCierre = (int)($m['total_unidades_cierre']
                         ?? $m['unidades_cierre']
                         ?? $m['total_unidades']
@@ -200,7 +199,6 @@ if (empty($movimientos)) {
 
         if (strlen($encargado) > 40) $encargado = substr($encargado, 0, 37) . '...';
 
-        // 🔥 FONDO DESTACADO PARA CIERRES (amarillo suave)
         if ($esCierre) {
             $pdf->SetFillColor(255, 243, 205);
             $fill = true;
@@ -213,9 +211,8 @@ if (empty($movimientos)) {
         $pdf->Cell($w[1], 8, pdf_txt($fecha_mov), 'B', 0, 'L', $fill);
         $pdf->Cell($w[2], 8, pdf_txt($cliente), 'B', 0, 'L', $fill);
 
-        // 🔥 COLOR SEGÚN TIPO (respetando tu lógica original)
         if ($esCierre) {
-            $pdf->SetTextColor(180, 95, 0); // naranja oscuro para cierre
+            $pdf->SetTextColor(180, 95, 0);
         } elseif ($esAnulacion) {
             $pdf->SetTextColor(108, 117, 125);
         } elseif (stripos($tipo, 'Entrada') !== false) {
@@ -243,7 +240,7 @@ $pdf->Ln(10);
 $pdf->SetFont('Arial', 'I', 8);
 $pdf->SetTextColor(120, 120, 120);
 $pdf->Cell(0, 6, pdf_txt('Gracias por su preferencia - Pirotecnia Fenix C.A.'), 0, 1, 'C');
-$pdf->Cell(0, 6, pdf_txt('Generado el ' . date('d/m/Y H:i:s')), 0, 1, 'R');
+$pdf->Cell(0, 6, pdf_txt('Generado el ' . date('d/m/Y h:i:s A')), 0, 1, 'R');
 
 $pdf->Output('I', 'Reporte_Movimientos_' . date('Ymd_His') . '.pdf');
 exit;
