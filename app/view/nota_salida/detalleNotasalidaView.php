@@ -179,28 +179,28 @@ $puede_anular_nota = $db ? PermisoHelper::tienePermiso($db, $id_rol_actual, 'Not
 <?php if (isset($nota) && ($nota['eliminado'] ?? 0) != 1 && $puede_anular_nota): ?>
 <div class="modal fade" id="anularModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content" style="background: #0d0d14; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-            <div class="modal-header" style="background: rgba(220,53,69,0.1); border-bottom: 1px solid rgba(255,255,255,0.05); border-radius: 16px 16px 0 0;">
+        <div class="modal-content" style="background: #ffffff; border: 1px solid #e9ecef; border-radius: 16px;">
+            <div class="modal-header" style="background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.08); border-radius: 16px 16px 0 0;">
                 <h5 class="modal-title" style="color: #ffffff;">
                     <i class="fas fa-exclamation-triangle me-2" style="color: #dc3545;"></i> Anular Nota de Salida
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter: invert(1); opacity: 0.3;"></button>
             </div>
             <form method="POST" action="?url=notasalida&type=eliminar">
-                <div class="modal-body" style="color: rgba(255,255,255,0.8);">
+                <div class="modal-body" style="color: #212529;">
                     <p>¿Estás seguro de anular esta nota de salida?</p>
-                    <p><strong style="color: rgba(255,255,255,0.5);">Cliente:</strong> <span style="color: #ffffff;"><?= htmlspecialchars($nota['cliente'] ?? '') ?></span></p>
+                    <p><strong style="color: #6c757d;">Cliente:</strong> <span style="color: #1a1a2e;"><?= htmlspecialchars($nota['cliente'] ?? '') ?></span></p>
                     <div class="alert" style="background: rgba(220,53,69,0.08); border: 1px solid rgba(220,53,69,0.12); color: #ea868f; border-radius: 12px; padding: 12px 16px;">
                         <i class="fas fa-info-circle me-2"></i> Al anular, el stock se revertirá automáticamente.
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold" style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Motivo <span class="text-danger">*</span></label>
-                        <textarea name="motivo_eliminacion" class="form-control" rows="3" required style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #ffffff; padding: 12px 16px;"></textarea>
+                        <label class="form-label fw-bold" style="color: #495057; font-size: 0.85rem;">Motivo <span class="text-danger">*</span></label>
+                        <textarea name="motivo_eliminacion" class="form-control" rows="3" required style="background: #ffffff; border: 1px solid #ced4da; border-radius: 12px; color: #212529; padding: 12px 16px;"></textarea>
                     </div>
                     <input type="hidden" id="idNotaSalidaImprimir" name="id_nota_salida" value="<?= htmlspecialchars((string) ($nota['id_nota_salida']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                 </div>
-                <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.04);">
-                    <button type="button" class="btn" data-bs-dismiss="modal" style="background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); border-radius: 50px; padding: 8px 20px; font-weight: 600; transition: all 0.3s ease;">Cancelar</button>
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border: 1px solid #dee2e6; border-radius: 50px; padding: 8px 20px; font-weight: 600;">Cancelar</button>
                     <button type="submit" class="btn" style="background: #dc3545; border: none; color: #fff; border-radius: 50px; padding: 8px 20px; font-weight: 600; transition: all 0.3s ease;"><i class="fas fa-ban me-1"></i> Anular</button>
                 </div>
             </form>
